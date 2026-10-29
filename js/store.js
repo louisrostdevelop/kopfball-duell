@@ -9,7 +9,7 @@ const def = () => ({
   name: "", diff: 1, dur: 90, pus: true, chaos: false,
   sfx: true, music: true, vib: true, quality: "high",
   stats: { games: 0, wins: 0, goals: 0, headGoals: 0, pus: 0, stomps: 0, supers: 0 },
-  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [],
+  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false,
 });
 export let S = load();
 function load() {
@@ -65,3 +65,38 @@ export function checkAch(ctx) {
 }
 export function achProgress(a) { if (S.ach[a.id]) return 1; if (a.stat) return Math.min(1, (S.stats[a.stat] || 0) / a.goal); return 0; }
 export { CHARS, ARENAS, BALLS };
+
+// ---------- Tagesaufgaben ----------
+const TASKS = [
+  { id: "wins", text: n => `Gewinne ${n} Spiele`, n: [2, 3], reward: 80 },
+  { id: "goals", text: n => `Schieß ${n} Tore`, n: [5, 8], reward: 60 },
+  { id: "headGoals", text: n => `Erziele ${n} Kopfballtore`, n: [2, 3], reward: 80 },
+  { id: "supers", text: n => `Setz ${n}-mal deinen Super ein`, n: [3, 5], reward: 60 },
+  { id: "pus", text: n => `Sammle ${n} Power-ups`, n: [3, 5], reward: 60 },
+  { id: "stomps", text: n => `Spring ${n}-mal auf einen Gegnerkopf`, n: [2, 3], reward: 70 },
+  { id: "online", text: () => "Spiel ein Online-Spiel", n: [1], reward: 90 },
+  { id: "hard", text: () => "Gewinn gegen Schwer oder Legende", n: [1], reward: 100 },
+  { id: "cupRound", text: n => `Gewinn ${n} Cup-Spiele`, n: [2], reward: 80 },
+];
+function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
+export function tasks() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (!S.tasks || S.tasks.date !== today) {
+    const r = seeded(today), pool = [...TASKS], list = [];
+    while (list.length < 3) { const t = pool.splice(Math.floor(r() * pool.length), 1)[0]; const n = t.n[Math.floor(r() * t.n.length)]; list.push({ id: t.id, n, prog: 0, done: false, reward: t.reward }); }
+    S.tasks = { date: today, list }; save();
+  }
+  return S.tasks.list.map(t => ({ ...t, text: TASKS.find(x => x.id === t.id).text(t.n) }));
+}
+// inc: { wins, goals, ... } -> gibt neu erledigte Aufgaben zurück
+export function taskProgress(inc) {
+  tasks();
+  const done = [];
+  S.tasks.list.forEach(t => {
+    if (t.done || !inc[t.id]) return;
+    t.prog = Math.min(t.n, t.prog + inc[t.id]);
+    if (t.prog >= t.n) { t.done = true; addCoins(t.reward); done.push({ ...t, text: TASKS.find(x => x.id === t.id).text(t.n) }); }
+  });
+  save();
+  return done;
+}

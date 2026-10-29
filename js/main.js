@@ -7,11 +7,12 @@ import * as A from "./audio.js";
 import * as I from "./input.js";
 import { makeAI, aiInput } from "./ai.js";
 import * as Net from "./net.js";
-import { S, save, reset as resetSave, addXP, addCoins, xpFor, owns, buy, dailyCheck, checkAch, achProgress } from "./store.js";
+import { S, save, reset as resetSave, addXP, addCoins, xpFor, owns, buy, dailyCheck, checkAch, achProgress, tasks, taskProgress } from "./store.js";
 
 const $ = id => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const VERSION = 2;
+const CELEB = { kalle: "🔥", yuki: "❄️", bolt: "⚡", rocco: "🚀", nala: "🍌", flummi: "🎈", phantom: "👻", tank: "💪", tina: "🌪️", magnus: "🧲", max: "☄️", kaiser: "👑" };
 
 const App = {
   mode: "demo", st: null, ai: [null, null], cfg: null, acc: 0, paused: false, endShown: false,
@@ -19,6 +20,7 @@ const App = {
   rec: [], replay: null, maxDef: 0, screen: "home", stack: [],
   cup: null, local2: null, series: {}, lastCfg: null,
   // online
+  jug: { i: -1, n: 0 },
   opp: null, guestIn: [0, 0, 0, 0, 0], sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, lobbyReady: false,
 };
 
@@ -45,6 +47,8 @@ function boot() {
     $("loading").classList.add("done"); resize();
     const d = dailyCheck();
     if (d) setTimeout(() => dailyModal(d), 500);
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone;
+    if (ios && !S.iosHint) setTimeout(() => { toast("Tipp: Teilen → „Zum Home-Bildschirm“ = Vollbild ohne Leisten"); S.iosHint = true; save(); }, d ? 6000 : 2500);
     // Link mit #CODE: direkt beitreten
     const h = (location.hash || "").slice(1);
     if (/^[A-Za-z0-9]{4}$/.test(h)) { history.replaceState(null, "", location.pathname + location.search); $("codeIn").value = h.toUpperCase(); showScreen("online"); setTimeout(() => tryJoin(h), 400); }
@@ -178,18 +182,25 @@ function onEvent(e, remote) {
     case "land": fx.burst("dust", e.x, e.y, { n: 6 }); snd("land"); break;
     case "swing": if (remote && e.i === myIdx()) break; snd("swing"); break;
     case "kick":
+      if (App.jug.n >= 3 && App.jug.i === e.i) fx.burst("text", e.x, e.y - 70, { text: "VOLLEY!", col: COL.gold, size: 30 });
+      App.jug.n = 0;
       fx.burst("kick", e.x, e.y, { pow: e.pow }); snd("kick", e.pow); fx.shake(3 * e.pow);
       if (e.pow > 1.6) { fx.burst("text", e.x, e.y - 40, { text: "WUMMS!", col: COL.gold, size: 30 }); fx.shake(6); }
       if (isHuman(e.i)) I.vibrate(e.pow > 1.4 ? 30 : 12);
       break;
-    case "head": fx.burst("head", e.x, e.y); snd("head"); if (e.v > 700) fx.shake(3); break;
-    case "bounce": if (e.v > 400) fx.burst("dust", e.x, e.y, { n: 4, col: "rgba(255,255,255,.35)" }); snd("bounce", e.v); break;
+    case "head": {
+      fx.burst("head", e.x, e.y); snd("head"); if (e.v > 700) fx.shake(3);
+      const j = App.jug; if (j.i === e.i) j.n++; else { j.i = e.i; j.n = 1; }
+      if (j.n >= 3) { fx.burst("text", e.x, e.y - 50, { text: j.n + "x JONGLIERT!", col: j.n >= 5 ? COL.gold : "#fff", size: 22 + Math.min(14, j.n * 2) }); if (j.n === 5 || j.n === 8) snd("full"); }
+      break;
+    }
+    case "bounce": App.jug.n = 0; if (e.v > 400) fx.burst("dust", e.x, e.y, { n: 4, col: "rgba(255,255,255,.35)" }); snd("bounce", e.v); break;
     case "post": fx.burst("post", e.x, e.y); snd("post"); snd("ohh"); fx.shake(7); fx.burst("text", e.x, e.y - 30, { text: "LATTE!", col: "#fff", size: 28 }); fx.hype(0.6); break;
     case "goal": onGoal(e); break;
     case "super": {
       const sc = SUPERS[e.k].col;
       fx.burst("super", e.x, e.y, { col: sc }); snd("super"); fx.shake(12); fx.flash(sc, 0.35);
-      fx.callout(SUPERS[e.k].name.toUpperCase(), sc, "", 1.0, 0.6);
+      if (!demo) fx.callout(SUPERS[e.k].name.toUpperCase(), sc, "", 1.0, 0.6);
       if (isHuman(e.i)) I.vibrate(60);
       break;
     }
@@ -207,7 +218,7 @@ function onEvent(e, remote) {
     case "wallhit": snd("wallhit"); fx.burst("post", e.x, e.y); break;
     case "charged": if (isHuman(e.i) || App.mode === "local") snd("charged"); break;
     case "ten": if (!demo) { fx.callout("10 SEK!", "#ff5a5a", "", 1.1, 0.55); snd("tick"); } break;
-    case "golden": snd("whistle"); fx.callout("GOLDEN GOAL", COL.gold, "Nächstes Tor gewinnt", 2.2, 0.8); break;
+    case "golden": snd("whistle"); fx.hype(0.8); break;
     case "end": snd("whistle"); fx.hype(1); break;
     case "emote": snd("emote"); break;
   }
@@ -236,11 +247,15 @@ function onGoal(e) {
   else if (e.s[0] === e.s[1]) sub = "AUSGLEICH!";
   else if (Math.abs(e.s[0] - e.s[1]) === 1 && e.s[e.i] > e.s[1 - e.i]) sub = "FÜHRUNG!";
   else sub = (App.names[e.i] || "").toUpperCase();
-  fx.callout(text, col, sub, 1.9, text.length > 9 ? 0.82 : 1);
-  // CPU reagiert mit Emote
-  if ((App.mode === "cpu" || App.mode === "cup") && Math.random() < 0.6) {
-    const cpu = App.st.p[1];
-    setTimeout(() => { if (App.st && App.st.p[1] === cpu) emote(App.st, 1, e.i === 1 ? ["😎", "😂", "🤡", "🔥"][Math.floor(Math.random() * 4)] : ["😤", "😤", "GG"][Math.floor(Math.random() * 3)]); }, 700);
+  if (!demo) fx.callout(text, col, sub, 1.9, text.length > 9 ? 0.82 : 1);
+  // Jubel: Torschütze zeigt sein Zeichen, CPU ärgert sich
+  if (App.mode !== "guest" && e.kind !== "own") {
+    const sc = App.st.p[e.i], s0 = App.st;
+    setTimeout(() => { if (App.st === s0) emote(s0, e.i, CELEB[sc.ch] || "🔥"); }, 350);
+  }
+  if ((App.mode === "cpu" || App.mode === "cup") && e.i === 0 && Math.random() < 0.6) {
+    const s0 = App.st;
+    setTimeout(() => { if (App.st === s0) emote(s0, 1, ["😤", "😤", "🤡", "GG"][Math.floor(Math.random() * 4)]); }, 1100);
   }
 }
 
@@ -483,6 +498,10 @@ function matchEnd() {
     if (win) { c.round++; if (c.round >= c.ops.length) { cupWon = true; c.done = true; addCoins(300); lines.push(["🏆 Pokal gewonnen", 300]); S.cupBest = Math.max(S.cupBest, 3); } }
     else c.done = true;
   }
+  const isOnline = App.mode === "guest" || App.mode === "host";
+  const inc = myS ? { wins: win ? 1 : 0, goals: myS.goals, headGoals: myS.headGoals, supers: myS.supers, pus: myS.pus, stomps: myS.stomps, online: isOnline ? 1 : 0, hard: win && (App.mode === "cpu" || App.mode === "cup") && App.cfg.diff >= 2 ? 1 : 0, cupRound: win && App.mode === "cup" ? 1 : 0 } : { pus: st.stats[0].pus + st.stats[1].pus, stomps: st.stats[0].stomps + st.stats[1].stomps };
+  const tdone = taskProgress(inc);
+  tdone.forEach((t, n) => setTimeout(() => { toast(`📋 Aufgabe geschafft: ${t.text} (+${t.reward})`, true); A.sfx("coin"); }, 600 + n * 1300));
   const achs = me >= 0 ? checkAch({ win, myGoals: myS.goals, conceded: st.s[op], superGoals: myS.superGoals, lastSec: myS.lastSecGoals, longGoals: myS.longGoals, maxDeficit: App.maxDef, cupWon, diff: App.cfg.diff, mode: App.mode === "guest" || App.mode === "host" ? "online" : App.mode }) : checkAch({});
   save();
   showEnd({ win, me, lines, coins, ups, achs, cupWon });
@@ -583,6 +602,7 @@ function refreshTop() {
   $("lvlNum").textContent = S.level;
   $("xpFill").style.width = Math.round(S.xp / xpFor(S.level) * 100) + "%";
   const done = Object.keys(S.ach).length; $("achCnt").textContent = done + "/" + ACHIEVEMENTS.length;
+  const tl = tasks(); $("taskCnt").textContent = tl.filter(t => t.done).length + "/" + tl.length;
   const cheap = CHARS.some(c => !owns("chars", c.id) && c.price <= S.coins);
   $("shopDot").hidden = !cheap;
 }
@@ -614,7 +634,7 @@ function selectScreen(opts) {
 function selUpdate() {
   const c = charById(selCtx.pick), locked = !owns("chars", c.id);
   $$(".ctile").forEach(t => t.classList.toggle("on", t.dataset.id === c.id));
-  const big = $("bigAv"); big.innerHTML = ""; big.append(avatarCanvas(c.id, 170, { mood: "happy" }));
+  const big = $("bigAv"); big.innerHTML = ""; big.append(avatarCanvas(c.id, innerHeight < 520 ? 104 : 170, { mood: "happy" }));
   $("ciName").textContent = c.name;
   $("ciSuper").textContent = "Super: " + SUPERS[c.super].name; $("ciDesc").textContent = SUPERS[c.super].desc;
   const bar = (l, v) => `<span>${l}</span><span class="bar"><i style="width:${Math.round(clamp((v - 0.8) / 0.45, 0.08, 1) * 100)}%"></i></span>`;
@@ -792,6 +812,11 @@ function levelModal(lvl) {
   const next = CHARS.find(c => !owns("chars", c.id));
   modal(`<div class="bigemo">⬆️</div><h3>Level ${lvl}!</h3><p>Bonus: <b>+${bonus} Münzen</b></p>` + (next ? `<p style="font-size:16px;color:var(--muted)">Nächster Kopf im Shop: ${next.name} (${next.price})</p>` : ""));
 }
+function tasksModal() {
+  const tl = tasks();
+  const rows = tl.map(t => `<div class="task${t.done ? " done" : ""}"><b>${esc(t.text)}<span>${t.done ? "✓" : "+" + t.reward}</span></b><div class="prog"><i style="width:${Math.round(t.prog / t.n * 100)}%"></i></div></div>`).join("");
+  modal(`<h3>Tagesaufgaben</h3><div class="tasklist">${rows}</div><p style="font-size:15px;color:var(--muted)">Jeden Tag gibt's drei neue.</p>`, "Alles klar");
+}
 function trophyModal() {
   A.sfx("levelup");
   modal(`<div class="bigemo">🏆</div><h3>Pokalsieger!</h3><p>Drei Gegner, drei Siege. Der Pokal gehört dir.</p>`, "Feiern");
@@ -866,6 +891,7 @@ function wireUI() {
   $("btnOnline").onclick = () => { A.sfx("click"); $("nameIn").value = S.name || ""; netNote(Net.available() ? "Spiel erstellen und den Link schicken. Kein Account nötig." : "Online-Modus lädt…"); showScreen("online"); };
   $("btnShop").onclick = () => { A.sfx("click"); showScreen("shop"); };
   $("btnAch").onclick = () => { A.sfx("click"); showScreen("ach"); };
+  $("btnTasks").onclick = () => { A.sfx("click"); tasksModal(); };
   $("btnSettings").onclick = () => { A.sfx("click"); showScreen("settings"); };
   $("homeCoins").onclick = () => { A.sfx("click"); showScreen("shop"); };
   $("homeLvl").onclick = () => { A.sfx("click"); showScreen("ach"); };

@@ -690,6 +690,56 @@ function drawCallouts(dt) {
   }
 }
 
+function vsIntro(st, names, e) {
+  // e: Sekunden seit Start des Countdowns
+  const slide = k => 1 - Math.pow(1 - clamp(k, 0, 1), 3);
+  const out = clamp((e - 1.6) / 0.5, 0, 1);
+  const y = Math.max(0, -base.oy / base.s) + 175;
+  [0, 1].forEach(i => {
+    const k = slide(e / 0.4) - out * 1.3, d = i ? 1 : -1;
+    const x = W / 2 + d * (250 + (1 - k) * 800);
+    ctx.save(); ctx.globalAlpha = clamp(1 - out, 0, 1);
+    ctx.save(); ctx.translate(x, y); ctx.transform(1, 0, -0.18, 1, 0, 0);
+    ctx.fillStyle = "#fff"; ctx.fillRect(-186, -48, 372, 96);
+    const g = ctx.createLinearGradient(0, -42, 0, 42); g.addColorStop(0, shade(TEAM[i], 0.15)); g.addColorStop(1, shade(TEAM[i], -0.3));
+    ctx.fillStyle = g; ctx.fillRect(-180, -42, 360, 84);
+    ctx.font = "36px Bungee, Impact"; ctx.textAlign = i ? "left" : "right"; ctx.textBaseline = "middle"; ctx.fillStyle = INK;
+    ctx.fillText((names[i] || "").toUpperCase().slice(0, 10), i ? -100 : 100, 3);
+    ctx.restore();
+    const av = avatar(st.p[i].ch, 90, "");
+    ctx.drawImage(av, x + (i ? 70 : -190), y - 66, 120, 120);
+    ctx.restore();
+  });
+  const vk = clamp((e - 0.3) / 0.25, 0, 1) * (1 - out);
+  if (vk > 0) {
+    ctx.save(); ctx.translate(W / 2, y + 4); ctx.scale(0.6 + vk * 0.4 + Math.sin(e * 20) * 0.02, 0.6 + vk * 0.4); ctx.globalAlpha = vk;
+    ctx.font = "80px Bungee, Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    ctx.lineWidth = 22; ctx.strokeStyle = "#fff"; ctx.strokeText("VS", 0, 0); ctx.lineWidth = 12; ctx.strokeStyle = INK; ctx.strokeText("VS", 0, 0);
+    ctx.fillStyle = COL.gold; ctx.fillText("VS", 0, 0); ctx.restore();
+  }
+}
+function weather(st, t) {
+  if (quality !== "high") return;
+  if (st.arena === "eis") {
+    ctx.fillStyle = "rgba(255,255,255,.8)";
+    for (let i = 0; i < 70; i++) {
+      const sx = (i * 137.5) % 1, sy = (i * 71.3) % 1, sp = 30 + (i % 7) * 9;
+      const x = -200 + sx * (W + 400) + Math.sin(t * 0.8 + i) * 24, y = ((sy * (H + 80) + t * sp) % (H + 80)) - 40;
+      ctx.beginPath(); ctx.arc(x, y, 1.5 + (i % 3), 0, TAU); ctx.fill();
+    }
+  } else if (st.arena === "neon") {
+    ctx.strokeStyle = "rgba(180,140,255,.25)"; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = 0; i < 60; i++) {
+      const sx = (i * 137.5) % 1, sy = (i * 71.3) % 1;
+      const x = -200 + sx * (W + 400) - ((t * 120) % 200), y = ((sy * (H + 80) + t * 900) % (H + 80)) - 40;
+      ctx.moveTo(x, y); ctx.lineTo(x - 6, y + 22);
+    }
+    ctx.stroke();
+  } else if (st.arena === "mond") {
+    for (let i = 0; i < 18; i++) { const a = 0.4 + 0.6 * Math.abs(Math.sin(t * (1 + i % 4) + i)); ctx.fillStyle = `rgba(255,255,255,${a})`; const x = (i * 211) % W, y = 20 + (i * 97) % 300; ctx.fillRect(x, y, 3, 3); }
+  }
+}
+
 // ---------- Haupt-Zeichnung ----------
 // opts: { names, labels, ballSkin, dt, replay (Snapshot-Liste), replayFrac, series, modName, countdown }
 export function render(st, t, opts) {
@@ -704,7 +754,11 @@ export function render(st, t, opts) {
     view = opts.replay[idx]; rep = opts.replay.slice(Math.max(0, idx - 12), idx + 1).map(s => ({ x: s.b.x, y: s.b.y, r: s.b.r, fx: s.b.fx, sp: Math.hypot(s.b.vx, s.b.vy) }));
   }
   let tz = 1, tx = W / 2, ty = H / 2;
-  if (rep) { tz = 1.55; tx = view.b.x; ty = Math.min(view.b.y, G - 140); }
+  if (rep) {
+    // Ball und Boden sollen beide im Bild sein
+    const top = Math.min(view.b.y, view.p[0].y - 90, view.p[1].y - 90) - 70, bot = G + 50;
+    tz = clamp(H / (bot - top), 1, 1.55); tx = view.b.x; ty = (top + bot) / 2;
+  }
   else if (st.ph === "goal" && st.pt > 3.4) { tz = 1.12; tx = st.b.x; ty = Math.min(st.b.y, G - 200); }
   const k = Math.min(1, dt * (rep ? 6 : 3));
   cam.z += (tz - cam.z) * k; cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
@@ -735,25 +789,29 @@ export function render(st, t, opts) {
   const labels = opts.labels || [];
   view.p.forEach(p => drawPlayer(view, p, t, rep ? null : labels[p.i]));
   drawParts(false);
+  weather(view, t);
   drawBallFx(view, view.b, t, opts.ballSkin || "klassik", rep);
   goalFront(view, 0, t); goalFront(view, 1, t);
   ctx.globalCompositeOperation = "lighter"; drawParts(true); ctx.globalCompositeOperation = "source-over";
   // HUD in Basiskoordinaten
   ctx.setTransform(dpr * base.s, 0, 0, dpr * base.s, dpr * base.ox, dpr * base.oy);
-  if (!opts.noHud) hud(st, t, opts.names || ["", ""], opts);
+  if (!opts.noHud && !rep) hud(st, t, opts.names || ["", ""], opts);
   // Countdown
   if ((st.ph === "cd" || st.ph === "ko") && !opts.noHud) {
     const n = st.ph === "ko" ? "" : st.pt > 2 ? "3" : st.pt > 1 ? "2" : st.pt > 0.25 ? "1" : "";
     const lab = st.ph === "ko" ? "WEITER!" : st.gold && st.pt > 0.25 ? "GOLDEN GOAL" : n;
     if (lab) {
       const f = st.ph === "ko" ? 1 : (st.pt % 1);
-      ctx.save(); ctx.translate(W / 2, 300); const sc = 0.8 + f * 0.5; ctx.scale(sc, sc); ctx.transform(1, 0, -0.15, 1, 0, 0);
+      ctx.save(); ctx.translate(W / 2, Math.max(0, -base.oy / base.s) + 330); const sc = 0.8 + f * 0.5; ctx.scale(sc, sc); ctx.transform(1, 0, -0.15, 1, 0, 0);
       ctx.font = (lab.length > 2 ? 70 : 140) + "px Bungee, Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
       ctx.lineWidth = 28; ctx.strokeStyle = "#fff"; ctx.strokeText(lab, 0, 0); ctx.lineWidth = 16; ctx.strokeStyle = INK; ctx.strokeText(lab, 0, 0);
-      ctx.fillStyle = st.gold ? COL.gold : "#fff"; ctx.fillText(lab, 0, 0); ctx.restore();
+      ctx.fillStyle = st.gold ? COL.gold : "#fff"; ctx.fillText(lab, 0, 0);
+      if (st.gold && st.ph === "cd") { ctx.font = "30px Bungee, Impact"; ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.strokeText("NÄCHSTES TOR GEWINNT", 0, 70); ctx.fillStyle = "#fff"; ctx.fillText("NÄCHSTES TOR GEWINNT", 0, 70); }
+      ctx.restore();
     }
   }
   if (!rep) drawCallouts(dt);
+  if (st.ph === "cd" && !st.gold && st.s[0] + st.s[1] === 0 && st.pt > 0.9 && !opts.noHud) vsIntro(st, opts.names || ["", ""], 3 - st.pt);
   // Wiederholung
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (rep) {
