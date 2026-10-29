@@ -36,8 +36,10 @@ function noise(dur, vol, type, freq, q = 1, t = 0, f1, bus = sfxBus) {
 export function sfx(kind, v = 1) {
   if (!ac) return;
   switch (kind) {
-    case "kick": osc("sine", 150 * Math.min(1.3, v), 45, 0.16, 0.7 * Math.min(1.4, v)); noise(0.05, 0.35, "highpass", 2000); if (v > 1.4) { noise(0.25, 0.3, "bandpass", 400, 1, 0, 3000); } break;
-    case "head": osc("triangle", 360, 170, 0.12, 0.35); noise(0.03, 0.15, "bandpass", 1500, 2); break;
+    case "kick": osc("sine", 140 * Math.min(1.3, v), 42, 0.18, 0.75 * Math.min(1.4, v)); noise(0.07, 0.45, "lowpass", 900, 1, 0, 200); noise(0.04, 0.3, "highpass", 2500); if (v > 1.4) { noise(0.3, 0.32, "bandpass", 400, 1, 0, 3000); osc("square", 90, 40, 0.12, 0.12); } break;
+    case "head": osc("triangle", 340 * Math.min(1.2, v), 160, 0.12, 0.35); noise(0.03, 0.18, "bandpass", 1500, 2); if (v > 1.3) osc("sine", 120, 50, 0.15, 0.4); break;
+    case "bump": osc("sine", 180, 70, 0.12, 0.35 * Math.min(1.5, v)); noise(0.06, 0.25, "lowpass", 700); break;
+    case "pop": osc("sine", 300, 900, 0.12, 0.2); break;
     case "bounce": osc("sine", 90, 50, 0.1, Math.min(0.4, 0.1 + v * 0.0004)); break;
     case "post": osc("sine", 920, 900, 0.5, 0.25); osc("sine", 1380, 1370, 0.35, 0.15); osc("square", 230, 220, 0.08, 0.1); break;
     case "jump": osc("square", 260, 520, 0.08, 0.05); break;

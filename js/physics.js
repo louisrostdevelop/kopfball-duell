@@ -9,7 +9,7 @@ export function newMatch(o) {
     s: [0, 0],
     p: [mkPlayer(0, o.chars[0]), mkPlayer(1, o.chars[1])],
     b: null, pu: [], puT: rand(6, 9), puId: 1,
-    wall: [0, 0], bigGoal: [0, 0],
+    wall: [0, 0], bigGoal: [0, 0], wind: { t: 0, dir: 1 }, jam: 0,
     ev: [], hs: 0, slow: 0,
     stats: [mkStats(), mkStats()],
     lastGoal: null, trail: 0, seq: 0,
@@ -20,9 +20,9 @@ export function newMatch(o) {
 const mkStats = () => ({ shots: 0, heads: 0, goals: 0, supers: 0, pus: 0, stomps: 0, headGoals: 0, superGoals: 0, longGoals: 0, lastSecGoals: 0, ownGoals: 0, maxTrail: 0 });
 function mkPlayer(i, ch) {
   return {
-    i, ch, x: i ? W - 320 : 320, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
+    i, ch, x: i ? W - 380 : 380, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
     kick: 0, kHit: false, kHeld: false, kPow: 1, chT: 0, charge: 0, lastJ: false, lastS: false,
-    meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false,
+    meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false, confT: 0, djT: 0, djUsed: false, kHitP: false, pushCD: 0, knock: 0,
     hc: 0, sc2: 0, mood: "", moodT: 0, emo: "", emoT: 0, land: 0,
   };
 }
@@ -31,7 +31,7 @@ function mkBall(st) {
 }
 const baseBR = st => BR * (st.mod === "bigball" ? 1.55 : 1);
 export const gMul = st => arenaById(st.arena).g * (st.mod === "lowgrav" ? 0.55 : 1);
-export const barY = (st, side) => BAR_Y - (st.bigGoal[side] > 0 ? 80 : 0);
+export const barY = (st, side) => BAR_Y - (st.bigGoal[side] > 0 ? 60 : 0);
 export const pr = p => HR * p.sc;
 export function shoePos(p) {
   const k = p.kick > 0 ? Math.sin((1 - p.kick / 0.24) * Math.PI) : 0;
@@ -44,7 +44,7 @@ export function kickoff(st) {
   const keep = st.p.map(p => ({ meter: p.meter, full: p.full, ch: p.ch, emo: p.emo, emoT: p.emoT }));
   st.p = [mkPlayer(0, keep[0].ch), mkPlayer(1, keep[1].ch)];
   st.p.forEach((p, i) => { p.meter = keep[i].meter; p.full = keep[i].full; p.emo = keep[i].emo; p.emoT = keep[i].emoT; });
-  st.b = mkBall(st); st.pu = []; st.wall = [0, 0]; st.bigGoal = [0, 0];
+  st.b = mkBall(st); st.pu = []; st.wall = [0, 0]; st.bigGoal = [0, 0]; st.wind = { t: 0, dir: 1 };
 }
 
 // Echtzeit-Fortschritt inkl. Hit-Stop und Zeitlupe
@@ -97,9 +97,12 @@ export function step(st, dt, inp) {
     handleSuper(st, p, c);
   });
   playerVsPlayer(st);
+  st.p.forEach(p => kickPush(st, p));
   ballPhysics(st, dt, false);
+  unjam(st, dt);
   powerups(st, dt);
   ["wall", "bigGoal"].forEach(k => { st[k][0] = Math.max(0, st[k][0] - dt); st[k][1] = Math.max(0, st[k][1] - dt); });
+  if (st.wind.t > 0) st.wind.t = Math.max(0, st.wind.t - dt);
 }
 
 function tickCosmetics(st, dt) {
@@ -118,25 +121,28 @@ function addMeter(st, p, v) {
 function movePlayer(st, p, c, dt, frozenPhase) {
   const ar = arenaById(st.arena), ch = charById(p.ch);
   // Timer
-  p.hc = Math.max(0, p.hc - dt); p.sc2 = Math.max(0, p.sc2 - dt);
-  ["bigT", "miniT", "spdT", "jmpT"].forEach(k => { if (p[k] > 0) p[k] = Math.max(0, p[k] - dt); });
+  p.hc = Math.max(0, p.hc - dt); p.sc2 = Math.max(0, p.sc2 - dt); p.pushCD = Math.max(0, p.pushCD - dt); p.knock = Math.max(0, p.knock - dt);
+  ["bigT", "miniT", "spdT", "jmpT", "confT", "djT"].forEach(k => { if (p[k] > 0) p[k] = Math.max(0, p[k] - dt); });
   if (p.frz > 0) p.frz = Math.max(0, p.frz - dt);
   if (p.stun > 0) p.stun = Math.max(0, p.stun - dt);
   if (p.armed > 0) { p.armed -= dt; if (p.armed <= 0) { p.armed = 0; p.meter = 60; ev(st, { t: "disarm", i: p.i }); } }
-  let tsc = p.bigT > 0 ? 1.45 : p.miniT > 0 ? 0.62 : 1;
+  let tsc = p.bigT > 0 ? 1.35 : p.miniT > 0 ? 0.7 : 1;
   if (st.mod === "minihead") tsc *= 0.78;
   p.sc += (tsc - p.sc) * Math.min(1, dt * 8);
   const r = pr(p);
   const locked = frozenPhase || p.frz > 0 || p.stun > 0;
   const turbo = st.mod === "turbo" ? 1.22 : 1;
-  const sp = 430 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.45 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.75 : 1);
-  const want = locked ? 0 : ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * sp;
-  const acc = (p.onG ? 5200 : 3400) * ar.grip * (p.frz > 0 ? 0.2 : 1);
+  const sp = 470 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.35 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.75 : 1);
+  const dirIn = ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * (p.confT > 0 ? -1 : 1); // verwirrt: links/rechts vertauscht
+  const want = locked ? 0 : dirIn * sp;
+  const acc = (p.onG ? 5200 : 3400) * ar.grip * (p.frz > 0 ? 0.2 : 1) * (p.knock > 0 ? 0.12 : 1);
   const d = want - p.vx, mx = acc * dt;
   p.vx += Math.abs(d) < mx ? d : Math.sign(d) * mx;
+  const jv = -960 * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.sqrt(gMul(st));
   if (!locked && c.j && p.onG) {
-    p.vy = -1000 * ch.jmp * (p.jmpT > 0 ? 1.3 : 1) * Math.sqrt(gMul(st)) * (st.mod === "lowgrav" ? 1 : 1);
-    p.onG = false; ev(st, { t: "jump", i: p.i, x: p.x, y: p.y + (FOOT + SR) * p.sc });
+    p.vy = jv; p.onG = false; ev(st, { t: "jump", i: p.i, x: p.x, y: p.y + (FOOT + SR) * p.sc });
+  } else if (!locked && c.j && !p.lastJ && !p.onG && p.djT > 0 && !p.djUsed) {
+    p.vy = jv * 0.85; p.djUsed = true; ev(st, { t: "jump", i: p.i, x: p.x, y: p.y + (FOOT + SR) * p.sc, dbl: true });
   }
   p.lastJ = !!c.j;
   p.vy += 2700 * gMul(st) * dt;
@@ -144,7 +150,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
   const rest = G - (FOOT + SR) * p.sc;
   if (p.y >= rest) {
     if (!p.onG && p.vy > 500) { ev(st, { t: "land", i: p.i, x: p.x, y: G, v: p.vy }); p.land = 0.15; }
-    p.y = rest; p.vy = 0; p.onG = true;
+    p.y = rest; p.vy = 0; p.onG = true; p.djUsed = false;
   } else if (p.onG && p.y < rest - 1) {
     // steht evtl. auf Latte
     p.onG = onBar(st, p);
@@ -184,7 +190,7 @@ function handleKick(st, p, c, dt) {
     if (before < 1 && p.charge >= 1) ev(st, { t: "charged", i: p.i });
   } else if (!c.k && p.kHeld) {
     p.kHeld = false;
-    if (can) { p.kick = 0.24; p.kHit = false; p.kPow = 1 + p.charge * 0.75; ev(st, { t: "swing", i: p.i, pow: p.kPow }); }
+    if (can) { p.kick = 0.24; p.kHit = false; p.kHitP = false; p.kPow = 1 + p.charge * 0.75; ev(st, { t: "swing", i: p.i, pow: p.kPow }); }
     p.charge = 0; p.chT = 0;
   }
   if (!can) { p.kHeld = false; p.charge = 0; }
@@ -197,6 +203,44 @@ function handleSuper(st, p, c) {
     const b = st.b;
     if (Math.hypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 90) fireSuper(st, p, charById(p.ch).super);
     else { p.armed = 4; ev(st, { t: "arm", i: p.i }); }
+  }
+}
+
+// Fuß trifft den Gegner: dezenter Schubser, abhängig von der Aufladung
+function kickPush(st, p) {
+  if (!(p.kick > 0.06) || p.kHitP) return;
+  const o = st.p[1 - p.i];
+  if (o.pushCD > 0) return;
+  const fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
+  const ro = pr(o), so = shoePos(o);
+  const hitHead = Math.hypot(o.x - fx, o.y - fy) < ro + 26 * KS * p.sc;
+  const hitFoot = Math.hypot(so.x - fx, so.y - fy) < SR * o.sc + 30 * KS * p.sc;
+  if (!(hitHead || hitFoot) || (o.x - p.x) * p.dir < -10) return;
+  p.kHitP = true;
+  const c = (p.kPow - 1) / 0.75;
+  const big = o.bigT > 0 ? 0.6 : o.miniT > 0 ? 1.3 : 1; // schwerer Kopf lässt sich schwerer schubsen
+  o.vx = p.dir * (320 + 160 * c) * big;
+  o.vy = Math.min(o.vy, -(110 + 140 * c) * big); o.onG = false;
+  o.knock = 0.22 + 0.08 * c;
+  o.pushCD = 0.55;
+  if (o.kHeld) { o.kHeld = false; o.charge = 0; o.chT = 0; } // Aufladen wird unterbrochen
+  ev(st, { t: "bump", i: p.i, x: (fx + o.x) / 2, y: (fy + o.y) / 2, pow: 1 + c });
+}
+// Ball klemmt zwischen beiden Spielern: nach kurzer Zeit springt er fair nach oben raus
+function unjam(st, dt) {
+  const b = st.b, [a, c] = st.p;
+  const near = p => Math.hypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 10 || Math.hypot(b.x - shoePos(p).x, b.y - shoePos(p).y) < SR * p.sc + b.r + 10;
+  const between = (b.x - a.x) * (b.x - c.x) < 0;
+  // nach Position messen (die Geschwindigkeit kann beim Einklemmen riesig sein, obwohl sich nichts bewegt)
+  if (near(a) && near(c) && between && !b.fx) {
+    if (st.jamX === undefined || Math.hypot(b.x - st.jamX, b.y - st.jamY) > 34) { st.jamX = b.x; st.jamY = b.y; st.jam = 0; }
+    else st.jam += dt;
+  } else { st.jam = 0; st.jamX = undefined; }
+  if (st.jam > 0.7) {
+    st.jamX = undefined;
+    st.jam = 0;
+    b.vy = -900; b.vx = (Math.random() < 0.5 ? -1 : 1) * rand(220, 300); b.y -= 6; b.ghost = 0.3;
+    ev(st, { t: "pop", x: b.x, y: b.y });
   }
 }
 
@@ -233,12 +277,14 @@ function ballPhysics(st, dt, postGoal) {
   const fxGrav = fxGravity(b);
   if (b.fx && !postGoal) superStep(st, b, dt);
   b.vy += 1550 * gMul(st) * fxGrav * dt;
+  if (st.wind && st.wind.t > 0 && !b.fx) b.vx += st.wind.dir * 300 * dt;
   b.vx *= 1 - ar.ballDrag * dt;
   b.x += b.vx * dt; b.y += b.vy * dt;
   b.av = b.vx / b.r; b.a += b.av * dt;
   if (b.held > 0) b.held -= dt;
 
-  if (!postGoal) {
+  if (b.ghost > 0) b.ghost -= dt;
+  if (!postGoal && !(b.ghost > 0)) {
     st.p.forEach(p => ballVsPlayer(st, b, p, dt));
   }
   // Boden
@@ -315,12 +361,9 @@ function touch(st, b, p, kind) {
   const prevOwner = b.fxO;
   if (b.fx && prevOwner !== p.i) {
     // Gegner berührt Spezialschuss
-    if (b.fx === "fire") {
-      p.vx = -p.dir * 700; p.vy = -520; p.onG = false; p.stun = 0.8;
-      ev(st, { t: "burn", i: p.i, x: p.x, y: p.y });
-      return false; // Ball fliegt durch
-    }
-    if (b.fx === "ice") { p.frz = 1.9; ev(st, { t: "freeze", i: p.i, x: p.x, y: p.y }); }
+    // Jeder Spezialschuss ist abwehrbar. Wer blockt, zahlt einen kleinen Preis.
+    if (b.fx === "fire") { p.vx = -p.dir * 420; p.vy = Math.min(p.vy, -260); p.onG = false; p.stun = Math.max(p.stun, 0.3); ev(st, { t: "burn", i: p.i, x: p.x, y: p.y }); }
+    if (b.fx === "ice") { p.frz = Math.max(p.frz, 1.1); ev(st, { t: "freeze", i: p.i, x: p.x, y: p.y }); }
     if (b.fx === "giant") { /* bleibt groß */ }
     else endFx(st);
     ev(st, { t: "save", i: p.i, x: b.x, y: b.y });
@@ -333,19 +376,34 @@ function touch(st, b, p, kind) {
 
 function ballVsPlayer(st, b, p, dt) {
   const r = pr(p), ch = charById(p.ch);
-  if (b.fx === "fire" && b.fxO !== p.i && Math.hypot(b.x - p.x, b.y - p.y) < r + b.r) { touch(st, b, p, "head"); return; }
-  if (b.fx === "fire" && b.fxO === p.i) return;
   if (b.fx && b.fxO === p.i && b.fxT < 0.25) return; // eigener Schuss löst sich erst
   // Kopf
+  const preVx = b.vx, preVy = b.vy, preLt = b.lt, preK = b.ltk;
   const hc = collideCircle(b, p.x, p.y, r + b.r, p.vx, p.vy, 0.82);
   if (hc) {
+    // Harter Schuss des Gegners trifft mich: ich werde ein Stück zurückgedrückt
+    if (preLt === 1 - p.i && (preK === "kick" || preK === "super") && hc.imp > 450 && p.pushCD <= 0) {
+      const k = Math.min(1, (hc.imp - 450) / 900) * (p.bigT > 0 ? 0.6 : 1);
+      p.vx += Math.sign(preVx || -p.dir) * (160 + 220 * k); p.pushCD = 0.35; p.knock = 0.15 + 0.1 * k;
+      if (k > 0.5) { p.vy = Math.min(p.vy, -140); p.onG = false; }
+    }
     if (!touch(st, b, p, "head")) return;
     b.vx += p.vx * 0.22 + p.dir * 120;
     if (p.vy < -150 && hc.ny < -0.3) { b.vy -= 260; b.vx += p.dir * 220; } // Kopfball-Wucht
-    if (hc.imp > 160 && p.hc <= 0) {
+    // Kopfball beim Aufladen/Ausholen: mehr Kraft, aber weniger als ein sauberer Schuss mit dem Fuß
+    let hp = 0;
+    if (p.kHeld && p.charge > 0.08) { hp = p.charge; p.kHeld = false; p.charge = 0; p.chT = 0; }
+    else if (p.kick > 0.06 && !p.kHit) { hp = Math.max(0.25, (p.kPow - 1) / 0.75); p.kHit = true; }
+    if (hp > 0) {
+      const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
+      b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (420 + 400 * hp) * pm) + p.vx * 0.15;
+      b.vy = Math.min(b.vy, -(240 + 320 * hp));
+      if (hp > 0.6) st.hs = 0.05;
+    }
+    if ((hc.imp > 160 || hp > 0) && p.hc <= 0) {
       p.hc = 0.12; st.stats[p.i].heads++;
       addMeter(st, p, 4 * (st.mod === "superfast" ? 2 : 1));
-      ev(st, { t: "head", i: p.i, x: b.x - hc.nx * b.r, y: b.y - hc.ny * b.r, v: hc.imp });
+      ev(st, { t: "head", i: p.i, x: b.x - hc.nx * b.r, y: b.y - hc.ny * b.r, v: hc.imp, pow: 1 + hp * 0.6 });
     }
   }
   // Schuh
@@ -356,22 +414,27 @@ function ballVsPlayer(st, b, p, dt) {
   if (p.kick > 0.06 && !p.kHit) {
     const fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
     const reach = 66 * KS * p.sc + b.r;
-    if (Math.hypot(b.x - fx, b.y - fy) < reach && (b.x - p.x) * p.dir > -18 * KS * p.sc) {
+    const dist = Math.hypot(b.x - fx, b.y - fy);
+    if (dist < reach && (b.x - p.x) * p.dir > -18 * KS * p.sc) {
       p.kHit = true;
       if (!touch(st, b, p, "kick")) return;
+      // Trefferqualität: sauber am Fuß = volle Kraft, am Rand der Reichweite deutlich weniger
+      const q = clamp((1 - dist / reach) * 1.7, 0, 1);
+      const qm = 0.55 + 0.45 * q;
       // aufgeladen (c = 0..1): härter UND deutlich höher
       const c = (p.kPow - 1) / 0.75;
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
       const air = !p.onG, high = b.y < p.y;
-      const vx = (680 + 300 * (ch.pow - 1)) * pm + 360 * c;
-      const vy = (air ? (high ? -260 : -400) : high ? -660 : -580) - 560 * c;
+      const vx = ((680 + 300 * (ch.pow - 1)) * pm + 360 * c) * qm;
+      const vy = ((air ? (high ? -260 : -400) : high ? -660 : -580) - 560 * c) * (0.7 + 0.3 * qm);
       b.vx = p.dir * vx + p.vx * 0.2;
       b.vy = vy;
       b.held = 0.05;
       st.stats[p.i].shots++;
       addMeter(st, p, 6 * (st.mod === "superfast" ? 2 : 1));
-      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow: p.kPow });
-      if (p.kPow > 1.45) st.hs = 0.07;
+      const pow = 1 + (p.kPow - 1) * qm;
+      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c });
+      if (pow > 1.45) st.hs = 0.07;
     }
   }
 }
@@ -408,16 +471,16 @@ export function fireSuper(st, p, kind) {
   if (Math.hypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 4) { b.x = p.x + p.dir * (pr(p) + b.r + 6); }
   st.stats[p.i].supers++;
   switch (kind) {
-    case "fire": aim(b, t.x, t.y, 1500); break;
-    case "ice": aim(b, t.x, t.y - 40, 1250); break;
-    case "thunder": aim(b, t.x, t.y, 1200); b.fxBX = b.vx; b.fxBY = b.vy; break;
-    case "rocket": b.vx = 0; b.vy = -80; break;
+    case "fire": aim(b, t.x, t.y, 1350); break;
+    case "ice": aim(b, t.x, t.y - 40, 1150); break;
+    case "thunder": aim(b, t.x, t.y, 1050); break;
+    case "rocket": { b.vx = 0; b.vy = -80; const t2 = target(st, p.i, true); b.fxTX = t2.x; b.fxTY = t2.y; break; }
     case "banana": b.vx = p.dir * 700; b.vy = -900; break;
-    case "ghost": aim(b, t.x, t.y, 1350); break;
-    case "giant": b.grow = 2.4; aim(b, t.x, t.y - 120, 1050); break;
+    case "ghost": aim(b, t.x, t.y, 1150); break;
+    case "giant": b.grow = 2.0; aim(b, t.x, t.y - 120, 1000); break;
     case "tornado": b.fxBX = b.x; b.vx = 0; b.vy = -650; break;
     case "magnet": b.vx = p.dir * 900; b.vy = -650; break;
-    case "meteor": b.vx = 0; b.vy = -2300; break;
+    case "meteor": b.vx = 0; b.vy = -2300; b.fxTX = t.x; b.fxTY = G; break;
     case "bouncy": b.vx = p.dir * 1100; b.vy = 700; break;
     case "clone": aim(b, t.x, t.y, 1150); b.fxBX = b.x; b.fxBY = b.y; b.fxDX = b.vx; b.fxDY = b.vy; b.fxK = [-1, 0, 1][Math.floor(Math.random() * 3)]; break;
   }
@@ -434,34 +497,35 @@ function superStep(st, b, dt) {
     case "thunder": {
       const ph = Math.floor(b.fxT / 0.11);
       if (ph !== b.fxP) { b.fxP = ph; ev(st, { t: "zap", x: b.x, y: b.y }); }
-      aim(b, t.x, t.y, 1200);
-      const ax = b.vx / 1200, ay = b.vy / 1200, s = (ph % 2 ? 1 : -1) * 560;
+      aim(b, t.x, t.y, 1050);
+      const ax = b.vx / 1050, ay = b.vy / 1050, s = (ph % 2 ? 1 : -1) * 420;
       b.vx += -ay * s; b.vy += ax * s;
       if (b.fxT > 1.8) endFx(st); break;
     }
     case "rocket":
-      if (b.fxP === 0 && b.fxT > 0.38) { b.fxP = 1; aim(b, t2.x, t2.y, 1800); ev(st, { t: "launch", x: b.x, y: b.y }); }
+      if (b.fxP === 0 && b.fxT > 0.5) { b.fxP = 1; aim(b, b.fxTX, b.fxTY, 1400); ev(st, { t: "launch", x: b.x, y: b.y }); }
       if (b.fxT > 2) endFx(st); break;
     case "banana": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2, 1150, dt); if (b.fxT > 2.2) endFx(st); break;
-    case "ghost": b.alpha = b.fxT < 0.15 ? 1 : Math.abs(b.x - t.x) < 140 ? 0.9 : 0.05; if (b.fxT > 1.6) endFx(st); break;
-    case "giant": if (b.fxT > 3.5) { b.fx = ""; b.fxO = -1; } break;
+    case "ghost": b.alpha = b.fxT < 0.2 ? 1 : Math.abs(b.x - t.x) < 320 ? 0.95 : 0.2; if (b.fxT > 1.6) endFx(st); break;
+    case "giant": if (b.fxT > 3) { b.fx = ""; b.fxO = -1; } break;
     case "tornado":
       if (b.fxP === 0) {
         b.vx = Math.cos(b.fxT * 16) * 520 + (b.fxBX - b.x) * 3; b.vy = -620;
         if (b.fxT > 0.55 || b.y < 120) { b.fxP = 1; aim(b, t.x, t.y, 1300); ev(st, { t: "launch", x: b.x, y: b.y }); }
-      } else steer(b, t.x, t.y, 7, 1450, dt);
+      } else steer(b, t.x, t.y, 4, 1250, dt);
       if (b.fxT > 2.4) endFx(st); break;
-    case "magnet": steer(b, t.x, t.y, 3.2, 1150, dt); if (b.fxT > 2.4) endFx(st); break;
+    case "magnet": steer(b, t.x, t.y, 2.6, 1100, dt); if (b.fxT > 2.4) endFx(st); break;
     case "meteor":
       if (b.fxP === 0 && b.y < -230) {
         b.fxP = 2; const side = b.fxO ? -1 : 1;
-        b.x = t.x - side * 430; b.y = -240; aim(b, t.x, t.y + 30, 1900); ev(st, { t: "launch", x: b.x, y: 0 });
+        b.x = t.x - side * 430; b.y = -240; aim(b, t.x, t.y + 30, 1500); ev(st, { t: "launch", x: b.x, y: 0 });
       }
+      if (b.fxP === 0 && b.fxT > 1.2) endFx(st);
       if (b.fxT > 2.5) endFx(st); break;
     case "bouncy": if (b.fxT > 3.2) endFx(st); break;
     case "clone": {
       b.fxBX += b.fxDX * dt; b.fxBY += b.fxDY * dt;
-      const amp = 95 * Math.sin(Math.min(1, b.fxT / 0.35) * Math.PI / 2);
+      const amp = 75 * Math.sin(Math.min(1, b.fxT / 0.35) * Math.PI / 2);
       const d = Math.hypot(b.fxDX, b.fxDY) || 1, px = -b.fxDY / d, py = b.fxDX / d;
       const nx = b.fxBX + px * amp * b.fxK, ny = b.fxBY + py * amp * b.fxK;
       b.vx = (nx - b.x) / dt; b.vy = (ny - b.y) / dt;
@@ -474,12 +538,12 @@ function endFx(st) {
   const b = st.b;
   if (!b.fx) return;
   if (b.fx === "clone") { const s = Math.hypot(b.fxDX, b.fxDY) || 1; b.vx = b.fxDX / s * 900; b.vy = b.fxDY / s * 900; }
-  if (b.fx === "giant") b.grow = Math.max(b.grow, 2.4);
+  if (b.fx === "giant") b.grow = Math.max(b.grow, 2.0);
   b.fx = ""; b.fxO = -1; b.alpha = 1; b.fxP = 0;
 }
 function meteorImpact(st, b) {
   ev(st, { t: "quake", x: b.x, y: G });
-  st.p.forEach(p => { if (p.i !== b.fxO && p.onG && Math.abs(p.x - b.x) < 240) { p.stun = 0.7; p.vy = -420; p.onG = false; } });
+  st.p.forEach(p => { if (p.i !== b.fxO && p.onG && Math.abs(p.x - b.x) < 170) { p.stun = 0.4; p.vy = -380; p.onG = false; } });
 }
 
 // ---------- Power-ups ----------
@@ -489,7 +553,7 @@ function powerups(st, dt) {
   if (st.puT <= 0 && st.pu.length < 2) {
     st.puT = st.mod === "pu2" ? rand(3, 5) : rand(7, 11);
     const k = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
-    st.pu.push({ id: st.puId++, k, x: rand(300, W - 300), y: rand(250, 360), t: 0 });
+    st.pu.push({ id: st.puId++, k, x: rand(320, W - 320), y: rand(260, 370), t: 0 });
     ev(st, { t: "puSpawn" });
   }
   const b = st.b;
@@ -505,15 +569,18 @@ function applyPu(st, i, k, x, y) {
   const me = st.p[i], op = st.p[1 - i];
   st.stats[i].pus++;
   switch (k) {
-    case "bighead": me.bigT = 8; me.miniT = 0; break;
-    case "mini": op.miniT = 8; op.bigT = 0; break;
-    case "freeze": op.frz = 2.5; break;
-    case "speed": me.spdT = 8; break;
-    case "jump": me.jmpT = 8; break;
+    case "bighead": me.bigT = 6; me.miniT = 0; break;
+    case "mini": op.miniT = 6; op.bigT = 0; break;
+    case "freeze": op.frz = Math.max(op.frz, 1.5); break;
+    case "speed": me.spdT = 6; break;
+    case "jump": me.jmpT = 6; break;
     case "fire": me.fireNext = true; break;
-    case "wall": st.wall[i] = 7; break;
-    case "biggoal": st.bigGoal[1 - i] = 8; break;
+    case "wall": st.wall[i] = 5; break;
+    case "biggoal": st.bigGoal[1 - i] = 6; break;
     case "meter": me.meter = 100; me.full = true; break;
+    case "confuse": op.confT = 3.5; break;
+    case "dbljump": me.djT = 7; break;
+    case "wind": st.wind = { t: 5, dir: me.dir }; break;
   }
   ev(st, { t: "pu", i, k, x, y });
 }

@@ -1,7 +1,12 @@
 // Online über PeerJS (WebRTC, direkt Browser zu Browser)
 const PREFIX = "kopfball-duell-v2-";
 const CH = "abcdefghjkmnpqrstuvwxyz23456789";
-const ICE = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }, { urls: "stun:stun.cloudflare.com:3478" }] };
+// STUN zum Finden der eigenen Adresse, TURN (PeerJS-Relay) für Netze, in denen keine direkte Verbindung klappt
+const ICE = { iceServers: [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
+  { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"], username: "peerjs", credential: "peerjsp" },
+] };
 export const mkCode = () => Array.from({ length: 4 }, () => CH[Math.floor(Math.random() * CH.length)]).join("");
 export const available = () => !!window.Peer;
 

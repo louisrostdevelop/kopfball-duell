@@ -22,7 +22,7 @@ export function aiInput(ai, st, dt) {
   const p = st.p[ai.i], o = st.p[1 - ai.i], b = st.b, d = ai.d, c = {};
   if (st.ph !== "play") { ai.hold = 0; return c; }
   const dir = p.dir, own = ai.i ? W : 0, r = pr(p);
-  const sp = 430 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
+  const sp = 470 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
   ai.think -= dt; ai.jcd -= dt; ai.kickT -= dt;
   if (ai.think <= 0) {
     ai.think = d.react * rand(0.7, 1.3);

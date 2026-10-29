@@ -1,7 +1,7 @@
 // Kopfball Duell – Ablauf, Menüs, Online, Fortschritt
 import { W, G, GOAL_W, CHARS, ARENAS, BALLS, SUPERS, POWERUPS, MODS, DIFFS, ACHIEVEMENTS, EMOTES, COL, charById, arenaById, clamp } from "./config.js";
 import { newMatch, advance, emote, skipCelebration, predictPlayer, REPLAY_START, REPLAY_END, barY, fireSuper } from "./physics.js";
-import { initRender, render, fx, setQuality, arenaThumb, resize } from "./render.js";
+import { initRender, render, fx, setQuality, arenaThumb, resize, setBand } from "./render.js";
 import { avatarCanvas, ballSprite, drawBall, drawHead } from "./art.js";
 import * as A from "./audio.js";
 import * as I from "./input.js";
@@ -34,7 +34,7 @@ function boot() {
     inGame: () => inGame(),
     onKey: onKey,
     onPadButton: onPad,
-    onTouch: () => A.unlock(),
+    onTouch: () => { A.unlock(); updateBand(); },
   });
   wireUI();
   startDemo();
@@ -51,8 +51,9 @@ function boot() {
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone;
     if (ios && !S.iosHint) setTimeout(() => { toast("Tipp: Teilen → „Zum Home-Bildschirm“ = Vollbild ohne Leisten"); S.iosHint = true; save(); }, d ? 6000 : 2500);
     // Link mit #CODE: direkt beitreten
-    const h = (location.hash || "").slice(1);
-    if (/^[A-Za-z0-9]{4}$/.test(h)) { history.replaceState(null, "", location.pathname + location.search); $("codeIn").value = h.toUpperCase(); showScreen("online"); setTimeout(() => tryJoin(h), 400); }
+    const qs = new URLSearchParams(location.search).get("join") || "";
+    const h = /^[A-Za-z0-9]{4}$/.test(qs) ? qs : (location.hash || "").slice(1);
+    if (/^[A-Za-z0-9]{4}$/.test(h)) { history.replaceState(null, "", location.pathname); $("codeIn").value = h.toUpperCase(); showScreen("online"); setTimeout(() => tryJoin(h), 400); }
   });
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
   window.__kd = App; window.__kdFire = fireSuper; // für Tests
@@ -84,10 +85,11 @@ function beginMatch(cfg) {
   if (cfg.mode === "cpu" || cfg.mode === "cup") App.ai[1] = makeAI(1, cfg.diff);
   App.names = cfg.names; App.labels = cfg.labels; App.ball = cfg.ball || S.ball;
   App.acc = 0; App.paused = false; App.endShown = false; App.rec = []; App.replay = null; App.maxDef = 0;
-  App.snaps = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0];
+  App.snaps = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0]; App.goT = -1;
   fx.clear();
   showScreen(null);
   I.setLayout(cfg.mode === "local" ? "split" : "single");
+  updateBand();
   $("gameBtns").hidden = false;
   $("btnEmote").hidden = cfg.mode === "local";
   $("emoteBar").hidden = true;
@@ -110,6 +112,10 @@ function goFullscreen() {
   if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).then(() => { try { screen.orientation.lock("landscape").catch(() => {}); } catch (_) {} }).catch(() => {});
 }
 
+function updateBand() {
+  const ig = ["cpu", "cup", "local", "host", "guest", "train"].includes(App.mode);
+  setBand(I.isTouch && ig ? (App.mode === "local" ? 92 : 104) : 0);
+}
 function quitToMenu() {
   if (App.mode === "host" || App.mode === "guest") Net.close();
   App.cup = null;
@@ -117,6 +123,7 @@ function quitToMenu() {
   $("gameBtns").hidden = true;
   A.crowdOff(); A.music(true, "menu");
   startDemo();
+  updateBand();
   App.stack = [];
   showScreen("home", true);
 }
@@ -154,7 +161,10 @@ function loop(now) {
   // Rückstand verfolgen (für Comeback)
   if (App.mode !== "demo") { const me = myIdx(); if (me >= 0) App.maxDef = Math.max(App.maxDef, st.s[1 - me] - st.s[me]); }
   const seriesTxt = seriesText();
-  render(st, simT, { dt, names: App.names, labels: App.labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesTxt, modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
+  // "DU"/"P1" nur zum Anpfiff zeigen, dann ausblenden
+  const la = st.ph === "cd" ? 1 : st.ph === "play" && App.goT >= 0 ? clamp(1 - (simT - App.goT - 1.5) / 0.6, 0, 1) : 0;
+  const labels = (App.labels || []).map(t => t ? { t, a: la } : null);
+  render(st, simT, { dt, names: App.names, labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesTxt, modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
   if (App.mode !== "demo") I.touchHud(App.mode === "guest" && App.gp ? { p: [st.p[0], Object.assign({}, st.p[1], { charge: App.gp.charge })] } : st);
   // Spielende
   if (st.ph === "end" && !App.endShown) { App.endShown = true; if (App.mode === "demo") setTimeout(startDemo, 1500); else setTimeout(matchEnd, 900); }
@@ -185,25 +195,34 @@ function onEvent(e, remote) {
   const snd = (k, v) => { if (!demo) A.sfx(k, v); };
   const col = e.i !== undefined ? [COL.p1, COL.p2][e.i] : "#fff";
   switch (e.t) {
-    case "go": snd(st.gold ? "whistle1" : "go"); if (!demo && st.s[0] + st.s[1] === 0 && !st.gold) snd("whistle1"); break;
-    case "jump": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: 4 }); snd("jump"); break;
+    case "go": if (st.s[0] + st.s[1] === 0 && App.goT < 0) App.goT = simT; snd(st.gold ? "whistle1" : "go"); if (!demo && st.s[0] + st.s[1] === 0 && !st.gold) snd("whistle1"); break;
+    case "jump": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: e.dbl ? 10 : 4 }); if (e.dbl) fx.burst("pu", e.x, e.y, { col: POWERUPS.dbljump.col }); snd("jump"); break;
     case "land": fx.burst("dust", e.x, e.y, { n: 6 }); snd("land"); break;
     case "swing": if (remote && e.i === myIdx()) break; snd("swing"); break;
     case "kick":
       if (App.jug.n >= 3 && App.jug.i === e.i) fx.burst("text", e.x, e.y - 70, { text: "VOLLEY!", col: COL.gold, size: 30 });
       App.jug.n = 0;
-      fx.burst("kick", e.x, e.y, { pow: e.pow }); snd("kick", e.pow); fx.shake(3 * e.pow);
-      if (e.pow > 1.6) { fx.burst("text", e.x, e.y - 40, { text: "WUMMS!", col: COL.gold, size: 30 }); fx.shake(6); }
+      {
+        const kp = st.p[e.i], dir = kp ? kp.dir : 1;
+        fx.burst("kick", e.x, e.y, { pow: e.pow, dir }); snd("kick", e.pow); fx.shake(2 + 4 * (e.pow - 1) * 2);
+        fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.4 + (e.pow - 1));
+        if (kp) fx.swoosh(e.x - dir * 20, e.y, dir, e.pow);
+        if (e.pow > 1.3) fx.punch(0.02 + 0.03 * (e.pow - 1));
+        if (e.c > 0.85 && e.q > 0.75) { fx.burst("text", e.x, e.y - 46, { text: "VOLLTREFFER!", col: COL.gold, size: 30 }); fx.shake(7); }
+        else if (e.pow > 1.5) fx.burst("text", e.x, e.y - 40, { text: "WUMMS!", col: COL.gold, size: 28 });
+      }
       if (isHuman(e.i)) I.vibrate(e.pow > 1.4 ? 30 : 12);
       break;
     case "head": {
-      fx.burst("head", e.x, e.y); snd("head"); if (e.v > 700) fx.shake(3);
+      fx.burst("head", e.x, e.y); snd("head", e.pow || 1); if (e.v > 700) fx.shake(3);
+      fx.squash(e.i); fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.5);
+      if ((e.pow || 1) > 1.3) { fx.burst("text", e.x, e.y - 50, { text: "POWER-KOPFBALL!", col: COL.gold, size: 24 }); fx.shake(5); fx.punch(0.02); }
       const j = App.jug; if (j.i === e.i) j.n++; else { j.i = e.i; j.n = 1; }
       if (j.n >= 3) { fx.burst("text", e.x, e.y - 50, { text: j.n + "x JONGLIERT!", col: j.n >= 5 ? COL.gold : "#fff", size: 22 + Math.min(14, j.n * 2) }); if (j.n === 5 || j.n === 8) snd("full"); }
       break;
     }
-    case "bounce": App.jug.n = 0; if (e.v > 400) fx.burst("dust", e.x, e.y, { n: 4, col: "rgba(255,255,255,.35)" }); snd("bounce", e.v); break;
-    case "post": fx.burst("post", e.x, e.y); snd("post"); snd("ohh"); fx.shake(7); fx.burst("text", e.x, e.y - 30, { text: "LATTE!", col: "#fff", size: 28 }); fx.hype(0.6); break;
+    case "bounce": App.jug.n = 0; if (e.v > 300) fx.ballHit(Math.PI / 2, e.v / 1400); if (e.v > 400) fx.burst("dust", e.x, e.y, { n: 4, col: "rgba(255,255,255,.35)" }); snd("bounce", e.v); break;
+    case "post": fx.bar(e.x < W / 2 ? 0 : 1); fx.burst("post", e.x, e.y); snd("post"); snd("ohh"); fx.shake(7); fx.burst("text", e.x, e.y - 30, { text: "LATTE!", col: "#fff", size: 28 }); fx.hype(0.6); break;
     case "goal": onGoal(e); break;
     case "super": {
       const sc = SUPERS[e.k].col;
@@ -229,6 +248,8 @@ function onEvent(e, remote) {
     case "golden": snd("whistle"); fx.hype(0.8); break;
     case "end": snd("whistle"); fx.hype(1); break;
     case "emote": snd("emote"); break;
+    case "bump": fx.burst("stomp", e.x, e.y); snd("bump", e.pow); fx.shake(3 + 4 * (e.pow - 1)); if (e.pow > 1.6) fx.burst("text", e.x, e.y - 40, { text: "SCHUBS!", col: "#fff", size: 24 }); if (isHuman(1 - e.i)) I.vibrate(20); break;
+    case "pop": fx.burst("dust", e.x, e.y + 10, { n: 10 }); snd("pop"); break;
   }
 }
 
@@ -270,10 +291,10 @@ function onGoal(e) {
 // ---------- Online: Host ----------
 function packState(st) {
   const r = v => Math.round(v * 10) / 10;
-  const P = p => ({ x: r(p.x), y: r(p.y), vx: r(p.vx), vy: r(p.vy), kick: r(p.kick * 100) / 100, kHeld: p.kHeld, charge: r(p.charge), sc: r(p.sc * 100) / 100, frz: r(p.frz), stun: r(p.stun), meter: Math.round(p.meter), full: p.full, armed: r(p.armed), fireNext: p.fireNext, bigT: r(p.bigT), miniT: r(p.miniT), spdT: r(p.spdT), jmpT: r(p.jmpT), mood: p.mood, emo: p.emo, emoT: r(p.emoT), land: r(p.land), onG: p.onG });
+  const P = p => ({ x: r(p.x), y: r(p.y), vx: r(p.vx), vy: r(p.vy), kick: r(p.kick * 100) / 100, kHeld: p.kHeld, charge: r(p.charge), sc: r(p.sc * 100) / 100, frz: r(p.frz), stun: r(p.stun), meter: Math.round(p.meter), full: p.full, armed: r(p.armed), fireNext: p.fireNext, bigT: r(p.bigT), miniT: r(p.miniT), spdT: r(p.spdT), jmpT: r(p.jmpT), mood: p.mood, emo: p.emo, emoT: r(p.emoT), land: r(p.land), onG: p.onG, confT: r(p.confT), djT: r(p.djT) });
   const b = st.b;
   return {
-    s: st.s, t: r(st.t), ph: st.ph, pt: r(st.pt), gold: st.gold, wall: st.wall.map(r), bigGoal: st.bigGoal.map(r),
+    s: st.s, t: r(st.t), ph: st.ph, pt: r(st.pt), gold: st.gold, wall: st.wall.map(r), bigGoal: st.bigGoal.map(r), wind: { t: r(st.wind.t), dir: st.wind.dir },
     pu: st.pu.map(u => ({ id: u.id, k: u.k, x: r(u.x), y: r(u.y), t: r(u.t) })),
     b: { x: r(b.x), y: r(b.y), vx: r(b.vx), vy: r(b.vy), r: r(b.r), a: r(b.a), fx: b.fx, fxT: r(b.fxT), fxK: b.fxK, fxBX: r(b.fxBX), fxBY: r(b.fxBY), fxDX: r(b.fxDX), fxDY: r(b.fxDY), alpha: r(b.alpha), fxP: b.fxP },
     p: st.p.map(P), stats: st.stats,
@@ -285,7 +306,7 @@ function hostSend(dt) {
   if (App.sendT >= 1 / 30) {
     App.sendT = 0;
     const ev = App.outEv.splice(0).filter(e => e.t !== "bounce" || e.v > 400);
-    Net.send({ t: "s", s: packState(App.st), ev });
+    Net.send({ t: "s", mid: App.mid, s: packState(App.st), ev });
   }
 }
 
@@ -322,7 +343,7 @@ function guestFrame(dt, now) {
 }
 function applySnap(st, a, b, k) {
   const L = (x, y) => x + (y - x) * k;
-  st.s = b.s; st.t = b.t; st.ph = b.ph; st.pt = b.pt; st.gold = b.gold; st.wall = b.wall; st.bigGoal = b.bigGoal; st.pu = b.pu; st.stats = b.stats;
+  st.s = b.s; st.t = b.t; st.ph = b.ph; st.pt = b.pt; st.gold = b.gold; st.wall = b.wall; st.bigGoal = b.bigGoal; if (b.wind) st.wind = b.wind; st.pu = b.pu; st.stats = b.stats;
   const jump = Math.hypot(a.b.x - b.b.x, a.b.y - b.b.y) > 200;
   Object.assign(st.b, b.b);
   if (!jump) { st.b.x = L(a.b.x, b.b.x); st.b.y = L(a.b.y, b.b.y); st.b.a = L(a.b.a, b.b.a); }
@@ -343,9 +364,10 @@ function hostGame() {
   $("lobbyCode").textContent = "····";
   $("lobbyNote").textContent = "Raum wird geöffnet…";
   showScreen("lobby");
+  setTimeout(() => { if (App.screen === "lobby" && $("lobbyCode").textContent === "····") $("lobbyNote").textContent = "Der Online-Server antwortet gerade nicht. Prüf deine Verbindung und versuch es nochmal."; }, 9000);
   Net.host({
     onReady: code => {
-      const link = location.origin + location.pathname + "#" + code.toUpperCase();
+      const link = location.origin + location.pathname + "?join=" + code.toUpperCase();
       $("lobbyCode").textContent = code.toUpperCase(); $("lobbyLink").textContent = link;
       $("lobbyNote").textContent = "Schick den Link. Sobald dein Kumpel ihn öffnet, ist er hier.";
       makeQR(link);
@@ -377,7 +399,8 @@ function hostData(d) {
 function hostStart() {
   if (!App.opp) return;
   const cfg = { mode: "host", chars: [S.char, App.opp.ch], arena: App.netCfg.arena, dur: App.netCfg.dur, pus: App.netCfg.pus, mod: null, golden: true, names: [S.name || "Du", App.opp.name], labels: ["DU", null], ball: S.ball };
-  Net.send({ t: "start", cfg: { ...cfg, mode: "guest", names: cfg.names, labels: [null, "DU"] } });
+  App.mid = (App.mid || 0) + 1;
+  Net.send({ t: "start", mid: App.mid, cfg: { ...cfg, mode: "guest", names: cfg.names, labels: [null, "DU"] } });
   beginMatch(cfg);
 }
 function tryJoin(code) {
@@ -410,12 +433,13 @@ function guestData(d) {
     case "full": Net.close(); showScreen("online"); netNote("Das Spiel ist schon voll.", true); break;
     case "start": {
       const c = d.cfg;
+      App.mid = d.mid;
       beginMatch({ ...c, mode: "guest", names: c.names, labels: [null, "DU"] });
       App.st.ph = "cd";
       break;
     }
     case "s":
-      if (App.mode !== "guest") break;
+      if (App.mode !== "guest" || d.mid !== App.mid) break; // alte Pakete vom letzten Spiel ignorieren
       App.snaps.push({ at: performance.now(), s: d.s });
       if (App.snaps.length > 12) App.snaps.shift();
       if (Array.isArray(d.ev)) d.ev.forEach(e => { if (e.t === "goal") { App.replay = App.rec.slice(-160); } onEvent(e, true); });
@@ -576,7 +600,7 @@ function shareResult() {
 }
 function shareOrCopy(d) {
   if (navigator.share) { navigator.share(d).catch(() => {}); return; }
-  const s = d.text ? d.text + " " + d.url : d.url;
+  const s = [d.text, d.url].filter(Boolean).join(" ");
   try { navigator.clipboard.writeText(s).then(() => toast("Link kopiert ✓"), () => toast(s)); } catch (_) { toast(s); }
 }
 
@@ -913,7 +937,7 @@ function wireUI() {
   $("btnLobbyLeave").onclick = goBack;
   $("btnLobbyStart").onclick = () => { A.sfx("click"); hostStart(); };
   $("btnLobbyHead").onclick = () => { A.sfx("click"); selectScreen({ title: "Kopf wechseln", okText: "Übernehmen", onDone: id => { S.char = id; save(); Net.send({ t: "pick", ch: id }); goBack(); } }); };
-  $("btnShare").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) shareOrCopy({ title: "Kopfball Duell", text: "Komm, Kopfball Duell gegen mich! 😤⚽", url: link }); };
+  $("btnShare").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) shareOrCopy({ title: "Kopfball Duell", text: "Kopfball Duell gegen mich? Tipp auf den Link: " + link }); };
   $$("#shopTabs button").forEach(b => b.onclick = () => { A.sfx("click"); shopTab = b.dataset.tab; shopScreen(); });
   $("btnEndAgain").onclick = endAgain;
   $("btnEndMenu").onclick = endMenu;

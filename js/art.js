@@ -309,16 +309,19 @@ export function ballSprite(skin, size) {
   return c;
 }
 
-export function drawBall(ctx, skin, x, y, r, a, alpha = 1) {
+// stretch: { ang, k } – Ball wird entlang ang um k gedehnt (k < 1 = gestaucht), Fläche bleibt gleich
+export function drawBall(ctx, skin, x, y, r, a, alpha = 1, stretch = null) {
   const spr = ballSprite(skin, 128);
   ctx.save(); ctx.globalAlpha = alpha;
-  const lw = Math.max(2, r * 0.16);
-  circ(ctx, x, y, r + lw * 0.9); ctx.fillStyle = "#fff"; ctx.fill();
-  circ(ctx, x, y, r + lw * 0.2); ctx.fillStyle = INK; ctx.fill();
-  ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.drawImage(spr, -r, -r, r * 2, r * 2); ctx.restore();
-  const g = ctx.createRadialGradient(x - r * 0.4, y - r * 0.45, r * 0.05, x, y, r);
-  g.addColorStop(0, "rgba(255,255,255,.55)"); g.addColorStop(0.45, "rgba(255,255,255,0)"); g.addColorStop(1, "rgba(0,0,30,.35)");
-  circ(ctx, x, y, r); ctx.fillStyle = g; ctx.fill();
+  ctx.translate(x, y);
+  if (stretch && Math.abs(stretch.k - 1) > 0.01) { ctx.rotate(stretch.ang); ctx.scale(stretch.k, 1 / Math.sqrt(stretch.k)); ctx.rotate(-stretch.ang); }
+  const lw = Math.max(2, r * 0.14);
+  circ(ctx, 0, 0, r + lw * 0.9); ctx.fillStyle = "#fff"; ctx.fill();
+  circ(ctx, 0, 0, r + lw * 0.15); ctx.fillStyle = INK; ctx.fill();
+  ctx.save(); ctx.rotate(a); ctx.drawImage(spr, -r, -r, r * 2, r * 2); ctx.restore();
+  const g = ctx.createRadialGradient(-r * 0.4, -r * 0.45, r * 0.05, 0, 0, r);
+  g.addColorStop(0, "rgba(255,255,255,.6)"); g.addColorStop(0.42, "rgba(255,255,255,0)"); g.addColorStop(1, "rgba(0,0,30,.38)");
+  circ(ctx, 0, 0, r); ctx.fillStyle = g; ctx.fill();
   ctx.restore();
 }
 
@@ -337,6 +340,9 @@ export function drawPuIcon(ctx, k, x, y, s, col) {
     case "wall": for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) { const ox = (c - 1 + (r % 2) * 0.5) * s * 0.7 + s * 0.12, oy = (r - 1) * s * 0.55; ctx.beginPath(); ctx.rect(ox - s * 0.15, oy - s * 0.24, s * 0.62, s * 0.46); ctx.fill(); ctx.stroke(); } break;
     case "biggoal": ctx.beginPath(); ctx.moveTo(-s * 0.85, s * 0.8); ctx.lineTo(-s * 0.85, -s * 0.6); ctx.lineTo(s * 0.85, -s * 0.6); ctx.lineTo(s * 0.85, s * 0.8); ctx.lineWidth = s * 0.26; ctx.stroke(); ctx.lineWidth = s * 0.12; ctx.strokeStyle = "#fff"; ctx.stroke(); P([[0, -0.15], [0.3, 0.25], [-0.3, 0.25]]); break;
     case "meter": P([[-0.15, -0.95], [0.55, -0.95], [0.15, -0.15], [0.6, -0.15], [-0.3, 0.95], [-0.05, 0.1], [-0.5, 0.1]]); break;
+    case "confuse": ctx.beginPath(); for (let k = 0; k < 40; k++) { const t = k / 40 * Math.PI * 4, rr = s * 0.12 + k / 40 * s * 0.75; ctx.lineTo(Math.cos(t) * rr, Math.sin(t) * rr); } ctx.lineWidth = s * 0.28; ctx.stroke(); ctx.lineWidth = s * 0.13; ctx.strokeStyle = "#fff"; ctx.stroke(); break;
+    case "dbljump": P([[0, -1], [0.6, -0.45], [0.22, -0.45], [0.22, -0.1], [-0.22, -0.1], [-0.22, -0.45], [-0.6, -0.45]]); P([[0, 0.05], [0.6, 0.6], [0.22, 0.6], [0.22, 0.95], [-0.22, 0.95], [-0.22, 0.6], [-0.6, 0.6]]); break;
+    case "wind": [[-0.45, -0.5, 0.9], [-0.8, 0, 1.4], [-0.55, 0.5, 1]].forEach(([x0, y, w]) => { ctx.beginPath(); ctx.moveTo(x0 * s, y * s); ctx.lineTo((x0 + w) * s, y * s); ctx.quadraticCurveTo((x0 + w + 0.35) * s, (y - 0.05) * s, (x0 + w + 0.2) * s, (y - 0.32) * s); ctx.lineWidth = s * 0.3; ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = s * 0.15; ctx.strokeStyle = "#fff"; ctx.stroke(); }); break;
   }
   ctx.restore();
 }

@@ -1,7 +1,7 @@
 // Spielwelt, Charaktere, Arenen, Bälle, Power-ups, Erfolge
-export const W = 1120, H = 720, G = 640;
-export const GOAL_W = 118, GOAL_H = 215, BAR_Y = G - GOAL_H, BAR_T = 12;
-export const HR = 62, BR = 27, SR = 18, FOOT = 63;
+export const W = 1360, H = 720, G = 640;
+export const GOAL_W = 112, GOAL_H = 205, BAR_Y = G - GOAL_H, BAR_T = 12;
+export const HR = 54, BR = 24, SR = 16, FOOT = 55;
 export const KS = HR / 46; // Skalierung der Schuss-Geometrie
 export const REST = G - FOOT - SR;
 export const STEP = 1 / 120;
@@ -74,6 +74,9 @@ export const POWERUPS = {
   wall:    { name: "Torwand",     icon: "wall",   col: "#9aa3b5", self: true },
   biggoal: { name: "Riesentor",   icon: "goal",   col: "#ff4fd8", self: false },
   meter:   { name: "Super voll",  icon: "meter",  col: "#ffe14d", self: true },
+  confuse: { name: "Verwirrung",  icon: "confuse", col: "#b28cff", self: false },
+  dbljump: { name: "Doppelsprung",icon: "dbljump", col: "#5effc8", self: true },
+  wind:    { name: "Rückenwind",  icon: "wind",   col: "#9fe8ff", self: true },
 };
 export const PU_KEYS = Object.keys(POWERUPS);
 
