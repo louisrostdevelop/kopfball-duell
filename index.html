@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Kopfball Duell</title>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: one-screen floodlit pitch; canvas letterboxed in the middle, menus float over it, touch pads pinned to the bottom corners. Single dark look by choice. */
+:root {
+  --night: #0b1420;
+  --stand: #142334;
+  --turf: #1f7a3c;
+  --chalk: #f3f6ee;
+  --p1: #ff7a1a;
+  --p2: #2fd3ff;
+  --muted: #9fb3c8;
+  --panel: rgba(9, 17, 28, 0.9);
+  --line: rgba(243, 246, 238, 0.18);
+  --display: "Bungee", "Arial Black", Impact, sans-serif;
+  --ui: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; margin: 0; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--night); color: var(--chalk); font-family: var(--ui);
+  overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+}
+#app { position: relative; height: 100%; display: grid; place-items: center; }
+#cv { display: block; max-width: 100%; border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
+
+.overlay {
+  position: absolute; inset: 0; display: grid; place-items: center; z-index: 5;
+  background: rgba(5, 10, 18, 0.55); padding-block: 16px;
+}
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px 22px 20px; width: min(420px, 100%); box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 12px; max-height: 100%; overflow: auto;
+}
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(26px, 6vw, 40px); line-height: 1; margin: 0; text-wrap: balance; }
+h1 .a { color: var(--p1); } h1 .b { color: var(--p2); }
+.sub { margin: 0; color: var(--muted); font-size: 17px; }
+.label { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-top: 4px; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; min-width: 0; }
+button.b, input {
+  font-family: var(--ui); font-size: 20px; font-weight: 700; border-radius: 8px;
+  border: 1px solid var(--line); padding: 11px 14px; color: var(--chalk); background: var(--stand);
+}
+button.b { cursor: pointer; letter-spacing: .02em; }
+button.b:hover:not(:disabled) { border-color: var(--chalk); }
+button.b:focus-visible, input:focus-visible { outline: 3px solid var(--p2); outline-offset: 2px; }
+button.b:disabled { opacity: .4; cursor: not-allowed; }
+button.main { background: var(--p1); border-color: var(--p1); color: #1a0d02; }
+input { text-transform: uppercase; letter-spacing: .3em; text-align: center; background: #07101a; }
+.note { font-size: 15px; color: var(--muted); margin: 0; line-height: 1.35; }
+.err { color: #ff9b8a; }
+.code { font-family: var(--display); font-size: 54px; letter-spacing: .12em; text-align: center; color: var(--p1); }
+.keys { font-size: 14px; color: var(--muted); line-height: 1.4; margin: 0; }
+.keys b { color: var(--chalk); }
+
+/* touch pads */
+.pad { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; z-index: 3; }
+.pad.left { left: 0; } .pad.right { right: 0; }
+.tb {
+  width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--line);
+  background: rgba(9, 17, 28, 0.55); color: var(--chalk); font-size: 26px; font-family: var(--ui); font-weight: 700;
+  display: grid; place-items: center; touch-action: none; cursor: pointer;
+}
+.tb.on { background: rgba(243, 246, 238, 0.28); border-color: var(--chalk); }
+.tb.p1 { border-color: color-mix(in srgb, var(--p1) 70%, transparent); }
+.tb.p2 { border-color: color-mix(in srgb, var(--p2) 70%, transparent); }
+.tb small { font-size: 12px; letter-spacing: .08em; display: block; margin-top: -4px; }
+#menuBtn {
+  position: absolute; top: 8px; right: 0; z-index: 4; font-family: var(--ui); font-weight: 700; font-size: 15px;
+  background: rgba(9, 17, 28, 0.7); color: var(--chalk); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer;
+}
+@media (max-width: 560px) { .tb { width: 56px; height: 56px; font-size: 22px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.link { font-size: 15px; word-break: break-all; text-align: center; color: var(--chalk); background: #07101a; border: 1px solid var(--line); border-radius: 6px; padding: 8px; user-select: text; -webkit-user-select: text; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <canvas id="cv" width="960" height="540" aria-label="Spielfeld"></canvas>
+  <button id="menuBtn" hidden>Menü</button>
+
+  <div class="pad left" id="padL"></div>
+  <div class="pad right" id="padR"></div>
+
+  <div class="overlay" id="ovMenu">
+    <div class="card">
+      <h1><span class="a">Kopfball</span> <span class="b">Duell</span></h1>
+      <p class="sub">1 gegen 1, große Köpfe, 90 Sekunden.</p>
+
+      <div class="label">Online gegen Kumpel</div>
+      <button class="b main" id="btnHost">Spiel erstellen</button>
+      <div class="row">
+        <input id="codeIn" maxlength="4" placeholder="CODE" autocomplete="off" aria-label="Raumcode">
+        <button class="b" id="btnJoin">Beitreten</button>
+      </div>
+      <p class="note" id="netNote">Verbinde…</p>
+
+      <div class="label">Offline</div>
+      <div class="row">
+        <button class="b" id="btnLocal">Zu zweit hier</button>
+        <button class="b" id="btnCpu">Gegen Computer</button>
+      </div>
+      <p class="keys"><b>Touch:</b> Buttons unten. <b>Tastatur:</b> A/D laufen, W springen, S schießen · zu zweit: Pfeiltasten + ↓ schießen.</p>
+    </div>
+  </div>
+
+  <div class="overlay" id="ovLobby" hidden>
+    <div class="card">
+      <div class="label">Dein Raumcode</div>
+      <div class="code" id="lobbyCode">----</div>
+      <div class="link" id="lobbyLink"></div>
+      <button class="b main" id="btnCopy">Link kopieren</button>
+      <p class="note" id="lobbyNote">Verbinde…</p>
+      <button class="b" id="btnLobbyBack">Abbrechen</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="ovEnd" hidden>
+    <div class="card">
+      <h1 id="endTitle">Abpfiff</h1>
+      <p class="sub" id="endScore"></p>
+      <button class="b main" id="btnRematch">Revanche</button>
+      <p class="note" id="endNote" hidden></p>
+      <button class="b" id="btnEndMenu">Zum Menü</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const W = 960, H = 540, G = 470, GOAL_W = 74, BAR_Y = G - 175;
+const HR = 36, SR = 13, BR = 16, REST = G - 40 - SR;
+const MATCH = 90;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const $ = id => document.getElementById(id);
+
+/* ---------- sizing ---------- */
+function fit() {
+  const app = $("app");
+  const aw = app.clientWidth, ah = app.clientHeight;
+  const s = Math.min(aw / W, ah / H);
+  cv.style.width = Math.floor(W * s) + "px";
+  cv.style.height = Math.floor(H * s) + "px";
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * s * dpr); cv.height = Math.round(H * s * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+}
+window.addEventListener("resize", fit);
+
+/* ---------- game state ---------- */
+function mkP(i) { return { x: i ? W - 230 : 230, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, kick: 0, kd: false, hit: false, onG: true }; }
+function newState() { return { b: { x: W / 2, y: 140, vx: 0, vy: 0 }, p: [mkP(0), mkP(1)], s: [0, 0], t: MATCH, ph: 0, pt: 0, last: -1 }; }
+function kickoff(st) { st.b = { x: W / 2, y: 140, vx: 0, vy: 0 }; st.p = [mkP(0), mkP(1)]; }
+let st = newState();
+
+function collideCircle(b, cx, cy, minD, pvx, pvy, rest) {
+  const dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+  if (d >= minD || d === 0) return false;
+  const nx = dx / d, ny = dy / d;
+  b.x = cx + nx * minD; b.y = cy + ny * minD;
+  const rvx = b.vx - pvx, rvy = b.vy - pvy, dot = rvx * nx + rvy * ny;
+  if (dot < 0) { b.vx -= (1 + rest) * dot * nx; b.vy -= (1 + rest) * dot * ny; }
+  return true;
+}
+function collideRect(b, x0, x1, y0, y1) {
+  const cx = Math.max(x0, Math.min(b.x, x1)), cy = Math.max(y0, Math.min(b.y, y1));
+  const dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+  if (d >= BR) return;
+  let nx, ny;
+  if (d === 0) { nx = 0; ny = b.y < (y0 + y1) / 2 ? -1 : 1; } else { nx = dx / d; ny = dy / d; }
+  b.x = cx + nx * BR; b.y = cy + ny * BR;
+  const dot = b.vx * nx + b.vy * ny;
+  if (dot < 0) { b.vx -= 1.7 * dot * nx; b.vy -= 1.7 * dot * ny; }
+}
+function shoePos(p) {
+  const k = p.kick > 0 ? Math.sin((1 - p.kick / 0.22) * Math.PI) : 0;
+  return { x: p.x + p.dir * (14 + 26 * k), y: p.y + 40 - 16 * k };
+}
+
+function step(st, dt, inp) {
+  if (st.ph === 2) return;
+  if (st.ph === 1) { st.pt -= dt; if (st.pt <= 0) { kickoff(st); st.ph = 0; } }
+  else { st.t -= dt; if (st.t <= 0) { st.t = 0; st.ph = 2; sfx("whistle"); return; } }
+
+  st.p.forEach((p, i) => {
+    const c = inp[i] || {};
+    p.vx = ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * 340;
+    if (c.j && p.onG) { p.vy = -780; p.onG = false; }
+    if (c.k && !p.kd && p.kick <= 0) { p.kick = 0.22; p.hit = false; }
+    p.kd = !!c.k;
+    if (p.kick > 0) p.kick = Math.max(0, p.kick - dt);
+    p.vy += 2100 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.y >= REST) { p.y = REST; p.vy = 0; p.onG = true; }
+    p.x = Math.max(HR, Math.min(W - HR, p.x));
+    const inGoal = p.x - HR < GOAL_W || p.x + HR > W - GOAL_W;
+    if (inGoal && p.y - HR < BAR_Y + 6 && p.y > BAR_Y) { p.y = BAR_Y + 6 + HR; p.vy = Math.max(p.vy, 0); }
+  });
+  const [a, b2] = st.p, dx = b2.x - a.x;
+  if (Math.abs(dx) < HR * 2 && Math.abs(b2.y - a.y) < HR * 2) {
+    const push = (HR * 2 - Math.abs(dx)) / 2 * (dx >= 0 ? 1 : -1);
+    a.x -= push; b2.x += push;
+    a.x = Math.max(HR, Math.min(W - HR, a.x)); b2.x = Math.max(HR, Math.min(W - HR, b2.x));
+  }
+
+  const b = st.b;
+  b.vy += 1450 * dt; b.vx *= 1 - 0.12 * dt;
+  b.x += b.vx * dt; b.y += b.vy * dt;
+
+  st.p.forEach(p => {
+    if (collideCircle(b, p.x, p.y, HR + BR, p.vx, p.vy, 0.85)) { b.vx += p.vx * 0.25; if (Math.hypot(b.vx, b.vy) > 260) sfx("head"); }
+    const s = shoePos(p);
+    collideCircle(b, s.x, s.y, SR + BR, p.vx, p.vy, 0.6);
+    if (p.kick > 0 && !p.hit && Math.hypot(b.x - (p.x + p.dir * 32), b.y - (p.y + 36)) < 62) {
+      b.vx = p.dir * 800 + p.vx * 0.3; b.vy = -540 + (b.y < p.y ? -120 : 0); p.hit = true; sfx("kick");
+    }
+  });
+
+  if (b.y + BR > G) { b.y = G - BR; b.vy = -b.vy * 0.7; b.vx *= 0.97; if (Math.abs(b.vy) < 70) b.vy = 0; }
+  if (b.y - BR < 0) { b.y = BR; b.vy = Math.abs(b.vy) * 0.8; }
+  if (b.x - BR < 0) { b.x = BR; b.vx = Math.abs(b.vx) * 0.7; }
+  if (b.x + BR > W) { b.x = W - BR; b.vx = -Math.abs(b.vx) * 0.7; }
+  collideRect(b, 0, GOAL_W, BAR_Y - 5, BAR_Y + 5);
+  collideRect(b, W - GOAL_W, W, BAR_Y - 5, BAR_Y + 5);
+  const sp = Math.hypot(b.vx, b.vy);
+  if (sp > 1150) { b.vx *= 1150 / sp; b.vy *= 1150 / sp; }
+
+  if (st.ph === 0 && b.y > BAR_Y) {
+    if (b.x + BR < GOAL_W) goal(st, 1);
+    else if (b.x - BR > W - GOAL_W) goal(st, 0);
+  }
+}
+function goal(st, i) { st.s[i]++; st.ph = 1; st.pt = 1.6; st.last = i; sfx("goal"); }
+
+/* ---------- CPU ---------- */
+function cpuInput(st) {
+  const p = st.p[1], b = st.b, c = {};
+  const behind = b.x + 34;
+  const tx = b.x > p.x - 8 ? b.x + 60 : behind;
+  if (tx > p.x + 10) c.r = true; else if (tx < p.x - 10) c.l = true;
+  const near = Math.abs(b.x - p.x) < 110;
+  if (near && b.y < p.y - 30 && b.vy > -100 && Math.random() < 0.08) c.j = true;
+  if (b.x < p.x && p.x - b.x < 70 && Math.abs(b.y - (p.y + 30)) < 60) c.k = true;
+  if (b.x > W - 200 && b.x > p.x) c.r = true;
+  return c;
+}
+
+/* ---------- input ---------- */
+const keys = new Set();
+window.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  keys.add(e.code);
+  if (["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Space"].includes(e.code)) e.preventDefault();
+  unlockAudio();
+});
+window.addEventListener("keyup", e => keys.delete(e.code));
+window.addEventListener("blur", () => keys.clear());
+const kA = () => ({ l: keys.has("KeyA"), r: keys.has("KeyD"), j: keys.has("KeyW"), k: keys.has("KeyS") || keys.has("Space") });
+const kB = () => ({ l: keys.has("ArrowLeft"), r: keys.has("ArrowRight"), j: keys.has("ArrowUp"), k: keys.has("ArrowDown") || keys.has("Enter") });
+const or = (x, y) => ({ l: x.l || y.l, r: x.r || y.r, j: x.j || y.j, k: x.k || y.k });
+
+const touch = [{}, {}];
+function makeBtn(player, act, label, sub) {
+  const el = document.createElement("button");
+  el.className = "tb p" + (player + 1); el.type = "button";
+  el.setAttribute("aria-label", sub || label);
+  el.innerHTML = label + (sub ? "<small>" + sub + "</small>" : "");
+  const ids = new Set();
+  const upd = () => { touch[player][act] = ids.size > 0; el.classList.toggle("on", ids.size > 0); };
+  el.addEventListener("pointerdown", e => { e.preventDefault(); ids.add(e.pointerId); try { el.setPointerCapture(e.pointerId); } catch (_) {} unlockAudio(); upd(); });
+  const off = e => { ids.delete(e.pointerId); upd(); };
+  el.addEventListener("pointerup", off); el.addEventListener("pointercancel", off); el.addEventListener("lostpointercapture", off);
+  el.addEventListener("contextmenu", e => e.preventDefault());
+  return el;
+}
+function buildPads(kind, me) {
+  const L = $("padL"), R = $("padR");
+  L.innerHTML = ""; R.innerHTML = "";
+  for (const k in touch[0]) delete touch[0][k];
+  for (const k in touch[1]) delete touch[1][k];
+  if (kind === "none") return;
+  if (kind === "split") {
+    [makeBtn(0,"l","◀"), makeBtn(0,"r","▶"), makeBtn(0,"j","▲","SPRUNG"), makeBtn(0,"k","●","SCHUSS")].forEach(b => L.append(b));
+    [makeBtn(1,"k","●","SCHUSS"), makeBtn(1,"j","▲","SPRUNG"), makeBtn(1,"l","◀"), makeBtn(1,"r","▶")].forEach(b => R.append(b));
+  } else {
+    [makeBtn(me,"l","◀"), makeBtn(me,"r","▶")].forEach(b => L.append(b));
+    [makeBtn(me,"j","▲","SPRUNG"), makeBtn(me,"k","●","SCHUSS")].forEach(b => R.append(b));
+  }
+}
+
+/* ---------- sound ---------- */
+let ac = null;
+function unlockAudio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} } }
+function sfx(kind) {
+  if (!ac) return;
+  try {
+    const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    const map = { kick: [180, 70, .12, "square"], head: [320, 160, .08, "triangle"], goal: [520, 880, .5, "sawtooth"], whistle: [1900, 2100, .45, "sine"], "goal-remote": [520, 880, .5, "sawtooth"] };
+    const [f0, f1, d, type] = map[kind] || map.head;
+    o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + d);
+    g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+    o.start(t); o.stop(t + d + 0.02);
+  } catch (_) {}
+}
+
+/* ---------- drawing ---------- */
+const crowd = Array.from({ length: 260 }, () => ({ x: Math.random() * W, y: 40 + Math.random() * 150, c: Math.random() }));
+function draw(st, t) {
+  const sky = ctx.createLinearGradient(0, 0, 0, G);
+  sky.addColorStop(0, "#081019"); sky.addColorStop(1, "#16304a");
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // stands
+  ctx.fillStyle = "#132538"; ctx.fillRect(0, 30, W, 175);
+  crowd.forEach(c => {
+    const bob = Math.sin(t * 3 + c.x) * (st.ph === 1 ? 3 : 0.8);
+    ctx.fillStyle = c.c < .33 ? "rgba(255,122,26,.55)" : c.c < .66 ? "rgba(47,211,255,.45)" : "rgba(243,246,238,.25)";
+    ctx.beginPath(); ctx.arc(c.x, c.y + bob, 4, 0, 7); ctx.fill();
+  });
+  // floodlights
+  [[90, 22], [W - 90, 22]].forEach(([x, y]) => {
+    const g = ctx.createRadialGradient(x, y, 2, x, y, 260);
+    g.addColorStop(0, "rgba(255,250,220,.35)"); g.addColorStop(1, "rgba(255,250,220,0)");
+    ctx.fillStyle = g; ctx.fillRect(x - 260, 0, 520, 300);
+  });
+  // pitch
+  for (let i = 0; i < 12; i++) { ctx.fillStyle = i % 2 ? "#1f7a3c" : "#23863f"; ctx.fillRect(i * W / 12, 205, W / 12 + 1, G - 205); }
+  ctx.fillStyle = "#17602f"; ctx.fillRect(0, G, W, H - G);
+  ctx.strokeStyle = "rgba(243,246,238,.55)"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(W / 2, 215); ctx.lineTo(W / 2, G); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, G); ctx.lineTo(W, G); ctx.stroke();
+  // goals
+  drawGoal(0, 1); drawGoal(W, -1);
+
+  // shadows
+  ctx.fillStyle = "rgba(0,0,0,.25)";
+  [st.b, ...st.p].forEach(o => { const s = Math.max(.3, 1 - (G - o.y) / 400); ctx.beginPath(); ctx.ellipse(o.x, G + 4, 26 * s, 6 * s, 0, 0, 7); ctx.fill(); });
+
+  st.p.forEach((p, i) => drawPlayer(p, i, st.b));
+  // ball
+  const b = st.b;
+  ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.x / BR);
+  ctx.fillStyle = "#f3f6ee"; ctx.beginPath(); ctx.arc(0, 0, BR, 0, 7); ctx.fill();
+  ctx.fillStyle = "#1b1f24";
+  for (let k = 0; k < 5; k++) { const a = k * 1.2566; ctx.beginPath(); ctx.arc(Math.cos(a) * 9, Math.sin(a) * 9, 3.6, 0, 7); ctx.fill(); }
+  ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, 7); ctx.fill();
+  ctx.restore();
+
+  // HUD
+  ctx.fillStyle = "rgba(6,12,20,.82)"; roundRect(W / 2 - 150, 8, 300, 54, 8); ctx.fill();
+  ctx.font = "34px Bungee, Impact, sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center";
+  ctx.fillStyle = "#ff7a1a"; ctx.fillText(st.s[0], W / 2 - 100, 37);
+  ctx.fillStyle = "#2fd3ff"; ctx.fillText(st.s[1], W / 2 + 100, 37);
+  const sec = Math.ceil(st.t);
+  ctx.fillStyle = sec <= 10 && st.ph !== 2 ? "#ffd166" : "#f3f6ee";
+  ctx.font = "26px Bungee, Impact, sans-serif";
+  ctx.fillText(Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"), W / 2, 37);
+  ctx.font = "600 15px 'Barlow Condensed', sans-serif";
+  ctx.fillStyle = "rgba(243,246,238,.7)";
+  ctx.fillText(names[0], W / 2 - 100, 75); ctx.fillText(names[1], W / 2 + 100, 75);
+
+  if (st.ph === 1) {
+    ctx.font = "84px Bungee, Impact, sans-serif";
+    ctx.fillStyle = st.last === 0 ? "#ff7a1a" : "#2fd3ff";
+    ctx.strokeStyle = "#081019"; ctx.lineWidth = 8;
+    const sc = 1 + Math.max(0, st.pt - 1.3) * 1.5;
+    ctx.save(); ctx.translate(W / 2, 230); ctx.scale(sc, sc);
+    ctx.strokeText("TOR!", 0, 0); ctx.fillText("TOR!", 0, 0); ctx.restore();
+  }
+  if (banner) {
+    ctx.font = "700 22px 'Barlow Condensed', sans-serif"; ctx.fillStyle = "rgba(6,12,20,.85)";
+    const w = ctx.measureText(banner).width + 30;
+    roundRect(W / 2 - w / 2, 100, w, 36, 6); ctx.fill();
+    ctx.fillStyle = "#f3f6ee"; ctx.fillText(banner, W / 2, 119);
+  }
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawGoal(x0, d) {
+  const x1 = x0 + d * GOAL_W;
+  ctx.save();
+  ctx.strokeStyle = "rgba(243,246,238,.28)"; ctx.lineWidth = 1;
+  for (let y = BAR_Y; y <= G; y += 14) { ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); }
+  for (let k = 0; k <= GOAL_W; k += 14) { ctx.beginPath(); ctx.moveTo(x0 + d * k, BAR_Y); ctx.lineTo(x0 + d * k, G); ctx.stroke(); }
+  ctx.fillStyle = "#f3f6ee";
+  ctx.fillRect(Math.min(x0, x1), BAR_Y - 5, GOAL_W, 10);
+  ctx.fillRect(x1 - 4, BAR_Y - 5, 8, G - BAR_Y + 5);
+  ctx.restore();
+}
+function drawPlayer(p, i, b) {
+  const col = i ? "#2fd3ff" : "#ff7a1a", dark = i ? "#0a6c86" : "#a3410a";
+  const s = shoePos(p);
+  // shoe
+  ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(p.kick > 0 ? -p.dir * 0.5 : 0);
+  ctx.fillStyle = "#1b1f24"; ctx.beginPath(); ctx.ellipse(p.dir * 4, 0, SR + 6, SR - 2, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = col; ctx.fillRect(-6, -SR + 3, 12, 4);
+  ctx.restore();
+  // head
+  ctx.fillStyle = "#f2c79b"; ctx.beginPath(); ctx.arc(p.x, p.y, HR, 0, 7); ctx.fill();
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p.x, p.y, HR, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+  ctx.fillStyle = dark; ctx.fillRect(p.x - HR + 4, p.y - 16, HR * 2 - 8, 6);
+  // eyes look at ball
+  const ang = Math.atan2(b.y - p.y, b.x - p.x);
+  [-11, 11].forEach(o => {
+    const ex = p.x + o + p.dir * 6, ey = p.y + 2;
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ex, ey, 7, 0, 7); ctx.fill();
+    ctx.fillStyle = "#14202c"; ctx.beginPath(); ctx.arc(ex + Math.cos(ang) * 3, ey + Math.sin(ang) * 3, 3.4, 0, 7); ctx.fill();
+  });
+  ctx.strokeStyle = "#8a4b2b"; ctx.lineWidth = 3; ctx.beginPath();
+  ctx.arc(p.x + p.dir * 6, p.y + 16, 9, 0.2, Math.PI - 0.2); ctx.stroke();
+}
+
+/* ---------- modes ---------- */
+let mode = "menu", banner = "", names = ["Spieler 1", "Spieler 2"];
+let net = null; // { peer, conn, role, ... }
+function show(id) { ["ovMenu", "ovLobby", "ovEnd"].forEach(o => $(o).hidden = o !== id); $("menuBtn").hidden = !!id || mode === "menu"; }
+
+function startLocal(kind) {
+  leaveNet();
+  mode = kind; st = newState(); banner = "";
+  names = kind === "cpu" ? ["Du", "Computer"] : ["Spieler 1", "Spieler 2"];
+  buildPads(kind === "local" ? "split" : "single", 0);
+  show(null);
+}
+function toMenu() { leaveNet(); mode = "menu"; st = newState(); banner = ""; buildPads("none"); show("ovMenu"); }
+
+/* ---------- online via PeerJS (WebRTC, peer to peer) ---------- */
+const CH = "abcdefghjkmnpqrstuvwxyz23456789";
+const PREFIX = "kopfball-duell-v1-";
+const mkCode = () => Array.from({ length: 4 }, () => CH[Math.floor(Math.random() * CH.length)]).join("");
+const gameLink = code => location.origin + location.pathname + "#" + code.toUpperCase();
+
+function leaveNet() {
+  if (!net) return;
+  const n = net; net = null;
+  try { n.conn && n.conn.close(); } catch (_) {}
+  try { n.peer.destroy(); } catch (_) {}
+}
+function hostGame(tries = 0) {
+  if (!window.Peer) return;
+  leaveNet();
+  const code = mkCode();
+  $("lobbyCode").textContent = code.toUpperCase();
+  $("lobbyLink").textContent = gameLink(code);
+  $("btnCopy").textContent = "Link kopieren";
+  $("lobbyNote").textContent = "Raum wird geöffnet…";
+  show("ovLobby");
+  const peer = new Peer(PREFIX + code);
+  const n = { peer, role: "host", code, conn: null, sendT: 0, guestIn: [0, 0, 0, 0] };
+  net = n; mode = "host"; names = ["Du", "Gast"]; st = newState(); banner = "";
+  peer.on("open", () => {
+    if (net !== n) return;
+    $("lobbyNote").textContent = "Schick den Link an deinen Kumpel. Sobald er ihn öffnet, geht's los. Oder er tippt den Code bei „Beitreten“ ein.";
+  });
+  peer.on("connection", conn => {
+    if (net !== n) { conn.close(); return; }
+    if (n.conn && n.conn.open) {
+      conn.on("open", () => { conn.send({ full: true }); setTimeout(() => conn.close(), 600); });
+      return;
+    }
+    n.conn = conn;
+    conn.on("open", () => {
+      if (net !== n || n.conn !== conn) return;
+      n.guestIn = [0, 0, 0, 0]; st = newState(); banner = ""; endShown = false;
+      buildPads("single", 0); show(null);
+    });
+    conn.on("data", d => { if (net === n && d && Array.isArray(d.i)) n.guestIn = d.i.slice(0, 4).map(v => (v ? 1 : 0)); });
+    conn.on("close", () => {
+      if (net !== n || n.conn !== conn) return;
+      n.conn = null; banner = "Gegner ist weg. Warte, bis jemand den Link neu öffnet…";
+    });
+  });
+  peer.on("disconnected", () => { if (net === n && !peer.destroyed) try { peer.reconnect(); } catch (_) {} });
+  peer.on("error", e => {
+    if (net !== n) return;
+    if (e.type === "unavailable-id" && tries < 3) { hostGame(tries + 1); return; }
+    if (n.conn && n.conn.open) return;
+    $("lobbyNote").textContent = "Verbindung fehlgeschlagen (" + e.type + "). Versuch es nochmal.";
+  });
+}
+function joinGame(codeArg) {
+  if (!window.Peer) return;
+  const note = $("netNote");
+  const code = String(codeArg || $("codeIn").value).trim().toLowerCase();
+  if (!/^[a-z0-9]{4}$/.test(code)) { note.textContent = "Der Code hat 4 Zeichen."; note.classList.add("err"); return; }
+  leaveNet();
+  const peer = new Peer();
+  const n = { peer, role: "guest", code, conn: null, lastIn: "", target: null, connected: false };
+  net = n; mode = "guest"; names = ["Gastgeber", "Du"]; st = newState(); banner = "Verbinde mit Spiel " + code.toUpperCase() + "…";
+  buildPads("single", 1); show(null);
+  const fail = msg => { if (net !== n) return; toMenu(); note.textContent = msg; note.classList.add("err"); };
+  peer.on("open", () => {
+    if (net !== n) return;
+    const conn = peer.connect(PREFIX + code, { serialization: "json" });
+    n.conn = conn;
+    conn.on("open", () => { if (net !== n) return; n.connected = true; n.lastIn = ""; banner = ""; });
+    conn.on("data", d => {
+      if (net !== n || !d) return;
+      if (d.full) { fail("Das Spiel " + code.toUpperCase() + " ist schon voll."); return; }
+      if (Array.isArray(d.s)) n.target = d.s;
+    });
+    conn.on("close", () => { if (net !== n) return; n.connected = false; banner = "Gastgeber hat das Spiel verlassen"; });
+  });
+  peer.on("error", e => {
+    if (e.type === "peer-unavailable") fail("Kein Spiel mit Code " + code.toUpperCase() + " gefunden.");
+    else if (!n.connected) fail("Verbindung fehlgeschlagen (" + e.type + ").");
+  });
+  setTimeout(() => {
+    if (net === n && !n.connected) fail("Verbindung kam nicht zustande. Manche Netze (Schule, Firma) blockieren direkte Verbindungen. Mobile Daten oder ein anderes WLAN helfen oft.");
+  }, 15000);
+}
+function pack(st) {
+  const r = v => Math.round(v * 10) / 10, p = st.p;
+  return [r(st.b.x), r(st.b.y), r(p[0].x), r(p[0].y), Math.round(p[0].kick * 100), r(p[1].x), r(p[1].y), Math.round(p[1].kick * 100), st.s[0], st.s[1], r(st.t), st.ph, st.last, r(st.pt)];
+}
+function unpackInto(st, a, lerp) {
+  const L = (o, k, v) => { o[k] = lerp ? o[k] + (v - o[k]) * lerp : v; };
+  if (Math.hypot(st.b.x - a[0], st.b.y - a[1]) > 140) lerp = 0;
+  L(st.b, "x", a[0]); L(st.b, "y", a[1]);
+  L(st.p[0], "x", a[2]); L(st.p[0], "y", a[3]); st.p[0].kick = a[4] / 100;
+  L(st.p[1], "x", a[5]); L(st.p[1], "y", a[6]); st.p[1].kick = a[7] / 100;
+  if (a[8] + a[9] > st.s[0] + st.s[1]) sfx("goal-remote");
+  st.s = [a[8], a[9]]; st.t = a[10]; st.ph = a[11]; st.last = a[12]; st.pt = a[13] || 0;
+}
+
+/* ---------- loop ---------- */
+let lastT = performance.now(), acc = 0, endShown = false;
+function frame(now) {
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  const hostLive = mode === "host" && net && net.conn && net.conn.open;
+  if (mode === "local" || mode === "cpu" || hostLive) {
+    let inp;
+    if (mode === "local") inp = [or(kA(), touch[0]), or(kB(), touch[1])];
+    else if (mode === "cpu") inp = [or(or(kA(), kB()), touch[0]), cpuInput(st)];
+    else { const gi = net.guestIn; inp = [or(or(kA(), kB()), touch[0]), { l: !!gi[0], r: !!gi[1], j: !!gi[2], k: !!gi[3] }]; }
+    acc += dt;
+    while (acc >= 1 / 120) { step(st, 1 / 120, inp); acc -= 1 / 120; }
+    if (hostLive) {
+      net.sendT += dt;
+      if (net.sendT >= 1 / 30) { net.sendT = 0; try { net.conn.send({ s: pack(st) }); } catch (_) {} }
+    }
+  } else if (mode === "guest" && net) {
+    const me = or(or(kA(), kB()), touch[1]);
+    const iv = [me.l ? 1 : 0, me.r ? 1 : 0, me.j ? 1 : 0, me.k ? 1 : 0], key = iv.join("");
+    if (net.connected && key !== net.lastIn) { net.lastIn = key; try { net.conn.send({ i: iv }); } catch (_) {} }
+    if (net.target) unpackInto(st, net.target, 0.45);
+  }
+  draw(st, now / 1000);
+
+  if (st.ph === 2 && mode !== "menu" && !endShown) {
+    endShown = true;
+    const [a, b] = st.s;
+    let title;
+    if (a === b) title = "Unentschieden";
+    else if (mode === "local") title = (a > b ? "Spieler 1" : "Spieler 2") + " gewinnt";
+    else { const meWin = mode === "guest" ? b > a : a > b; title = meWin ? "Gewonnen!" : "Verloren"; }
+    $("endTitle").textContent = title;
+    $("endScore").textContent = names[0] + " " + a + " : " + b + " " + names[1];
+    const guest = mode === "guest";
+    $("btnRematch").hidden = guest;
+    $("endNote").hidden = !guest; $("endNote").textContent = "Der Gastgeber startet die Revanche.";
+    show("ovEnd");
+  }
+  if (st.ph !== 2 && endShown) { endShown = false; if (!$("ovEnd").hidden) show(null); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- wiring ---------- */
+$("btnLocal").onclick = () => { unlockAudio(); startLocal("local"); };
+$("btnCpu").onclick = () => { unlockAudio(); startLocal("cpu"); };
+$("btnHost").onclick = () => { unlockAudio(); hostGame(); };
+$("btnJoin").onclick = () => { unlockAudio(); joinGame(); };
+$("codeIn").addEventListener("keydown", e => { if (e.key === "Enter") joinGame(); });
+$("btnLobbyBack").onclick = toMenu;
+$("btnEndMenu").onclick = toMenu;
+$("menuBtn").onclick = toMenu;
+$("btnRematch").onclick = () => { st = newState(); endShown = false; show(null); };
+$("btnCopy").onclick = () => {
+  const link = $("lobbyLink").textContent;
+  const fallback = () => { $("btnCopy").textContent = "Link oben markieren und kopieren"; const r = document.createRange(); r.selectNodeContents($("lobbyLink")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); };
+  try { navigator.clipboard.writeText(link).then(() => { $("btnCopy").textContent = "Kopiert ✓"; }, fallback); } catch (_) { fallback(); }
+};
+
+function setNet(ok) {
+  $("btnHost").disabled = !ok; $("btnJoin").disabled = !ok; $("codeIn").disabled = !ok;
+  $("netNote").classList.remove("err");
+  $("netNote").textContent = ok
+    ? "Spiel erstellen, Link schicken, fertig. Kein Account nötig."
+    : "Online-Modus konnte nicht geladen werden. Offline-Modi funktionieren trotzdem.";
+}
+setNet(!!window.Peer);
+fit(); show("ovMenu");
+requestAnimationFrame(frame);
+
+// Link mit #CODE: direkt beitreten
+const hashCode = (location.hash || "").slice(1);
+if (/^[A-Za-z0-9]{4}$/.test(hashCode)) {
+  history.replaceState(null, "", location.pathname + location.search);
+  $("codeIn").value = hashCode.toUpperCase();
+  if (window.Peer) joinGame(hashCode);
+}
+})();
+</script>
+</body>
+</html>
