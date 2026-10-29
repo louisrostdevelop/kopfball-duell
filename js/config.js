@@ -1,5 +1,5 @@
 // Spielwelt, Charaktere, Arenen, Bälle, Power-ups, Erfolge
-export const W = 1360, H = 720, G = 640;
+export const W = 1520, H = 720, G = 640;
 export const GOAL_W = 112, GOAL_H = 205, BAR_Y = G - GOAL_H, BAR_T = 12;
 export const HR = 54, BR = 24, SR = 16, FOOT = 55;
 export const KS = HR / 46; // Skalierung der Schuss-Geometrie

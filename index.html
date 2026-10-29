@@ -20,7 +20,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preload" href="fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/nunito-900.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 <script src="vendor/peerjs.min.js" defer></script>
 <script src="vendor/qrcode.js" defer></script>
 </head>
@@ -93,17 +93,28 @@
     </nav>
 
     <div class="stage">
-      <div class="spot"></div>
-      <canvas id="showcase" aria-label="Dein Kopf"></canvas>
-      <div class="pedestal"></div>
+      <canvas id="showcase" aria-label="Dein Kopf, antippen zum Jonglieren"></canvas>
       <div class="plate">
         <span class="rarity" id="stRarity">Basis</span>
         <b id="stName">Kalle</b>
         <span class="superline"><svg><use href="#i-bolt"/></svg><span id="stSuper">Feuerball</span></span>
       </div>
+      <button class="nextup" id="hsNext" hidden><span class="nu-av" id="nuAv"></span><span class="nu-txt"><small>Nächster Kopf</small><b id="nuName">Rocco</b><span class="nu-bar"><i id="nuFill"></i></span></span><span class="nu-num" id="nuNum">0/200</span></button>
     </div>
 
     <div class="playzone">
+      <div class="homeside">
+        <button class="hs-daily" id="hsDaily">
+          <span class="hd-ic"><svg><use href="#i-cal"/></svg></span>
+          <span class="hd-txt"><small>Tages-Challenge</small><b id="hdOpp">Magnus</b><em id="hdRules">Chaos, bis 3</em></span>
+          <span class="hd-av" id="hdAv"></span>
+          <span class="hd-rw" id="hdRw"><span class="coin"></span>+150</span>
+        </button>
+        <button class="hs-tasks" id="hsTasks">
+          <span class="ht-head"><svg><use href="#i-tasks"/></svg><b>Heute</b><span class="grow"></span><em id="htCount">0/3</em></span>
+          <span class="ht-list" id="htList"></span>
+        </button>
+      </div>
       <button class="modecard" id="modeCard">
         <span class="mc-ic" id="mcIcon"><svg><use href="#i-play"/></svg></span>
         <span class="mc-txt"><small>Modus</small><b id="mcTitle">Schnelles Spiel</b><em id="mcSub">Gegen den Computer</em></span>
@@ -310,6 +321,6 @@
 <div id="rotate" hidden><div class="phone"></div><b>Handy drehen</b><span>Quer spielt es sich viel besser.</span></div>
 <div id="loading"><b class="ld-logo">Kopfball<br>Duell</b><div class="ball"></div></div>
 
-<script type="module" src="js/main.js?v=4"></script>
+<script type="module" src="js/main.js?v=5"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@ import { barY, shoePos, pr } from "./physics.js";
 const TAU = Math.PI * 2;
 const INK = COL.ink;
 const TEAM = [COL.p1, COL.p2];
-const FT = 380; // obere (hintere) Kante des Spielfelds
+const FT = 330; // obere (hintere) Kante des Spielfelds
 
 let cv, ctx, cw = 0, ch = 0, dpr = 1, band = 0;
 const base = { s: 1, ox: 0, oy: 0 };
@@ -220,8 +220,8 @@ function paintCrowd(b, R, cr) {
 
 const SKIN = ["#e9b98f", "#c98b5e", "#8d5a3b", "#f3d2b3", "#a86f4a"];
 const CROWD = {
-  stadion: { top: 140, bot: FT - 52, rows: 7, gaps: 0.06, base: "#2a3d6e", alt: "#d9dfef", skin: SKIN },
-  eis: { top: 150, bot: FT - 52, rows: 6, gaps: 0.1, base: "#24485e", alt: "#e9f7ff", skin: SKIN },
+  stadion: { top: 104, bot: FT - 52, rows: 7, gaps: 0.06, base: "#2a3d6e", alt: "#d9dfef", skin: SKIN },
+  eis: { top: 112, bot: FT - 52, rows: 6, gaps: 0.1, base: "#24485e", alt: "#e9f7ff", skin: SKIN },
 };
 
 function grassTex(b, R, dark, n = 900) {
@@ -284,7 +284,7 @@ function bgStadion(b, R) {
   // Dach
   b.fillStyle = "#060c22"; b.beginPath(); b.moveTo(R.x0, 96); b.quadraticCurveTo(W / 2, 60, R.x1, 96); b.lineTo(R.x1, 128); b.quadraticCurveTo(W / 2, 98, R.x0, 128); b.fill();
   b.fillStyle = "rgba(255,255,255,.08)"; for (let x = R.x0; x < R.x1; x += 60) b.fillRect(x, 108, 30, 3);
-  standsBlock(b, R, 124, "#14234f", "#1d3166");
+  standsBlock(b, R, 96, "#14234f", "#1d3166");
   // Flutlichtmasten
   [-30, W + 30].forEach(x => {
     b.fillStyle = "#060c22"; b.fillRect(x - 6, -60, 12, 180);
@@ -359,7 +359,7 @@ function bgEis(b, R) {
   b.fillStyle = sky; b.fillRect(R.x0, R.y0, R.x1 - R.x0, FT - R.y0);
   b.strokeStyle = "#0a2433"; b.lineWidth = 10;
   for (let x = R.x0; x < R.x1; x += 150) { b.beginPath(); b.moveTo(x, R.y0); b.lineTo(x + 75, 100); b.lineTo(x + 150, R.y0); b.stroke(); }
-  standsBlock(b, R, 134, "#11293a", "#17394f");
+  standsBlock(b, R, 104, "#11293a", "#17394f");
   b.fillStyle = "#dff3fb"; b.fillRect(R.x0, FT - 40, R.x1 - R.x0, 34);
   b.fillStyle = "#22d3ee"; b.fillRect(R.x0, FT - 8, R.x1 - R.x0, 3);
   const ice = b.createLinearGradient(0, FT, 0, G); ice.addColorStop(0, "#8fcfe6"); ice.addColorStop(1, "#e3f8ff");

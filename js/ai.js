@@ -3,11 +3,11 @@ import { W, G, GOAL_W, HR, KS, DIFFS, arenaById, charById, rand, clamp } from ".
 import { gMul, pr } from "./physics.js";
 
 export function makeAI(i, diff, keeper = false) {
-  return { i, keeper, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 300 : 300, wantJ: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0 };
+  return { i, keeper, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 340 : 340, wantJ: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0 };
 }
 
 function predict(st, steps, dt) {
-  const b = st.b, ar = arenaById(st.arena), g = 1550 * gMul(st) * (b.fx ? 0.2 : 1);
+  const b = st.b, ar = arenaById(st.arena), g = 1750 * gMul(st) * (b.fx ? 0.2 : 1);
   let x = b.x, y = b.y, vx = b.vx, vy = b.vy; const r = b.r, out = [];
   for (let n = 0; n < steps; n++) {
     vy += g * dt; x += vx * dt; y += vy * dt;
@@ -22,7 +22,7 @@ export function aiInput(ai, st, dt) {
   const p = st.p[ai.i], o = st.p[1 - ai.i], b = st.b, d = ai.d, c = {};
   if (st.ph !== "play") { ai.hold = 0; return c; }
   const dir = p.dir, own = ai.i ? W : 0, r = pr(p);
-  const sp = 470 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
+  const sp = 505 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
   if (ai.keeper) return keeperInput(ai, st, p, b, dt);
   ai.think -= dt; ai.jcd -= dt; ai.kickT -= dt;
   if (ai.think <= 0) {

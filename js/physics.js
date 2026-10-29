@@ -27,7 +27,7 @@ export function newMatch(o) {
 const mkStats = () => ({ shots: 0, heads: 0, goals: 0, supers: 0, pus: 0, stomps: 0, headGoals: 0, superGoals: 0, longGoals: 0, lastSecGoals: 0, ownGoals: 0, maxTrail: 0 });
 function mkPlayer(i, ch) {
   return {
-    i, ch, x: i ? W - 380 : 380, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
+    i, ch, x: i ? W - 430 : 430, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
     kick: 0, kHit: false, kHeld: false, kPow: 1, chT: 0, charge: 0, lastJ: false, lastS: false,
     meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false, confT: 0, djT: 0, djUsed: false, kHitP: false, pushCD: 0, knock: 0,
     hc: 0, sc2: 0, mood: "", moodT: 0, emo: "", emoT: 0, land: 0,
@@ -141,20 +141,20 @@ function movePlayer(st, p, c, dt, frozenPhase) {
   const r = pr(p);
   const locked = frozenPhase || p.frz > 0 || p.stun > 0;
   const turbo = (st.mod === "turbo" ? 1.22 : 1) * st.rules.speed;
-  const sp = 470 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.35 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.75 : 1);
+  const sp = 505 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.35 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.9 : 1);
   const dirIn = ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * (p.confT > 0 ? -1 : 1); // verwirrt: links/rechts vertauscht
   const want = locked ? 0 : dirIn * sp;
-  const acc = (p.onG ? 5200 : 3400) * ar.grip * (st.rules.floor === "ice" ? 0.16 : 1) * (p.frz > 0 ? 0.2 : 1) * (p.knock > 0 ? 0.12 : 1);
+  const acc = (p.onG ? 6400 : 4600) * ar.grip * (st.rules.floor === "ice" ? 0.16 : 1) * (p.frz > 0 ? 0.2 : 1) * (p.knock > 0 ? 0.12 : 1);
   const d = want - p.vx, mx = acc * dt;
   p.vx += Math.abs(d) < mx ? d : Math.sign(d) * mx;
-  const jv = -960 * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.sqrt(gMul(st));
+  const jv = -1010 * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.sqrt(gMul(st));
   if (!locked && c.j && p.onG) {
     p.vy = jv; p.onG = false; ev(st, { t: "jump", i: p.i, x: p.x, y: p.y + (FOOT + SR) * p.sc });
   } else if (!locked && c.j && !p.lastJ && !p.onG && p.djT > 0 && !p.djUsed) {
     p.vy = jv * 0.85; p.djUsed = true; ev(st, { t: "jump", i: p.i, x: p.x, y: p.y + (FOOT + SR) * p.sc, dbl: true });
   }
   p.lastJ = !!c.j;
-  p.vy += 2700 * gMul(st) * dt;
+  p.vy += 3000 * gMul(st) * dt;
   p.x += p.vx * dt; p.y += p.vy * dt;
   const rest = G - (FOOT + SR) * p.sc;
   if (p.y >= rest) {
@@ -195,7 +195,7 @@ function handleKick(st, p, c, dt) {
   } else if (c.k && p.kHeld && can) {
     p.chT += dt;
     const before = p.charge;
-    p.charge = clamp((p.chT - 0.12) / 0.6, 0, 1);
+    p.charge = clamp((p.chT - 0.1) / 0.5, 0, 1);
     if (before < 1 && p.charge >= 1) ev(st, { t: "charged", i: p.i });
   } else if (!c.k && p.kHeld) {
     p.kHeld = false;
@@ -275,7 +275,7 @@ function playerVsPlayer(st) {
 }
 
 // Ball
-function maxBall(st) { return 1500 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed); }
+function maxBall(st) { return 1900 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed); }
 
 function ballPhysics(st, dt, postGoal) {
   const b = st.b, ar = arenaById(st.arena);
@@ -285,7 +285,7 @@ function ballPhysics(st, dt, postGoal) {
   b.r += (tr - b.r) * Math.min(1, dt * 10);
   const fxGrav = fxGravity(b);
   if (b.fx && !postGoal) superStep(st, b, dt);
-  b.vy += 1550 * gMul(st) * fxGrav * wgt(st).grav * dt;
+  b.vy += 1750 * gMul(st) * fxGrav * wgt(st).grav * dt;
   if (st.wind && st.wind.t > 0 && !b.fx) b.vx += st.wind.dir * 300 * dt;
   b.vx *= 1 - ar.ballDrag * wgt(st).drag * (st.rules.floor === "ice" && b.y + b.r > G - 2 ? 0.3 : 1) * dt;
   b.x += b.vx * dt; b.y += b.vy * dt;
@@ -397,7 +397,7 @@ function ballVsPlayer(st, b, p, dt) {
       if (k > 0.5) { p.vy = Math.min(p.vy, -140); p.onG = false; }
     }
     if (!touch(st, b, p, "head")) return;
-    b.vx += p.vx * 0.22 + p.dir * 120;
+    b.vx += p.vx * 0.25 + (hc.ny < 0.1 ? p.dir * 160 : 0); // Schub nach vorn nur bei echtem Kopfball, nicht wenn der Ball unten am Kinn klemmt
     if (p.vy < -150 && hc.ny < -0.3) { b.vy -= 260; b.vx += p.dir * 220; } // Kopfball-Wucht
     // Kopfball beim Aufladen/Ausholen: mehr Kraft, aber weniger als ein sauberer Schuss mit dem Fuß
     let hp = 0;
@@ -405,8 +405,8 @@ function ballVsPlayer(st, b, p, dt) {
     else if (p.kick > 0.06 && !p.kHit) { hp = Math.max(0.25, (p.kPow - 1) / 0.75); p.kHit = true; }
     if (hp > 0) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
-      b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (420 + 400 * hp) * pm * wgt(st).kick) + p.vx * 0.15;
-      b.vy = Math.min(b.vy, -(240 + 320 * hp));
+      b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (540 + 460 * hp) * pm * wgt(st).kick) + p.vx * 0.15;
+      b.vy = Math.min(b.vy, -(300 + 360 * hp));
       if (hp > 0.6) st.hs = 0.05;
     }
     if ((hc.imp > 160 || hp > 0) && p.hc <= 0) {
@@ -434,8 +434,8 @@ function ballVsPlayer(st, b, p, dt) {
       const c = (p.kPow - 1) / 0.75;
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
       const air = !p.onG, high = b.y < p.y;
-      const vx = ((680 + 300 * (ch.pow - 1)) * pm + 360 * c) * qm;
-      const vy = ((air ? (high ? -260 : -400) : high ? -660 : -580) - 560 * c) * (0.7 + 0.3 * qm);
+      const vx = ((880 + 340 * (ch.pow - 1)) * pm + 560 * c) * qm;
+      const vy = ((air ? (high ? -300 : -450) : high ? -720 : -630) - 640 * c) * (0.7 + 0.3 * qm);
       const wk = wgt(st).kick;
       b.vx = p.dir * vx * wk + p.vx * 0.2;
       b.vy = vy * wk;
@@ -563,7 +563,7 @@ function powerups(st, dt) {
   if (st.puT <= 0 && st.pu.length < 2) {
     st.puT = st.mod === "pu2" || st.rules.pu === "many" ? rand(3, 5) : rand(7, 11);
     const k = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
-    st.pu.push({ id: st.puId++, k, x: rand(320, W - 320), y: rand(260, 370), t: 0 });
+    st.pu.push({ id: st.puId++, k, x: rand(360, W - 360), y: rand(260, 370), t: 0 });
     ev(st, { t: "puSpawn" });
   }
   const b = st.b;
