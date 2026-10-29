@@ -118,3 +118,43 @@ export const ACHIEVEMENTS = [
 export const EMOTES = ["😂", "🔥", "😤", "😎", "🤡", "GG"];
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const rand = (a, b) => a + Math.random() * (b - a);
+
+// Seltenheit nach Preis (für Karten und Shop)
+export const RARITY = { basis: "Basis", selten: "Selten", episch: "Episch", legend: "Legendär" };
+export const rarityOf = c => !c.price ? "basis" : c.price <= 300 ? "selten" : c.price <= 500 ? "episch" : "legend";
+
+// Spielmodi (Reihenfolge = Reihenfolge der Karten)
+export const MODES = [
+  { id: "quick",   name: "Schnelles Spiel",  desc: "Gegen den Computer. Du stellst alles ein.", icon: "i-play",   c1: "#6b9bff", c2: "#2348d6", tags: ["1 Spieler"] },
+  { id: "cup",     name: "Cup",              desc: "Drei Gegner, drei Siege, ein Pokal.",        icon: "i-trophy", c1: "#ffd84a", c2: "#e88a00", tags: ["+300 Pokal"] },
+  { id: "online",  name: "Online",           desc: "Link schicken, Kumpel spielt mit.",          icon: "i-globe",  c1: "#b28cff", c2: "#5f33dc", tags: ["2 Spieler"] },
+  { id: "local",   name: "Zu zweit",         desc: "Ein Gerät, zwei Spieler.",                   icon: "i-users",  c1: "#ffa06b", c2: "#e04d00", tags: ["2 Spieler"] },
+  { id: "daily",   name: "Tages-Challenge",  desc: "Jeden Tag ein fester Gegner mit eigenen Regeln.", icon: "i-cal", c1: "#ff7f8f", c2: "#d61f5a", tags: ["+150 pro Tag"], isNew: true },
+  { id: "endless", name: "Endlos",           desc: "Sieg um Sieg. Die Gegner werden härter.",    icon: "i-inf",    c1: "#6ff094", c2: "#179b45", tags: ["Rekord jagen"], isNew: true },
+  { id: "train",   name: "Training",         desc: "Ohne Zeit gegen einen Torwart. Supers üben.", icon: "i-target", c1: "#5fe3e8", c2: "#0b8fa6", tags: ["Üben"] },
+];
+
+// Eigene Regeln
+export const RULE_OPTS = [
+  { k: "goal",   name: "Tore",           opts: [[0.8, "Klein"], [1, "Normal"], [1.25, "Groß"], [1.5, "Riesig"]] },
+  { k: "ball",   name: "Ball",           opts: [[0.75, "Klein"], [1, "Normal"], [1.35, "Groß"], [1.8, "Riesig"]] },
+  { k: "weight", name: "Ballgewicht",    opts: [["light", "Leicht"], ["normal", "Normal"], ["heavy", "Schwer"]], hint: "Leicht prallt mehr ab und fliegt weiter" },
+  { k: "floor",  name: "Boden",          opts: [["normal", "Griffig"], ["ice", "Rutschig"]] },
+  { k: "grav",   name: "Schwerkraft",    opts: [[0.55, "Wenig"], [1, "Normal"], [1.35, "Viel"]] },
+  { k: "speed",  name: "Tempo",          opts: [[0.85, "Gemütlich"], [1, "Normal"], [1.25, "Turbo"]] },
+  { k: "head",   name: "Köpfe",          opts: [[0.75, "Mini"], [1, "Normal"], [1.3, "Riesig"]] },
+  { k: "pu",     name: "Power-ups",      opts: [["off", "Aus"], ["normal", "Normal"], ["many", "Viele"]] },
+  { k: "supers", name: "Spezialschüsse", opts: [[true, "An"], [false, "Aus"]] },
+  { k: "win",    name: "Sieg",           opts: [[0, "Nach Zeit"], [3, "Erster bis 3"], [5, "Erster bis 5"], [7, "Erster bis 7"]] },
+];
+export const RULE_PRESETS = [
+  { id: "std",    name: "Standard",    desc: "Wie gewohnt",                   c1: "#6b9bff", c2: "#2348d6", rules: {} },
+  { id: "chaos",  name: "Chaos",       desc: "Viele Power-ups, großer Ball",  c1: "#ff8cc2", c2: "#d9267a", rules: { pu: "many", ball: 1.35, weight: "light" } },
+  { id: "moon",   name: "Mondfußball", desc: "Kaum Schwerkraft",              c1: "#9aa0c0", c2: "#4b4f78", rules: { grav: 0.55, weight: "light" } },
+  { id: "ice",    name: "Eisfläche",   desc: "Alles rutscht",                 c1: "#7eeaff", c2: "#0a95c4", rules: { floor: "ice" } },
+  { id: "giants", name: "Riesenköpfe", desc: "Große Köpfe, große Tore",       c1: "#ffa06b", c2: "#e04d00", rules: { head: 1.3, goal: 1.25 } },
+  { id: "mini",   name: "Mini-Tore",   desc: "Präzision zählt",               c1: "#6ff094", c2: "#179b45", rules: { goal: 0.8, ball: 0.75 } },
+  { id: "heavy",  name: "Medizinball", desc: "Schwerer Ball, große Tore",     c1: "#c79a6b", c2: "#7a4a22", rules: { weight: "heavy", goal: 1.25, ball: 1.35 } },
+  { id: "turbo",  name: "Turbo",       desc: "Alles schneller",               c1: "#ffd84a", c2: "#e88a00", rules: { speed: 1.25 } },
+  { id: "pure",   name: "Puristen",    desc: "Ohne Power-ups und Supers",     c1: "#b28cff", c2: "#5f33dc", rules: { pu: "off", supers: false } },
+];

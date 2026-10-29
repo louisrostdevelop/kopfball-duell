@@ -1,7 +1,7 @@
 // Offline-Unterstützung: erst Netz, dann Cache (so kommen Updates sofort an)
-const CACHE = "kopfball-v2";
+const CACHE = "kopfball-v3";
 const CORE = ["./", "index.html", "css/style.css", "js/main.js", "js/config.js", "js/physics.js", "js/render.js", "js/art.js", "js/audio.js", "js/input.js", "js/ai.js", "js/net.js", "js/store.js",
-  "fonts/bungee.woff2", "fonts/barlow-500.woff2", "fonts/barlow-600.woff2", "fonts/barlow-700.woff2", "fonts/barlow-800.woff2", "vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "manifest.webmanifest"];
+  "fonts/lilita.woff2", "fonts/nunito-700.woff2", "fonts/nunito-800.woff2", "fonts/nunito-900.woff2", "vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "manifest.webmanifest"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {

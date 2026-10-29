@@ -75,7 +75,7 @@ export function setLayout(kind, force) {
 function stickZone(pi) {
   const z = el("div", "stickzone"), base = el("div", "stick"), knob = el("div", "knob");
   base.append(knob); z.append(base); root.append(z);
-  const hint = el("div", "stickhint"); hint.innerHTML = "<span>◀ ziehen ▶</span><small>hoch wischen = Sprung</small>"; z.append(hint);
+  const hint = el("div", "stickhint"); hint.innerHTML = '<span class="sh-pad">◀ ▶</span><span>Hier ziehen zum Laufen<small>Hoch wischen = Sprung</small></span>'; z.append(hint);
   let id = null, ax = 0, ay = 0;
   const set = (dx, dy) => {
     const t = touch[pi];
@@ -127,11 +127,11 @@ function buttons(pi, side, big) {
     b.addEventListener("pointerup", off); b.addEventListener("pointercancel", off); b.addEventListener("lostpointercapture", off);
     return b;
   };
-  const sup = mk("s", '<svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span>SUPER</span>', "sup");
+  const sup = mk("s", '<svg><use href="#i-bolt"/></svg><span>SUPER</span>', "sup");
   sup.dataset.pi = pi;
-  const jmp = mk("j", '<svg viewBox="0 0 24 24"><path d="M12 4 4 13h5v7h6v-7h5z"/></svg><span>SPRUNG</span>', "jmp");
-  const kck = mk("k", '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg><span>SCHUSS</span><b class="charge"></b>', "kck");
-  if (side === "left") wrap.append(kck, jmp, sup); else wrap.append(sup, jmp, kck);
+  const jmp = mk("j", '<svg viewBox="0 0 24 24"><path d="M12 3 3 13h5.5v8h7v-8H21z"/></svg><span>SPRUNG</span>', "jmp");
+  const kck = mk("k", '<svg><use href="#i-ball"/></svg><span>SCHUSS</span><b class="charge"></b>', "kck");
+  if (big) wrap.append(sup, jmp, kck); else wrap.append(kck, jmp, sup);
   root.append(wrap);
 }
 

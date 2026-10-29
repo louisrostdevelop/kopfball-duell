@@ -1,10 +1,16 @@
 // Spielphysik. Läuft beim Host bzw. offline, der Gast bekommt nur Zustände + Events.
-import { W, H, G, GOAL_W, BAR_Y, BAR_T, HR, BR, SR, FOOT, REST, STEP, KS, charById, arenaById, PU_KEYS, clamp, rand } from "./config.js";
+import { W, H, G, GOAL_W, GOAL_H, BAR_Y, BAR_T, HR, BR, SR, FOOT, REST, STEP, KS, charById, arenaById, PU_KEYS, clamp, rand } from "./config.js";
+
+// Eigene Regeln (für Spiele gegen Freunde). Alle Werte optional.
+export const DEFAULT_RULES = { goal: 1, ball: 1, weight: "normal", floor: "normal", grav: 1, speed: 1, head: 1, pu: "normal", supers: true, win: 0 };
+const WEIGHT = { light: { bounce: 0.18, grav: 0.78, kick: 1.12, drag: 0.7 }, normal: { bounce: 0, grav: 1, kick: 1, drag: 1 }, heavy: { bounce: -0.22, grav: 1.25, kick: 0.86, drag: 1.4 } };
+const wgt = st => WEIGHT[st.rules.weight] || WEIGHT.normal;
 
 export function newMatch(o) {
   const ar = arenaById(o.arena);
   const st = {
     arena: ar.id, mod: o.mod || null, dur: o.dur || 90, pus: o.pus !== false, golden: o.golden !== false,
+    rules: { ...DEFAULT_RULES, ...(o.rules || {}) }, train: !!o.train,
     t: o.dur || 90, ph: "cd", pt: 3, gold: false, el: 0,
     s: [0, 0],
     p: [mkPlayer(0, o.chars[0]), mkPlayer(1, o.chars[1])],
@@ -14,6 +20,7 @@ export function newMatch(o) {
     stats: [mkStats(), mkStats()],
     lastGoal: null, trail: 0, seq: 0,
   };
+  if (st.rules.pu === "off") st.pus = false;
   st.b = mkBall(st);
   return st;
 }
@@ -29,9 +36,9 @@ function mkPlayer(i, ch) {
 function mkBall(st) {
   return { x: W / 2, y: 265, vx: rand(-40, 40), vy: 0, r: baseBR(st), a: 0, av: 0, fx: "", fxT: 0, fxO: -1, fxP: 0, fxK: 0, fxBX: 0, fxBY: 0, fxDX: 0, fxDY: 0, alpha: 1, grow: 1, lt: -1, ltk: "", ltx: 0, held: 0 };
 }
-const baseBR = st => BR * (st.mod === "bigball" ? 1.55 : 1);
-export const gMul = st => arenaById(st.arena).g * (st.mod === "lowgrav" ? 0.55 : 1);
-export const barY = (st, side) => BAR_Y - (st.bigGoal[side] > 0 ? 60 : 0);
+const baseBR = st => BR * st.rules.ball * (st.mod === "bigball" ? 1.55 : 1);
+export const gMul = st => arenaById(st.arena).g * (st.mod === "lowgrav" ? 0.55 : 1) * st.rules.grav;
+export const barY = (st, side) => G - GOAL_H * (st.rules ? st.rules.goal : 1) - (st.bigGoal[side] > 0 ? 60 : 0);
 export const pr = p => HR * p.sc;
 export function shoePos(p) {
   const k = p.kick > 0 ? Math.sin((1 - p.kick / 0.24) * Math.PI) : 0;
@@ -72,13 +79,14 @@ export function step(st, dt, inp) {
     st.p.forEach((p, i) => movePlayer(st, p, {}, dt, false));
     ballPhysics(st, dt, true);
     if (st.pt <= 0) {
-      if (st.gold || (st.t <= 0 && st.s[0] !== st.s[1])) { st.ph = "end"; ev(st, { t: "end" }); return; }
+      const won = st.rules.win && Math.max(st.s[0], st.s[1]) >= st.rules.win;
+      if (st.gold || won || (!st.rules.win && st.t <= 0 && st.s[0] !== st.s[1])) { st.ph = "end"; ev(st, { t: "end" }); return; }
       kickoff(st); st.ph = "ko"; st.pt = 1.0; ev(st, { t: "ko" });
     }
     return;
   }
   // play
-  if (!st.gold) {
+  if (!st.gold && !st.rules.win && !st.train) {
     const before = st.t; st.t -= dt;
     if (before > 10 && st.t <= 10) ev(st, { t: "ten" });
     if (st.t <= 0) {
@@ -113,7 +121,7 @@ function tickCosmetics(st, dt) {
   });
 }
 function addMeter(st, p, v) {
-  if (p.armed > 0 || p.full) return;
+  if (p.armed > 0 || p.full || !st.rules.supers) return;
   p.meter = Math.min(100, p.meter + v);
   if (p.meter >= 100) { p.full = true; ev(st, { t: "full", i: p.i }); }
 }
@@ -128,14 +136,15 @@ function movePlayer(st, p, c, dt, frozenPhase) {
   if (p.armed > 0) { p.armed -= dt; if (p.armed <= 0) { p.armed = 0; p.meter = 60; ev(st, { t: "disarm", i: p.i }); } }
   let tsc = p.bigT > 0 ? 1.35 : p.miniT > 0 ? 0.7 : 1;
   if (st.mod === "minihead") tsc *= 0.78;
+  tsc *= st.rules.head;
   p.sc += (tsc - p.sc) * Math.min(1, dt * 8);
   const r = pr(p);
   const locked = frozenPhase || p.frz > 0 || p.stun > 0;
-  const turbo = st.mod === "turbo" ? 1.22 : 1;
+  const turbo = (st.mod === "turbo" ? 1.22 : 1) * st.rules.speed;
   const sp = 470 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.35 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.75 : 1);
   const dirIn = ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * (p.confT > 0 ? -1 : 1); // verwirrt: links/rechts vertauscht
   const want = locked ? 0 : dirIn * sp;
-  const acc = (p.onG ? 5200 : 3400) * ar.grip * (p.frz > 0 ? 0.2 : 1) * (p.knock > 0 ? 0.12 : 1);
+  const acc = (p.onG ? 5200 : 3400) * ar.grip * (st.rules.floor === "ice" ? 0.16 : 1) * (p.frz > 0 ? 0.2 : 1) * (p.knock > 0 ? 0.12 : 1);
   const d = want - p.vx, mx = acc * dt;
   p.vx += Math.abs(d) < mx ? d : Math.sign(d) * mx;
   const jv = -960 * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.sqrt(gMul(st));
@@ -266,7 +275,7 @@ function playerVsPlayer(st) {
 }
 
 // Ball
-function maxBall(st) { return 1500 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1); }
+function maxBall(st) { return 1500 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed); }
 
 function ballPhysics(st, dt, postGoal) {
   const b = st.b, ar = arenaById(st.arena);
@@ -276,9 +285,9 @@ function ballPhysics(st, dt, postGoal) {
   b.r += (tr - b.r) * Math.min(1, dt * 10);
   const fxGrav = fxGravity(b);
   if (b.fx && !postGoal) superStep(st, b, dt);
-  b.vy += 1550 * gMul(st) * fxGrav * dt;
+  b.vy += 1550 * gMul(st) * fxGrav * wgt(st).grav * dt;
   if (st.wind && st.wind.t > 0 && !b.fx) b.vx += st.wind.dir * 300 * dt;
-  b.vx *= 1 - ar.ballDrag * dt;
+  b.vx *= 1 - ar.ballDrag * wgt(st).drag * (st.rules.floor === "ice" && b.y + b.r > G - 2 ? 0.3 : 1) * dt;
   b.x += b.vx * dt; b.y += b.vy * dt;
   b.av = b.vx / b.r; b.a += b.av * dt;
   if (b.held > 0) b.held -= dt;
@@ -292,8 +301,8 @@ function ballPhysics(st, dt, postGoal) {
   if (b.y + b.r > G && b.vy >= 0) {
     const imp = b.vy;
     b.y = G - b.r;
-    const bounce = b.fx === "bouncy" ? 1.06 : ar.bounce;
-    b.vy = -b.vy * bounce; b.vx *= ar.roll;
+    const bounce = b.fx === "bouncy" ? 1.06 : clamp(ar.bounce + wgt(st).bounce, 0.25, 0.92);
+    b.vy = -b.vy * bounce; b.vx *= st.rules.floor === "ice" ? 0.995 : ar.roll;
     if (Math.abs(b.vy) < 70) b.vy = 0;
     if (imp > 220) ev(st, { t: "bounce", x: b.x, y: G, v: imp });
     if (b.fx === "meteor" && b.fxP === 2) { meteorImpact(st, b); }
@@ -396,7 +405,7 @@ function ballVsPlayer(st, b, p, dt) {
     else if (p.kick > 0.06 && !p.kHit) { hp = Math.max(0.25, (p.kPow - 1) / 0.75); p.kHit = true; }
     if (hp > 0) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
-      b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (420 + 400 * hp) * pm) + p.vx * 0.15;
+      b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (420 + 400 * hp) * pm * wgt(st).kick) + p.vx * 0.15;
       b.vy = Math.min(b.vy, -(240 + 320 * hp));
       if (hp > 0.6) st.hs = 0.05;
     }
@@ -427,8 +436,9 @@ function ballVsPlayer(st, b, p, dt) {
       const air = !p.onG, high = b.y < p.y;
       const vx = ((680 + 300 * (ch.pow - 1)) * pm + 360 * c) * qm;
       const vy = ((air ? (high ? -260 : -400) : high ? -660 : -580) - 560 * c) * (0.7 + 0.3 * qm);
-      b.vx = p.dir * vx + p.vx * 0.2;
-      b.vy = vy;
+      const wk = wgt(st).kick;
+      b.vx = p.dir * vx * wk + p.vx * 0.2;
+      b.vy = vy * wk;
       b.held = 0.05;
       st.stats[p.i].shots++;
       addMeter(st, p, 6 * (st.mod === "superfast" ? 2 : 1));
@@ -551,7 +561,7 @@ function powerups(st, dt) {
   if (!st.pus) return;
   st.puT -= dt;
   if (st.puT <= 0 && st.pu.length < 2) {
-    st.puT = st.mod === "pu2" ? rand(3, 5) : rand(7, 11);
+    st.puT = st.mod === "pu2" || st.rules.pu === "many" ? rand(3, 5) : rand(7, 11);
     const k = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
     st.pu.push({ id: st.puId++, k, x: rand(320, W - 320), y: rand(260, 370), t: 0 });
     ev(st, { t: "puSpawn" });

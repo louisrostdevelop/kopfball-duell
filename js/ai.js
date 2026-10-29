@@ -1,9 +1,9 @@
 // Computer-Gegner
-import { W, G, GOAL_W, HR, KS, DIFFS, arenaById, charById, rand } from "./config.js";
+import { W, G, GOAL_W, HR, KS, DIFFS, arenaById, charById, rand, clamp } from "./config.js";
 import { gMul, pr } from "./physics.js";
 
-export function makeAI(i, diff) {
-  return { i, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 300 : 300, wantJ: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0 };
+export function makeAI(i, diff, keeper = false) {
+  return { i, keeper, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 300 : 300, wantJ: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0 };
 }
 
 function predict(st, steps, dt) {
@@ -23,6 +23,7 @@ export function aiInput(ai, st, dt) {
   if (st.ph !== "play") { ai.hold = 0; return c; }
   const dir = p.dir, own = ai.i ? W : 0, r = pr(p);
   const sp = 470 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
+  if (ai.keeper) return keeperInput(ai, st, p, b, dt);
   ai.think -= dt; ai.jcd -= dt; ai.kickT -= dt;
   if (ai.think <= 0) {
     ai.think = d.react * rand(0.7, 1.3);
@@ -90,5 +91,18 @@ export function aiInput(ai, st, dt) {
   const near = Math.hypot(b.x - p.x, b.y - p.y) < r + b.r + 85 && (b.x - p.x) * dir > -20;
   if (p.full && near && Math.random() < d.superUse * 0.2) c.s = true;
   if (p.armed > 0) { ai.tx = b.x - dir * (r + b.r); }
+  return c;
+}
+
+// Training: bleibt vor dem Tor, springt gegen hohe Bälle, schießt nur weg, wenn der Ball nah am Tor ist
+function keeperInput(ai, st, p, b, dt) {
+  const c = {}, own = ai.i ? W : 0, dir = p.dir;
+  const home = own + dir * (GOAL_W + 70);
+  const towards = b.vx * -dir > 120;
+  const tx = towards && Math.abs(b.x - own) < 520 ? clamp(b.x, Math.min(home, own + dir * 60), Math.max(home, own + dir * 60)) : home;
+  if (tx > p.x + 10) c.r = true; else if (tx < p.x - 10) c.l = true;
+  ai.jcd -= dt;
+  if (towards && Math.abs(b.x - p.x) < 220 && b.y < p.y - 40 && b.y > p.y - 300 && ai.jcd <= 0 && Math.random() < 0.6) { c.j = true; ai.jcd = 0.7; }
+  if (Math.abs(b.x - own) < 260 && Math.abs(b.x - p.x) < 90 && (b.x - p.x) * dir > -10 && b.y > p.y) c.k = Math.random() < 0.5;
   return c;
 }

@@ -1,5 +1,5 @@
 // Speicherstand: Münzen, Level, Freischaltungen, Statistik, Erfolge
-import { CHARS, ARENAS, BALLS, ACHIEVEMENTS } from "./config.js";
+import { CHARS, ARENAS, BALLS, ACHIEVEMENTS, RULE_PRESETS, DIFFS } from "./config.js";
 
 const KEY = "kopfball-duell-save-v2";
 const def = () => ({
@@ -9,7 +9,7 @@ const def = () => ({
   name: "", diff: 1, dur: 90, pus: true, chaos: false,
   sfx: true, music: true, vib: true, quality: "high",
   stats: { games: 0, wins: 0, goals: 0, headGoals: 0, pus: 0, stomps: 0, supers: 0 },
-  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false,
+  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, chDone: "", endlessBest: 0, dealBought: "",
 });
 export let S = load();
 function load() {
@@ -99,4 +99,30 @@ export function taskProgress(inc) {
   });
   save();
   return done;
+}
+
+// ---------- Tages-Challenge ----------
+const today = () => new Date().toISOString().slice(0, 10);
+export function challenge() {
+  const d = today(), r = seeded("ch" + d);
+  const pick = a => a[Math.floor(r() * a.length)];
+  const presets = RULE_PRESETS.filter(p => p.id !== "std");
+  const pre = pick(presets);
+  const opp = pick(CHARS).id, arena = pick(ARENAS).id;
+  const diff = r() < 0.5 ? 2 : r() < 0.7 ? 1 : 3;
+  return { date: d, opp, arena, diff, preset: pre.id, presetName: pre.name, rules: { ...pre.rules, win: r() < 0.5 ? 3 : 0 }, dur: 60, reward: 150 + (diff === 3 ? 100 : 0), done: S.chDone === d };
+}
+export function challengeDone() { S.chDone = today(); save(); }
+
+// ---------- Angebot des Tages ----------
+export function deal() {
+  const d = today(), r = seeded("deal" + d);
+  const pool = [...CHARS.filter(c => c.price && !S.chars.includes(c.id)).map(c => ({ kind: "chars", it: c })), ...BALLS.filter(b => b.price && !S.balls.includes(b.id)).map(b => ({ kind: "balls", it: b }))];
+  if (!pool.length || S.dealBought === d) return null;
+  const x = pool[Math.floor(r() * pool.length)];
+  return { kind: x.kind, id: x.it.id, name: x.it.name, old: x.it.price, price: Math.round(x.it.price * 0.7 / 10) * 10 };
+}
+export function buyDeal(dl) {
+  if (!dl || S.coins < dl.price || owns(dl.kind, dl.id)) return false;
+  S.coins -= dl.price; S[dl.kind].push(dl.id); S.dealBought = today(); save(); return true;
 }

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Kopfball Duell</title>
 <meta name="description" content="Head Soccer im Browser: 12 Köpfe mit Spezialschüssen, Power-ups, Cup und online gegen Kumpels per Link. Kostenlos, ohne Download.">
-<meta name="theme-color" content="#0d1b3e">
+<meta name="theme-color" content="#1a3fc4">
 <meta property="og:title" content="Kopfball Duell – fordere mich heraus!">
 <meta property="og:description" content="Head Soccer im Browser. Online gegen Kumpels per Link, Spezialschüsse, Power-ups. Ohne Download.">
 <meta property="og:image" content="https://louisrostdevelop.github.io/kopfball-duell/og.jpg">
@@ -18,128 +18,205 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="preload" href="fonts/bungee.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="preload" href="fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/nunito-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=4">
 <script src="vendor/peerjs.min.js" defer></script>
 <script src="vendor/qrcode.js" defer></script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 3h12v2h3v3a5 5 0 0 1-4.6 5 6 6 0 0 1-3.4 3.4V19h3v2H8v-2h3v-2.6A6 6 0 0 1 7.6 13 5 5 0 0 1 3 8V5h3V3Zm0 4H5v1a3 3 0 0 0 1.4 2.5A6 6 0 0 1 6 9V7Zm12 0v2a6 6 0 0 1-.4 1.5A3 3 0 0 0 19 8V7h-1Z"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 6h-2.8a15 15 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8ZM12 4a13 13 0 0 1 1.9 4h-3.8A13 13 0 0 1 12 4ZM4.3 14a8 8 0 0 1 0-4h3.2a16 16 0 0 0 0 4H4.3Zm.8 2h2.8a15 15 0 0 0 1.4 3.6A8 8 0 0 1 5.1 16Zm2.8-8H5.1a8 8 0 0 1 4.2-3.6A15 15 0 0 0 7.9 8ZM12 20a13 13 0 0 1-1.9-4h3.8a13 13 0 0 1-1.9 4Zm2.3-6H9.7a14 14 0 0 1 0-4h4.6a14 14 0 0 1 0 4Zm.4 5.6a15 15 0 0 0 1.4-3.6h2.8a8 8 0 0 1-4.2 3.6Zm1.8-5.6a16 16 0 0 0 0-4h3.2a8 8 0 0 1 0 4h-3.2Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><circle cx="17" cy="9" r="3"/><path d="M1 20a7 7 0 0 1 14 0v1H1v-1Zm15 1v-1a8.9 8.9 0 0 0-2-5.7A5.5 5.5 0 0 1 23 18.5V21h-7Z"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M8 7V6a4 4 0 0 1 8 0v1h3.2a1 1 0 0 1 1 .9l1 13A1 1 0 0 1 20.2 22H3.8a1 1 0 0 1-1-1.1l1-13a1 1 0 0 1 1-.9H8Zm2 0h4V6a2 2 0 0 0-4 0v1Zm-1 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24"><path d="M9 2h6a2 2 0 0 1 2 2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2-2Zm0 2v2h6V4H9Zm-1.3 9.3-1.4 1.4L9.6 18l6.7-6.7-1.4-1.4-5.3 5.3-1.9-1.9Z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6 12 2Z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M10.3 2h3.4l.6 2.7a8 8 0 0 1 1.8 1l2.6-.9 1.7 2.9-2 1.8a8 8 0 0 1 0 2.1l2 1.8-1.7 2.9-2.6-.9a8 8 0 0 1-1.8 1l-.6 2.6h-3.4l-.6-2.6a8 8 0 0 1-1.8-1l-2.6.9-1.7-2.9 2-1.8a8 8 0 0 1 0-2.1l-2-1.8 1.7-2.9 2.6.9a8 8 0 0 1 1.8-1L10.3 2ZM12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15.5 3.5 7 12l8.5 8.5 2.1-2.1L11.2 12l6.4-6.4-2.1-2.1Z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1Zm2 0h6V7a3 3 0 0 0-6 0v3Z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6V4Z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M18 2a4 4 0 1 1-3.3 6.3L9.9 10.8a4 4 0 0 1 0 2.4l4.8 2.5A4 4 0 1 1 14 18v-.2l-5.2-2.7a4 4 0 1 1 0-6.2L14 6.2V6a4 4 0 0 1 4-4Z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 2h11a2 2 0 0 1 2 2v12h-2V4H8V2Zm-3 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V2ZM5 10v10h14V10H5Zm7 1.5 1.3 2.7 3 .4-2.2 2 .6 3-2.7-1.5-2.7 1.5.6-3-2.2-2 3-.4 1.3-2.7Z"/></symbol>
+  <symbol id="i-inf" viewBox="0 0 24 24"><path d="M6.5 7C9 7 10.6 9 12 10.8 13.4 9 15 7 17.5 7a5 5 0 0 1 0 10c-2.5 0-4.1-2-5.5-3.8C10.6 15 9 17 6.5 17a5 5 0 0 1 0-10Zm0 3a2 2 0 0 0 0 4c1.1 0 2-1 3.3-2-1.3-1-2.2-2-3.3-2Zm11 0c-1.1 0-2 1-3.3 2 1.3 1 2.2 2 3.3 2a2 2 0 0 0 0-4Z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M3 5h9.2a3 3 0 0 1 5.6 0H21v2h-3.2a3 3 0 0 1-5.6 0H3V5Zm0 6h3.2a3 3 0 0 1 5.6 0H21v2h-9.2a3 3 0 0 1-5.6 0H3v-2Zm0 6h11.2a3 3 0 0 1 5.6 0H21v2h-1.2a3 3 0 0 1-5.6 0H3v-2Z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.3 4.2 5.7 5.7 5.7-5.7 2.1 2.1-5.7 5.7 5.7 5.7-2.1 2.1-5.7-5.7-5.7 5.7-2.1-2.1 5.7-5.7-5.7-5.7 2.1-2.1Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20ZM8.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7 13.5a5 5 0 0 0 10 0H7Z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 1 4 13.5h6.5L9 23l11-13h-7l.5-9Z"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><path d="M8.5 2a3 3 0 0 1 3.5 2.4A3 3 0 1 1 15.5 8H21v4h-1v9a1 1 0 0 1-1 1h-6V12h-2v10H5a1 1 0 0 1-1-1v-9H3V8h5.5a3 3 0 0 1 0-6Zm0 2a1 1 0 0 0 0 2H11a2.5 2.5 0 0 0-2.5-2Zm7 0A2.5 2.5 0 0 0 13 6h2.5a1 1 0 0 0 0-2Z"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M16 3l5 5-5 5V9.5H8v-3h8V3ZM8 11v3.5h8v3H8V21l-5-5 5-5Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m9.5 15.6-4.3-4.3-2.4 2.4 6.7 6.7L21.2 8.7l-2.4-2.4-9.3 9.3Z"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M3 9h4l6-5v16l-6-5H3V9Zm13.5-1.5a6 6 0 0 1 0 9l-1.4-1.4a4 4 0 0 0 0-6.2l1.4-1.4Zm2.8-2.8a10 10 0 0 1 0 14.6l-1.4-1.4a8 8 0 0 0 0-11.8l1.4-1.4Z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M20 2v14.5a3.5 3.5 0 1 1-2-3.2V6.4L10 8.2v10.3A3.5 3.5 0 1 1 8 15.3V5l12-3Z"/></symbol>
+  <symbol id="i-vib" viewBox="0 0 24 24"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 3v13h8V5H8ZM2 8h2v8H2V8Zm18 0h2v8h-2V8Z"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M3 3h7v3H6v4H3V3Zm11 0h7v7h-3V6h-4V3ZM3 14h3v4h4v3H3v-7Zm15 0h3v7h-7v-3h4v-4Z"/></symbol>
+  <symbol id="i-ball" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 5.2-3.4 2.5 1.3 4h4.2l1.3-4L12 7.2Zm-5.6-.4A8 8 0 0 0 4 12.3l2.5-1.8-.1-3.7Zm11.2 0-.1 3.7 2.5 1.8a8 8 0 0 0-2.4-5.5ZM12 4a8 8 0 0 0-3.6.9L12 6.2l3.6-1.3A8 8 0 0 0 12 4Zm-3.9 12.1-3.5.3a8 8 0 0 0 4.2 4.1l-.7-4.4Zm7.8 0-.7 4.4a8 8 0 0 0 4.2-4.1l-3.5-.3Z"/></symbol>
+  <symbol id="i-stadium" viewBox="0 0 24 24"><path d="M2 8c0-1.7 4.5-3 10-3s10 1.3 10 3v8c0 1.7-4.5 3-10 3S2 17.7 2 16V8Zm10 1c-4.4 0-7-1-7-1v6s2.6 1 7 1 7-1 7-1V8s-2.6 1-7 1Zm-1 1h2v4h-2v-4Z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="m2 7 5 4 5-7 5 7 5-4-2 12H4L2 7Zm2.4 14h15.2v2H4.4v-2Z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-1 4v7l5.5 3.3 1-1.7-4.5-2.7V6h-2Z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><path d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-2h3v3h-3v-3Zm5 0h3v3h-3v-3Zm-5 5h3v3h-3v-3Zm5 0h3v3h-3v-3Z"/></symbol>
+</svg>
+
 <canvas id="cv" aria-label="Spielfeld"></canvas>
 <div id="touch" class="touch none"></div>
 
 <div id="gameBtns" hidden>
-  <button class="gbtn" id="btnPause" aria-label="Pause"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
-  <button class="gbtn" id="btnEmote" aria-label="Emote">😎</button>
+  <button class="gbtn" id="btnPause" aria-label="Pause"><svg><use href="#i-pause"/></svg></button>
+  <button class="gbtn" id="btnEmote" aria-label="Emote"><svg><use href="#i-smile"/></svg></button>
   <div id="emoteBar" hidden></div>
 </div>
 
 <main id="ui">
   <!-- Start -->
-  <section class="screen" id="scr-home">
-    <header class="topbar">
-      <button class="lvl" id="homeLvl" aria-label="Level"><b id="lvlNum">1</b><span class="xpbar"><i id="xpFill"></i></span></button>
-      <div class="grow"></div>
-      <button class="coins" id="homeCoins" aria-label="Münzen"><span class="coin"></span><b id="coinNum">0</b></button>
-      <button class="iconbtn" id="btnSettings" aria-label="Einstellungen"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.4 4.6-.1-2.2 2-1.6-2-3.4-2.4.9a8 8 0 0 0-1.9-1.1L15.6 3h-4l-.4 2.6a8 8 0 0 0-1.9 1.1L6.9 5.8l-2 3.4 2 1.6a8 8 0 0 0 0 2.2l-2 1.6 2 3.4 2.4-.9c.6.5 1.2.8 1.9 1.1l.4 2.6h4l.4-2.6c.7-.3 1.3-.6 1.9-1.1l2.4.9 2-3.4-2-1.6Z"/></svg></button>
+  <section class="screen home" id="scr-home">
+    <header class="hud-top">
+      <button class="profile" id="btnProfile" aria-label="Profil">
+        <span class="pf-av" id="pfAv"></span>
+        <span class="pf-txt"><b id="pfName">Spieler</b><span class="pf-xp"><i id="xpFill"></i><em id="xpTxt">0/120</em></span></span>
+        <span class="pf-lvl"><span id="lvlNum">1</span></span>
+      </button>
+      <span class="grow"></span>
+      <button class="chip coin-chip" id="homeCoins" aria-label="Münzen, zum Shop"><span class="coin"></span><b class="coinNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
+      <button class="chip star-chip" id="homeStars" aria-label="Erfolge"><svg class="ic"><use href="#i-star"/></svg><b id="starNum">0</b></button>
+      <button class="sqbtn" id="btnSettings" aria-label="Einstellungen"><svg><use href="#i-gear"/></svg></button>
     </header>
-    <div class="homegrid">
-      <div class="brand">
-        <h1 class="logo" aria-label="Kopfball Duell"><span class="l1">KOPFBALL</span><span class="l2">DUELL</span></h1>
-        <p class="tag">1 gegen 1. Große Köpfe. Kleine Tore. Kein Erbarmen.</p>
-        <button class="mehead" id="meHead" aria-label="Kopf wählen"><span id="meHeadCv"></span><span class="mehtxt"><small>Dein Kopf</small><b id="meHeadName">Kalle</b></span></button>
+
+    <nav class="sidenav">
+      <button class="navbtn blue" id="navHeads"><svg><use href="#i-swap"/></svg><span>Köpfe</span></button>
+      <button class="navbtn pink" id="navShop"><svg><use href="#i-bag"/></svg><span>Shop</span><i class="badge" id="shopBadge" hidden>!</i></button>
+      <button class="navbtn green" id="navTasks"><svg><use href="#i-tasks"/></svg><span>Aufgaben</span><i class="badge" id="taskBadge" hidden></i></button>
+      <button class="navbtn gold" id="navAch"><svg><use href="#i-trophy"/></svg><span>Erfolge</span></button>
+    </nav>
+
+    <div class="stage">
+      <div class="spot"></div>
+      <canvas id="showcase" aria-label="Dein Kopf"></canvas>
+      <div class="pedestal"></div>
+      <div class="plate">
+        <span class="rarity" id="stRarity">Basis</span>
+        <b id="stName">Kalle</b>
+        <span class="superline"><svg><use href="#i-bolt"/></svg><span id="stSuper">Feuerball</span></span>
       </div>
-      <nav class="mainmenu">
-        <button class="mbtn primary" id="btnPlay"><span class="ic">▶</span><span><b>Schnelles Spiel</b><small>Gegen den Computer</small></span></button>
-        <button class="mbtn cup" id="btnCup"><span class="ic">🏆</span><span><b>Cup</b><small>3 Runden bis zum Pokal</small></span></button>
-        <button class="mbtn online" id="btnOnline"><span class="ic">🌐</span><span><b>Online</b><small>Link an Kumpel schicken</small></span></button>
-        <button class="mbtn" id="btnLocal"><span class="ic">👥</span><span><b>Zu zweit</b><small>An einem Gerät</small></span></button>
-        <div class="row2">
-          <button class="mbtn small" id="btnShop"><span class="ic">🛒</span><b>Shop</b><i class="dot" id="shopDot" hidden></i></button>
-          <button class="mbtn small" id="btnTasks"><span class="ic">📋</span><b>Aufgaben</b><span class="cnt" id="taskCnt"></span></button>
-          <button class="mbtn small" id="btnAch"><span class="ic">⭐</span><b>Erfolge</b><span class="cnt" id="achCnt"></span></button>
-        </div>
-      </nav>
     </div>
+
+    <div class="playzone">
+      <button class="modecard" id="modeCard">
+        <span class="mc-ic" id="mcIcon"><svg><use href="#i-play"/></svg></span>
+        <span class="mc-txt"><small>Modus</small><b id="mcTitle">Schnelles Spiel</b><em id="mcSub">Gegen den Computer</em></span>
+        <span class="mc-chev">Wechseln</span>
+      </button>
+      <button class="btn-play" id="btnPlay"><span>Spielen</span></button>
+    </div>
+  </section>
+
+  <!-- Modus-Auswahl -->
+  <section class="screen sheet" id="scr-modes" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Spielmodus</h2></header>
+    <div class="modegrid" id="modeGrid"></div>
   </section>
 
   <!-- Kopf-Auswahl -->
   <section class="screen" id="scr-select" hidden>
-    <header class="topbar"><button class="back" data-back>‹ Zurück</button><h2 id="selTitle">Wähle deinen Kopf</h2><div class="grow"></div><div class="coins static"><span class="coin"></span><b class="coinNum">0</b></div></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2 id="selTitle">Köpfe</h2><span class="grow"></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
     <div class="selgrid">
-      <div class="chargrid" id="charGrid"></div>
-      <aside class="charinfo">
-        <div class="bigav" id="bigAv"></div>
+      <div class="cardgrid" id="charGrid"></div>
+      <aside class="detail">
+        <div class="det-top" id="detTop"><span class="rarity" id="ciRarity">Basis</span><div class="bigav" id="bigAv"></div></div>
         <h3 id="ciName">Kalle</h3>
-        <div class="superbox"><b id="ciSuper">Feuerball</b><p id="ciDesc"></p></div>
+        <div class="superbox"><svg><use href="#i-bolt"/></svg><div><b id="ciSuper">Feuerball</b><p id="ciDesc"></p></div></div>
         <div class="stats" id="ciStats"></div>
-        <button class="cta" id="btnSelOk">Weiter</button>
+        <button class="btn green" id="btnSelOk">Auswählen</button>
       </aside>
     </div>
   </section>
 
-  <!-- Spiel-Einstellungen -->
+  <!-- Spiel einstellen -->
   <section class="screen" id="scr-setup" hidden>
-    <header class="topbar"><button class="back" data-back>‹ Zurück</button><h2>Arena und Regeln</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2 id="setupTitle">Spiel einstellen</h2></header>
     <div class="setupgrid">
-      <div class="arenas" id="arenaList"></div>
-      <div class="opts">
-        <div class="opt" id="optDiff"><span>Gegner</span><div class="seg" id="segDiff"></div></div>
-        <div class="opt"><span>Spielzeit</span><div class="seg" id="segDur"></div></div>
-        <div class="opt"><span>Power-ups</span><button class="toggle" id="tglPu" aria-pressed="true"></button></div>
-        <div class="opt"><span>Chaos-Modus <small>zufällige Sonderregel</small></span><button class="toggle" id="tglChaos" aria-pressed="false"></button></div>
-        <button class="cta big" id="btnKickoff">Anpfiff!</button>
+      <div class="panel">
+        <h4>Arena</h4>
+        <div class="arenas" id="arenaList"></div>
+      </div>
+      <div class="panel opts">
+        <div class="opt" id="optDiff"><h4>Gegner</h4><div class="seg" id="segDiff"></div></div>
+        <div class="opt" id="optDur"><h4>Spieldauer</h4><div class="seg" id="segDur"></div></div>
+        <div class="opt" id="optRules"><h4>Regeln</h4><button class="rulesbtn" id="btnRules"><svg><use href="#i-sliders"/></svg><span id="rulesSum">Standard</span><em>Anpassen</em></button></div>
+        <button class="btn green big" id="btnKickoff">Anpfiff</button>
       </div>
     </div>
   </section>
 
-  <!-- Cup -->
-  <section class="screen" id="scr-cup" hidden>
-    <header class="topbar"><button class="back" data-back>‹ Cup verlassen</button><h2>Kopfball-Cup</h2></header>
-    <div class="cupwrap">
+  <!-- Regeln -->
+  <section class="screen sheet" id="scr-rules" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Regeln</h2><span class="grow"></span><button class="btn small ghost" id="btnRulesReset">Zurücksetzen</button></header>
+    <div class="presets" id="rulePresets"></div>
+    <div class="rulelist" id="ruleList"></div>
+    <div class="sheetfoot"><button class="btn green big" id="btnRulesDone">Fertig</button></div>
+  </section>
+
+  <!-- Cup / Endlos -->
+  <section class="screen" id="scr-run" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2 id="runTitle">Kopfball-Cup</h2></header>
+    <div class="runwrap">
       <div class="bracket" id="bracket"></div>
-      <p class="cupnote" id="cupNote"></p>
-      <button class="cta big" id="btnCupNext">Nächstes Spiel</button>
+      <p class="runnote" id="runNote"></p>
+      <button class="btn yellow big" id="btnRunNext">Los geht's</button>
     </div>
   </section>
 
   <!-- Online -->
   <section class="screen" id="scr-online" hidden>
-    <header class="topbar"><button class="back" data-back>‹ Zurück</button><h2>Online gegen Kumpel</h2></header>
-    <div class="panel narrow">
-      <label class="field"><span>Dein Name</span><input id="nameIn" maxlength="12" placeholder="z. B. Louis" autocomplete="nickname"></label>
-      <button class="cta big" id="btnHost">Spiel erstellen</button>
-      <div class="or"><span>oder Code eingeben</span></div>
-      <div class="joinrow"><input id="codeIn" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" aria-label="Raumcode"><button class="cta" id="btnJoin">Beitreten</button></div>
-      <p class="note" id="netNote"></p>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Online</h2></header>
+    <div class="onlinegrid">
+      <div class="panel">
+        <h4>Dein Name</h4>
+        <input id="nameIn" maxlength="12" placeholder="z. B. Louis" autocomplete="nickname">
+        <button class="btn purple big" id="btnHost"><svg><use href="#i-plus"/></svg>Raum erstellen</button>
+        <p class="hint">Du bekommst einen Link, den du deinem Kumpel schickst.</p>
+      </div>
+      <div class="panel">
+        <h4>Code von deinem Kumpel</h4>
+        <div class="codebox"><input id="codeIn" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Raumcode"></div>
+        <button class="btn yellow big" id="btnJoin">Beitreten</button>
+        <p class="hint" id="netNote"></p>
+      </div>
     </div>
   </section>
 
   <!-- Lobby -->
   <section class="screen" id="scr-lobby" hidden>
-    <header class="topbar"><button class="back" id="btnLobbyLeave">‹ Verlassen</button><h2>Lobby</h2></header>
+    <header class="bar"><button class="iconback" id="btnLobbyLeave" aria-label="Verlassen"><svg><use href="#i-back"/></svg></button><h2>Lobby</h2></header>
     <div class="lobbygrid">
-      <div class="invite" id="inviteBox">
-        <span class="lab">Raumcode</span>
-        <div class="code" id="lobbyCode">----</div>
+      <div class="panel invite" id="inviteBox">
+        <h4>Raumcode</h4>
+        <div class="bigcode" id="lobbyCode">····</div>
         <div class="qr" id="qrBox"></div>
-        <div class="link" id="lobbyLink"></div>
-        <button class="cta" id="btnShare">Link teilen</button>
+        <div class="row">
+          <button class="btn purple" id="btnShare"><svg><use href="#i-share"/></svg>Link teilen</button>
+          <button class="btn ghost" id="btnCopyLink"><svg><use href="#i-copy"/></svg>Kopieren</button>
+        </div>
+        <div class="linkline" id="lobbyLink"></div>
       </div>
-      <div class="versus">
+      <div class="panel versus">
         <div class="vsrow">
           <div class="vsp p1"><div class="vsav" id="vsAv0"></div><b id="vsName0">Du</b><small id="vsCh0"></small></div>
           <div class="vs">VS</div>
           <div class="vsp p2"><div class="vsav" id="vsAv1"><span class="wait">?</span></div><b id="vsName1">Warte…</b><small id="vsCh1"></small></div>
         </div>
-        <p class="note center" id="lobbyNote">Schick den Link. Sobald dein Kumpel ihn öffnet, ist er hier.</p>
+        <p class="hint center" id="lobbyNote">Schick den Link. Sobald dein Kumpel ihn öffnet, ist er hier.</p>
         <div class="lobbyopts" id="lobbyOpts">
-          <div class="opt"><span>Arena</span><div class="seg wrap" id="segLobbyArena"></div></div>
-          <div class="opt"><span>Spielzeit</span><div class="seg" id="segLobbyDur"></div></div>
-          <div class="opt"><span>Power-ups</span><button class="toggle" id="tglLobbyPu" aria-pressed="true"></button></div>
+          <div class="opt"><h4>Arena</h4><div class="seg wrap" id="segLobbyArena"></div></div>
+          <div class="opt"><h4>Spieldauer</h4><div class="seg" id="segLobbyDur"></div></div>
+          <div class="opt"><h4>Regeln</h4><button class="rulesbtn" id="btnLobbyRules"><svg><use href="#i-sliders"/></svg><span id="lobbyRulesSum">Standard</span><em>Anpassen</em></button></div>
         </div>
         <div class="row">
-          <button class="ghost" id="btnLobbyHead">Kopf wechseln</button>
-          <button class="cta big" id="btnLobbyStart" disabled>Anpfiff!</button>
+          <button class="btn ghost" id="btnLobbyHead"><svg><use href="#i-swap"/></svg>Kopf</button>
+          <button class="btn green big" id="btnLobbyStart" disabled>Anpfiff</button>
         </div>
       </div>
     </div>
@@ -147,70 +224,92 @@
 
   <!-- Shop -->
   <section class="screen" id="scr-shop" hidden>
-    <header class="topbar"><button class="back" data-back>‹ Zurück</button><h2>Shop</h2><div class="grow"></div><div class="coins static"><span class="coin"></span><b class="coinNum">0</b></div></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Shop</h2><span class="grow"></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
+    <div class="deal" id="dealBox"></div>
     <div class="tabs" id="shopTabs"><button data-tab="chars" class="on">Köpfe</button><button data-tab="balls">Bälle</button><button data-tab="arenas">Arenen</button></div>
     <div class="shopgrid" id="shopGrid"></div>
   </section>
 
+  <!-- Aufgaben -->
+  <section class="screen" id="scr-tasks" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Aufgaben</h2></header>
+    <div class="taskwrap">
+      <div class="challenge" id="challengeCard"></div>
+      <div class="panel"><h4>Heute</h4><div class="tasklist" id="taskList"></div><p class="hint">Jeden Tag gibt's drei neue.</p></div>
+    </div>
+  </section>
+
   <!-- Erfolge -->
   <section class="screen" id="scr-ach" hidden>
-    <header class="topbar"><button class="back" data-back>‹ Zurück</button><h2>Erfolge</h2><div class="grow"></div><span class="pill" id="achSum"></span></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Erfolge</h2><span class="grow"></span><span class="chip static"><svg class="ic"><use href="#i-star"/></svg><b id="achSum">0</b></span></header>
+    <div class="profilebox" id="profileBox"></div>
     <div class="achlist" id="achList"></div>
   </section>
 
   <!-- Einstellungen -->
   <section class="screen" id="scr-settings" hidden>
-    <header class="topbar"><button class="back" data-back>‹ Zurück</button><h2>Einstellungen</h2></header>
-    <div class="panel narrow">
-      <div class="opt"><span>Soundeffekte</span><button class="toggle" id="tglSfx"></button></div>
-      <div class="opt"><span>Musik im Menü</span><button class="toggle" id="tglMusic"></button></div>
-      <div class="opt"><span>Vibration</span><button class="toggle" id="tglVib"></button></div>
-      <div class="opt"><span>Grafik</span><div class="seg" id="segQual"></div></div>
-      <div class="opt"><span>Vollbild</span><button class="ghost" id="btnFull">Umschalten</button></div>
-      <h4>Steuerung</h4>
-      <table class="keys">
-        <tr><th></th><th>Laufen</th><th>Springen</th><th>Schuss</th><th>Super</th></tr>
-        <tr><td>Spieler 1</td><td>A D</td><td>W</td><td>S / Leertaste</td><td>E / Shift</td></tr>
-        <tr><td>Spieler 2</td><td>← →</td><td>↑</td><td>↓ / Enter</td><td>. / Shift rechts</td></tr>
-        <tr><td>Controller</td><td>Stick</td><td>A</td><td>X / B</td><td>Y / RB</td></tr>
-        <tr><td>Touch</td><td>links ziehen</td><td>hoch wischen</td><td>Schuss</td><td>Super</td></tr>
-      </table>
-      <p class="note">Schuss antippen = flacher Schuss. Gedrückt halten lädt auf, beim Loslassen fliegt der Ball härter und höher. Super lädt sich durch Ballkontakte. Emotes mit 1 bis 6.</p>
-      <button class="ghost danger" id="btnReset">Fortschritt löschen</button>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Einstellungen</h2></header>
+    <div class="settingsgrid">
+      <div class="panel">
+        <h4>Spieler</h4>
+        <input id="setName" maxlength="12" placeholder="Dein Name" autocomplete="nickname">
+        <div class="setrow"><svg><use href="#i-sound"/></svg><span>Soundeffekte</span><button class="toggle" id="tglSfx" aria-label="Soundeffekte"></button></div>
+        <div class="setrow"><svg><use href="#i-music"/></svg><span>Musik im Menü</span><button class="toggle" id="tglMusic" aria-label="Musik"></button></div>
+        <div class="setrow"><svg><use href="#i-vib"/></svg><span>Vibration</span><button class="toggle" id="tglVib" aria-label="Vibration"></button></div>
+        <div class="setrow"><svg><use href="#i-stadium"/></svg><span>Grafik</span><div class="seg" id="segQual"></div></div>
+        <div class="setrow"><svg><use href="#i-expand"/></svg><span>Vollbild</span><button class="btn small ghost" id="btnFull">Umschalten</button></div>
+      </div>
+      <div class="panel">
+        <h4>Steuerung</h4>
+        <table class="keys">
+          <tr><th></th><th>Laufen</th><th>Springen</th><th>Schuss</th><th>Super</th></tr>
+          <tr><td>Spieler 1</td><td><kbd>A</kbd><kbd>D</kbd></td><td><kbd>W</kbd></td><td><kbd>S</kbd> <kbd>Leer</kbd></td><td><kbd>E</kbd></td></tr>
+          <tr><td>Spieler 2</td><td><kbd>←</kbd><kbd>→</kbd></td><td><kbd>↑</kbd></td><td><kbd>↓</kbd> <kbd>Enter</kbd></td><td><kbd>.</kbd></td></tr>
+          <tr><td>Controller</td><td>Stick</td><td>A</td><td>X / B</td><td>Y / RB</td></tr>
+          <tr><td>Touch</td><td>links ziehen</td><td>hoch wischen</td><td>Schuss</td><td>Super</td></tr>
+        </table>
+        <p class="hint">Schuss antippen: flach. Halten und loslassen: härter und höher. Am meisten Wumms, wenn der Ball sauber den Fuß trifft. Emotes mit 1 bis 6.</p>
+        <button class="btn small danger" id="btnReset">Fortschritt löschen</button>
+      </div>
     </div>
   </section>
 
   <!-- Ergebnis -->
   <section class="screen overlay" id="scr-end" hidden>
     <div class="endcard">
-      <div class="endhead"><div id="endAv"></div><div><h2 id="endTitle">Gewonnen!</h2><p id="endScore" class="endscore"></p></div></div>
+      <div class="ribbon" id="endTitle">Sieg!</div>
+      <div class="endscore">
+        <div class="es p1"><div id="endAv0"></div><b id="endN0">Du</b></div>
+        <div class="es-num"><span id="endS0">0</span><i>:</i><span id="endS1">0</span></div>
+        <div class="es p2"><div id="endAv1"></div><b id="endN1">CPU</b></div>
+      </div>
       <div class="endstats" id="endStats"></div>
       <div class="rewards" id="endRewards"></div>
-      <p class="note center" id="endNote"></p>
+      <p class="hint center" id="endNote"></p>
       <div class="row">
-        <button class="ghost" id="btnEndMenu">Menü</button>
-        <button class="ghost" id="btnEndShare">Teilen</button>
-        <button class="cta big" id="btnEndAgain">Revanche</button>
+        <button class="btn ghost" id="btnEndMenu">Menü</button>
+        <button class="btn ghost" id="btnEndShare"><svg><use href="#i-share"/></svg>Teilen</button>
+        <button class="btn yellow big" id="btnEndAgain">Revanche</button>
       </div>
     </div>
   </section>
 
   <!-- Pause -->
   <section class="screen overlay" id="scr-pause" hidden>
-    <div class="panel narrow center">
-      <h2>Pause</h2>
-      <button class="cta big" id="btnResume">Weiter</button>
-      <button class="ghost" id="btnRestart">Neu starten</button>
-      <button class="ghost" id="btnQuit">Aufgeben</button>
+    <div class="pausecard">
+      <div class="ribbon blue">Pause</div>
+      <button class="btn green big" id="btnResume"><svg><use href="#i-play"/></svg>Weiter</button>
+      <button class="btn ghost" id="btnRestart">Neu starten</button>
+      <button class="btn ghost danger" id="btnQuit">Aufgeben</button>
     </div>
   </section>
 </main>
 
 <div id="toasts"></div>
 <div id="modal" hidden><div class="modalcard" id="modalCard"></div></div>
-<div id="rotate" hidden><div class="phone"></div><b>Dreh dein Handy</b><span>Querformat spielt sich viel besser.</span></div>
-<div id="loading"><div class="ball"></div></div>
+<div id="rotate" hidden><div class="phone"></div><b>Handy drehen</b><span>Quer spielt es sich viel besser.</span></div>
+<div id="loading"><b class="ld-logo">Kopfball<br>Duell</b><div class="ball"></div></div>
 
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>
