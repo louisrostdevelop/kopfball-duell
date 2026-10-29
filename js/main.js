@@ -100,8 +100,8 @@ function beginMatch(cfg) {
 
 function tutorial() {
   const lines = I.isTouch
-    ? ["Links ziehen = laufen, hoch wischen = springen", "Schuss halten = Powerschuss", "Leiste voll? SUPER drücken!"]
-    : ["A/D laufen · W springen · S schießen", "Schuss halten = Powerschuss", "Leiste voll? E für deinen Super!"];
+    ? ["Links ziehen = laufen, hoch wischen = springen", "Schuss halten = aufladen, loslassen = Powerschuss nach oben", "Leiste voll? SUPER drücken!"]
+    : ["A/D laufen · W springen · S schießen", "Leertaste halten = aufladen, loslassen = Powerschuss nach oben", "Leiste voll? E für deinen Super!"];
   lines.forEach((t, n) => setTimeout(() => toast(t), 300 + n * 1400));
 }
 

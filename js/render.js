@@ -31,16 +31,12 @@ export function resize() {
   cw = vw; ch = vh;
   cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
   cv.style.width = vw + "px"; cv.style.height = vh + "px";
-  // Feld so groß wie möglich: Breite füllen, notfalls etwas vom Himmel abschneiden
-  const sFit = Math.min(vw / W, vh / H);
-  const sW = vw / W;
-  // Auf flachen Handybildschirmen: Feld nutzt die volle Breite, oben wird Himmel abgeschnitten (bis 22 %)
-  let s = sFit;
-  if (sW > sFit && vh / (sW * H) > 0.78) s = sW;
+  // Feld so groß wie möglich: volle Breite, oben darf Himmel/Tribüne wegfallen (bis 34 %).
+  // Fliegt der Ball darüber hinaus, zeigt ein Pfeil, wo er ist.
+  const s = Math.min(vw / W, vh / (H * 0.66));
   base.s = s;
   base.ox = (vw - W * s) / 2;
-  // Boden unten verankern
-  base.oy = vh - H * s;
+  base.oy = vh - H * s; // Boden unten verankern
   if (base.oy > 0) base.oy = (vh - H * s) * 0.55;
   bgKey = "";
 }
@@ -682,7 +678,7 @@ function drawCallouts(dt) {
     const k = c.t / c.dur;
     const pop = c.t < 0.18 ? 0.4 + (c.t / 0.18) * 0.8 : c.t < 0.3 ? 1.2 - (c.t - 0.18) / 0.12 * 0.2 : 1;
     const a = k > 0.8 ? (1 - k) / 0.2 : 1;
-    const y = 250 - i * 0;
+    const y = Math.max(0, -base.oy / base.s) + 200;
     ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, y); ctx.scale(pop * c.size, pop * c.size); ctx.transform(1, 0, -0.18, 1, 0, 0);
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.font = "92px Bungee, Impact, sans-serif";
@@ -810,7 +806,7 @@ export function render(st, t, opts) {
     const lab = st.ph === "ko" ? "WEITER!" : st.gold && st.pt > 0.25 ? "GOLDEN GOAL" : n;
     if (lab) {
       const f = st.ph === "ko" ? 1 : (st.pt % 1);
-      ctx.save(); ctx.translate(W / 2, Math.max(0, -base.oy / base.s) + 330); const sc = 0.8 + f * 0.5; ctx.scale(sc, sc); ctx.transform(1, 0, -0.15, 1, 0, 0);
+      ctx.save(); ctx.translate(W / 2, Math.max(0, -base.oy / base.s) + 225); const sc = 0.8 + f * 0.5; ctx.scale(sc, sc); ctx.transform(1, 0, -0.15, 1, 0, 0);
       ctx.font = (lab.length > 2 ? 70 : 140) + "px Bungee, Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
       ctx.lineWidth = 28; ctx.strokeStyle = "#fff"; ctx.strokeText(lab, 0, 0); ctx.lineWidth = 16; ctx.strokeStyle = INK; ctx.strokeText(lab, 0, 0);
       ctx.fillStyle = st.gold ? COL.gold : "#fff"; ctx.fillText(lab, 0, 0);

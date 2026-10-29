@@ -20,14 +20,14 @@ export function newMatch(o) {
 const mkStats = () => ({ shots: 0, heads: 0, goals: 0, supers: 0, pus: 0, stomps: 0, headGoals: 0, superGoals: 0, longGoals: 0, lastSecGoals: 0, ownGoals: 0, maxTrail: 0 });
 function mkPlayer(i, ch) {
   return {
-    i, ch, x: i ? W - 360 : 360, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
+    i, ch, x: i ? W - 320 : 320, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
     kick: 0, kHit: false, kHeld: false, kPow: 1, chT: 0, charge: 0, lastJ: false, lastS: false,
     meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false,
     hc: 0, sc2: 0, mood: "", moodT: 0, emo: "", emoT: 0, land: 0,
   };
 }
 function mkBall(st) {
-  return { x: W / 2, y: 170, vx: rand(-40, 40), vy: 0, r: baseBR(st), a: 0, av: 0, fx: "", fxT: 0, fxO: -1, fxP: 0, fxK: 0, fxBX: 0, fxBY: 0, fxDX: 0, fxDY: 0, alpha: 1, grow: 1, lt: -1, ltk: "", ltx: 0, held: 0 };
+  return { x: W / 2, y: 265, vx: rand(-40, 40), vy: 0, r: baseBR(st), a: 0, av: 0, fx: "", fxT: 0, fxO: -1, fxP: 0, fxK: 0, fxBX: 0, fxBY: 0, fxDX: 0, fxDY: 0, alpha: 1, grow: 1, lt: -1, ltk: "", ltx: 0, held: 0 };
 }
 const baseBR = st => BR * (st.mod === "bigball" ? 1.55 : 1);
 export const gMul = st => arenaById(st.arena).g * (st.mod === "lowgrav" ? 0.55 : 1);
@@ -172,19 +172,19 @@ function onBar(st, p) {
 }
 
 function handleKick(st, p, c, dt) {
+  // Drücken = ausholen (und aufladen, solange gehalten), Loslassen = schießen.
   const can = p.frz <= 0 && p.stun <= 0;
   if (p.kick > 0) p.kick = Math.max(0, p.kick - dt);
   if (can && c.k && !p.kHeld) {
     p.kHeld = true; p.chT = 0; p.charge = 0;
-    if (p.kick <= 0.06) { p.kick = 0.24; p.kHit = false; p.kPow = 1; ev(st, { t: "swing", i: p.i }); }
   } else if (c.k && p.kHeld && can) {
     p.chT += dt;
     const before = p.charge;
-    p.charge = clamp((p.chT - 0.18) / 0.55, 0, 1);
+    p.charge = clamp((p.chT - 0.12) / 0.6, 0, 1);
     if (before < 1 && p.charge >= 1) ev(st, { t: "charged", i: p.i });
   } else if (!c.k && p.kHeld) {
     p.kHeld = false;
-    if (p.charge > 0.12 && can) { p.kick = 0.24; p.kHit = false; p.kPow = 1 + p.charge * 0.75; ev(st, { t: "swing", i: p.i, pow: p.kPow }); }
+    if (can) { p.kick = 0.24; p.kHit = false; p.kPow = 1 + p.charge * 0.75; ev(st, { t: "swing", i: p.i, pow: p.kPow }); }
     p.charge = 0; p.chT = 0;
   }
   if (!can) { p.kHeld = false; p.charge = 0; }
@@ -222,7 +222,7 @@ function playerVsPlayer(st) {
 }
 
 // Ball
-function maxBall(st) { return 1250 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1); }
+function maxBall(st) { return 1500 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1); }
 
 function ballPhysics(st, dt, postGoal) {
   const b = st.b, ar = arenaById(st.arena);
@@ -242,7 +242,8 @@ function ballPhysics(st, dt, postGoal) {
     st.p.forEach(p => ballVsPlayer(st, b, p, dt));
   }
   // Boden
-  if (b.y + b.r > G) {
+  if (b.y + b.r > G && b.vy < 0) b.y = G - b.r; // gerade weggeschossen: nur aus dem Boden heben
+  if (b.y + b.r > G && b.vy >= 0) {
     const imp = b.vy;
     b.y = G - b.r;
     const bounce = b.fx === "bouncy" ? 1.06 : ar.bounce;
@@ -358,13 +359,14 @@ function ballVsPlayer(st, b, p, dt) {
     if (Math.hypot(b.x - fx, b.y - fy) < reach && (b.x - p.x) * p.dir > -18 * KS * p.sc) {
       p.kHit = true;
       if (!touch(st, b, p, "kick")) return;
-      const pow = ch.pow * p.kPow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
-      const air = !p.onG;
-      const high = b.y < p.y;
-      b.vx = p.dir * (660 + 300 * (pow - 1) + 300 * (p.kPow - 1)) * pow + p.vx * 0.2;
-      b.vy = air ? (high ? -260 : -400) : high ? -680 : -600;
-      b.vy *= 0.9 + (p.kPow - 1) * 0.25;
-      if (p.kPow > 1.3) b.vy *= 0.8;
+      // aufgeladen (c = 0..1): härter UND deutlich höher
+      const c = (p.kPow - 1) / 0.75;
+      const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
+      const air = !p.onG, high = b.y < p.y;
+      const vx = (680 + 300 * (ch.pow - 1)) * pm + 360 * c;
+      const vy = (air ? (high ? -260 : -400) : high ? -660 : -580) - 560 * c;
+      b.vx = p.dir * vx + p.vx * 0.2;
+      b.vy = vy;
       b.held = 0.05;
       st.stats[p.i].shots++;
       addMeter(st, p, 6 * (st.mod === "superfast" ? 2 : 1));
@@ -487,7 +489,7 @@ function powerups(st, dt) {
   if (st.puT <= 0 && st.pu.length < 2) {
     st.puT = st.mod === "pu2" ? rand(3, 5) : rand(7, 11);
     const k = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
-    st.pu.push({ id: st.puId++, k, x: rand(330, W - 330), y: rand(150, 300), t: 0 });
+    st.pu.push({ id: st.puId++, k, x: rand(300, W - 300), y: rand(250, 360), t: 0 });
     ev(st, { t: "puSpawn" });
   }
   const b = st.b;
