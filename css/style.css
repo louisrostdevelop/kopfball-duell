@@ -40,7 +40,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outl
 .topbar { display: flex; align-items: center; gap: 12px; min-height: 48px; margin-bottom: 12px; }
 .topbar h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(20px, 3.4vw, 30px); letter-spacing: .01em; }
 .grow { flex: 1; }
-.back { background: none; border: 0; font-size: 20px; font-weight: 700; color: var(--muted); padding: 8px 6px; }
+.back { white-space: nowrap; background: none; border: 0; font-size: 20px; font-weight: 700; color: var(--muted); padding: 8px 6px; }
 .back:hover { color: var(--chalk); }
 
 /* Level & Münzen */
@@ -351,6 +351,22 @@ input { font: inherit; font-size: 22px; font-weight: 700; background: #060c24; c
   .selgrid, .setupgrid, .lobbygrid { grid-template-columns: 1fr; }
   .charinfo { position: static; }
   .bracket { grid-template-columns: 1fr 1fr; }
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  .mainmenu { padding: 0 8px; }
+  .mbtn { transform: skewX(-4deg); }
+  .mbtn > * { transform: skewX(4deg); }
+  .mbtn:hover { transform: skewX(-4deg) translateY(-2px); }
+  .mbtn:active { transform: skewX(-4deg) translateY(4px); }
+  .row2 .mbtn { flex-direction: column; gap: 2px; padding: 6px 4px; text-align: center; }
+  .row2 .mbtn b { font-size: 14px; }
+  .row2 .mbtn .cnt { margin: 0; }
+  .opt { flex-wrap: wrap; }
+  .seg button { padding: 7px 9px; }
+  .lvl .xpbar { width: 60px; }
+  .arenas { grid-template-columns: 1fr 1fr; }
+  .atile .cap small { display: none; }
+  .topbar h2 { font-size: 20px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .screen { padding-top: calc(6px + var(--st)); }

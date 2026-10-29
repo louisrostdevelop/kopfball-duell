@@ -12,6 +12,7 @@ import { S, save, reset as resetSave, addXP, addCoins, xpFor, owns, buy, dailyCh
 const $ = id => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const VERSION = 2;
+const PHRASES = ["WAS FÜR EIN DING!", "UNHALTBAR!", "DRIN DAS DING!", "DER SASS!", "EISKALT!", "SAUBER!", "KEINE CHANCE!", "WIE GEMALT!"];
 const CELEB = { kalle: "🔥", yuki: "❄️", bolt: "⚡", rocco: "🚀", nala: "🍌", flummi: "🎈", phantom: "👻", tank: "💪", tina: "🌪️", magnus: "🧲", max: "☄️", kaiser: "👑" };
 
 const App = {
@@ -65,7 +66,8 @@ function startDemo() {
   const a = pool[Math.floor(Math.random() * pool.length)];
   let b = pool[Math.floor(Math.random() * pool.length)]; if (b === a) b = pool[(pool.indexOf(a) + 3) % pool.length];
   App.mode = "demo";
-  App.st = newMatch({ chars: [a, b], arena: S.arena || "stadion", dur: 600, pus: true, golden: false });
+  const ar = ARENAS[Math.floor(Math.random() * ARENAS.length)].id;
+  App.st = newMatch({ chars: [a, b], arena: ar, dur: 600, pus: true, golden: false });
   App.st.ph = "play";
   App.ai = [makeAI(0, 2), makeAI(1, 2)];
   App.names = ["", ""]; App.labels = [null, null]; App.ball = S.ball;
@@ -120,9 +122,15 @@ function quitToMenu() {
 }
 
 // ---------- Schleife ----------
-let lastT = performance.now(), simT = 0;
+let lastT = performance.now(), simT = 0, perf = { t: 0, n: 0, slow: 0 };
 function loop(now) {
-  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; simT += dt;
+  const raw = (now - lastT) / 1000;
+  const dt = Math.min(0.05, raw); lastT = now; simT += dt;
+  // Läuft es ruckelig? Dann automatisch auf schnelle Grafik umschalten
+  if (S.quality === "high" && inGame() && raw < 0.5) {
+    perf.t += raw; perf.n++;
+    if (perf.t > 3) { if (perf.n / perf.t < 42) { perf.slow++; if (perf.slow >= 2) { S.quality = "low"; save(); setQuality("low"); toast("Grafik auf „Schnell“ gestellt, damit es flüssig läuft"); } } else perf.slow = 0; perf.t = 0; perf.n = 0; }
+  }
   I.pollPads();
   const st = App.st;
   const rotated = I.isTouch && window.innerHeight > window.innerWidth && inGame();
@@ -246,7 +254,7 @@ function onGoal(e) {
   if (scorer === 3 && e.kind !== "own") sub = "HATTRICK!";
   else if (e.s[0] === e.s[1]) sub = "AUSGLEICH!";
   else if (Math.abs(e.s[0] - e.s[1]) === 1 && e.s[e.i] > e.s[1 - e.i]) sub = "FÜHRUNG!";
-  else sub = (App.names[e.i] || "").toUpperCase();
+  else sub = Math.random() < 0.5 ? (App.names[e.i] || "").toUpperCase() : PHRASES[Math.floor(Math.random() * PHRASES.length)];
   if (!demo) fx.callout(text, col, sub, 1.9, text.length > 9 ? 0.82 : 1);
   // Jubel: Torschütze zeigt sein Zeichen, CPU ärgert sich
   if (App.mode !== "guest" && e.kind !== "own") {

@@ -262,6 +262,8 @@ function ballPhysics(st, dt, postGoal) {
     const x0 = side ? W - GOAL_W : 0, x1 = side ? W : GOAL_W;
     if (collideRect(b, x0, x1, by - BAR_T / 2, by + BAR_T / 2, 1.6)) {
       if (Math.hypot(b.vx, b.vy) > 200) ev(st, { t: "post", x: b.x, y: by });
+      // Ball liegt auf der Latte: sanft zurück ins Feld rollen lassen
+      if (b.y < by && Math.abs(b.vy) < 90) b.vx += (side ? -1 : 1) * 40;
       if (b.fx && b.fx !== "bouncy" && b.fx !== "giant") endFx(st);
     }
     // Pfosten vorne (dünn)

@@ -166,6 +166,7 @@ function buildBg(arena) {
   const R = { x0, x1, y0, y1 };
   ({ stadion: bgStadion, strand: bgStrand, neon: bgNeon, eis: bgEis, mond: bgMond }[arena] || bgStadion)(b, R);
   crowdPeople = makeCrowd(arena, R);
+  if (quality !== "high") { const keep = ctx; ctx = b; drawCrowdPeople(0, 0); ctx = keep; }
 }
 
 function turf(b, R, c1, c2, lines = true) {
@@ -346,6 +347,10 @@ function makeCrowd(arena, R) {
 function drawCrowd(t) {
   if (!crowdPeople) return;
   const hype = crowdHype;
+  if (quality === "high") drawCrowdPeople(t, hype);
+  crowdFx(hype);
+}
+function drawCrowdPeople(t, hype) {
   for (const p of crowdPeople) {
     const j = Math.max(0, Math.sin(t * (6 + hype * 6) + p.ph)) * (1.5 + hype * 9) * p.s;
     const y = p.y - j;
@@ -353,6 +358,9 @@ function drawCrowd(t) {
     ctx.fillStyle = p.skin || "#f2c79b"; ctx.beginPath(); ctx.arc(p.x, y - 7 * p.s, 5.5 * p.s, 0, TAU); ctx.fill();
     if (hype > 0.4 && Math.sin(p.ph * 3) > 0.2) { ctx.fillStyle = p.c; ctx.fillRect(p.x - 9 * p.s, y - 16 * p.s - j * 0.5, 3 * p.s, 10 * p.s); ctx.fillRect(p.x + 6 * p.s, y - 16 * p.s - j * 0.5, 3 * p.s, 10 * p.s); }
   }
+}
+function crowdFx(hype) {
+  if (crowdPeople.length < 100) return;
   // Tribüne abdunkeln, damit das Feld heraussticht
   const dk = ctx.createLinearGradient(0, 60, 0, FT - 40);
   dk.addColorStop(0, "rgba(5,10,30,.55)"); dk.addColorStop(1, "rgba(5,10,30,.18)");
