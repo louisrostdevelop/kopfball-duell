@@ -10,11 +10,11 @@ export class ServerError extends Error {
  * @param {{ url: string, anonKey: string, storage?: Storage, fetch?: typeof fetch, schema?: string, captcha?: () => Promise<string> }} o
  *   captcha: liefert ein Captcha-Token für die Gast-Anmeldung (nur nötig, wenn im Projekt eingeschaltet)
  */
-export function createClient({ url, anonKey, storage = globalThis.localStorage, fetch: f = globalThis.fetch.bind(globalThis), schema = "api", captcha = null }) {
+export function createClient({ url, anonKey, storage = globalThis.localStorage, fetch: f = globalThis.fetch.bind(globalThis), schema = "api", captcha = null, sessionKey = KEY }) {
   url = url.replace(/\/+$/, "");
   let session = null, refreshing = null; const subs = [];
-  try { session = JSON.parse(storage.getItem(KEY) || "null"); } catch (_) {}
-  const keep = s => { session = s; try { s ? storage.setItem(KEY, JSON.stringify(s)) : storage.removeItem(KEY); } catch (_) {} subs.forEach(cb => cb(s && s.user)); };
+  try { session = JSON.parse(storage.getItem(sessionKey) || "null"); } catch (_) {}
+  const keep = s => { session = s; try { s ? storage.setItem(sessionKey, JSON.stringify(s)) : storage.removeItem(sessionKey); } catch (_) {} subs.forEach(cb => cb(s && s.user)); };
   const fromAuth = d => ({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: d.expires_at || Math.floor(Date.now() / 1000) + (d.expires_in || 3600), user: d.user });
 
   async function call(path, { method = "POST", body, token, headers = {}, timeout = 12000 } = {}) {
@@ -70,10 +70,27 @@ export function createClient({ url, anonKey, storage = globalThis.localStorage, 
     user: () => session && session.user,
     onAuthChange(cb) { subs.push(cb); },
     /** Gast behält ID und Spielstand: E-Mail (und Passwort) hinzufügen. Supabase schickt eine Bestätigungs-Mail. */
-    async linkEmail(email, password) {
+    async linkEmail(email, password, redirectTo) {
       const s = await ensureSession();
-      const u = await call("/auth/v1/user", { method: "PUT", token: s.access_token, body: password ? { email, password } : { email } });
+      const u = await call("/auth/v1/user" + (redirectTo ? "?redirect_to=" + encodeURIComponent(redirectTo) : ""), { method: "PUT", token: s.access_token, body: password ? { email, password } : { email } });
       keep({ ...session, user: u }); return u;
+    },
+    /** Passwort setzen oder ändern (nach bestätigter E-Mail), damit man sich auf anderen Geräten anmelden kann */
+    async setPassword(password) {
+      const s = await ensureSession();
+      const u = await call("/auth/v1/user", { method: "PUT", token: s.access_token, body: { password } });
+      keep({ ...session, user: u }); return u;
+    },
+    /** Rückkehr aus der Bestätigungs-Mail: Supabase hängt die neue Sitzung an die Adresse (#access_token=...).
+     *  Gibt "ok", einen Fehlertext oder null (nichts da) zurück. */
+    async takeRedirect(hash) {
+      const q = new URLSearchParams(String(hash || "").replace(/^#/, ""));
+      if (q.get("error_description") || q.get("error")) return q.get("error_description") || q.get("error");
+      if (!q.get("access_token") || !q.get("refresh_token")) return null;
+      const access_token = q.get("access_token");
+      const user = await call("/auth/v1/user", { method: "GET", token: access_token });
+      keep({ access_token, refresh_token: q.get("refresh_token"), expires_at: Number(q.get("expires_at")) || Math.floor(Date.now() / 1000) + Number(q.get("expires_in") || 3600), user });
+      return "ok";
     },
     async signIn(email, password) { keep(fromAuth(await call("/auth/v1/token?grant_type=password", { body: { email, password } }))); return session.user; },
     async signOut() { const s = session; keep(null); if (s) await call("/auth/v1/logout", { token: s.access_token }).catch(() => {}); },

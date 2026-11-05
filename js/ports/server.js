@@ -15,5 +15,11 @@
  * @property {() => Promise<object[]>} shop                             Echtgeld-Produkte
  * @property {(product: string) => Promise<string>} checkout            URL zur Bezahlseite
  * @property {() => Promise<number>} flush                              noch nicht gesendete Meldungen nachschicken
+ * @property {(item: string) => Promise<object>} [upgradeHead]
+ * @property {(mode: "casual"|"ranked", head: string) => Promise<object>} queueJoin   in die Warteschlange
+ * @property {() => Promise<{ matched: boolean, waited?: number, match?: string, role?: "host"|"guest", opponent?: object }>} queuePoll
+ * @property {() => Promise<object>} queueLeave
+ * @property {(match: string, r: { score: number[], duration: number }) => Promise<{ status: string, result?: object }>} reportOnline
+ * @property {(match: string) => Promise<{ status: string, result?: object }>} matchStatus
  */
 export {};

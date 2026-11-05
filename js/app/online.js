@@ -150,7 +150,9 @@ export function guestData(d) {
   switch (d.t) {
     case "welcome":
       if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote("Ihr habt verschiedene Spielversionen. Bitte beide die Seite neu laden.", true); break; }
-      App.opp = { name: (d.name || "Gastgeber").slice(0, 12), ch: charById(d.ch).id }; App.netCfg = d.cfg; lobbyUI("guest"); showScreen("lobby"); A.sfx("coin"); break;
+      App.opp = { name: (d.name || "Gastgeber").slice(0, 12), ch: charById(d.ch).id }; App.netCfg = d.cfg; lobbyUI("guest");
+      if (!App.mm) showScreen("lobby");   // Gegnersuche: keine Lobby, der Host pfeift gleich an
+      A.sfx("coin"); break;
     case "cfg": App.netCfg = d.cfg; lobbyUI("guest"); break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("guest"); } break;
     case "full": Net.close(); showScreen("online"); netNote("Der Raum ist schon voll.", true); break;
@@ -161,7 +163,7 @@ export function guestData(d) {
       if (App.snaps.length > 12) App.snaps.shift();
       if (Array.isArray(d.ev)) d.ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); onEvent(e, true); });
       break;
-    case "lobby": backToLobby(); break;
+    case "lobby": if (!App.mm) backToLobby(); break;
     case "pong": App.rtt = performance.now() - d.c; break;
   }
 }

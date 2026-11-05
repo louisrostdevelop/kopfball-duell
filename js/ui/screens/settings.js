@@ -6,12 +6,14 @@ import { audio as A, input as I } from "../../app/services.js";
 import { registerScreen } from "../nav.js";
 import { saveName } from "./online.js";
 import { refreshTop } from "./home.js";
+import { accountUI } from "./account.js";
 
 export function settingsScreen() {
   $("setName").value = S.name || "";
   toggle($("tglSfx"), S.sfx, v => { S.sfx = v; A.setSfx(v); save(); });
   toggle($("tglMusic"), S.music, v => { S.music = v; A.setMusic(v); save(); });
   toggle($("tglVib"), S.vib, v => { S.vib = v; I.setVibration(v); save(); });
+  accountUI();
   seg($("segQual"), [{ v: "high", t: "Hoch" }, { v: "low", t: "Schnell" }], S.quality, v => { S.quality = v; setQuality(v); save(); });
 }
 

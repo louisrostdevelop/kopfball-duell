@@ -5,10 +5,9 @@
 // tests/sim/catalog.test.mjs prüft, dass sie aktuell ist. Auf dem Server einspielen: siehe docs/BACKEND.md.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf } from "../js/content/config.js";
+import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE } from "../js/content/config.js";
 import { TASKS } from "../js/core/economy.js";
 
-const GEMS_BY_RARITY = { basis: null, selten: 300, episch: 450, legend: 600 };
 // Echtgeld-Produkte (Startwerte aus dem Spielkonzept)
 export const PRODUCTS = [
   { id: "gems_100", gems: 100, price: 99 },
@@ -24,7 +23,7 @@ const arr = a => "array[" + a.map(q).join(", ") + "]::text[]";
 
 export function catalogSql() {
   const items = [
-    ...CHARS.map(c => ({ id: "head:" + c.id, kind: "head", rarity: rarityOf(c), coins: c.price, gems: GEMS_BY_RARITY[rarityOf(c)], meta: { name: c.name, super: c.super } })),
+    ...CHARS.map(c => ({ id: "head:" + c.id, kind: "head", rarity: rarityOf(c), coins: c.price, gems: GEM_PRICE[rarityOf(c)], meta: { name: c.name, super: c.super } })),
     ...BALLS.map(b => ({ id: "ball:" + b.id, kind: "ball", rarity: rarityOf(b), coins: b.price, gems: null, meta: { name: b.name } })),
     ...ARENAS.map(a => ({ id: "arena:" + a.id, kind: "arena", rarity: rarityOf(a), coins: a.price, gems: null, meta: { name: a.name } })),
   ];

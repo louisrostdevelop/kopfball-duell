@@ -52,6 +52,11 @@ Ist in `js/content/backend.js` ein Supabase-Projekt eingetragen, steckt `main.js
 vom Server ins Profil: Käufe, Tagesbonus und Spielmeldungen gehen an den Server, die Anzeige rechnet lokal vor
 und übernimmt danach die Server-Zahlen. Ohne Eintrag läuft alles lokal wie bisher. Backend: `docs/BACKEND.md`.
 
+Mit Server zusätzlich: Juwelen und Echtgeld-Shop (`ui/screens/shop.js`), Konto sichern und anmelden
+(`ui/screens/account.js`), Gegnersuche Casual/Ranked (`app/matchmaking.js`, `ui/screens/search.js`). Der Server
+paart, verbunden wird per PeerJS mit festem Raumnamen aus der Spiel-ID; beide melden das Ergebnis, gewertet wird
+nur bei gleicher Meldung.
+
 ## Spiellogik (`js/core/sim/`)
 
 `core/physics.js` ist die öffentliche Schnittstelle, die Logik steckt in 13 Modulen ohne Zyklen:

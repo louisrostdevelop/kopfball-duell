@@ -39,6 +39,7 @@ export function showEnd(r) {
     case "daily": again.textContent = "Nochmal"; break;
     default: again.textContent = "Revanche";
   }
+  if (App.mm) { again.textContent = "Nächster Gegner"; menu.textContent = "Menü"; note.textContent = App.mm.mode === "ranked" ? "Wertung wird gebucht…" : "Ergebnis wird gebucht…"; }
   showScreen("end");
 }
 

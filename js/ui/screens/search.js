@@ -1,0 +1,37 @@
+// Gegnersuche (Casual / Ranked): Wartezeit, Gegner gefunden, Verbindungsaufbau
+import { avatarCanvas } from "../render/art.js";
+import { $ } from "../dom.js";
+import { goBack, registerScreen } from "../nav.js";
+import { S } from "../../app/profile.js";
+import { App } from "../../app/state.js";
+import { cancelSearch, league } from "../../app/matchmaking.js";
+import { serverState } from "../../app/account.js";
+
+let clock = null;
+const mmss = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+
+export function searchUI(mm) {
+  if (!mm) return;
+  $("srTitle").textContent = mm.mode === "ranked" ? "Ranked" : "Casual";
+  const av = $("srAv"); if (!av.firstChild) av.append(avatarCanvas(S.char, 120));
+  const rating = serverState() && serverState().season && serverState().season.rating;
+  $("srMe").textContent = (S.name || "Du") + (mm.mode === "ranked" ? " · " + league(rating ? rating.mmr : 1000) + " " + (rating ? rating.mmr : 1000) : "");
+  const st = $("srState"), opp = $("srOpp");
+  if (mm.state === "search") {
+    st.textContent = "Suche Gegner…"; opp.textContent = "";
+    $("scr-search").classList.remove("found");
+    clearInterval(clock); clock = setInterval(() => { if (App.mm && App.mm.state === "search") $("srTime").textContent = mmss((Date.now() - App.mm.t0) / 1000); else clearInterval(clock); }, 250);
+  } else {
+    clearInterval(clock);
+    $("scr-search").classList.add("found");
+    const o = mm.opp || {};
+    st.textContent = mm.state === "connect" ? "Gegner gefunden! Verbinde…" : "Verbunden. Gleich geht's los…";
+    opp.textContent = (o.name || "Gegner") + " · Level " + (o.level || 1) + (mm.mode === "ranked" && o.mmr ? " · " + league(o.mmr) + " " + o.mmr : "");
+  }
+  $("srCancel").hidden = mm.state !== "search";
+}
+
+export function initSearch() {
+  registerScreen("search", { back: () => { if (App.mm && App.mm.state !== "search") return true; cancelSearch(); return false; } });
+  $("srCancel").onclick = goBack;
+}

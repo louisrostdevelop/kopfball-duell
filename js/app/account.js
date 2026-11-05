@@ -23,6 +23,7 @@ export function applyState(st) {
   if (st.heads) S.heads = Object.fromEntries(Object.entries(st.heads).map(([k, v]) => [k.replace(/^head:/, ""), v]));
   if (st.name) S.name = st.name;
   if (typeof st.guest === "boolean") S.guest = st.guest;
+  S.serverSynced = true;   // ab jetzt gilt der Server, lokaler Stand wird nie wieder übernommen
   save();
 }
 export const serverState = () => last;
@@ -37,7 +38,7 @@ export function initAccount() {
 export async function syncOnStart() {
   if (!online()) return null;
   let st = await server.state();
-  if (st && st.imported === false && hasLocalProgress()) {
+  if (st && st.imported === false && !S.serverSynced && hasLocalProgress()) {
     try { st = await server.importLocal(S); } catch (_) { /* schon übernommen oder zu groß: Server-Stand gilt */ }
   }
   applyState(st);
@@ -68,3 +69,25 @@ export async function reportMatch(r) {
 
 /** Lokaler Modus -> Server-Modus. Online-Spiele laufen über die Warteschlange und werden dort gewertet. */
 export const serverMode = mode => ({ cpu: "cpu", cup: "cpu", endless: "endless", daily: "daily", local: "local", train: "train" })[mode] || null;
+
+// ---------- Juwelen und Echtgeld ----------
+/** Kopf mit Juwelen kaufen. Gibt true zurück, wenn der Server gebucht hat. */
+export async function buyWithGems(kind, id) {
+  const r = await server.buy(itemId(kind, id), "gems");
+  applyState(r.state);
+  if (!S[kind].includes(id)) S[kind].push(id);
+  save();
+  return true;
+}
+/** Echtgeld-Produkte vom Server (mit "buyable" für diesen Spieler) */
+export const shopProducts = () => server.shop();
+/** Zur Bezahlseite (Stripe). Kommt mit ?kauf=ok oder ?kauf=abgebrochen zurück. */
+export async function startCheckout(product) { location.href = await server.checkout(product); }
+/** Nach der Rückkehr von der Bezahlseite: ein paar Mal nachsehen, bis die Juwelen da sind */
+export async function awaitPurchase(before, tries = 10) {
+  for (let i = 0; i < tries; i++) {
+    await new Promise(r => setTimeout(r, 1500));
+    try { const st = await server.state(); applyState(st); if (st.gems > before) return st.gems - before; } catch (_) {}
+  }
+  return 0;
+}

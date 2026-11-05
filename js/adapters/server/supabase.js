@@ -27,6 +27,13 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     importLocal: profile => client.rpc("import_local", { local: profile }),
     setName: name => client.rpc("set_name", { new_name: name }),
     shop: () => client.rpc("shop"),
+    // Online mit Warteschlange (Casual / Ranked)
+    queueJoin: (mode, head) => client.rpc("queue_join", { queue_mode: mode, head }),
+    queuePoll: () => client.rpc("queue_poll"),
+    queueLeave: () => client.rpc("queue_leave"),
+    reportOnline: (match, r) => client.rpc("report_match", { match, r }),
+    matchStatus: match => client.rpc("match_status", { match }),
+    rankedBoard: (n = 50) => client.rpc("ranked_board", { lim: n, offs: 0 }),
     async checkout(product) { const r = await client.fn("create-checkout", { product }); return r.url; },
   };
 }

@@ -14,7 +14,7 @@
 /**
  * @typedef {Object} Transport
  * @property {() => boolean} available
- * @property {(h: TransportHandlers) => string} host        Raum öffnen, gibt den Code zurück
+ * @property {(h: TransportHandlers, opts?: { code?: string }) => string} host   Raum öffnen (optional mit festem Code), gibt den Code zurück
  * @property {(code: string, h: TransportHandlers) => void} join
  * @property {(msg: object) => void} send
  * @property {() => void} close

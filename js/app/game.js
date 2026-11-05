@@ -75,7 +75,7 @@ export function updateBand() {
 
 export function quitToMenu() {
   if (App.mode === "host" || App.mode === "guest") Net.close();
-  App.run = null;
+  App.run = null; App.mm = null;
   document.body.classList.remove("ingame");
   $("gameBtns").hidden = true;
   A.crowdOff(); A.music(true, "menu");

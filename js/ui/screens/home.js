@@ -1,5 +1,6 @@
 // Startseite mit Bühne (jonglierender Kopf), Tageskarten und Kopfzeile
 import { charById, CHARS, DIFFS, MODES, RARITY, rarityOf, SUPERS } from "../../content/config.js";
+import { online as serverOn } from "../../app/account.js";
 import { matchLen } from "../../core/physics.js";
 import { challenge, deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
 import { avatarCanvas, drawBall, drawHead } from "../render/art.js";
@@ -10,6 +11,7 @@ import { goBack, registerScreen, showScreen } from "../nav.js";
 import { selectScreen } from "./select.js";
 import { audio as A } from "../../app/services.js";
 import { dailyBriefing } from "./run.js";
+import { setShopTab } from "./shop.js";
 
 export let showcaseT = 0, showcaseTap = 0, juggle = { y: 0, vy: 0, a: 0, hits: 0 };
 
@@ -58,6 +60,8 @@ export function homeScreen() {
 
 export function refreshTop() {
   $$(".coinNum").forEach(e => e.textContent = S.coins);
+  $$(".gemNum").forEach(e => e.textContent = S.gems || 0);
+  $("homeGems").hidden = !serverOn();
   $("lvlNum").textContent = S.level;
   $("xpFill").style.width = Math.round(S.xp / xpFor(S.level) * 100) + "%";
   $("xpTxt").textContent = S.xp + "/" + xpFor(S.level);
@@ -133,4 +137,5 @@ export function initHome() {
   $("btnProfile").onclick = () => { A.sfx("click"); showScreen("ach"); };
   $("btnSettings").onclick = () => { A.sfx("click"); showScreen("settings"); };
   $("homeCoins").onclick = () => { A.sfx("click"); showScreen("shop"); };
+  $("homeGems").onclick = () => { A.sfx("click"); setShopTab("gems"); showScreen("shop"); };
 }

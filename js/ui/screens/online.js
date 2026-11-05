@@ -10,8 +10,30 @@ import { rulesSummary, rulesScreen } from "./rules.js";
 import { obsChoices } from "./setup.js";
 import { selectScreen } from "./select.js";
 import { audio as A, net as Net } from "../../app/services.js";
+import { online as serverOn, serverState } from "../../app/account.js";
+import { errText, findMatch, league, MIN_LEVEL } from "../../app/matchmaking.js";
 
-export function openOnline() { $("nameIn").value = S.name || ""; netNote(""); showScreen("online"); }
+export function openOnline() { $("nameIn").value = S.name || ""; netNote(""); mmPanel(); showScreen("online"); }
+
+// Gegner suchen (nur mit Server): Casual ohne Wertung, Ranked mit Liga
+export function mmPanel() {
+  const box = $("mmPanel"); box.hidden = !serverOn(); if (box.hidden) return;
+  const st = serverState() || {}, r = st.season && st.season.rating, mmr = r ? r.mmr : 1000;
+  const setBtn = (b, mode, sub) => {
+    const lock = S.level < MIN_LEVEL[mode] ? `ab Level ${MIN_LEVEL[mode]}` : mode === "ranked" && S.guest !== false ? "Konto nötig" : mode === "ranked" && !st.season ? "keine Saison" : "";
+    b.classList.toggle("locked", !!lock);
+    b.querySelector("em").textContent = lock || sub;
+    b.onclick = () => {
+      A.sfx("click");
+      if (lock === "Konto nötig") { showScreen("settings"); return; }
+      if (lock) { netNote("Dafür brauchst du Level " + MIN_LEVEL[mode] + ". Spiel ein paar Runden gegen den Computer.", true); return; }
+      saveName($("nameIn").value);
+      findMatch(mode).catch(e => netNote(errText(e), true));
+    };
+  };
+  setBtn($("btnCasual"), "casual", "ohne Wertung");
+  setBtn($("btnRanked"), "ranked", league(mmr) + " · " + mmr + (r ? ` · ${r.wins}/${r.games} Siege` : ""));
+}
 
 export function lobbyUI(role) {
   const host = role === "host";

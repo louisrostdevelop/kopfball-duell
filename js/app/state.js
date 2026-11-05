@@ -8,6 +8,7 @@ export const App = {
   rec: [], replay: null, maxDef: 0, screen: "home", stack: [],
   run: null, local2: null, series: {}, lastCfg: null, jug: { i: -1, n: 0 },
   opp: null, guestIn: [0, 0, 0, 0, 0, 0, 0, 0], gPend: { j: 0, d: 0 }, gEdge: null, sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
+  mm: null,   // Gegnersuche: { mode, state, match, role, opp } (app/matchmaking.js)
 };
 
 export const inGame = () => ["cpu", "cup", "local", "host", "guest", "endless", "daily", "train"].includes(App.mode) && App.screen === null;

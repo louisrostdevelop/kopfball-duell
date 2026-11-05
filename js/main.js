@@ -26,6 +26,7 @@ import { initTasks } from "./ui/screens/tasks.js";
 import { initAchievements } from "./ui/screens/achievements.js";
 import { initSettings } from "./ui/screens/settings.js";
 import { initEnd } from "./ui/screens/end.js";
+import { initSearch } from "./ui/screens/search.js";
 // Adapter
 import * as webAudio from "./adapters/audio/webaudio.js";
 import * as domInput from "./adapters/input/dom-input.js";
@@ -37,12 +38,18 @@ import { supabaseAuth } from "./adapters/auth/supabase.js";
 import { supabaseServer } from "./adapters/server/supabase.js";
 import { turnstileToken } from "./adapters/server/turnstile.js";
 import { BACKEND } from "./content/backend.js";
-import { claimDaily, initAccount, online as serverOn, syncOnStart } from "./app/account.js";
+import { awaitPurchase, claimDaily, initAccount, online as serverOn, syncOnStart } from "./app/account.js";
 
 async function boot() {
   // 1. Dienste einstecken, Spieler und Profil laden. Mit Server (content/backend.js): Konto und Spielstand dort.
   const be = backendConfig();
-  const client = be && createClient({ ...be, captcha: be.captchaSiteKey ? turnstileToken(be.captchaSiteKey) : null });
+  const client = be && createClient({ ...be, captcha: be.captchaSiteKey ? turnstileToken(be.captchaSiteKey) : null, sessionKey: be.sessionKey });
+  // Rückkehr aus der Bestätigungs-Mail (#access_token=...): Sitzung übernehmen, Adresse aufräumen
+  let mailBack = null;
+  if (client && /access_token=|error_description=/.test(location.hash)) {
+    mailBack = await client.takeRedirect(location.hash).catch(e => e.code || "Fehler");
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   const auth = client ? supabaseAuth(client) : guestAuth();
   provide({ audio: webAudio, input: domInput, net: peerjs, auth, ...(client ? { server: supabaseServer(client) } : {}) });
   await auth.init();
@@ -55,7 +62,7 @@ async function boot() {
   setQuality(S.quality);
   webAudio.setSfx(S.sfx); webAudio.setMusic(S.music); domInput.setVibration(S.vib);
   domInput.initInput({ inGame: () => inGame(), onKey, onPadButton: onPad, onTouch: () => { webAudio.unlock(); updateBand(); } });
-  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initHud].forEach(f => f());
+  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initSearch, initHud].forEach(f => f());
 
   // 3. Los geht's
   startDemo();
@@ -69,6 +76,17 @@ async function boot() {
     const d = dailyCheck();
     if (d) setTimeout(() => dailyModal(d), 500);
     if (synced) synced.then(() => { homeScreen(); return claimDaily(); }).then(x => { if (x) { homeScreen(); setTimeout(() => dailyModal(x), 500); } });
+    if (mailBack) toast(mailBack === "ok" ? "Konto gesichert. Du kannst jetzt auf jedem Gerät spielen." : "Link aus der Mail hat nicht geklappt: " + mailBack, mailBack === "ok" ? "i-check" : "i-close", mailBack === "ok");
+    // Rückkehr von der Bezahlseite
+    const kauf = new URLSearchParams(location.search).get("kauf");
+    if (kauf && serverOn()) {
+      const q = new URLSearchParams(location.search); q.delete("kauf");
+      history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : ""));
+      if (kauf === "ok") {
+        toast("Danke! Juwelen kommen gleich.", "i-gem", true);
+        (synced || Promise.resolve()).then(() => awaitPurchase(S.gems || 0)).then(n => { homeScreen(); if (n) toast(`+${n} Juwelen`, "i-gem", true); });
+      } else toast("Kauf abgebrochen", "i-close");
+    }
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone;
     if (ios && !S.iosHint) setTimeout(() => { toast("Tipp: Teilen → „Zum Home-Bildschirm“ für Vollbild"); S.iosHint = true; save(); }, d ? 6000 : 2500);
     // Einladungslink: ?join=CODE (alte Links mit #CODE gehen auch)
@@ -83,7 +101,8 @@ async function boot() {
 // Server aus content/backend.js; für Tests und Entwicklung auch ?backend=<url>&key=<anon> (nur localhost)
 function backendConfig() {
   const q = new URLSearchParams(location.search), u = q.get("backend");
-  if (u && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(u)) return { url: u, anonKey: q.get("key") || "dev" };
+  // as=2: zweites Konto im selben Browser (Tests mit zwei Tabs)
+  if (u && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(u)) return { url: u, anonKey: q.get("key") || "dev", sessionKey: q.get("as") ? "kopfball-duell-session-" + q.get("as").replace(/\W/g, "") : undefined };
   return BACKEND.url && BACKEND.anonKey ? BACKEND : null;
 }
 

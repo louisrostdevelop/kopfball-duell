@@ -13,6 +13,7 @@ import { runScreen } from "../ui/screens/run.js";
 import { audio as A, net as Net } from "./services.js";
 import { online as serverOn, reportMatch, serverMode } from "./account.js";
 import { refreshTop } from "../ui/screens/home.js";
+import { again as mmAgain, leave as mmLeave, reportResult } from "./matchmaking.js";
 
 export function seriesKey() {
   if (App.mode === "local") return "local";
@@ -68,6 +69,21 @@ export function matchEnd() {
   const achs = me >= 0 ? checkAch({ win, myGoals: myS.goals, conceded: st.s[op], superGoals: myS.superGoals, lastSec: myS.lastSecGoals, longGoals: myS.longGoals, maxDeficit: App.maxDef, cupWon: runInfo === "cup", diff: App.cfg.diff, mode: online ? "online" : App.mode === "cup" || App.mode === "endless" || App.mode === "daily" ? "cpu" : App.mode }) : checkAch({});
   save();
   showEnd({ win, me, lines, ups, achs, runInfo });
+  if (App.mm && online) {
+    const mm = App.mm;
+    reportResult([a, b], (Date.now() - (App.t0 || Date.now())) / 1000).then(res => {
+      if (App.mm !== mm || App.screen !== "end") { if (res && res.status === "settled") refreshTop(); return; }
+      const note = $("endNote"), r = res && res.result;
+      if (res && res.status === "settled" && r) {
+        const d = mm.role === "host" ? r.mmrDelta : -r.mmrDelta;
+        note.textContent = mm.mode === "ranked" ? `Wertung ${d >= 0 ? "+" : ""}${d}` + (d === 0 ? " (zu oft gegen denselben Gegner)" : "") : "Ergebnis gebucht.";
+        if (mm.mode === "ranked" && d) toast(`Wertung ${d > 0 ? "+" : ""}${d}`, "i-crown", d > 0);
+      } else if (res && res.status === "disputed") note.textContent = "Eure Ergebnisse passen nicht zusammen. Das Spiel wird geprüft.";
+      else if (res && res.status === "waiting") note.textContent = "Der Gegner hat noch nicht gemeldet. Wird später gewertet.";
+      else note.textContent = "Ergebnis konnte nicht gemeldet werden.";
+      refreshTop();
+    });
+  }
   if (serverOn() && serverMode(App.mode)) {
     const facts = myS ? [myS.goals >= 3 && "hattrick", myS.superGoals > 0 && "supergoal", myS.lastSecGoals > 0 && "lastsec", myS.longGoals > 0 && "longshot", win && App.maxDef >= 2 && "comeback"].filter(Boolean) : [];
     reportMatch({
@@ -87,13 +103,14 @@ export function matchEnd() {
 
 export function endAgain() {
   A.sfx("click");
+  if (App.mm) { mmAgain().catch(() => mmLeave()); return; }
   if (App.mode === "cup" || App.mode === "endless") { if (App.run && App.run.done && App.run.kind === "cup" && App.run.round >= 3) trophyModal(); runScreen(); return; }
   if (App.mode === "guest") { Net.send({ t: "rematch" }); $("endNote").textContent = "Anfrage gesendet. Warte auf den Gastgeber…"; $("btnEndAgain").disabled = true; return; }
   if (App.mode === "host") { hostStart(); return; }
   beginMatch({ ...App.lastCfg, chars: [...App.lastCfg.chars] });
 }
 
-export function endMenu() { A.sfx("click"); if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); return; } quitToMenu(); }
+export function endMenu() { A.sfx("click"); if (App.mm) { mmLeave(); return; } if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); return; } quitToMenu(); }
 
 export function shareResult() {
   const st = App.st, me = myIdx(), url = location.origin + location.pathname;

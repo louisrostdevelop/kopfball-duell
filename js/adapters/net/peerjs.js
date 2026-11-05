@@ -20,9 +20,10 @@ export function send(m) { if (cur && cur.conn && cur.conn.open) try { cur.conn.s
 export function isOpen() { return !!(cur && cur.conn && cur.conn.open); }
 export function role() { return cur ? cur.role : null; }
 
-export function host(h, tries = 0) {
+// opts.code: fester Raumname (Matchmaking: aus der Spiel-ID), sonst zufällig
+export function host(h, { code: fixed = null, tries = 0 } = {}) {
   close();
-  const code = mkCode();
+  const code = fixed || mkCode();
   const peer = new window.Peer(PREFIX + code, { config: ICE, debug: 0 });
   const me = { peer, role: "host", code, conn: null };
   cur = me;
@@ -38,7 +39,7 @@ export function host(h, tries = 0) {
   peer.on("disconnected", () => { if (cur === me && !peer.destroyed) try { peer.reconnect(); } catch (_) {} });
   peer.on("error", e => {
     if (cur !== me) return;
-    if (e.type === "unavailable-id" && tries < 3) { host(h, tries + 1); return; }
+    if (e.type === "unavailable-id" && tries < 3) { if (fixed) setTimeout(() => host(h, { code: fixed, tries: tries + 1 }), 1500); else host(h, { tries: tries + 1 }); return; }
     if (me.conn && me.conn.open) return;
     h.onError && h.onError(e.type);
   });

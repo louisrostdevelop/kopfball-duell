@@ -126,6 +126,11 @@ export const rand = (a, b) => a + Math.random() * (b - a);
 // Seltenheit nach Preis (für Karten und Shop)
 export const RARITY = { basis: "Basis", selten: "Selten", episch: "Episch", legend: "Legendär" };
 export const rarityOf = c => !c.price ? "basis" : c.price <= 300 ? "selten" : c.price <= 500 ? "episch" : "legend";
+// Juwelen-Preis von Köpfen nach Seltenheit (Basis-Köpfe gibt es nur für Münzen). Gilt auch auf dem Server (catalog.sql).
+export const GEM_PRICE = { basis: null, selten: 300, episch: 450, legend: 600 };
+export const gemPrice = c => GEM_PRICE[rarityOf(c)];
+// Euro-Wert von Juwelen, immer neben Juwelen-Preisen angezeigt (Basis: kleinstes Paket, 100 Juwelen = 0,99 €)
+export const gemsInEuro = n => (n * 0.0099).toFixed(2).replace(".", ",") + " €";
 
 // Spielmodi (Reihenfolge = Reihenfolge der Karten)
 export const MODES = [

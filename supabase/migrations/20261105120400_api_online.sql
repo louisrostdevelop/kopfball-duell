@@ -143,6 +143,13 @@ begin
 end $$;
 
 -- ---------- Abrechnen: Wertung (Elo), Münzen, XP, Pass-Punkte ----------
+-- Stand eines Online-Spiels für den, der zuerst gemeldet hat (wartet auf die andere Seite)
+create or replace function api.match_status(match uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('status', mt.status, 'result', mt.result)
+  from game.matches mt where mt.id = match and game.me() in (mt.p1, mt.p2)
+$$;
+
 create or replace function game.settle(match uuid, score jsonb) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare mt game.matches; a integer := (score->>0)::integer; b integer := (score->>1)::integer;
@@ -315,7 +322,7 @@ $$;
 -- Niemand außer ausdrücklich Berechtigten darf Funktionen ausführen
 revoke execute on all functions in schema api, game from public;
 
-grant execute on function api.queue_join(text, text), api.queue_poll(), api.queue_leave(), api.report_match(uuid, jsonb),
+grant execute on function api.queue_join(text, text), api.queue_poll(), api.queue_leave(), api.report_match(uuid, jsonb), api.match_status(uuid),
   api.submit_score(text, integer), api.my_rank(text, text), api.leaderboard_around(text, text, integer), api.friend_request(text), api.friend_remove(text), api.friends() to authenticated;
 -- Bestenlisten darf jeder lesen, auch ohne Anmeldung (für die Website)
 grant execute on function api.leaderboard(text, text, integer, integer), api.ranked_board(integer, integer) to anon, authenticated;
