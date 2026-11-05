@@ -22,7 +22,7 @@ const App = {
   names: ["", ""], labels: [null, null], ball: "klassik", goT: -1,
   rec: [], replay: null, maxDef: 0, screen: "home", stack: [],
   run: null, local2: null, series: {}, lastCfg: null, jug: { i: -1, n: 0 },
-  opp: null, guestIn: [0, 0, 0, 0, 0, 0], sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
+  opp: null, guestIn: [0, 0, 0, 0, 0, 0, 0, 0], gPend: { j: 0, d: 0 }, gEdge: null, sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
 };
 const inGame = () => ["cpu", "cup", "local", "host", "guest", "endless", "daily", "train"].includes(App.mode) && App.screen === null;
 const vsCpu = () => ["cpu", "cup", "endless", "daily", "train"].includes(App.mode);
@@ -82,7 +82,7 @@ function beginMatch(cfg) {
   if (vsCpu()) App.ai[1] = makeAI(1, cfg.diff ?? 1, !!cfg.keeper);
   App.names = cfg.names; App.labels = cfg.labels; App.ball = cfg.ball || S.ball;
   App.acc = 0; App.paused = false; App.endShown = false; App.rec = []; App.replay = null; App.maxDef = 0; App.goT = -1;
-  App.snaps = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0, 0]; App.jug = { i: -1, n: 0 };
+  App.snaps = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0]; App.gPend = { j: 0, d: 0 }; App.jug = { i: -1, n: 0 };
   fx.clear();
   showScreen(null);
   I.setLayout(cfg.mode === "local" ? "split" : "single");
@@ -160,7 +160,15 @@ function gatherInputs(dt) {
   if (App.mode === "demo") return [aiInput(App.ai[0], st, dt), aiInput(App.ai[1], st, dt)];
   if (vsCpu()) return [I.getInput(0, "single"), aiInput(App.ai[1], st, dt)];
   if (App.mode === "local") return [I.getInput(0, "local"), I.getInput(1, "local")];
-  if (App.mode === "host") { const g = App.guestIn; return [I.getInput(0, "single"), { l: !!g[0], r: !!g[1], j: !!g[2], k: !!g[3], s: !!g[4], d: !!g[5] }]; }
+  if (App.mode === "host") {
+    const g = App.guestIn, pd = App.gPend;
+    // Druck-Zähler gestiegen, die Taste ist aber schon wieder los: Druck trotzdem kurz geben (kurzer Sprung = halb hoch)
+    if (g[6] !== pd.sj) { if (!g[2] && pd.sj !== undefined) pd.j = 0.07; pd.sj = g[6]; }
+    if (g[7] !== pd.sd) { if (!g[5] && pd.sd !== undefined) pd.d = 0.03; pd.sd = g[7]; }
+    const out = { l: !!g[0], r: !!g[1], j: !!g[2] || pd.j > 0, k: !!g[3], s: !!g[4], d: !!g[5] || pd.d > 0 };
+    pd.j = Math.max(0, pd.j - dt); pd.d = Math.max(0, pd.d - dt);
+    return [I.getInput(0, "single"), out];
+  }
   return [{}, {}];
 }
 function myIdx() { return App.mode === "guest" ? 1 : App.mode === "local" || App.mode === "demo" ? -1 : 0; }
@@ -230,7 +238,7 @@ function onEvent(e, remote) {
     case "pop": fx.burst("dust", e.x, e.y + 10, { n: 10 }); snd("pop"); break;
     case "slide": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: 8 }); snd("slide"); break;
     case "bomb": if (remote && e.i === myIdx()) break; snd("bomb"); break;
-    case "pound": fx.burst("dust", e.x, e.y, { n: 8 + Math.round(10 * e.k) }); fx.shake(3 + 6 * e.k); snd("pound", e.k); if (isHuman(e.i)) I.vibrate(15); break;
+    case "pound": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: 8 + Math.round(10 * e.k) }); fx.shake(3 + 6 * e.k); snd("pound", e.k); if (isHuman(e.i)) I.vibrate(15); break;
     case "squash": {
       fx.burst("kick", e.x, e.y, { pow: 1.3 + e.k * 0.6, dir: Math.sign(st.b.vx) || 1 }); fx.burst("dust", e.x, G, { n: 14 });
       fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.9 + e.k); fx.shake(6 + 10 * e.k); fx.punch(0.02 + 0.03 * e.k); snd("squash", e.k);
@@ -293,7 +301,9 @@ function hostSend(dt) {
 function guestFrame(dt, now) {
   const st = App.st;
   const me = I.getInput(1, "single");
-  const iv = [me.l, me.r, me.j, me.k, me.s, me.d].map(v => (v ? 1 : 0)), key = iv.join("");
+  App.gEdge = App.gEdge || { j: 0, d: 0, lj: false, ld: false };
+  const ge = App.gEdge; if (me.j && !ge.lj) ge.j++; if (me.d && !ge.ld) ge.d++; ge.lj = !!me.j; ge.ld = !!me.d;
+  const iv = [me.l, me.r, me.j, me.k, me.s, me.d].map(v => (v ? 1 : 0)).concat([ge.j % 1000, ge.d % 1000]), key = iv.join(",");
   App.inT += dt;
   if (key !== App.lastIn || App.inT > 0.15) { App.lastIn = key; App.inT = 0; Net.send({ t: "i", i: iv }); }
   App.pingT += dt; if (App.pingT > 2) { App.pingT = 0; Net.send({ t: "ping", c: performance.now() }); }
@@ -308,6 +318,9 @@ function guestFrame(dt, now) {
   if (!App.gp) App.gp = Object.assign({}, st.p[1]);
   const gp = App.gp;
   ["sc", "frz", "stun", "bigT", "miniT", "spdT", "jmpT", "armed", "confT", "djT", "tripCD"].forEach(f => gp[f] = sp[f]);
+  if (gp.bomb && !sp.bomb && sp.vy < 0) { gp.bomb = 0; gp.bombLock = true; gp.vy = sp.vy; gp.y = sp.y; gp.onG = false; }
+  if (gp.slide > 0 && !(sp.slide > 0) && Math.abs(sp.vx) < Math.abs(gp.vx) * 0.7) { gp.slide = 0; gp.slideCD = 0.5; gp.vx = sp.vx; }
+  if (sp.stun > 0 && gp.slide > 0) gp.slide = 0;
   predictPlayer(st, gp, me, dt);
   const lat = Math.min(0.25, App.rtt / 2000 + 0.08);
   const tx = sp.x + sp.vx * lat, ty = sp.y + sp.vy * lat * 0.5;
@@ -361,7 +374,7 @@ function hostData(d) {
       lobbyUI("host"); A.sfx("coin"); toast(App.opp.name + " ist da!", "i-users");
       break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("host"); } break;
-    case "i": if (Array.isArray(d.i)) App.guestIn = d.i.slice(0, 6); break;
+    case "i": if (Array.isArray(d.i)) App.guestIn = d.i.slice(0, 8); break;
     case "emo": if (App.mode === "host" && App.st && EMOTES.includes(d.e)) emote(App.st, 1, d.e); break;
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "rematch": toast((App.opp ? App.opp.name : "Gast") + " will Revanche!", "i-swap"); break;

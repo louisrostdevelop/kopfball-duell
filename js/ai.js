@@ -20,7 +20,7 @@ function predict(st, steps, dt) {
 
 export function aiInput(ai, st, dt) {
   const p = st.p[ai.i], o = st.p[1 - ai.i], b = st.b, d = ai.d, c = {};
-  if (st.ph !== "play") { ai.hold = 0; return c; }
+  if (st.ph !== "play") { ai.hold = 0; ai.jHold = 0; ai.dPulse = 0; ai.wantJ = 0; return c; }
   const dir = p.dir, own = ai.i ? W : 0, r = pr(p);
   const sp = 505 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
   if (ai.keeper) return keeperInput(ai, st, p, b, dt);
@@ -74,7 +74,6 @@ export function aiInput(ai, st, dt) {
     if (!p.onG && p.vy > -150 && ai.dcd <= 0) {
       const ox = (b.x - p.x) * dir, below = b.y > p.y + r && b.y + b.r > G - 30;
       if (below && ox > r * 0.15 && ox < r * 0.9 && p.y < rest - 70 && Math.random() < d.kickSkill * 0.8) { ai.dPulse = 0.04; ai.dcd = 1; }
-      else if (towardOwn && (b.x - p.x) * dir < -40 && p.y < rest - 80 && Math.random() < d.jumpSkill * 0.6) { ai.dPulse = 0.04; ai.dcd = 1; }
     }
     // Grätsche: flacher Ball kurz vor mir, der Gegner ist dran oder er rollt Richtung meines Tors
     if (p.onG && ai.dcd <= 0 && p.slideCD <= 0 && b.y > G - 70) {
@@ -87,8 +86,9 @@ export function aiInput(ai, st, dt) {
   if (dx > 10) c.r = true; else if (dx < -10) c.l = true;
   // Springen
   if (ai.wantJ > 0) { ai.wantJ -= dt; if (ai.wantJ <= 0 && ai.jcd <= 0) { ai.jHold = ai.jFull ? 0.32 : 0.03; ai.jcd = 0.5; ai.wantJ = 0; } }
-  if (ai.jHold > 0) { ai.jHold -= dt; c.j = true; }
-  if (ai.dPulse > 0) { ai.dPulse -= dt; c.d = true; }
+  const sdt = st.hs > 0 ? 0 : dt * (st.slow > 0 ? 0.28 : 1); // Haltezeiten in Spielzeit, nicht in Bildzeit
+  if (ai.jHold > 0) { ai.jHold -= sdt; c.j = true; }
+  if (ai.dPulse > 0) { ai.dPulse -= sdt; c.d = true; }
   // Schießen
   const fx = p.x + dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
   const inReach = Math.hypot(b.x - fx, b.y - fy) < 66 * KS * p.sc + b.r - 6 && (b.x - p.x) * dir > -10;

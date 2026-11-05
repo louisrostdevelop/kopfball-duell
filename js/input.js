@@ -92,7 +92,7 @@ function stickZone(pi) {
   });
   z.addEventListener("pointermove", e => {
     if (e.pointerId !== id) return;
-    if (flick.move(e.clientX, e.clientY)) { ay = e.clientY; const r = z.getBoundingClientRect(); base.style.top = (ay - r.top) + "px"; }
+    if (flick.move(e.clientX, e.clientY, e.clientY - ay < -20)) { ay = e.clientY; const r = z.getBoundingClientRect(); base.style.top = (ay - r.top) + "px"; }
     let dx = e.clientX - ax, dy = e.clientY - ay;
     // Stick folgt dem Finger, damit Richtungswechsel schnell gehen
     if (Math.abs(dx) > 60) { ax += dx - Math.sign(dx) * 60; dx = Math.sign(dx) * 60; const r = z.getBoundingClientRect(); base.style.left = (ax - r.left) + "px"; }
@@ -121,13 +121,15 @@ function slider(pi, side) {
 
 // Schneller Wisch nach unten: deutlich, schnell und überwiegend senkrecht, damit Laufen ihn nicht auslöst
 function downFlick(pi) {
-  let hist = [], cool = 0;
+  let hist = [], cool = 0, upT = 0;
   return {
-    reset(x, y) { hist = [{ x, y, t: performance.now() }]; },
-    move(x, y) {
+    reset(x, y) { hist = [{ x, y, t: performance.now() }]; upT = 0; },
+    // up = Finger ist gerade im Sprung-Bereich; der Rückweg danach zählt nicht als Wisch
+    move(x, y, up) {
       const now = performance.now();
+      if (up) upT = now;
       hist.push({ x, y, t: now }); while (hist.length > 2 && now - hist[0].t > 140) hist.shift();
-      if (now < cool) return false;
+      if (now < cool || now - upT < 220) return false;
       const a = hist[0], dy = y - a.y, dx = Math.abs(x - a.x), dt = Math.max(16, now - a.t);
       if (dy > 34 && dy > dx * 1.4 && dy / dt > 0.35) {
         cool = now + 260; hist = [{ x, y, t: now }];

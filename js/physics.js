@@ -54,7 +54,7 @@ function mkPlayer(i, ch) {
     kick: 0, kHit: false, kHeld: false, kPow: 1, chT: 0, charge: 0, lastJ: false, lastS: false,
     meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false, confT: 0, djT: 0, djUsed: false, kHitP: false, pushCD: 0, knock: 0,
     hc: 0, sc2: 0, mood: "", moodT: 0, emo: "", emoT: 0, land: 0,
-    coy: 0, jHeld: false, jRel: false, jT: 0, lastD: false, dBuf: 0, dAir: false, bomb: 0, bombY: 0, bombRec: 0, slide: 0, slideDir: 1, slideCD: 0, slideHit: false, slideHitP: false, tripCD: 0,
+    coy: 0, jHeld: false, jRel: false, jT: 0, lastD: false, dBuf: 0, dAir: false, bombLock: false, stompImm: 0, bomb: 0, bombY: 0, bombRec: 0, slide: 0, slideDir: 1, slideCD: 0, slideHit: false, slideHitP: false, tripCD: 0,
   };
 }
 function mkBall(st) {
@@ -82,11 +82,19 @@ export function kickoff(st) {
 
 // Echtzeit-Fortschritt inkl. Hit-Stop und Zeitlupe
 export function advance(st, dt, inp, acc) {
+  // Kurze Drücke (Sprung, unten) merken, bis ein Physikschritt sie gesehen hat
+  if (!st.latch) st.latch = [{}, {}];
+  inp.forEach((c, i) => { if (c && c.j) st.latch[i].j = true; if (c && c.d) st.latch[i].d = true; });
   if (st.hs > 0) { st.hs -= dt; return acc; }
   if (st.slow > 0) { st.slow -= dt; dt *= 0.28; }
   acc += dt;
   let n = 0;
-  while (acc >= STEP && n < 12) { step(st, STEP, inp); acc -= STEP; n++; if (st.hs > 0) { acc = 0; break; } }
+  while (acc >= STEP && n < 12) {
+    const use = n === 0 ? inp.map((c, i) => ({ ...(c || {}), j: (c && c.j) || st.latch[i].j, d: (c && c.d) || st.latch[i].d })) : inp;
+    step(st, STEP, use); acc -= STEP; n++;
+    if (n === 1) st.latch = [{}, {}];
+    if (st.hs > 0) { acc = 0; break; }
+  }
   return acc;
 }
 
@@ -132,7 +140,8 @@ export function step(st, dt, inp) {
   });
   playerVsPlayer(st);
   st.p.forEach(p => kickPush(st, p));
-  st.p.forEach(p => slideTrip(st, p));
+  const trips = st.p.map(p => slideTripHit(st, p)); // erst beide prüfen, dann anwenden: keiner gewinnt nur wegen der Reihenfolge
+  st.p.forEach((p, i) => { if (trips[i]) slideTrip(st, p); });
   ballPhysics(st, dt, false);
   unjam(st, dt);
   powerups(st, dt);
@@ -179,9 +188,10 @@ function movePlayer(st, p, c, dt, frozenPhase) {
   if (p.dBuf > 0) p.dBuf = Math.max(0, p.dBuf - dt);
   if (p.dBuf > 0 && p.dAir === p.onG) p.dBuf = 0;
   const dPress = p.dBuf > 0;
+  if (p.stompImm > 0) p.stompImm -= dt;
   p.slideCD = Math.max(0, p.slideCD - dt); p.bombRec = Math.max(0, p.bombRec - dt); p.tripCD = Math.max(0, p.tripCD - dt);
   if (p.onG) p.coy = MOVE.coyote; else p.coy = Math.max(0, p.coy - dt);
-  if (locked) { if (p.slide > 0) endSlide(p); }
+  if ((locked || !p.onG) && p.slide > 0) endSlide(p);
   // Unten am Boden: Grätsche (Richtung = Laufrichtung, sonst Blickrichtung)
   if (!locked && dPress && p.onG && p.slide <= 0 && p.slideCD <= 0 && !(p.kick > 0.1)) {
     p.slide = MOVE.slideT; p.slideDir = dirIn || p.dir; p.slideHit = false; p.slideHitP = false; p.dBuf = 0;
@@ -191,7 +201,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
     ev(st, { t: "slide", i: p.i, x: p.x, y: G, dir: p.slideDir });
   }
   // Unten in der Luft: Arschbombe, sofort und ohne Halt
-  else if (!locked && dPress && !p.onG && !p.bomb && p.y < rest - MOVE.bombMinH) {
+  else if (!locked && dPress && !p.onG && !p.bomb && !p.bombLock && p.slide <= 0 && p.y < rest - MOVE.bombMinH) {
     p.bomb = 1; p.bombY = p.y; p.vy = Math.max(p.vy, MOVE.bombV); p.vx *= 0.4; p.jHeld = false; p.dBuf = 0;
     if (p.kHeld) { p.kHeld = false; p.charge = 0; p.chT = 0; }
     st.stats[p.i].bombs++;
@@ -206,7 +216,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
   } else {
     const want = locked ? 0 : dirIn * sp;
     let acc = (p.onG ? 6400 : 4600) * grip * (p.frz > 0 ? 0.2 : 1) * (p.knock > 0 ? 0.12 : 1);
-    if (want !== 0 && p.vx !== 0 && Math.sign(want) !== Math.sign(p.vx)) acc *= MOVE.turn;
+    if (want !== 0 && p.vx !== 0 && Math.sign(want) !== Math.sign(p.vx) && p.onG && p.knock <= 0 && grip >= 0.5) acc *= MOVE.turn;
     else if (want === 0) acc *= MOVE.stopG;
     if (p.bomb) acc *= 0.3;
     if (p.bombRec > 0) acc *= 0.5;
@@ -214,7 +224,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
     p.vx += Math.abs(d) < mx ? d : Math.sign(d) * mx;
   }
   // Springen: halten = voller Sprung, kurz tippen = halber
-  const jv = -1010 * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.pow(gMul(st), 0.25); // weniger Schwerkraft = höhere, langsamere Sprünge
+  const gm0 = gMul(st), jv = -1010 * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.min(Math.pow(gm0, 0.25), Math.sqrt(1.5 * gm0)); // weniger Schwerkraft = höhere Sprünge (max. 1,5-fach)
   const jPress = !!c.j && !p.lastJ;
   if (!locked && c.j && (p.onG || p.coy > 0) && !p.bomb && p.vy >= -50) {
     if (p.slide > 0) endSlide(p);
@@ -242,7 +252,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
       if (p.bomb) bombLand(st, p);
       else if (p.vy > 500) { ev(st, { t: "land", i: p.i, x: p.x, y: G, v: p.vy }); p.land = 0.15; }
     }
-    p.y = rest; p.vy = 0; p.onG = true; p.djUsed = false; p.jHeld = false;
+    p.y = rest; p.vy = 0; p.onG = true; p.djUsed = false; p.jHeld = false; p.bombLock = false;
   } else if (p.onG && p.y < rest - 1) {
     // steht evtl. auf Latte
     p.onG = onBar(st, p);
@@ -256,7 +266,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
     const foot = p.y + (FOOT + SR) * p.sc;
     if (p.vy >= 0 && foot >= by - BAR_T / 2 && foot - p.vy * dt <= by - BAR_T / 2 + 2) {
       if (p.bomb) bombLand(st, p);
-      p.y = by - BAR_T / 2 - (FOOT + SR) * p.sc; p.vy = 0; p.onG = true; p.jHeld = false; continue;
+      p.y = by - BAR_T / 2 - (FOOT + SR) * p.sc; p.vy = 0; p.onG = true; p.jHeld = false; p.bombLock = false; continue;
     }
     if (p.y - r < by + BAR_T / 2 && p.y > by) { p.y = by + BAR_T / 2 + r; if (p.vy < 0) p.vy = 0; }
   }
@@ -320,7 +330,8 @@ function kickPush(st, p) {
   const big = o.bigT > 0 ? 0.6 : o.miniT > 0 ? 1.3 : 1; // schwerer Kopf lässt sich schwerer schubsen
   o.vx = p.dir * (320 + 160 * c) * big;
   o.vy = Math.min(o.vy, -(110 + 140 * c) * big); o.onG = false;
-  o.knock = 0.22 + 0.08 * c;
+  o.knock = 0.22 + 0.08 * c; o.coy = 0; o.jHeld = false;
+  if (o.slide > 0) endSlide(o);
   o.pushCD = 0.55;
   if (o.kHeld) { o.kHeld = false; o.charge = 0; o.chT = 0; } // Aufladen wird unterbrochen
   ev(st, { t: "bump", i: p.i, x: (fx + o.x) / 2, y: (fy + o.y) / 2, pow: 1 + c });
@@ -352,10 +363,13 @@ function playerVsPlayer(st) {
   if (top && top.vy > 150) {
     const bot = top === a ? b : a;
     const bk = top.bomb ? bombPow(top) : 0, bombed = !!top.bomb;
-    top.vy = bombed ? -620 : -820; top.onG = false; top.bomb = 0; top.jHeld = false;
-    top.y = bot.y - (pr(top) + pr(bot)) * 0.95;
-    if (top.sc2 <= 0) {
-      bot.stun = Math.max(bot.stun, bombed ? 0.45 + 0.4 * bk : 0.55); top.sc2 = 0.8;
+    top.vy = bombed ? -620 : -820; top.onG = false; top.bomb = 0; top.jHeld = false; top.coy = 0; top.bombLock = true;
+    top.vx = (Math.sign(top.x - bot.x) || -top.dir) * 240; // vom Kopf abprallen, nicht drauf sitzen bleiben
+    top.y = bot.y - (pr(top) + pr(bot)) * 1.01;
+    if (top.sc2 <= 0 && !(bot.stompImm > 0)) {
+      const stn = bombed ? 0.45 + 0.4 * bk : 0.55;
+      bot.stun = Math.max(bot.stun, stn); top.sc2 = 0.8;
+      bot.stompImm = stn + 1.1; // danach eine Weile nicht wieder betäubbar: Zeit zum Wegkommen
       if (bot.kHeld) { bot.kHeld = false; bot.charge = 0; bot.chT = 0; }
       st.stats[top.i].stomps++;
       ev(st, { t: "stomp", i: top.i, x: bot.x, y: bot.y - pr(bot), bomb: bombed, k: bk });
@@ -371,14 +385,15 @@ function bombBall(st, b, p) {
   const r = pr(p), bottom = p.y + (FOOT + SR) * p.sc, dxb = b.x - p.x, reach = r * 0.95 + b.r * 0.6;
   if (Math.abs(dxb) > reach || b.y < p.y + r * 0.3 || b.y - b.r > bottom + 4 || b.y + b.r < p.y) return false;
   const k = bombPow(p);
-  p.bomb = 0; p.vy = -(360 + 200 * k); p.onG = false; p.jHeld = false;
-  b.nh = p.i; b.nhT = 0.14;
+  if (b.y > p.y) p.y = Math.min(p.y, b.y - b.r - (FOOT + SR) * p.sc - 1); // sauber auf den Ball setzen, nicht hinein
+  p.bomb = 0; p.vy = -(360 + 200 * k); p.onG = false; p.jHeld = false; p.coy = 0; p.bombLock = true;
+  b.nh = p.i; b.nhT = 0.22;
   if (!touch(st, b, p, "bomb")) return true;
   const ox = clamp(dxb / reach, -1, 1), flat = Math.min(1, Math.abs(ox) * 1.5), km = kickMul(st);
-  const side = Math.abs(ox) < 0.12 ? 0 : Math.sign(ox);
+  const side = Math.abs(ox) < 0.12 ? p.dir : Math.sign(ox);
   if (b.y + b.r >= G - 16) {
     // gequetscht: seitlich raus, je weiter vom Rand getroffen, desto flacher und schneller
-    b.vx = (side * (650 + 850 * k) * (0.3 + 0.7 * flat) + (side ? 0 : p.dir * 60)) * km;
+    b.vx = side * (650 + 850 * k) * (0.3 + 0.7 * Math.max(0.15, flat)) * km;
     b.vy = -(420 + 560 * k) * (1 - 0.55 * flat) * km;
     b.y = G - b.r - 1;
     ev(st, { t: "squash", i: p.i, x: b.x, y: G - b.r, k, flat });
@@ -406,15 +421,19 @@ function slideBall(st, b, p) {
   return true;
 }
 // Grätsche trifft den Gegner am Boden: kurz ins Stolpern, mehr nicht
-function slideTrip(st, p) {
-  if (!(p.slide > 0) || p.slideHitP) return;
+function slideTripHit(st, p) {
+  if (!(p.slide > 0) || p.slideHitP) return false;
   const o = st.p[1 - p.i];
-  if (!o.onG || o.tripCD > 0) return;
+  if (!o.onG || o.tripCD > 0) return false;
   const f = shoePos(p);
-  if ((o.x - p.x) * p.slideDir < 0 || Math.abs(o.x - f.x) > pr(o) * 0.8 + SR * p.sc) return;
+  if (Math.abs((o.y + (FOOT + SR) * o.sc) - (p.y + (FOOT + SR) * p.sc)) > 30) return false; // gleiche Höhe (nicht auf der Latte)
+  return (o.x - p.x) * p.slideDir >= 0 && Math.abs(o.x - f.x) <= pr(o) * 0.8 + SR * p.sc;
+}
+function slideTrip(st, p) {
+  const o = st.p[1 - p.i];
   p.slideHitP = true; p.vx *= 0.4;
   o.stun = Math.max(o.stun, MOVE.tripStun); o.tripCD = MOVE.tripCD;
-  o.vx = p.slideDir * 260; o.vy = -240; o.onG = false; o.jHeld = false;
+  o.vx = p.slideDir * 260; o.vy = -240; o.onG = false; o.jHeld = false; o.coy = 0;
   if (o.slide > 0) endSlide(o);
   if (o.kHeld) { o.kHeld = false; o.charge = 0; o.chT = 0; }
   ev(st, { t: "trip", i: p.i, x: o.x, y: G - 20 });
