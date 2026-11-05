@@ -1,5 +1,5 @@
 // Offline-Unterstützung: erst Netz, dann Cache (so kommen Updates sofort an)
-const CACHE = "kopfball-v7";
+const CACHE = "kopfball-v8";
 const CORE = ["./", "index.html", "css/style.css", "js/main.js", "js/config.js", "js/physics.js", "js/render.js", "js/art.js", "js/audio.js", "js/input.js", "js/ai.js", "js/net.js", "js/store.js", "js/layouts.js",
   "fonts/lilita.woff2", "fonts/nunito-700.woff2", "fonts/nunito-800.woff2", "fonts/nunito-900.woff2", "vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "manifest.webmanifest"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });

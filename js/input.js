@@ -89,12 +89,19 @@ function stickZone(pi) {
   base.append(knob); z.append(base); root.append(z);
   const hint = el("div", "stickhint"); hint.innerHTML = '<span class="sh-pad">◀ ▶</span><span>Hier ziehen zum Laufen<small>Hoch = Sprung · Runter = Grätsche</small></span>'; z.append(hint);
   let id = null, ax = 0, ay = 0;
+  // Sprung: schon schräg nach oben (ab ca. 27°) reicht, damit man im Laufen springen kann.
+  // Einmal ausgelöst, bleibt er gehalten, bis der Daumen fast wieder unten ist (sonst wird aus dem hohen Sprung ein halber).
+  // Grätsche/Bombe bleibt streng (deutlich nach unten), damit man im Laufen nicht aus Versehen grätscht.
+  let jOn = false, dOn = false;
   const set = (dx, dy) => {
-    const vert = Math.abs(dy) > Math.abs(dx) * 0.9;
+    const ax = Math.abs(dx);
+    jOn = jOn ? dy < -18 : dy < -42 && -dy > ax * 0.5;
+    dOn = dOn ? dy > 18 : dy > 36 && dy > ax * 0.9;
+    if (jOn) dOn = false;
     press(pi, "l", dx < -12); press(pi, "r", dx > 12);
-    press(pi, "j", dy < -44 && vert);
-    press(pi, "d", dy > 36 && vert);
-    base.classList.toggle("up", dy < -44 && vert); base.classList.toggle("dn", dy > 36 && vert);
+    press(pi, "j", jOn);
+    press(pi, "d", dOn);
+    base.classList.toggle("up", jOn); base.classList.toggle("dn", dOn);
     knob.style.transform = `translate(${Math.max(-48, Math.min(48, dx))}px, ${Math.max(-48, Math.min(48, dy))}px)`;
   };
   z.addEventListener("pointerdown", e => {
