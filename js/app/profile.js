@@ -34,13 +34,19 @@ export function addXP(n) {
 }
 export function addCoins(n) { S.coins += n; if (n > 0) S.earned += n; }
 export function owns(kind, id) { return S[kind].includes(id); }
+// Mit Server (app/account.js) bestätigt der Server jeden Kauf, sonst wird er zurückgedreht
+const hooks = { buy: null, serverDaily: false };
+export function setHooks(h) { Object.assign(hooks, h); }
 export function buy(kind, id, price) {
   if (owns(kind, id) || S.coins < price) return false;
-  S.coins -= price; S[kind].push(id); save(); return true;
+  S.coins -= price; S[kind].push(id); save();
+  if (hooks.buy) hooks.buy(kind, id, () => { S.coins += price; S[kind] = S[kind].filter(x => x !== id); save(); });
+  return true;
 }
 
 // Tagesbonus: einmal am Tag, Serie steigt bis 7 Tage
 export function dailyCheck() {
+  if (hooks.serverDaily) return null;   // holt app/account.js beim Server ab
   const d = today();
   if (S.daily.last === d) return null;
   S.daily.streak = S.daily.last === yesterday() ? Math.min(7, S.daily.streak + 1) : 1;
@@ -87,6 +93,7 @@ export function challengeDone() { S.chDone = today(); save(); }
 
 // Angebot des Tages
 export function deal() {
+  if (hooks.buy) return null;   // Rabatt gibt es (noch) nicht auf dem Server
   const d = today();
   if (S.dealBought === d) return null;
   return dealFor(d, S);

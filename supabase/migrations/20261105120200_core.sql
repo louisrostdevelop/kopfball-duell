@@ -147,6 +147,7 @@ language sql stable security definer set search_path = '' as $$
     'tasks', case when pr.tasks_day = current_date then pr.tasks else '[]'::jsonb end,
     'career', pr.career, 'achievements', pr.achievements, 'stats', pr.stats,
     'cpuCoinsToday', case when pr.cap_day = current_date then pr.cap_cpu_coins else 0 end,
+    'imported', pr.imported,
     'season', (select jsonb_build_object('id', s.id, 'endsAt', s.ends_at,
                  'pass', (select jsonb_build_object('points', pp.points, 'premium', pp.premium, 'free', pp.claimed_free, 'premiumClaimed', pp.claimed_premium)
                             from game.pass_progress pp where pp.player_id = pl.id and pp.season_id = s.id),

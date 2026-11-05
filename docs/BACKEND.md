@@ -1,0 +1,165 @@
+# Backend (Supabase)
+
+Alles, was zählt (Münzen, Juwelen, Käufe, Level, Wertung), liegt auf dem Server. Das Backend ist komplett
+Code in `supabase/`. Ein Projekt lässt sich damit jederzeit neu aufsetzen, auch nach einer Pause oder auf
+einem anderen Anbieter mit Postgres.
+
+```
+supabase/
+  migrations/   Schema, Server-Funktionen, Rechte, Wartung (wiederholbar, idempotent)
+  catalog.sql   Köpfe, Bälle, Arenen, Preise, Produkte, Aufgaben (erzeugt: npm run catalog)
+  seed.sql      nur lokal: eine laufende Saison
+  functions/    Edge Functions: create-checkout, stripe-webhook
+  tests/        Datenbank-Tests (Sicherheit, Wirtschaft, Online, Dienste, Gleichzeitigkeit, Sicherung)
+  ops/          deploy.sh, backup.sh, restore.sh, new-season.sql
+  local/        Test- und Entwicklungs-Datenbank ohne Docker, Lasttest
+```
+
+## Aufbau in einem Satz
+
+Daten liegen im privaten Schema `game` (für Clients gesperrt, RLS an, keine Regeln). Clients rufen nur
+Funktionen im Schema `api` auf, die prüfen, rechnen und buchen. Die öffentliche Schnittstelle (PostgREST)
+zeigt nur `api`.
+
+| Schutz | Wie |
+|---|---|
+| Direkter Tabellenzugriff | unmöglich: keine Rechte, RLS ohne Regeln, Schema nicht freigegeben |
+| Funktionen | nur ausdrücklich freigegebene; `search_path = ''` gegen Umleitungen |
+| Doppelte Buchungen | Anfrage-Schlüssel (gleiche Anfrage = gleiche Antwort), Webhook-Kennung eindeutig |
+| Negativer Kontostand | atomare Buchung mit Bedingung, Prüfung in der Tabelle, Buchungsjournal (`ledger`) |
+| Spam | Grenzen pro Spieler und Aktion (`rate_limits`) |
+| Bot-Farmen gegen den Computer | weiches Tageslimit 600 Münzen, harte Grenze 1500 (danach nichts mehr) |
+| Sieg-Absprachen in Ranked | mehr als 5 Spiele desselben Paars in 24 h zählen nicht |
+| Erfundene Ergebnisse | Plausibilitätsprüfung; Online zählt nur, wenn beide Seiten dasselbe melden |
+| Käufe | nur per signiertem Stripe-Webhook, Preis aus der Datenbank, nie vom Client |
+
+## Gemessen (Lasttest, 100 000 Spieler, 2 vCPU, 16 Verbindungen)
+
+`supabase/local/load-test.sh` füllt 100 000 Spieler, 3 Mio. Buchungen, 500 000 Spiele, 1 Mio. Freundschaften (1,1 GB).
+
+| Aufruf | Anfragen/s | vorher |
+|---|---|---|
+| `api.me()` (Start) | ~1600 | |
+| Spiel melden | ~840 | 760 |
+| Bestenliste Top 50 | ~2200 | |
+| Mein Rang | ~7000 | 65 |
+| Warteschlange (beitreten + suchen) | ~1600 | 1040 |
+| Wartung (alle 10 min) | 0,1 s | 216 s |
+
+Zum Vergleich: 1000 gleichzeitige Spieler erzeugen grob 20 bis 50 Anfragen pro Sekunde.
+Die kleinste Supabase-Instanz hat damit viel Luft.
+
+## Neues Projekt aufsetzen (oder nach einer Pause neu)
+
+Einmalig: [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) und `psql` installieren.
+
+1. Projekt anlegen auf supabase.com (Region Frankfurt, `eu-central-1`). Datenbank-Passwort notieren.
+2. Werte holen:
+   - **Projekt-Ref**: steht in der URL `https://<ref>.supabase.co`
+   - **Access Token**: supabase.com → Account → Access Tokens
+   - **DB-URL**: Projekt → Connect → *Session pooler* (Port 5432), Passwort einsetzen
+3. Ausführen:
+   ```bash
+   export SUPABASE_ACCESS_TOKEN=...  SUPABASE_DB_PASSWORD=...  SUPABASE_DB_URL='postgresql://postgres.<ref>:...@...:5432/postgres'
+   bash supabase/ops/deploy.sh <ref>
+   ```
+   Das spielt Migrationen, Katalog und die erste Saison ein und lädt die Edge Functions hoch. Das Skript lässt
+   sich beliebig oft wiederholen.
+4. Im Dashboard einstellen (das geht nicht per Code):
+   - **Authentication → Sign In / Providers**: *Allow anonymous sign-ins* an, *Allow manual linking* an
+   - **Authentication → Attack Protection**: Captcha an (Cloudflare Turnstile, kostenlos). Ohne Captcha kann
+     jemand massenhaft Gast-Konten anlegen. Den Site-Key in `js/content/backend.js` unter `captchaSiteKey` eintragen.
+   - **Authentication → URL Configuration**: Site URL `https://louisrostdevelop.github.io/kopfball-duell/`
+   - **Realtime → Settings**: *Allow public access* aus (nur private Kanäle, die Regeln stehen in den Migrationen)
+   - **Database → Extensions**: `pg_cron` an, dann `bash supabase/ops/deploy.sh <ref>` noch einmal ausführen. Erst
+     danach läuft die Wartung alle 10 Minuten.
+5. Client verbinden: in `js/content/backend.js` die Projekt-URL und den **anon**-Schlüssel eintragen
+   (Project Settings → API). Der Schlüssel ist öffentlich gedacht: die Rechte prüft der Server.
+6. Prüfen: `supabase db lint --linked` sollte keine Warnungen zeigen.
+
+### Pause und Wiederherstellen
+
+- **Free-Plan**: Projekte werden nach 7 Tagen ohne Aktivität pausiert. Im Dashboard mit *Restore* wieder
+  anwerfen, die Daten bleiben erhalten. Ist das Projekt weg, mit den Schritten oben neu aufsetzen und die
+  letzte Sicherung einspielen.
+- **Pro-Plan** (ab 25 $/Monat): wird nie pausiert, tägliche Sicherungen inklusive. Sobald echtes Geld fließt,
+  ist das die richtige Wahl.
+
+## Sicherung
+
+```bash
+SUPABASE_DB_URL=... BACKUP_PASSPHRASE=... bash supabase/ops/backup.sh backups/
+```
+
+Gesichert werden die Konten (`auth.users`, `auth.identities`) und alle Spielerdaten. Struktur und Katalog nicht,
+die kommen aus dem Repo. Die Datei enthält E-Mail-Adressen, deshalb mit Passphrase verschlüsseln und nicht ins
+Repo legen (`backups/` steht in `.gitignore`). `pg_dump` muss mindestens die Postgres-Version des Projekts haben.
+
+Einspielen in ein frisches, leeres Projekt (nach `deploy.sh`):
+
+```bash
+SUPABASE_DB_URL=... BACKUP_PASSPHRASE=... bash supabase/ops/restore.sh backups/kopfball-....sql.gz.gpg
+```
+
+Das läuft als eine Transaktion: entweder alles oder nichts. In ein Projekt, das schon Spieler hat, wird nicht
+eingespielt. `supabase/tests/20_ops.sh` prüft Sicherung und Wiederherstellung bei jedem Testlauf.
+
+## Saisons
+
+Eine Saison dauert 28 Tage. Die nächste anlegen (im SQL-Editor oder per `psql`):
+
+```bash
+psql "$SUPABASE_DB_URL" -f supabase/ops/new-season.sql
+```
+
+Sie beginnt, wenn die letzte endet. Man kann also mehrere im Voraus anlegen. Pass-Stufen und Belohnungen stehen
+in der Datei.
+
+## Zahlungen (Stripe)
+
+1. Stripe-Konto, dann in `supabase/.env.production` (nicht ins Repo):
+   ```
+   STRIPE_SECRET_KEY=sk_live_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   SITE_URL=https://louisrostdevelop.github.io/kopfball-duell/
+   ALLOWED_ORIGINS=https://louisrostdevelop.github.io
+   ```
+   Hochladen: `supabase secrets set --env-file supabase/.env.production` (macht auch `deploy.sh`).
+2. In Stripe einen Webhook auf `https://<ref>.supabase.co/functions/v1/stripe-webhook` anlegen, mit den Ereignissen
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded` und
+   `charge.dispute.created`.
+3. Ablauf:
+   - Der Client ruft `create-checkout` auf. Die Funktion prüft Konto und Produkt, den Preis liest sie aus der Datenbank.
+   - Der Spieler bezahlt bei Stripe.
+   - Stripe meldet die Zahlung an `stripe-webhook`. Erst dann bucht `api.grant_purchase`.
+   - Kann ein Kauf nicht gebucht werden (z. B. das Starterpaket doppelt in zwei Tabs), erstattet die Funktion
+     ihn sofort.
+   - Bei Erstattung oder Rückbuchung werden die Juwelen zurückgeholt, soweit sie noch da sind.
+4. Testen mit Testschlüsseln (`sk_test_...`) und `stripe listen --forward-to <url>`.
+
+Preise und Produkte stehen in `tools/gen-catalog.mjs` und landen über `npm run catalog` in `catalog.sql`.
+
+## Lokal entwickeln (ohne Docker)
+
+```bash
+npm run test:db                 # alle Datenbank-Tests auf einem eigenen Postgres
+node tools/dev-backend.mjs      # lokale Datenbank + Supabase-Ersatz auf :54321
+npm run serve                   # Spiel auf :8765
+# Spiel mit Server: http://localhost:8765/?backend=http://localhost:54321
+```
+
+`tools/dev-backend.mjs` bildet die Supabase-Adressen nach (Gast-Anmeldung, Token, `/rest/v1/rpc`) und ruft die
+echten Funktionen mit den echten Rechten auf. Die Token sind nicht signiert, das Ganze ist also nur für die
+Entwicklung. Mit Docker geht auch der echte Stack: `supabase start`. Die CI testet beides.
+
+Lasttest: `bash supabase/local/load-test.sh 100000 20 16` (Spieler, Sekunden, Verbindungen).
+
+## Wenn es groß wird
+
+| Wann | Was |
+|---|---|
+| Echtes Geld | Pro-Plan (keine Pause, tägliche Sicherungen, Point-in-Time-Recovery dazubuchbar) |
+| > 2 000 gleichzeitig | größere Instanz (Compute Add-on). Die Funktionen sind auf kurze Sperren ausgelegt |
+| > 10 Mio. Buchungen | `ledger` nach Monat partitionieren. Der BRIN-Index auf `created_at` ist schon da |
+| Online-Betrug | Prüfdienst: Eingaben aus dem Storage-Bucket `match-logs` nachsimulieren (`js/core` läuft in Deno) |
+| Bestenlisten sehr groß | sind sie schon: Rang über die Zähltabelle `score_counts`, unabhängig von der Größe |

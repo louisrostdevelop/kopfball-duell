@@ -27,8 +27,8 @@ Welche Adapter benutzt werden, entscheidet nur `js/main.js`.
 |---|---|---|
 | `js/content/` | Spielinhalte als Daten: Köpfe, Bälle, Arenen, Modi, Regel-Optionen, Hindernis-Layouts | nur `content/` |
 | `js/core/` | Spiellogik (`sim/`, ein Modul pro Thema), Computer-Gegner (`ai.js`), Fortschritt und Wirtschaft (`economy.js`). Reine Funktionen, deterministisch mit festem Zufall | `content/`, `core/` |
-| `js/ports/` | Schnittstellen als JSDoc-Typen: `storage.js`, `auth.js`, `transport.js`, `devices.js` | nichts |
-| `js/adapters/` | Umsetzungen der Schnittstellen: `audio/webaudio.js`, `input/dom-input.js`, `net/peerjs.js`, `storage/local.js`, `storage/synced.js`, `auth/guest.js` | `adapters/`, `ports/` |
+| `js/ports/` | Schnittstellen als JSDoc-Typen: `storage.js`, `auth.js`, `transport.js`, `devices.js`, `server.js` | nichts |
+| `js/adapters/` | Umsetzungen der Schnittstellen: `audio/webaudio.js`, `input/dom-input.js`, `net/peerjs.js`, `storage/local.js`, `storage/synced.js`, `auth/guest.js`, `auth/supabase.js`, `server/supabase.js` (+ `supabase-rest.js`, `turnstile.js`) | `adapters/`, `ports/` |
 | `js/app/` | Ablauf: Zustand, Spiel starten/beenden, Hauptschleife, Effekte, Online-Protokoll, Modi, Spielende, Profil-Dienst, Dienste-Register | alles außer `adapters/` |
 | `js/ui/` | Bildschirme (`screens/`), Navigation, Dialoge, Spiel-Knöpfe, DOM-Helfer, Canvas-Zeichnen (`render/`) | alles außer `adapters/` |
 | `js/main.js` | Einstiegspunkt: steckt Adapter ein, lädt Spieler und Profil, baut die Oberfläche auf | alles |
@@ -44,6 +44,13 @@ steckt, legt `main.js` mit `provide({ ... })` fest. Das Profil bekommt seinen Sp
 
 Neuen Adapter bauen = ein Objekt mit den Funktionen aus der passenden Datei in `js/ports/` schreiben
 und in `main.js` einstecken. Spielablauf und Bildschirme ändern sich dabei nicht.
+
+## Server (optional)
+
+Ist in `js/content/backend.js` ein Supabase-Projekt eingetragen, steckt `main.js` statt des lokalen Gasts
+`auth/supabase.js` und den Spiel-Server `server/supabase.js` ein. `app/account.js` übernimmt dann den Stand
+vom Server ins Profil: Käufe, Tagesbonus und Spielmeldungen gehen an den Server, die Anzeige rechnet lokal vor
+und übernimmt danach die Server-Zahlen. Ohne Eintrag läuft alles lokal wie bisher. Backend: `docs/BACKEND.md`.
 
 ## Spiellogik (`js/core/sim/`)
 

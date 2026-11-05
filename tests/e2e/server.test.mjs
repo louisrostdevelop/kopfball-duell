@@ -1,0 +1,101 @@
+// Spiel mit Server: Gast-Konto auf dem Server, Übernahme des lokalen Spielstands, Tagesbonus, Kauf (bestätigt und
+// abgelehnt), Spielmeldung. Läuft gegen tools/dev-backend.mjs auf einer lokalen Postgres-Datenbank mit den echten
+// Migrationen. Ohne Postgres auf dem Rechner wird der Test übersprungen.
+import { test, before, after } from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, mkdtempSync, rmSync, readdirSync, chmodSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { start, openPage, click, VIEW } from "./lib.mjs";
+
+const hasPg = existsSync("/usr/lib/postgresql") && readdirSync("/usr/lib/postgresql").length > 0;
+const DB_SCRIPT = new URL("../../supabase/local/start-db.sh", import.meta.url).pathname;
+let env, be, dir;
+
+before(async () => {
+  if (!hasPg) return;
+  dir = mkdtempSync(join(tmpdir(), "kd-e2e-")); chmodSync(dir, 0o777);
+  const dbUrl = execFileSync("bash", [DB_SCRIPT, dir, "55441"], { encoding: "utf8" }).trim().split("\n").pop();
+  const { startDevBackend } = await import("../../tools/dev-backend.mjs");
+  be = await startDevBackend({ dbUrl, port: 0 });
+  env = await start();
+});
+after(async () => {
+  if (!hasPg) return;
+  await env.close(); await be.close();
+  execFileSync("bash", [DB_SCRIPT, "stop", dir]); rmSync(dir, { recursive: true, force: true });
+});
+
+const S = page => page.evaluate(async () => { const p = await import("/js/app/profile.js"); return JSON.parse(JSON.stringify(p.S)); });
+const db = async (sql, args = []) => (await be.pool.query(sql, args)).rows;
+const until = async (fn, ms = 6000) => { const t = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t > ms) return v; await new Promise(r => setTimeout(r, 150)); } };
+
+test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "kein Postgres" }, async () => {
+  // Lokaler Spielstand von vorher: 1200 Münzen, Tank gekauft
+  const { page, errors } = await openPage(env, VIEW.desktop, { save: { coins: 1200, chars: ["kalle", "yuki", "bolt", "tank"] }, query: `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev` });
+  const sess = await until(() => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null")));
+  assert.ok(sess && sess.user && sess.user.is_anonymous, "Gast-Konto auf dem Server angelegt");
+  const id = sess.user.id;
+
+  // Import: 150 Start + 1050 lokal erspielt; Tank übernommen. Danach Tagesbonus 70 (Serie 1)
+  const w = await until(async () => { const r = await db("select coins from game.wallets where player_id = $1", [id]); return r[0] && Number(r[0].coins) === 1270 && r[0]; });
+  assert.ok(w, "Import + Tagesbonus auf dem Server: " + JSON.stringify(await db("select reason, delta from game.ledger where player_id = $1", [id])));
+  assert.equal((await db("select count(*)::int n from game.inventory where player_id = $1 and item_id = 'head:tank'", [id]))[0].n, 1, "Tank übernommen");
+  await until(async () => (await S(page)).coins === 1270);
+  assert.equal((await S(page)).coins, 1270, "Anzeige = Server");
+  await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
+
+  // Kauf: lokal sofort, Server bestätigt
+  await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 200));
+  await until(async () => (await db("select 1 from game.inventory where player_id = $1 and item_id = 'head:rocco'", [id])).length);
+  await until(async () => (await S(page)).coins === 1070);
+  assert.equal((await S(page)).coins, 1070, "Kauf gebucht");
+
+  // Geschummelt: lokal Münzen erhöht, teuren Kopf gekauft -> Server lehnt ab, wird zurückgedreht
+  await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.coins = 99999; p.buy("chars", "kaiser", 900); p.buy("chars", "max", 600); p.buy("chars", "magnus", 500); });
+  await until(async () => { const s = await S(page); return s.coins < 2000 && !s.chars.includes("max"); });
+  const s = await S(page);
+  const real = Number((await db("select coins from game.wallets where player_id = $1", [id]))[0].coins);
+  assert.equal(s.coins, real, "Münzen wieder wie auf dem Server");
+  const owned = (await db("select item_id from game.inventory where player_id = $1", [id])).map(r => r.item_id.replace("head:", ""));
+  assert.deepEqual([...s.chars].sort(), owned.filter(x => !x.includes(":")).sort(), "Besitz wie auf dem Server");
+  assert.ok(real >= 0 && real <= 1070, "Server hat nur bezahlbare Käufe gebucht");
+
+  // Spiel gegen den Computer: Server bucht die Belohnung
+  const before = real;
+  await click(page, "#btnPlay", 200); await click(page, "#btnKickoff", 3400);
+  await page.evaluate(() => { const A = window.__kd; A.t0 = Date.now() - 60000; A.st.s = [2, 0]; A.st.stats[0].goals = 2; A.st.t = 0.5; });
+  await until(() => page.evaluate(() => window.__kd.screen === "end"));
+  const m = await until(async () => (await db("select delta from game.ledger where player_id = $1 and reason = 'match_cpu'", [id]))[0]);
+  assert.ok(m && m.delta > 0, "Sieg gemeldet und belohnt");
+  const wallet = async () => Number((await db("select coins from game.wallets where player_id = $1", [id]))[0].coins);
+  assert.ok(await wallet() >= before + m.delta, "Belohnung (plus Erfolge) gebucht");
+  await until(async () => (await S(page)).coins === await wallet());
+  assert.equal((await S(page)).coins, await wallet(), "Anzeige = Server nach dem Spiel");
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-pending") || "[]")), [], "keine Meldung hängt");
+  assert.deepEqual(errors.filter(e => !/status of 400/.test(e)), [], "nur die abgelehnten Käufe (400) im Log");
+});
+
+test("Server weg: Spiel läuft weiter, Meldung wird nachgeholt", { skip: !hasPg && "kein Postgres" }, async () => {
+  const q = `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev`;
+  const { page, ctx, errors } = await openPage(env, VIEW.desktop, { query: q });
+  const id = (await until(() => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null"))))?.user?.id;
+  assert.ok(id);
+  await until(async () => (await db("select 1 from game.ledger where player_id = $1 and reason = 'daily'", [id])).length);
+  await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
+  await ctx.route(be.url.replace("127.0.0.1", "localhost") + "/rest/**", r => r.abort());   // Netz zum Server weg
+  await click(page, "#btnPlay", 200); await click(page, "#btnKickoff", 3400);
+  await page.evaluate(() => { const A = window.__kd; A.t0 = Date.now() - 60000; A.st.s = [1, 0]; A.st.stats[0].goals = 1; A.st.t = 0.5; });
+  await until(() => page.evaluate(() => window.__kd.screen === "end"));
+  const pending = () => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-pending") || "[]").length);
+  await until(async () => (await pending()) === 1);
+  await page.waitForTimeout(500);   // Sendeversuch ist gescheitert, Meldung bleibt liegen
+  assert.equal(await pending(), 1, "Meldung wartet im Browser");
+  await ctx.unroute(be.url.replace("127.0.0.1", "localhost") + "/rest/**");
+  await page.reload(); await page.waitForSelector("#loading.done", { state: "attached" });
+  const m = await until(async () => (await db("select delta from game.ledger where player_id = $1 and reason = 'match_cpu'", [id]))[0]);
+  assert.ok(m, "nach dem Neuladen nachgemeldet");
+  assert.equal(await until(async () => (await pending()) === 0) && await pending(), 0, "Warteschlange im Browser leer");
+  assert.deepEqual(errors.filter(e => !/Failed to load resource|ERR_FAILED/.test(e)), []);
+});

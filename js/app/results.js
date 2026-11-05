@@ -11,6 +11,8 @@ import { trophyModal } from "../ui/modals.js";
 import { showEnd } from "../ui/screens/end.js";
 import { runScreen } from "../ui/screens/run.js";
 import { audio as A, net as Net } from "./services.js";
+import { online as serverOn, reportMatch, serverMode } from "./account.js";
+import { refreshTop } from "../ui/screens/home.js";
 
 export function seriesKey() {
   if (App.mode === "local") return "local";
@@ -66,6 +68,19 @@ export function matchEnd() {
   const achs = me >= 0 ? checkAch({ win, myGoals: myS.goals, conceded: st.s[op], superGoals: myS.superGoals, lastSec: myS.lastSecGoals, longGoals: myS.longGoals, maxDeficit: App.maxDef, cupWon: runInfo === "cup", diff: App.cfg.diff, mode: online ? "online" : App.mode === "cup" || App.mode === "endless" || App.mode === "daily" ? "cpu" : App.mode }) : checkAch({});
   save();
   showEnd({ win, me, lines, ups, achs, runInfo });
+  if (serverOn() && serverMode(App.mode)) {
+    const facts = myS ? [myS.goals >= 3 && "hattrick", myS.superGoals > 0 && "supergoal", myS.lastSecGoals > 0 && "lastsec", myS.longGoals > 0 && "longshot", win && App.maxDef >= 2 && "comeback"].filter(Boolean) : [];
+    reportMatch({
+      mode: serverMode(App.mode), won: win, goals: myS ? myS.goals : 0, conceded: me >= 0 ? st.s[op] : 0,
+      duration: Math.round(Math.min(900, (Date.now() - (App.t0 || Date.now())) / 1000)), head: "head:" + (me >= 0 ? st.p[me].ch : S.char), diff: App.cfg.diff ?? 1,
+      stats: myS ? { headGoals: myS.headGoals, pus: myS.pus, stomps: myS.stomps, supers: myS.supers } : {}, facts,
+    }).then(res => {
+      if (!res) return;
+      if (res.capReached) toast("Tageslimit gegen den Computer erreicht. Morgen gibt es wieder Münzen.", "i-lock");
+      else if (res.coinsBeforeCap > res.coins) toast("Ab jetzt heute weniger Münzen gegen den Computer", "i-clock");
+      refreshTop();
+    });
+  }
   A.sfx(me < 0 || win ? "win" : "lose");
   if (win || me < 0) fx.burst("goal", W / 2, 300, { col: COL.gold });
 }

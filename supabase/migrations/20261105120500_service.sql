@@ -10,6 +10,7 @@ declare pr game.products; pid uuid; it text; s integer;
 begin
   select * into pr from game.products where id = product;
   if pr.id is null then perform game.fail('unknown_product'); end if;
+  if amount_cents < pr.price_cents then perform game.fail('amount_mismatch'); end if;
   if pr.once_per_player and exists (select 1 from game.purchases where player_id = player and product_id = product and status = 'paid') then
     perform game.fail('already_owned');
   end if;
@@ -31,6 +32,19 @@ begin
   end loop;
   return jsonb_build_object('purchase', pid);
 end $$;
+
+-- ---------- Shop: Echtgeld-Produkte; "buyable" sagt, ob der Aufrufer es (noch) kaufen kann ----------
+-- Gäste sehen die Preise, kaufen geht nur mit verknüpftem Konto. create-checkout prüft genau hiermit.
+create or replace function api.shop() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', p.id, 'gems', p.gems, 'items', p.items, 'priceCents', p.price_cents, 'currency', p.currency,
+    'buyable', auth.uid() is not null
+      and not coalesce((select u.is_anonymous from auth.users u where u.id = auth.uid()), true)
+      and not (p.once_per_player and exists (select 1 from game.purchases x where x.player_id = auth.uid() and x.product_id = p.id and x.status = 'paid'))
+  ) order by p.price_cents), '[]')
+  from game.products p where p.active
+$$;
 
 -- ---------- Erstattung: Juwelen zurückbuchen (soweit noch vorhanden), Kauf markieren ----------
 create or replace function api.refund_purchase(provider text, provider_ref text) returns jsonb
@@ -101,6 +115,7 @@ end $$;
 
 grant execute on function api.grant_purchase(uuid, text, text, text, integer, text), api.refund_purchase(text, text) to service_role;
 grant execute on function game.rebuild_score_counts() to service_role;
+grant execute on function api.shop() to anon, authenticated, service_role;
 grant execute on function game.maintenance() to service_role;
 
 -- ---------- Regelmäßig ausführen (pg_cron gibt es auf Supabase; lokal ohne Docker evtl. nicht) ----------

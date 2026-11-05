@@ -19,5 +19,10 @@ export const net = port("net");
 /** @type {import("../ports/auth.js").AuthProvider} */
 export const auth = port("auth");
 
-/** @param {{ audio?: object, input?: object, net?: object, auth?: object }} services */
+/** @type {import("../ports/server.js").GameServer} optional: ohne Server läuft alles lokal */
+export const server = port("server");
+
+/** @param {{ audio?: object, input?: object, net?: object, auth?: object, server?: object }} services */
 export function provide(services) { Object.assign(impl, services); }
+/** Ist ein Dienst eingesteckt? (für optionale Dienste wie server) */
+export const has = name => !!impl[name];

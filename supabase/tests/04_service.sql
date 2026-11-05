@@ -22,7 +22,20 @@ begin
   r := api.grant_purchase(u, 'stripe', 'cs_test_2', 'starter', 299, 'EUR');
   perform pg_temp.expect_error($q$select api.grant_purchase('$q$ || u || $q$', 'stripe', 'cs_test_3', 'starter', 299, 'EUR')$q$, 'already_owned');
   r := api.grant_purchase(u, 'stripe', 'cs_test_4', 'premium_pass', 499, 'EUR');
+  perform pg_temp.expect_error($q$select api.grant_purchase('$q$ || u || $q$', 'stripe', 'cs_test_5', 'gems_550', 1, 'EUR')$q$, 'amount_mismatch');
   reset role;
+  -- Shop: Starterpaket nach dem Kauf nicht mehr kaufbar, Gäste können gar nicht kaufen
+  perform set_config('request.jwt.claim.sub', u::text, true);
+  set local role authenticated;
+  r := api.shop();
+  reset role;
+  assert (select not (e->>'buyable')::boolean from jsonb_array_elements(r) e where e->>'id' = 'starter'), 'Starter schon gekauft';
+  assert (select (e->>'buyable')::boolean from jsonb_array_elements(r) e where e->>'id' = 'gems_100'), 'Juwelen kaufbar';
+  set local role anon;
+  perform set_config('request.jwt.claim.sub', '', true);
+  r := api.shop();
+  reset role;
+  assert jsonb_array_length(r) >= 5 and not exists (select 1 from jsonb_array_elements(r) e where (e->>'buyable')::boolean), 'Gast sieht Preise, kauft nicht';
   assert (select gems from game.wallets where player_id = u) = 850, 'Juwelen 550 + 300';
   assert (select premium from game.pass_progress where player_id = u and season_id = game.current_season()), 'Premium-Pass aktiv';
 

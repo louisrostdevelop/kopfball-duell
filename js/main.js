@@ -32,13 +32,23 @@ import * as domInput from "./adapters/input/dom-input.js";
 import * as peerjs from "./adapters/net/peerjs.js";
 import { localProfileStore } from "./adapters/storage/local.js";
 import { guestAuth } from "./adapters/auth/guest.js";
+import { createClient } from "./adapters/server/supabase-rest.js";
+import { supabaseAuth } from "./adapters/auth/supabase.js";
+import { supabaseServer } from "./adapters/server/supabase.js";
+import { turnstileToken } from "./adapters/server/turnstile.js";
+import { BACKEND } from "./content/backend.js";
+import { claimDaily, initAccount, online as serverOn, syncOnStart } from "./app/account.js";
 
 async function boot() {
-  // 1. Dienste einstecken, Spieler und Profil laden
-  const auth = guestAuth();
-  provide({ audio: webAudio, input: domInput, net: peerjs, auth });
+  // 1. Dienste einstecken, Spieler und Profil laden. Mit Server (content/backend.js): Konto und Spielstand dort.
+  const be = backendConfig();
+  const client = be && createClient({ ...be, captcha: be.captchaSiteKey ? turnstileToken(be.captchaSiteKey) : null });
+  const auth = client ? supabaseAuth(client) : guestAuth();
+  provide({ audio: webAudio, input: domInput, net: peerjs, auth, ...(client ? { server: supabaseServer(client) } : {}) });
   await auth.init();
   await initProfile(localProfileStore());
+  initAccount();
+  const synced = serverOn() ? syncOnStart().catch(() => null) : null;
 
   // 2. Oberfläche aufbauen
   initRender($("cv"));
@@ -58,6 +68,7 @@ async function boot() {
     $("loading").classList.add("done"); resize(); homeScreen();
     const d = dailyCheck();
     if (d) setTimeout(() => dailyModal(d), 500);
+    if (synced) synced.then(() => { homeScreen(); return claimDaily(); }).then(x => { if (x) { homeScreen(); setTimeout(() => dailyModal(x), 500); } });
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone;
     if (ios && !S.iosHint) setTimeout(() => { toast("Tipp: Teilen → „Zum Home-Bildschirm“ für Vollbild"); S.iosHint = true; save(); }, d ? 6000 : 2500);
     // Einladungslink: ?join=CODE (alte Links mit #CODE gehen auch)
@@ -67,6 +78,13 @@ async function boot() {
   });
   if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
   window.__kd = App; window.__kdFire = fireSuper; // für Tests
+}
+
+// Server aus content/backend.js; für Tests und Entwicklung auch ?backend=<url>&key=<anon> (nur localhost)
+function backendConfig() {
+  const q = new URLSearchParams(location.search), u = q.get("backend");
+  if (u && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(u)) return { url: u, anonKey: q.get("key") || "dev" };
+  return BACKEND.url && BACKEND.anonKey ? BACKEND : null;
 }
 
 boot();

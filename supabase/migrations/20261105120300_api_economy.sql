@@ -320,7 +320,8 @@ begin
             union all select 'arena:' || x from jsonb_array_elements_text(coalesce(local->'arenas', '[]')) x loop
     if exists (select 1 from game.items where id = it and price_coins is not null and active) then perform game.give_item(p, it, 'import'); end if;
   end loop;
-  c := least(greatest(coalesce((local->>'coins')::integer, 0), 0), game.cfg_int('import_coin_cap'));
+  -- Startguthaben hat das Server-Konto schon: nur was darüber hinaus lokal erspielt wurde
+  c := least(greatest(coalesce((local->>'coins')::integer, 0) - game.cfg_int('start_coins'), 0), game.cfg_int('import_coin_cap'));
   perform game.book(p, 'coins', c, 'import');
   update game.progress set imported = true where player_id = p;
   if local ? 'name' and local->>'name' <> '' then

@@ -12,6 +12,7 @@
     "catalog": "node tools/gen-catalog.mjs"
   },
   "devDependencies": {
+    "pg": "^8.16.3",
     "playwright": "1.63.0"
   }
 }
