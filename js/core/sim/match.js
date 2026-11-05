@@ -41,7 +41,7 @@ export function step(st, dt, inp) {
   if (st.ph === "goal") {
     st.pt -= dt; tickCosmetics(st, dt);
     // Ball und Spieler dürfen nachlaufen
-    st.p.forEach((p, i) => movePlayer(st, p, {}, dt, false));
+    st.p.forEach(p => movePlayer(st, p, {}, dt, false));
     ballPhysics(st, dt, true);
     if (st.pt <= 0) {
       const won = st.rules.win && Math.max(st.s[0], st.s[1]) >= st.rules.win;

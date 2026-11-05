@@ -1,6 +1,6 @@
 // Startseite mit Bühne (jonglierender Kopf), Tageskarten und Kopfzeile
 import { charById, CHARS, DIFFS, MODES, RARITY, rarityOf, SUPERS } from "../../content/config.js";
-import { online as serverOn } from "../../app/account.js";
+import { online as serverOn, passView } from "../../app/account.js";
 import { matchLen } from "../../core/physics.js";
 import { challenge, deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
 import { avatarCanvas, drawBall, drawHead } from "../render/art.js";
@@ -12,8 +12,10 @@ import { selectScreen } from "./select.js";
 import { audio as A } from "../../app/services.js";
 import { dailyBriefing } from "./run.js";
 import { setShopTab } from "./shop.js";
+import { availableModes } from "./modes.js";
 
-export let showcaseT = 0, showcaseTap = 0, juggle = { y: 0, vy: 0, a: 0, hits: 0 };
+export let showcaseT = 0, showcaseTap = 0;
+export const juggle = { y: 0, vy: 0, a: 0, hits: 0 };
 
 // Antippen der Bühne: Kopf nickt, Ball fliegt hoch
 export function tapShowcase() { showcaseTap = 0.5; juggle.vy = Math.min(juggle.vy, -200); A.sfx("head"); }
@@ -23,7 +25,7 @@ export function homeScreen() {
   const c = charById(S.char), rar = rarityOf(c);
   $("stName").textContent = c.name; $("stSuper").textContent = SUPERS[c.super].name;
   const rb = $("stRarity"); rb.textContent = RARITY[rar]; rb.style.setProperty("--rc", RCOL[rar]);
-  const m = MODES.find(x => x.id === S.mode) || MODES[0];
+  const m = availableModes().find(x => x.id === S.mode) || MODES[0];
   $("mcTitle").textContent = m.name;
   let sub = m.desc;
   if (m.id === "daily") { const ch = dailyChallenge(); sub = ch.done ? "Heute geschafft" : `Heute: ${charById(ch.opp).name}, ${ch.presetName}`; }
@@ -67,7 +69,7 @@ export function refreshTop() {
   $("xpTxt").textContent = S.xp + "/" + xpFor(S.level);
   $("starNum").textContent = Object.keys(S.ach).length;
   const tl = tasks(), open = tl.filter(t => !t.done).length, ch = challenge();
-  const tb = $("taskBadge"); const n = open + (ch.done ? 0 : 1); tb.hidden = !n; tb.textContent = n;
+  const tb = $("taskBadge"); const pv = serverOn() && passView(); const n = open + (ch.done ? 0 : 1) + (pv ? pv.claimable : 0); tb.hidden = !n; tb.textContent = n;
   const dl = deal(); $("shopBadge").hidden = !(dl && S.coins >= dl.price) && !CHARS.some(c => !owns("chars", c.id) && c.price <= S.coins);
 }
 

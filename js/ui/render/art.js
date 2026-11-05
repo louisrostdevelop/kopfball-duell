@@ -126,7 +126,7 @@ function capPath(ctx, x, y, r, from, to, inset) {
   ctx.beginPath(); ctx.arc(x, y, r - inset, from, to); ctx.closePath();
 }
 
-function front(ctx, c, x, y, r, dir, lw, o) {
+function front(ctx, c, x, y, r, dir, lw, _o) {
   const H = c.hair, A = c.acc;
   switch (c.style) {
     case "spikes": {
@@ -326,7 +326,7 @@ export function drawBall(ctx, skin, x, y, r, a, alpha = 1, stretch = null) {
 }
 
 // ---------- Power-up Icons ----------
-export function drawPuIcon(ctx, k, x, y, s, col) {
+export function drawPuIcon(ctx, k, x, y, s, _col) {
   ctx.save(); ctx.translate(x, y); ctx.lineJoin = "round"; ctx.lineCap = "round";
   ctx.fillStyle = "#fff"; ctx.strokeStyle = INK; ctx.lineWidth = s * 0.12;
   const P = (pts) => { ctx.beginPath(); pts.forEach(([a, b], n) => n ? ctx.lineTo(a * s, b * s) : ctx.moveTo(a * s, b * s)); ctx.closePath(); ctx.fill(); ctx.stroke(); };
@@ -340,9 +340,9 @@ export function drawPuIcon(ctx, k, x, y, s, col) {
     case "wall": for (let r = 0; r < 3; r++) for (let c = 0; c < 2; c++) { const ox = (c - 1 + (r % 2) * 0.5) * s * 0.7 + s * 0.12, oy = (r - 1) * s * 0.55; ctx.beginPath(); ctx.rect(ox - s * 0.15, oy - s * 0.24, s * 0.62, s * 0.46); ctx.fill(); ctx.stroke(); } break;
     case "biggoal": ctx.beginPath(); ctx.moveTo(-s * 0.85, s * 0.8); ctx.lineTo(-s * 0.85, -s * 0.6); ctx.lineTo(s * 0.85, -s * 0.6); ctx.lineTo(s * 0.85, s * 0.8); ctx.lineWidth = s * 0.26; ctx.stroke(); ctx.lineWidth = s * 0.12; ctx.strokeStyle = "#fff"; ctx.stroke(); P([[0, -0.15], [0.3, 0.25], [-0.3, 0.25]]); break;
     case "meter": P([[-0.15, -0.95], [0.55, -0.95], [0.15, -0.15], [0.6, -0.15], [-0.3, 0.95], [-0.05, 0.1], [-0.5, 0.1]]); break;
-    case "confuse": ctx.beginPath(); for (let k = 0; k < 40; k++) { const t = k / 40 * Math.PI * 4, rr = s * 0.12 + k / 40 * s * 0.75; ctx.lineTo(Math.cos(t) * rr, Math.sin(t) * rr); } ctx.lineWidth = s * 0.28; ctx.stroke(); ctx.lineWidth = s * 0.13; ctx.strokeStyle = "#fff"; ctx.stroke(); break;
+    case "confuse": ctx.beginPath(); for (let n = 0; n < 40; n++) { const t = n / 40 * Math.PI * 4, rr = s * 0.12 + n / 40 * s * 0.75; ctx.lineTo(Math.cos(t) * rr, Math.sin(t) * rr); } ctx.lineWidth = s * 0.28; ctx.stroke(); ctx.lineWidth = s * 0.13; ctx.strokeStyle = "#fff"; ctx.stroke(); break;
     case "dbljump": P([[0, -1], [0.6, -0.45], [0.22, -0.45], [0.22, -0.1], [-0.22, -0.1], [-0.22, -0.45], [-0.6, -0.45]]); P([[0, 0.05], [0.6, 0.6], [0.22, 0.6], [0.22, 0.95], [-0.22, 0.95], [-0.22, 0.6], [-0.6, 0.6]]); break;
-    case "wind": [[-0.45, -0.5, 0.9], [-0.8, 0, 1.4], [-0.55, 0.5, 1]].forEach(([x0, y, w]) => { ctx.beginPath(); ctx.moveTo(x0 * s, y * s); ctx.lineTo((x0 + w) * s, y * s); ctx.quadraticCurveTo((x0 + w + 0.35) * s, (y - 0.05) * s, (x0 + w + 0.2) * s, (y - 0.32) * s); ctx.lineWidth = s * 0.3; ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = s * 0.15; ctx.strokeStyle = "#fff"; ctx.stroke(); }); break;
+    case "wind": [[-0.45, -0.5, 0.9], [-0.8, 0, 1.4], [-0.55, 0.5, 1]].forEach(([x0, wy, w]) => { ctx.beginPath(); ctx.moveTo(x0 * s, wy * s); ctx.lineTo((x0 + w) * s, wy * s); ctx.quadraticCurveTo((x0 + w + 0.35) * s, (wy - 0.05) * s, (x0 + w + 0.2) * s, (wy - 0.32) * s); ctx.lineWidth = s * 0.3; ctx.strokeStyle = INK; ctx.stroke(); ctx.lineWidth = s * 0.15; ctx.strokeStyle = "#fff"; ctx.stroke(); }); break;
   }
   ctx.restore();
 }

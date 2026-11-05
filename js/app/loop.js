@@ -13,7 +13,8 @@ import { $, toast } from "../ui/dom.js";
 import { drawShowcase } from "../ui/screens/home.js";
 import { input as I } from "./services.js";
 
-export let lastT = performance.now(), simT = 0, perf = { t: 0, n: 0, slow: 0 };
+export let lastT = performance.now(), simT = 0;
+export const perf = { t: 0, n: 0, slow: 0 };
 
 export function loop(now) {
   const raw = (now - lastT) / 1000;

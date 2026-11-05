@@ -55,17 +55,17 @@ test("Sync: neueres Profil vom Server gewinnt", async () => {
   const s = syncedProfileStore(local, remote, { delay: 10 });
   let got = null; s.onRemoteChange(p => { got = p; });
   assert.equal((await s.load()).coins, 1, "erst sofort lokal");
-  await new Promise(r => setTimeout(r, 20));
+  await new Promise(r => { setTimeout(r, 20); });
   assert.equal(got.coins, 2); assert.equal(local.data.coins, 2);
 });
 test("Sync: lokal neuer wird hochgeladen, Speichern gebündelt", async () => {
   const local = memStore({ coins: 9, updatedAt: 9 }), remote = memStore({ coins: 2, updatedAt: 5 });
   const s = syncedProfileStore(local, remote, { delay: 20 });
-  await s.load(); await new Promise(r => setTimeout(r, 5));
+  await s.load(); await new Promise(r => { setTimeout(r, 5); });
   assert.equal(remote.data.coins, 9);
   const before = remote.saves;
   for (let i = 0; i < 10; i++) s.save({ coins: 10 + i, updatedAt: 10 + i });
   assert.equal(local.data.coins, 19, "lokal sofort");
-  await new Promise(r => setTimeout(r, 40));
+  await new Promise(r => { setTimeout(r, 40); });
   assert.equal(remote.saves - before, 1, "zum Server nur einmal"); assert.equal(remote.data.coins, 19);
 });

@@ -17,7 +17,7 @@ export function turnstileToken(siteKey) {
     const box = document.createElement("div"); box.style.cssText = "position:fixed;bottom:8px;right:8px;z-index:99";
     document.body.appendChild(box);
     try {
-      return await new Promise((ok, fail) => ts.render(box, { sitekey: siteKey, size: "flexible", appearance: "interaction-only", callback: ok, "error-callback": () => fail(new Error("captcha")), "timeout-callback": () => fail(new Error("captcha_timeout")) }));
+      return await new Promise((ok, fail) => { ts.render(box, { sitekey: siteKey, size: "flexible", appearance: "interaction-only", callback: ok, "error-callback": () => fail(new Error("captcha")), "timeout-callback": () => fail(new Error("captcha_timeout")) }); });
     } finally { setTimeout(() => box.remove(), 500); }
   };
 }

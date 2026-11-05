@@ -21,7 +21,8 @@ const barWob = [9, 9];
 const headSq = [0, 0];
 const swoosh = [];
 const ballSq = { t: 9, ang: 0, p: 0 };
-let crowdHype = 0, flashes = [];
+let crowdHype = 0;
+const flashes = [];
 
 export function initRender(canvas) {
   cv = canvas; ctx = cv.getContext("2d", { alpha: false });
@@ -465,7 +466,7 @@ function netOffset(side, x, y) {
   const d = Math.abs(y - nh.y);
   return Math.max(0, Math.sin(nh.t * 16 + 0.6) * Math.exp(-nh.t * 3.5)) * 26 * nh.p * Math.exp(-(d * d) / 9000) * x;
 }
-function goalBack(st, side, t) {
+function goalBack(st, side, _t) {
   const by = barY(st, side), d = side ? -1 : 1, gl = side ? W - GOAL_W : GOAL_W; // Torlinie (vorne)
   const xb = side ? W : 0;
   netHit[side].t += 1 / 60;
@@ -627,7 +628,7 @@ function drawPlayer(st, p, t, label) {
 }
 // Eisschale um Kopf und Fuß: Kristall-Facetten, Glanz, Eiszapfen, Risse kurz vorm Auftauen
 const ICE_SHAPE = [0, 1].map(i => { seedN = 4242 + i * 99; return Array.from({ length: 11 }, (_, k) => ({ a: k / 11 * TAU + (srand() - 0.5) * 0.35, r: 1.16 + srand() * 0.22 })); });
-function drawIce(p, r, s, t) {
+function drawIce(p, r, s, _t) {
   const pts = ICE_SHAPE[p.i], cy = p.y + r * 0.18, a = clamp(p.frz / 0.25, 0, 1);
   ctx.save(); ctx.globalAlpha = 0.35 + 0.65 * a; ctx.lineJoin = "round";
   // Kopf bläulich einfärben
@@ -875,7 +876,7 @@ export function layoutPreview(arena, obsList, w, h) {
   return c;
 }
 
-function drawPowerups(st, t) {
+function drawPowerups(st, _t) {
   for (const u of st.pu) {
     const y = u.y + Math.sin(u.t * 3) * 8, col = POWERUPS[u.k].col;
     const pop = Math.min(1, u.t * 4) * (u.t > 11 ? (Math.sin(u.t * 20) > 0 ? 1 : 0.4) : 1);

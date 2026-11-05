@@ -32,8 +32,13 @@ export function resolveObs(cfg) {
   return cfg;
 }
 
+// Kopf-Level aus dem Server-Stand (ohne Server immer 1)
+export const headLevel = id => (S.heads && S.heads[id] && S.heads[id].level) || 1;
+
 export function beginMatch(cfg) {
   const orig = cfg; cfg = resolveObs(cfg);
+  // Gegen den Computer zählt nur das eigene Level, zu zweit beide; online bringt der Host die Level mit
+  if (!cfg.levels && cfg.mode !== "guest" && cfg.mode !== "host") cfg = { ...cfg, levels: [headLevel(cfg.chars[0]), cfg.mode === "local" ? headLevel(cfg.chars[1]) : 1] };
   App.cfg = cfg; App.lastCfg = orig;
   App.mode = cfg.mode;
   App.st = newMatch(cfg);

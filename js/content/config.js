@@ -127,6 +127,15 @@ export const rand = (a, b) => a + Math.random() * (b - a);
 export const RARITY = { basis: "Basis", selten: "Selten", episch: "Episch", legend: "Legendär" };
 export const rarityOf = c => !c.price ? "basis" : c.price <= 300 ? "selten" : c.price <= 500 ? "episch" : "legend";
 // Juwelen-Preis von Köpfen nach Seltenheit (Basis-Köpfe gibt es nur für Münzen). Gilt auch auf dem Server (catalog.sql).
+// Kopf-Level 1 bis 10 (Server: head_max_level). Stufe 10 = +25 % Schusskraft, +25 % schnellere Super-Ladung, +5 % Tempo.
+// Sprung bleibt gleich (höhere Sprünge verändern das Timing, das hilft kaum und fühlt sich fremd an).
+// Messung: tools/balance/levels.mjs
+export const HEAD_MAX_LEVEL = 10;
+export const headBonus = lvl => Math.max(0, Math.min(1, ((lvl || 1) - 1) / (HEAD_MAX_LEVEL - 1))) * 0.25;
+export function leveledStats(c, lvl) {
+  const b = headBonus(lvl);
+  return b ? { ...c, pow: c.pow * (1 + b), spd: c.spd * (1 + b * 0.2) } : c;
+}
 export const GEM_PRICE = { basis: null, selten: 300, episch: 450, legend: 600 };
 export const gemPrice = c => GEM_PRICE[rarityOf(c)];
 // Euro-Wert von Juwelen, immer neben Juwelen-Preisen angezeigt (Basis: kleinstes Paket, 100 Juwelen = 0,99 €)
@@ -136,7 +145,10 @@ export const gemsInEuro = n => (n * 0.0099).toFixed(2).replace(".", ",") + " €
 export const MODES = [
   { id: "quick",   name: "Schnelles Spiel",  desc: "Gegen den Computer. Du stellst alles ein.", icon: "i-play",   c1: "#6b9bff", c2: "#2348d6", tags: ["1 Spieler"] },
   { id: "cup",     name: "Cup",              desc: "Drei Gegner, drei Siege, ein Pokal.",        icon: "i-trophy", c1: "#ffd84a", c2: "#e88a00", tags: ["+300 Pokal"] },
-  { id: "online",  name: "Online",           desc: "Link schicken, Kumpel spielt mit.",          icon: "i-globe",  c1: "#b28cff", c2: "#5f33dc", tags: ["2 Spieler"] },
+  // nur mit Server (Gegnersuche): zufälliger Gegner ohne Wertung / mit Liga und Wertung
+  { id: "casual",  name: "Casual",           desc: "Zufälliger Gegner aus aller Welt, ohne Wertung.", icon: "i-globe", c1: "#5fd0ff", c2: "#1773d6", tags: ["Online", "ohne Wertung"], server: true, isNew: true },
+  { id: "ranked",  name: "Ranked",           desc: "Gleich starke Gegner, Liga und Saison-Wertung.", icon: "i-crown", c1: "#ffd84a", c2: "#d97706", tags: ["Online", "Liga"], server: true, isNew: true },
+  { id: "online",  name: "Mit Freunden",     desc: "Link schicken, Kumpel spielt mit.",          icon: "i-globe",  c1: "#b28cff", c2: "#5f33dc", tags: ["2 Spieler"] },
   { id: "local",   name: "Zu zweit",         desc: "Ein Gerät, zwei Spieler.",                   icon: "i-users",  c1: "#ffa06b", c2: "#e04d00", tags: ["2 Spieler"] },
   { id: "daily",   name: "Tages-Challenge",  desc: "Jeden Tag ein fester Gegner mit eigenen Regeln.", icon: "i-cal", c1: "#ff7f8f", c2: "#d61f5a", tags: ["+150 pro Tag"], isNew: true },
   { id: "endless", name: "Endlos",           desc: "Sieg um Sieg. Die Gegner werden härter.",    icon: "i-inf",    c1: "#6ff094", c2: "#179b45", tags: ["Rekord jagen"], isNew: true },

@@ -14,7 +14,7 @@ export function coreFiles() {
 }
 export function renderList(files) {
   const lines = []; let cur = "  ";
-  for (const f of files.map(f => JSON.stringify(f))) { if (cur.length + f.length > 110) { lines.push(cur.trimEnd()); cur = "  "; } cur += f + ", "; }
+  for (const f of files.map(x => JSON.stringify(x))) { if (cur.length + f.length > 110) { lines.push(cur.trimEnd()); cur = "  "; } cur += f + ", "; }
   lines.push(cur.replace(/, $/, ""));
   return "const CORE = [\n" + lines.join("\n") + "\n];";
 }

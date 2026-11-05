@@ -61,7 +61,7 @@ test("Handy-Touch", async t => {
   await t.test("rechts nur Schuss und Super", async () => assert.equal(await page.locator(".tbtn.jmp, .tbtn.dwn").count(), 0));
   await t.test("Blitz-Tipp irgendwo rechts = Schuss", async () => {
     const x = tz.x + tz.width * 0.3, y = tz.y + tz.height * 0.3;
-    await page.evaluate(([x, y]) => { const z = document.querySelector(".tzone"); for (const type of ["pointerdown", "pointerup"]) z.dispatchEvent(new PointerEvent(type, { pointerId: 9, clientX: x, clientY: y, bubbles: true, pointerType: "touch" })); }, [x, y]);
+    await page.evaluate(([px, py]) => { const zone = document.querySelector(".tzone"); for (const type of ["pointerdown", "pointerup"]) zone.dispatchEvent(new PointerEvent(type, { pointerId: 9, clientX: px, clientY: py, bubbles: true, pointerType: "touch" })); }, [x, y]);
     assert.deepEqual(await ev(), ["swing0"]);
   });
   await page.waitForTimeout(400);

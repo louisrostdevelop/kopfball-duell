@@ -7,8 +7,10 @@ import { dailyChallenge } from "../../app/modes.js";
 import { $, esc, svg } from "../dom.js";
 import { dailyBriefing } from "./run.js";
 import { registerScreen } from "../nav.js";
+import { passButton } from "./pass.js";
 
 export function tasksScreen() {
+  passButton();
   const c = dailyChallenge(), o = charById(c.opp), card = $("challengeCard");
   card.innerHTML = `<div class="ch-head">${svg("i-cal")}<h3>Tages-Challenge</h3></div>`;
   const row = document.createElement("div"); row.className = "ch-row";

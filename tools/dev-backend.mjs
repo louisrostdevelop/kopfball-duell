@@ -72,7 +72,7 @@ export async function startDevBackend({ dbUrl, port = 54321, log = false } = {})
       return send(404, { message: "not_found" });
     } catch (e) { return send(500, { message: String(e.message || e) }); }
   });
-  await new Promise(r => server.listen(port, "127.0.0.1", r));
+  await new Promise(r => { server.listen(port, "127.0.0.1", r); });
   return { url: `http://127.0.0.1:${server.address().port}`, pool, dbUrl, close: async () => { server.close(); await pool.end(); } };
 }
 

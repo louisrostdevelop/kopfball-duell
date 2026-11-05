@@ -29,7 +29,7 @@ after(async () => {
 
 const S = page => page.evaluate(async () => { const p = await import("/js/app/profile.js"); return JSON.parse(JSON.stringify(p.S)); });
 const db = async (sql, args = []) => (await be.pool.query(sql, args)).rows;
-const until = async (fn, ms = 6000) => { const t = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t > ms) return v; await new Promise(r => setTimeout(r, 150)); } };
+const until = async (fn, ms = 6000) => { const t = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t > ms) return v; await new Promise(r => { setTimeout(r, 150); }); } };
 
 test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "kein Postgres" }, async () => {
   // Lokaler Spielstand von vorher: 1200 Münzen, Tank gekauft
@@ -63,14 +63,14 @@ test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "
   assert.ok(real >= 0 && real <= 1070, "Server hat nur bezahlbare Käufe gebucht");
 
   // Spiel gegen den Computer: Server bucht die Belohnung
-  const before = real;
+  const coinsBefore = real;
   await click(page, "#btnPlay", 200); await click(page, "#btnKickoff", 3400);
   await page.evaluate(() => { const A = window.__kd; A.t0 = Date.now() - 60000; A.st.s = [2, 0]; A.st.stats[0].goals = 2; A.st.t = 0.5; });
   await until(() => page.evaluate(() => window.__kd.screen === "end"));
   const m = await until(async () => (await db("select delta from game.ledger where player_id = $1 and reason = 'match_cpu'", [id]))[0]);
   assert.ok(m && m.delta > 0, "Sieg gemeldet und belohnt");
   const wallet = async () => Number((await db("select coins from game.wallets where player_id = $1", [id]))[0].coins);
-  assert.ok(await wallet() >= before + m.delta, "Belohnung (plus Erfolge) gebucht");
+  assert.ok(await wallet() >= coinsBefore + m.delta, "Belohnung (plus Erfolge) gebucht");
   await until(async () => (await S(page)).coins === await wallet());
   assert.equal((await S(page)).coins, await wallet(), "Anzeige = Server nach dem Spiel");
   assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-pending") || "[]")), [], "keine Meldung hängt");
@@ -98,4 +98,45 @@ test("Server weg: Spiel läuft weiter, Meldung wird nachgeholt", { skip: !hasPg 
   assert.ok(m, "nach dem Neuladen nachgemeldet");
   assert.equal(await until(async () => (await pending()) === 0) && await pending(), 0, "Warteschlange im Browser leer");
   assert.deepEqual(errors.filter(e => !/Failed to load resource|ERR_FAILED/.test(e)), []);
+});
+
+test("Saison-Pass abholen, Kopf aufwerten, Casual/Ranked in der Modus-Auswahl", { skip: !hasPg && "kein Postgres" }, async () => {
+  const q = `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev`;
+  const { page, errors } = await openPage(env, VIEW.desktop, { query: q });
+  const id = (await until(() => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null"))))?.user?.id;
+  await until(async () => (await db("select 1 from game.ledger where player_id = $1 and reason = 'daily'", [id])).length);
+  await db("select game.book($1, 'coins', 3000, 't'), game.book($1, 'gems', 600, 't'), game.add_pass_points($1, 130)", [id]);
+  await db("update game.heads set xp = 100 where player_id = $1 and head_id = 'head:kalle'", [id]);
+  await page.evaluate(async () => { const a = await import("/js/app/account.js"); const s = await import("/js/app/services.js"); a.applyState(await s.server.state()); });
+  await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
+
+  // Modus-Auswahl: Casual und Ranked da (Ranked als Gast gesperrt)
+  await click(page, "#modeCard", 300);
+  const names = await page.$$eval("#modeGrid .mcard b", els => els.map(e => e.textContent));
+  assert.ok(names.includes("Casual") && names.includes("Ranked"), names.join(","));
+  assert.ok(await page.locator("#modeGrid .mcard.locked", { hasText: "Ranked" }).count() === 1, "Ranked gesperrt für Gäste");
+  await click(page, "#scr-modes [data-back]");
+
+  // Pass: drei Stufen erreicht, Gratis abholen, Premium mit Juwelen
+  await click(page, "#navTasks", 300);
+  assert.equal(await page.textContent("#passBadge"), "3");
+  await click(page, "#btnPass", 400);
+  await click(page, ".ptier:nth-child(1) .pt-cell.free .btn.yellow", 600);
+  assert.equal((await db("select claimed_free from game.pass_progress where player_id = $1", [id]))[0].claimed_free, "1");
+  await click(page, ".pt-premium .btn.pink", 800);
+  assert.ok((await db("select premium from game.pass_progress where player_id = $1", [id]))[0].premium, "Premium gekauft");
+  await click(page, ".ptier:nth-child(1) .pt-cell.prem .btn.yellow", 600);
+  assert.equal((await db("select claimed_premium from game.pass_progress where player_id = $1", [id]))[0].claimed_premium, "1");
+
+  // Kopf aufwerten: Kalle hat 100 Kopf-XP = genug für Level 2 (kostet 200 Münzen)
+  await click(page, "#scr-pass [data-back]"); await click(page, "#scr-tasks [data-back]");
+  await click(page, "#navHeads", 400);
+  await click(page, "#ciLevel .btn", 800);
+  assert.equal((await db("select level from game.heads where player_id = $1 and head_id = 'head:kalle'", [id]))[0].level, 2);
+  assert.match(await page.textContent("#ciLevel"), /Level 2/);
+  // Spiel mit Level 2: Kopf-Level im Spiel
+  await click(page, "#btnSelOk", 300);
+  await click(page, "#btnPlay", 300); await click(page, "#btnKickoff", 600);
+  assert.deepEqual(await page.evaluate(() => window.__kd.st.lv), [2, 1]);
+  assert.deepEqual(errors.filter(e => !/status of 400/.test(e)), []);
 });

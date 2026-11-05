@@ -84,7 +84,7 @@ function matched(r) {
   } else {
     let tries = 0;
     const join = () => Net.join(roomOf(r.match), {
-      onConn: () => Net.send({ t: "hello", name: S.name || "Gast", ch: S.char, v: VERSION }),
+      onConn: () => Net.send({ t: "hello", name: S.name || "Gast", ch: S.char, lv: 1, v: VERSION }),   // Level kommt vom Server
       onData: d => { guestData(d); if (d.t === "welcome" && App.mm) { App.mm.state = "play"; clearTimeout(timer); searchUI(App.mm); } },
       onClose,
       onError: (t, wasOk) => { if (wasOk || my !== gen) return; if (t === "peer-unavailable" && ++tries < 12) setTimeout(() => { if (my === gen) join(); }, 1500); else fail("Verbindung zum Gegner fehlgeschlagen (" + t + ")."); },
@@ -107,7 +107,7 @@ export async function reportResult(score, duration) {
   try { res = await server.reportOnline(mm.match, { score, duration: Math.max(10, Math.min(900, Math.round(duration))) }); }
   catch (e) { return { status: "error", error: e }; }
   for (let i = 0; res.status === "waiting" && i < 15; i++) {
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => { setTimeout(r, 2000); });
     try { res = await server.matchStatus(mm.match); if (res.status === "open") res.status = "waiting"; } catch (_) {}
   }
   server.state().then(applyState).catch(() => {});

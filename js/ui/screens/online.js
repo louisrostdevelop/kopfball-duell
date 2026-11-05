@@ -3,6 +3,7 @@ import { ARENAS, charById, SUPERS } from "../../content/config.js";
 import { owns, S, save } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
 import { sendNetCfg, hostGame, tryJoin, hostStart } from "../../app/online.js";
+import { headLevel } from "../../app/game.js";
 import { App } from "../../app/state.js";
 import { $, seg, shareOrCopy, copyText } from "../dom.js";
 import { showScreen, registerScreen, swapScreen, goBack } from "../nav.js";
@@ -79,7 +80,7 @@ export function initOnline() {
   $("btnLobbyLeave").onclick = goBack;
   $("btnLobbyStart").onclick = () => { A.sfx("click"); hostStart(); };
   $("btnLobbyRules").onclick = () => { A.sfx("click"); App.netCfg.rules = App.netCfg.rules || {}; rulesScreen(App.netCfg.rules, () => { S.rules = { ...App.netCfg.rules }; save(); Net.send({ t: "cfg", cfg: App.netCfg }); }); };
-  $("btnLobbyHead").onclick = () => { A.sfx("click"); selectScreen({ title: "Kopf wechseln", okText: "Übernehmen", onDone: id => { S.char = id; save(); Net.send({ t: "pick", ch: id }); goBack(); } }); };
+  $("btnLobbyHead").onclick = () => { A.sfx("click"); selectScreen({ title: "Kopf wechseln", okText: "Übernehmen", onDone: id => { S.char = id; save(); Net.send({ t: "pick", ch: id, lv: headLevel(id) }); goBack(); } }); };
   $("btnShare").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) shareOrCopy({ title: "Kopfball Duell", text: "Kopfball Duell gegen mich? Tipp auf den Link: " + link }); };
   $("btnCopyLink").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) copyText(link); };
 }

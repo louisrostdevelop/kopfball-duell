@@ -264,7 +264,8 @@ language plpgsql security definer set search_path = '' as $$
 begin
   if rw ? 'coins' then perform game.book(p, 'coins', (rw->>'coins')::integer, why); end if;
   if rw ? 'gems' then perform game.book(p, 'gems', (rw->>'gems')::integer, why); end if;
-  if rw ? 'item' then perform game.give_item(p, rw->>'item', why); end if;
+  -- Gegenstand schon im Besitz: 200 Münzen statt nichts
+  if rw ? 'item' and not game.give_item(p, rw->>'item', why) then perform game.book(p, 'coins', 200, why || '_dup', rw->>'item'); end if;
 end $$;
 
 create or replace function api.claim_pass(tier integer, premium boolean) returns jsonb

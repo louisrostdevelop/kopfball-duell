@@ -46,7 +46,7 @@ function play(k, arena, lagSide) {
   let shot = null;
   while (st.ph !== "end" && t < 200) {
     t += DT;
-    let inp = [AI.aiInput(a[0], st, DT), AI.aiInput(a[1], st, DT)];
+    const inp = [AI.aiInput(a[0], st, DT), AI.aiInput(a[1], st, DT)];
     if (lagSide >= 0) { q.push(inp[lagSide]); inp[lagSide] = q.length > lagN ? q.shift() : {}; }
     acc = P.advance(st, DT, inp, acc);
     const b = st.b, sp = Math.hypot(b.vx, b.vy);

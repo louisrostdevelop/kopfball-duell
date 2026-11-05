@@ -27,6 +27,8 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     importLocal: profile => client.rpc("import_local", { local: profile }),
     setName: name => client.rpc("set_name", { new_name: name }),
     shop: () => client.rpc("shop"),
+    claimPass: (tier, premium) => client.rpc("claim_pass", { tier, premium }),
+    buyPassWithGems: () => client.rpc("buy_pass_with_gems", { request_key: key() }),
     // Online mit Warteschlange (Casual / Ranked)
     queueJoin: (mode, head) => client.rpc("queue_join", { queue_mode: mode, head }),
     queuePoll: () => client.rpc("queue_poll"),

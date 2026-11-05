@@ -18,7 +18,7 @@ export function serve(port = 0) {
       res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream" }).end(body);
     } catch { res.writeHead(404).end(); }
   });
-  return new Promise(ok => server.listen(port, "127.0.0.1", () => ok({ server, url: `http://127.0.0.1:${server.address().port}` })));
+  return new Promise(ok => { server.listen(port, "127.0.0.1", () => ok({ server, url: `http://127.0.0.1:${server.address().port}` })); });
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

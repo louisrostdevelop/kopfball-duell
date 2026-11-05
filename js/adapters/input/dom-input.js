@@ -6,7 +6,7 @@ const tap = [{}, {}];
 const kbTap = new Set();
 const pads = [{}, {}];
 let layout = "none", root = null, hooks = {};
-let padPrev = [];
+const padPrev = [];
 export let isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 export let usedPad = false;
 
@@ -94,9 +94,9 @@ function stickZone(pi) {
   // Grätsche/Bombe bleibt streng (deutlich nach unten), damit man im Laufen nicht aus Versehen grätscht.
   let jOn = false, dOn = false;
   const set = (dx, dy) => {
-    const ax = Math.abs(dx);
-    jOn = jOn ? dy < -18 : dy < -42 && -dy > ax * 0.5;
-    dOn = dOn ? dy > 18 : dy > 36 && dy > ax * 0.9;
+    const adx = Math.abs(dx);
+    jOn = jOn ? dy < -18 : dy < -42 && -dy > adx * 0.5;
+    dOn = dOn ? dy > 18 : dy > 36 && dy > adx * 0.9;
     if (jOn) dOn = false;
     press(pi, "l", dx < -12); press(pi, "r", dx > 12);
     press(pi, "j", jOn);

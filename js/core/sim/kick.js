@@ -1,8 +1,9 @@
 // Schuss: Ausholen, Loslassen, Schussart und Richtung
-import { G, SR, KS, charById, clamp } from "../../content/config.js";
+import { G, SR, KS, clamp } from "../../content/config.js";
 import { ev, pr, shoePos } from "./base.js";
 import { endSlide } from "./tricks.js";
 import { AIR, KICK } from "./tuning.js";
+import { headStats } from "./rules.js";
 
 export function swingNow(st, p) {
   p.kick = KICK.swing; p.kHit = false; p.kHitP = false; p.kPow = 1 + p.charge * 0.75;
@@ -60,7 +61,7 @@ export function kickKind(b) {
 }
 
 export function kickVec(st, p, b, c, qm, pm) {
-  const kind = kickKind(b), ch = charById(p.ch);
+  const kind = kickKind(b), ch = headStats(st, p);
   const base = ((KICK.tap + 400 * (ch.pow - 1)) * pm + KICK.chargeAdd * c) * qm, lift = (0.7 + 0.3 * qm) / AIR.tb;
   // Lupfer: auch waagrecht langsamer, damit er bei gleicher Höhe an derselben Stelle landet
   if (kind === "lob") return { kind, vx: base * 0.5 / AIR.tb, vy: -(800 + 380 * c) * lift };
@@ -73,7 +74,7 @@ export function kickPreview(st, p) {
   const b = st.b, fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
   const reach = 66 * KS * p.sc + b.r;
   if (Math.hypot(b.x - fx, b.y - fy) > reach * 2 || (b.x - p.x) * p.dir < -18 * KS * p.sc) return null;
-  const pm = charById(p.ch).pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
+  const pm = headStats(st, p).pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
   const kv = kickVec(st, p, b, p.charge, 1, pm);
   return { kind: kv.kind, ang: Math.atan2(kv.vy, p.dir * kv.vx), c: p.charge };
 }

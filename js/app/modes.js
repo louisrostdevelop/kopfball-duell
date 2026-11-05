@@ -8,6 +8,20 @@ import { dailyBriefing, runScreen } from "../ui/screens/run.js";
 import { selectScreen } from "../ui/screens/select.js";
 import { setupScreen } from "../ui/screens/setup.js";
 import { audio as A } from "./services.js";
+import { online as serverOn } from "./account.js";
+import { errText, findMatch } from "./matchmaking.js";
+import { modeLock } from "../ui/screens/modes.js";
+import { showScreen } from "../ui/nav.js";
+import { toast } from "../ui/dom.js";
+
+// Gegnersuche direkt aus der Modus-Auswahl
+function startSearch(id) {
+  if (!serverOn()) { openOnline(); return; }
+  const lock = modeLock(id);
+  if (lock === "Konto nötig") { toast("Für Ranked brauchst du ein Konto", "i-user"); showScreen("settings"); return; }
+  if (lock) { toast(`${id === "ranked" ? "Ranked" : "Casual"} gibt es ${lock}. Spiel ein paar Runden gegen den Computer.`, "i-lock"); return; }
+  findMatch(id).catch(e => toast(errText(e), "i-close"));
+}
 
 export function cpuNames(opp) { return [S.name || "Du", charById(opp).name]; }
 
@@ -17,6 +31,7 @@ export function startMode(id) {
     case "quick": setupScreen({ mode: "cpu" }); break;
     case "local": App.local2 = [S.char]; selectScreen({ title: "Spieler 2: Kopf wählen", cur: CHARS.find(c => c.id !== S.char && owns("chars", c.id)).id, p2: true, okText: "Weiter", onDone: id2 => { App.local2[1] = id2; setupScreen({ mode: "local" }); } }); break;
     case "online": openOnline(); break;
+    case "casual": case "ranked": startSearch(id); break;
     case "cup": startCup(); break;
     case "endless": startEndless(); break;
     case "daily": dailyBriefing(); break;

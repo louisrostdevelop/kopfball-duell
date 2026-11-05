@@ -39,7 +39,7 @@ export function createClient({ url, anonKey, storage = globalThis.localStorage, 
   async function refresh() {
     if (!session || !session.refresh_token) return null;
     refreshing = refreshing || call("/auth/v1/token?grant_type=refresh_token", { body: { refresh_token: session.refresh_token } })
-      .then(d => (keep(fromAuth(d)), session))
+      .then(d => { keep(fromAuth(d)); return session; })
       .catch(e => { if (e.status === 400 || e.status === 401) keep(null); throw e; })   // Token ungültig: neu anmelden
       .finally(() => { refreshing = null; });
     return refreshing;
@@ -63,10 +63,10 @@ export function createClient({ url, anonKey, storage = globalThis.localStorage, 
       return go(s2.access_token);
     }
   }
-  async function fn(name, body) { const s = await ensureSession(); return call("/functions/v1/" + name, { body, token: s.access_token }); }
+  async function callFn(name, body) { const s = await ensureSession(); return call("/functions/v1/" + name, { body, token: s.access_token }); }
 
   return {
-    ensureSession, rpc, fn,
+    ensureSession, rpc, fn: callFn,
     user: () => session && session.user,
     onAuthChange(cb) { subs.push(cb); },
     /** Gast behält ID und Spielstand: E-Mail (und Passwort) hinzufügen. Supabase schickt eine Bestätigungs-Mail. */

@@ -85,7 +85,7 @@ export function fireSuper(st, p, kind) {
 
 export function superStep(st, b, dt) {
   b.fxT += dt;
-  const t = target(st, b.fxO, false), t2 = target(st, b.fxO, true);
+  const t = target(st, b.fxO, false);
   switch (b.fx) {
     case "fire": if (b.fxT > 1.6) endFx(st); break;
     case "ice": if (b.fxT > 1.6) endFx(st); break;

@@ -3,16 +3,22 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test \"tests/sim/*.test.mjs\"",
+    "test": "npm run lint && node --test \"tests/sim/*.test.mjs\"",
     "test:e2e": "node --test --test-concurrency=1 \"tests/e2e/*.test.mjs\"",
     "test:all": "npm test && npm run test:e2e",
     "golden:update": "UPDATE_GOLDEN=1 node tests/sim/golden.test.mjs",
     "serve": "node tools/serve.mjs",
     "test:db": "bash supabase/local/run-tests.sh",
-    "catalog": "node tools/gen-catalog.mjs"
+    "catalog": "node tools/gen-catalog.mjs",
+    "lint": "eslint --max-warnings 0 . && stylelint --max-warnings 0 \"css/**/*.css\""
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
     "pg": "^8.16.3",
-    "playwright": "1.63.0"
+    "playwright": "1.63.0",
+    "stylelint": "^16.25.0",
+    "stylelint-config-standard": "^39.0.1"
   }
 }

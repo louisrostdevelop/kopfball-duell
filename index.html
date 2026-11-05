@@ -143,6 +143,7 @@
         <h3 id="ciName">Kalle</h3>
         <div class="superbox"><svg><use href="#i-bolt"/></svg><div><b id="ciSuper">Feuerball</b><p id="ciDesc"></p></div></div>
         <div class="stats" id="ciStats"></div>
+        <div class="headlv" id="ciLevel" hidden></div>
         <button class="btn green" id="btnSelOk">Auswählen</button>
       </aside>
     </div>
@@ -269,11 +270,18 @@
 
   <!-- Aufgaben -->
   <section class="screen" id="scr-tasks" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Aufgaben</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Aufgaben</h2><span class="grow"></span><button class="btn small purple" id="btnPass" hidden><svg><use href="#i-crown"/></svg>Saison-Pass<i class="badge" id="passBadge" hidden></i></button></header>
     <div class="taskwrap">
       <div class="challenge" id="challengeCard"></div>
       <div class="panel"><h4>Heute</h4><div class="tasklist" id="taskList"></div><p class="hint">Jeden Tag gibt's drei neue.</p></div>
     </div>
+  </section>
+
+  <!-- Saison-Pass -->
+  <section class="screen" id="scr-pass" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Saison-Pass</h2><span class="grow"></span><span class="chip gem-chip static"><span class="gem"></span><b class="gemNum">0</b></span></header>
+    <div class="passtop" id="passTop"></div>
+    <div class="passtrack" id="passTrack"></div>
   </section>
 
   <!-- Erfolge -->

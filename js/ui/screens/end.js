@@ -17,7 +17,7 @@ export function showEnd(r) {
   [0, 1].forEach(i => { const av = $("endAv" + i); av.innerHTML = ""; const won = st.s[i] > st.s[1 - i]; av.append(avatarCanvas(st.p[i].ch, 92, { dir: i ? -1 : 1, mood: won ? "happy" : st.s[i] < st.s[1 - i] ? "sad" : "" })); $("endN" + i).textContent = App.names[i]; });
   $("endS0").textContent = a; $("endS1").textContent = b;
   const s0 = st.stats[0], s1 = st.stats[1];
-  const rows = [["Schüsse", s0.shots, s1.shots], ["Kopfbälle", s0.heads, s1.heads], ["Spezialschüsse", s0.supers, s1.supers], ["Power-ups", s0.pus, s1.pus], ["Schubser", s0.stomps, s1.stomps]].filter(r => r[1] + r[2] > 0);
+  const rows = [["Schüsse", s0.shots, s1.shots], ["Kopfbälle", s0.heads, s1.heads], ["Spezialschüsse", s0.supers, s1.supers], ["Power-ups", s0.pus, s1.pus], ["Schubser", s0.stomps, s1.stomps]].filter(row => row[1] + row[2] > 0);
   $("endStats").innerHTML = rows.map(([l, x, y]) => `<span class="v">${x}</span><span class="lbl">${l}</span><span class="v r">${y}</span>`).join("");
   const rw = $("endRewards"); rw.innerHTML = "";
   r.lines.forEach(([l, c], n) => { const d = document.createElement("div"); d.className = "rw-line"; d.style.animationDelay = (0.2 + n * 0.22) + "s"; d.innerHTML = `<span class="coin"></span><b>+${c}</b><span>${esc(l)}</span>`; rw.append(d); setTimeout(() => A.sfx("coin"), 200 + n * 220); });

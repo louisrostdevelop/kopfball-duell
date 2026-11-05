@@ -1,5 +1,5 @@
 // Spielregeln: Standardwerte, Spiellänge und abgeleitete Faktoren (Gewicht, Schusskraft, Schwerkraft, Tempo-Limit)
-import { BR, arenaById } from "../../content/config.js";
+import { BR, arenaById, charById, leveledStats } from "../../content/config.js";
 import { BG, KICK } from "./tuning.js";
 
 // Eigene Regeln (für Spiele gegen Freunde). Alle Werte optional.
@@ -22,3 +22,13 @@ export const gMul = st => arenaById(st.arena).g * (st.mod === "lowgrav" ? 0.55 :
 
 // Ball
 export function maxBall(st) { return KICK.cap * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed) * Math.max(1, st.rules.kick || 1); }
+
+// Werte eines Kopfs im Spiel: Grundwerte des Kopfs plus Kopf-Level (st.lv, vom Server; ohne Angabe Level 1)
+const statCache = new WeakMap();
+export function headStats(st, p) {
+  const lv = (st.lv && st.lv[p.i]) || 1, c = charById(p.ch);
+  if (lv <= 1) return c;
+  let m = statCache.get(st); if (!m) statCache.set(st, m = {});
+  const k = p.ch + ":" + lv;
+  return m[k] || (m[k] = leveledStats(c, lv));
+}

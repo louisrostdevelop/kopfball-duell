@@ -125,6 +125,7 @@ begin
   r := api.report_cpu_match(pg_temp.cpu('cpu', false, 1, 3, 'head:tank'), 'match-key-v001');
   assert (r->'state'->>'passPoints')::int = 5 and (api.me()->'season'->'pass'->>'points')::int = 5, 'Pass-Punkte';
   r := api.claim_pass(0, false);
+  assert jsonb_typeof(r->'season'->'tiers') = 'array' and (r->'season'->'pass'->>'free')::int = 1, 'Stufen im Zustand, Stufe 0 abgeholt';
   perform pg_temp.expect_error('select api.claim_pass(0, false)', 'already_claimed');
   perform pg_temp.expect_error('select api.claim_pass(0, true)', 'no_premium');
   perform pg_temp.expect_error('select api.claim_pass(1, false)', 'not_reached');

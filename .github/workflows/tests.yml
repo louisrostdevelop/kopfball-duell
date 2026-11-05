@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   spiellogik:
-    name: Spiellogik (Referenzspiele + Matrix)
+    name: Lint + Spiellogik (Referenzspiele + Matrix)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -21,7 +21,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
+          cache: npm
+      - run: npm ci
+      - run: npm test   # Lint (ESLint, Stylelint) + Spiellogik
 
   browser:
     name: Browser (Menüs, Steuerung, Online, Server, Handy-Layout)

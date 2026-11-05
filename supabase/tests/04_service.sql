@@ -63,3 +63,18 @@ begin
   assert not exists (select 1 from game.requests where key = 'old-request-key'), 'alte Doppelt-Schutz-Einträge weg';
 end $$;
 rollback;
+
+-- Pass-Belohnung, die man schon hat: 200 Münzen statt nichts
+begin;
+do $$
+declare u uuid; c0 bigint;
+begin
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into u;
+  perform game.give_item(u, 'ball:gold', 'test');
+  select coins into c0 from game.wallets where player_id = u;
+  perform game.give_reward(u, '{"item": "ball:gold"}', 'pass_premium');
+  assert (select coins from game.wallets where player_id = u) = c0 + 200, 'Ersatz für doppelten Gegenstand';
+  perform game.give_reward(u, '{"item": "ball:neon"}', 'pass_premium');
+  assert exists (select 1 from game.inventory where player_id = u and item_id = 'ball:neon'), 'neuer Gegenstand';
+end $$;
+rollback;

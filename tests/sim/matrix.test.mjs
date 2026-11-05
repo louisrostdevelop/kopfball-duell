@@ -9,8 +9,7 @@ const { W, G, FOOT, SR } = C;
 const DT = 1 / 120;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rows = [];
-let fails = 0;
-function check(name, ok, info = "") { rows.push([ok ? "OK " : "FAIL", name, info]); if (!ok) fails++; }
+function check(name, ok, info = "") { rows.push([ok ? "OK " : "FAIL", name, info]); }
 
 function setup(o = {}) {
   const st = P.newMatch({ chars: ["kalle", "yuki"], arena: o.arena || "stadion", dur: 90, pus: false, golden: false, rules: o.rules || {} });
@@ -23,7 +22,8 @@ function setup(o = {}) {
 }
 const rest = p => G - (FOOT + SR) * p.sc;
 // Läuft n Schritte, inp(t) liefert Eingabe für Spieler 0
-function run(st, secs, inp0, inp1 = () => ({}), each) {
+function run(st, secs, inp0, inp1, each) {
+  inp1 ??= () => ({});
   const n = Math.round(secs / DT);
   for (let k = 0; k < n; k++) {
     const t = k * DT;
@@ -81,7 +81,7 @@ check("Mond: Sprung höher", moon > full * 1.15, moon.toFixed(0));
 
 // ---------- 2. Grätsche ----------
 function slideRun(o, inp, secs = 0.9) {
-  const st = setup(o); const p = st.p[0]; const x0 = p.x; let slides = 0, maxV = 0, ev = [];
+  const st = setup(o); const p = st.p[0]; const x0 = p.x; let slides = 0, maxV = 0; const ev = [];
   run(st, secs, inp, o.inp1, s => { if (!o.ball) keepBall(s); maxV = Math.max(maxV, Math.abs(s.p[0].vx)); for (const e of s.ev.splice(0)) { ev.push(e); if (e.t === "slide") slides++; } });
   return { st, p: st.p[0], dist: st.p[0].x - x0, slides, maxV, ev };
 }
@@ -149,7 +149,8 @@ function slideRun(o, inp, secs = 0.9) {
 }
 
 // ---------- 3. Arschbombe ----------
-function bombRun(o, inp, secs = 1.4, inp1) {
+function bombRun(o, inp, secs, inp1) {
+  secs ??= 1.4;
   const st = setup(o); const ev = []; let maxV = 0;
   run(st, secs, inp, inp1, s => { if (!o.ball) keepBall(s); maxV = Math.max(maxV, Math.hypot(s.b.vx, s.b.vy)); for (const e of s.ev.splice(0)) ev.push(e); });
   return { st, p: st.p[0], ev, maxV };
@@ -279,9 +280,9 @@ function bombRun(o, inp, secs = 1.4, inp1) {
 }
 { // Nach Schubser kein Sofort-Sprung
   const st = setup({ ax: 600, bx: 700 }); let jumpedAt = -1, bumpAt = -1;
-  run(st, 0.6, t => ({}), t => ({ k: t < 0.05 }), (s, t) => { keepBall(s); for (const e of s.ev.splice(0)) { if (e.t === "bump") bumpAt = t; if (e.t === "jump" && e.i === 0 && bumpAt >= 0 && jumpedAt < 0) jumpedAt = t; } });
+  run(st, 0.6, () => ({}), t => ({ k: t < 0.05 }), (s, t) => { keepBall(s); for (const e of s.ev.splice(0)) { if (e.t === "bump") bumpAt = t; if (e.t === "jump" && e.i === 0 && bumpAt >= 0 && jumpedAt < 0) jumpedAt = t; } });
   const st2 = setup({ ax: 600, bx: 700 }); let bumpAt2 = -1, jumped2 = false;
-  run(st2, 0.6, (t, s) => ({ j: bumpAt2 >= 0 && t - bumpAt2 < 0.06 }), t => ({ k: t < 0.05 }), (s, t) => { keepBall(s); for (const e of s.ev.splice(0)) { if (e.t === "bump" && bumpAt2 < 0) bumpAt2 = t; if (e.t === "jump" && e.i === 0) jumped2 = true; } });
+  run(st2, 0.6, t => ({ j: bumpAt2 >= 0 && t - bumpAt2 < 0.06 }), t => ({ k: t < 0.05 }), (s, t) => { keepBall(s); for (const e of s.ev.splice(0)) { if (e.t === "bump" && bumpAt2 < 0) bumpAt2 = t; if (e.t === "jump" && e.i === 0) jumped2 = true; } });
   check("Nach Schubser kein Coyote-Sprung (Review)", bumpAt2 < 0 || !jumped2, bumpAt2 < 0 ? "kein Schubser ausgelöst" : "");
 }
 { // Druck während Hit-Stop geht nicht verloren
@@ -311,14 +312,13 @@ function kickAt(o) {
   const lim = P.KICK.cap;
   check("Mitnahme bleibt unter der Obergrenze", fast && fast.spd <= lim + 1, fast ? fast.spd.toFixed(0) : "");
 }
-{ // Ping-Pong: beide schießen sich den Ball dauernd zu, Tempo darf nicht explodieren
+// Ping-Pong: beide schießen sich den Ball dauernd zu, Tempo darf nicht explodieren
   for (const rules of [{}, { kick: 1.45, bounce: 1.4 }, { ball: 0.75, kick: 1.45 }]) {
     const st = setup({ ax: 600, bx: 820, ballX: 710, ballY: 560, rules }); let mx = 0, bad = 0;
     const L = P.KICK.cap * Math.max(1, rules.kick || 1);
     run(st, 8, t => ({ k: Math.floor(t * 6) % 2 === 0 }), t => ({ k: Math.floor(t * 6 + 1) % 2 === 0 }), s => { const v = Math.hypot(s.b.vx, s.b.vy); mx = Math.max(mx, v); if (!isFinite(v) || s.b.y > G + 2) bad++; if (s.ph !== "play") { s.ph = "play"; P.kickoff(s); } });
     check("Ping-Pong " + JSON.stringify(rules) + ": Tempo begrenzt", bad === 0 && mx <= L * 1.12, mx.toFixed(0) + " (Limit " + L + ")");
   }
-}
 { // Tunneln: Ball mit Höchsttempo gegen Latte und Köpfe darf nicht durchrutschen
   let through = 0, shots = 0;
   for (const rules of [{ kick: 1.45 }, { kick: 1.45, ball: 0.75 }]) for (let ang = -0.9; ang <= 0.9; ang += 0.06) {
@@ -404,7 +404,7 @@ const LY = await import("../../js/content/layouts.js");
   let through = 0, shots = 0;
   for (const ar of ["stadion", "neon", "eis"]) for (let li = 0; li < 3; li++) {
     const st0 = setup({ arena: ar, rules: { obs: li } });
-    for (const o of st0.obs.filter(o => o.t === "plat" && !o.block)) for (const vy of [-1, 1]) for (const ball of [0.75, 1]) {
+    for (const o of st0.obs.filter(ob => ob.t === "plat" && !ob.block)) for (const vy of [-1, 1]) for (const ball of [0.75, 1]) {
       const st = setup({ arena: ar, rules: { obs: li, kick: 1.45, ball }, ax: 180, bx: 1380 }); const q = st.obs.find(x => Math.abs(x.cx - o.cx) < 1 && x.cy === o.cy);
       const b = st.b; b.x = q.x; b.y = vy < 0 ? q.y + q.h + 80 : q.y - 80; b.vx = 120; b.vy = vy * -P.KICK.cap * 1.45; shots++;
       const startBelow = b.y > q.y;

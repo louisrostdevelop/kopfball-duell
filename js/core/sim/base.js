@@ -1,5 +1,5 @@
 // Gemeinsame Bausteine: Ereignisse, Maße, Kollisionen, Super-Leiste
-import { G, GOAL_H, HR, FOOT, KS, clamp } from "../../content/config.js";
+import { G, GOAL_H, HR, FOOT, KS, clamp, headBonus } from "../../content/config.js";
 import { KICK } from "./tuning.js";
 
 export const barY = (st, side) => G - GOAL_H * (st.rules ? st.rules.goal : 1) - (st.bigGoal[side] > 0 ? 60 : 0);
@@ -19,6 +19,7 @@ export const ev = (st, e) => { st.ev.push(e); };
 
 export function addMeter(st, p, v) {
   if (p.armed > 0 || p.full || !st.rules.supers) return;
+  const lv = st.lv && st.lv[p.i]; if (lv > 1) v *= 1 + headBonus(lv);   // Kopf-Level lädt den Super schneller
   p.meter = Math.min(100, p.meter + v);
   if (p.meter >= 100) { p.full = true; ev(st, { t: "full", i: p.i }); }
 }

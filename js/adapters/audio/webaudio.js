@@ -27,7 +27,8 @@ function osc(type, f0, f1, dur, vol, t = 0, bus = sfxBus) {
   o.type = type; o.frequency.setValueAtTime(f0, s); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), s + dur);
   env(g, s, 0.005, vol, dur); o.connect(g); g.connect(bus); o.start(s); o.stop(s + dur + 0.05);
 }
-function noise(dur, vol, type, freq, q = 1, t = 0, f1, bus = sfxBus) {
+function noise(dur, vol, type, freq, q, t, f1, bus) {
+  q ??= 1; t ??= 0; bus ??= sfxBus;
   if (!ac) return; const s = ac.currentTime + t, n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
   n.buffer = noiseBuf; f.type = type; f.frequency.setValueAtTime(freq, s); if (f1) f.frequency.exponentialRampToValueAtTime(f1, s + dur); f.Q.value = q;
   env(g, s, 0.004, vol, dur); n.connect(f); f.connect(g); g.connect(bus); n.start(s, Math.random()); n.stop(s + dur + 0.05);

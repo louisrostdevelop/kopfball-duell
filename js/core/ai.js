@@ -1,6 +1,6 @@
 // Computer-Gegner
-import { W, G, GOAL_W, KS, DIFFS, arenaById, charById, rand, clamp } from "../content/config.js";
-import { ballG, pr, AIR } from "./physics.js";
+import { W, G, GOAL_W, KS, DIFFS, arenaById, rand, clamp } from "../content/config.js";
+import { ballG, headStats, pr, AIR } from "./physics.js";
 
 export function makeAI(i, diff, keeper = false) {
   return { i, keeper, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 340 : 340, wantJ: 0, jFull: true, jHold: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0, dcd: 0, dPulse: 0 };
@@ -26,7 +26,7 @@ export function aiInput(ai, st, dt) {
   const p = st.p[ai.i], o = st.p[1 - ai.i], b = st.b, d = ai.d, c = {};
   if (st.ph !== "play") { ai.hold = 0; ai.jHold = 0; ai.dPulse = 0; ai.wantJ = 0; return c; }
   const dir = p.dir, own = ai.i ? W : 0, r = pr(p);
-  const sp = 505 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
+  const sp = 505 * headStats(st, p).spd * arenaById(st.arena).spd * d.spd;
   if (ai.keeper) return keeperInput(ai, st, p, b, dt);
   ai.think -= dt; ai.jcd -= dt; ai.kickT -= dt; ai.dcd -= dt;
   const rest = G - 71 * p.sc; // ungefähre Standhöhe des Kopfes
@@ -70,7 +70,7 @@ export function aiInput(ai, st, dt) {
     for (const q of path) {
       if (q.t > 0.45 * AIR.tp) break;
       const dx = Math.abs(q.x - p.x), hy = p.y - q.y;
-      const roof = (st.obs || []).some(o => o.t === "plat" && !o.block && Math.abs(o.x - p.x) < o.w / 2 + r && o.y + o.h < p.y - r && o.y + o.h > p.y - r - 220 && q.y < o.y);
+      const roof = (st.obs || []).some(ob => ob.t === "plat" && !ob.block && Math.abs(ob.x - p.x) < ob.w / 2 + r && ob.y + ob.h < p.y - r && ob.y + ob.h > p.y - r - 220 && q.y < ob.y);
       if (!roof && dx < r + 40 && hy > r * 0.6 && hy < 260 && Math.random() < d.jumpSkill) { ai.wantJ = Math.max(0, q.t - (hy < r * 1.5 ? 0.12 : 0.22) * AIR.tp); ai.jFull = hy >= r * 1.5; break; }
     }
     // Ball liegt auf meinem Kopf: nach vorne laufen und springen
@@ -92,8 +92,8 @@ export function aiInput(ai, st, dt) {
   // Block im Weg: drüberspringen
   if (p.onG && (c.l || c.r) && st.obs && st.obs.length && ai.jcd <= 0) {
     const mv = c.r ? 1 : -1;
-    for (const o of st.obs) if (o.t === "plat" && o.block) {
-      const edge = mv > 0 ? o.x - o.w / 2 : o.x + o.w / 2, gap = (edge - p.x) * mv - r * 0.8;
+    for (const ob of st.obs) if (ob.t === "plat" && ob.block) {
+      const edge = mv > 0 ? ob.x - ob.w / 2 : ob.x + ob.w / 2, gap = (edge - p.x) * mv - r * 0.8;
       if (gap > -4 && gap < 50 && (ai.tx - edge) * mv > 0) { ai.jHold = 0.3 * AIR.tp; ai.jcd = 0.4; break; }
     }
   }

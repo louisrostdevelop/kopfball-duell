@@ -74,7 +74,7 @@ export function buildObstacles(arena, idx) {
 }
 
 // Position zur Spielzeit t (deterministisch, damit online beide Seiten dasselbe sehen)
-export function moveObstacles(obs, t, dt) {
+export function moveObstacles(obs, t, _dt) {
   for (const o of obs) {
     if (!o.mv) continue;
     const m = o.mv, w = 2 * Math.PI / m.per, a = w * t + (m.ph || 0);

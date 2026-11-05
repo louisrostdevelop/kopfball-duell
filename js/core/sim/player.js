@@ -1,8 +1,8 @@
 // Spieler: Laufen, Springen, Spieler gegen Spieler
-import { W, G, GOAL_W, BAR_T, SR, FOOT, charById, arenaById, clamp } from "../../content/config.js";
+import { W, G, GOAL_W, BAR_T, SR, FOOT, arenaById, clamp } from "../../content/config.js";
 import { barY, ev, pr } from "./base.js";
 import { obsPlayer } from "./obstacles.js";
-import { gMul } from "./rules.js";
+import { gMul, headStats } from "./rules.js";
 import { bombLand, endSlide } from "./tricks.js";
 import { MOVE, PG, bombPow, pv } from "./tuning.js";
 
@@ -15,7 +15,7 @@ export function tickCosmetics(st, dt) {
 }
 
 export function movePlayer(st, p, c, dt, frozenPhase) {
-  const ar = arenaById(st.arena), ch = charById(p.ch);
+  const ar = arenaById(st.arena), ch = headStats(st, p);
   // Timer
   p.hc = Math.max(0, p.hc - dt); p.sc2 = Math.max(0, p.sc2 - dt); p.pushCD = Math.max(0, p.pushCD - dt); p.knock = Math.max(0, p.knock - dt);
   ["bigT", "miniT", "spdT", "jmpT", "confT", "djT"].forEach(k => { if (p[k] > 0) p[k] = Math.max(0, p[k] - dt); });

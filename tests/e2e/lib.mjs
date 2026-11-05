@@ -68,8 +68,8 @@ export async function takeEvents(page, re, wait = 450) {
 
 // Zeigerereignis direkt auf ein Element (mehrere Finger über pointerId)
 export function pointer(page, sel, type, x, y, id) {
-  return page.evaluate(([sel, type, x, y, id]) => {
-    document.querySelector(sel).dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: "touch" }));
+  return page.evaluate(([s, ty, px, py, pid]) => {
+    document.querySelector(s).dispatchEvent(new PointerEvent(ty, { pointerId: pid, clientX: px, clientY: py, bubbles: true, pointerType: "touch" }));
   }, [sel, type, x, y, id]);
 }
 export async function center(page, sel) {

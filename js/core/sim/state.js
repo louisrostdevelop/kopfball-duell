@@ -8,7 +8,7 @@ export function newMatch(o) {
   const ar = arenaById(o.arena);
   setFieldW(W0 * ((o.rules && o.rules.field) || 1));
   const st = {
-    arena: ar.id, mod: o.mod || null, dur: o.dur || 90, pus: o.pus !== false, golden: o.golden !== false,
+    arena: ar.id, lv: o.levels || [1, 1], mod: o.mod || null, dur: o.dur || 90, pus: o.pus !== false, golden: o.golden !== false,
     rules: (() => { const r = { ...DEFAULT_RULES, ...(o.rules || {}) }; const ml = matchLen(r); if (ml.win) r.win = ml.win; return r; })(), train: !!o.train,
     t: o.dur || 90, ph: "cd", pt: 3, gold: false, el: 0,
     s: [0, 0],

@@ -27,6 +27,7 @@ import { initAchievements } from "./ui/screens/achievements.js";
 import { initSettings } from "./ui/screens/settings.js";
 import { initEnd } from "./ui/screens/end.js";
 import { initSearch } from "./ui/screens/search.js";
+import { initPass } from "./ui/screens/pass.js";
 // Adapter
 import * as webAudio from "./adapters/audio/webaudio.js";
 import * as domInput from "./adapters/input/dom-input.js";
@@ -62,7 +63,7 @@ async function boot() {
   setQuality(S.quality);
   webAudio.setSfx(S.sfx); webAudio.setMusic(S.music); domInput.setVibration(S.vib);
   domInput.initInput({ inGame: () => inGame(), onKey, onPadButton: onPad, onTouch: () => { webAudio.unlock(); updateBand(); } });
-  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initSearch, initHud].forEach(f => f());
+  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initSearch, initPass, initHud].forEach(f => f());
 
   // 3. Los geht's
   startDemo();
@@ -71,7 +72,7 @@ async function boot() {
   const unlockOnce = () => { webAudio.unlock(); if (!inGame()) webAudio.music(true, "menu"); window.removeEventListener("pointerdown", unlockOnce); window.removeEventListener("keydown", unlockOnce); };
   window.addEventListener("pointerdown", unlockOnce); window.addEventListener("keydown", unlockOnce);
   const fontsReady = document.fonts ? Promise.all(["400 20px 'Lilita One'", "800 20px Nunito", "900 20px Nunito"].map(f => document.fonts.load(f).catch(() => {}))) : Promise.resolve();
-  Promise.race([fontsReady, new Promise(r => setTimeout(r, 1500))]).then(() => {
+  Promise.race([fontsReady, new Promise(r => { setTimeout(r, 1500); })]).then(() => {
     $("loading").classList.add("done"); resize(); homeScreen();
     const d = dailyCheck();
     if (d) setTimeout(() => dailyModal(d), 500);

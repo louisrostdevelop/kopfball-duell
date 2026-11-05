@@ -1,10 +1,10 @@
 // Ball: Flug, Boden, Wände, Latten, Tor-Erkennung, Kopf und Fuß
-import { W, G, GOAL_W, BAR_T, SR, KS, charById, arenaById, clamp, rand } from "../../content/config.js";
+import { W, G, GOAL_W, BAR_T, SR, KS, arenaById, clamp, rand } from "../../content/config.js";
 import { addMeter, barY, collideCircle, collideRect, ev, pr, shoePos } from "./base.js";
 import { goal } from "./goal.js";
 import { kickVec } from "./kick.js";
 import { obsBall } from "./obstacles.js";
-import { baseBR, gMul, kickMul, maxBall, wgt } from "./rules.js";
+import { baseBR, gMul, headStats, kickMul, maxBall, wgt } from "./rules.js";
 import { endFx, fxGravity, meteorImpact, superStep, touch } from "./supers.js";
 import { bombBall, slideBall } from "./tricks.js";
 import { BG, KICK, bv, pv } from "./tuning.js";
@@ -102,14 +102,14 @@ export function ballPhysics(st, dt, postGoal) {
   }
 }
 
-export function ballVsPlayer(st, b, p, dt) {
-  const r = pr(p), ch = charById(p.ch);
+export function ballVsPlayer(st, b, p, _dt) {
+  const r = pr(p), ch = headStats(st, p);
   if (b.nhT > 0 && b.nh === p.i) return; // gerade gequetscht/gespitzelt: kurz keine zweite Berührung
   if (p.bomb && bombBall(st, b, p)) return;
   if (p.slide > 0 && !p.slideHit && slideBall(st, b, p)) return;
   if (b.fx && b.fxO === p.i && b.fxT < 0.25) return; // eigener Schuss löst sich erst
   // Kopf
-  const preVx = b.vx, preVy = b.vy, preLt = b.lt, preK = b.ltk;
+  const preVx = b.vx, preLt = b.lt, preK = b.ltk;
   const hc = collideCircle(b, p.x, p.y, r + b.r, p.vx, p.vy, clamp(0.82 * Math.sqrt(st.rules.bounce || 1), 0.6, 0.95));
   if (hc) {
     // Harter Schuss des Gegners trifft mich: ich werde ein Stück zurückgedrückt

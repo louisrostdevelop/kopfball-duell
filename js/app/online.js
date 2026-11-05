@@ -1,10 +1,10 @@
 // Online-Spiel: Host schickt Zustände, Gast sagt voraus und gleicht ab; Lobby-Protokoll
-import { charById, clamp, EMOTES } from "../content/config.js";
+import { charById, clamp, EMOTES, HEAD_MAX_LEVEL } from "../content/config.js";
 import { moveObstacles } from "../content/layouts.js";
 import { emote, matchLen, predictPlayer } from "../core/physics.js";
 import { owns, S } from "./profile.js";
 import { onEvent } from "./effects.js";
-import { beginMatch, quitToMenu, resolveObs, startDemo, updateBand } from "./game.js";
+import { beginMatch, headLevel, quitToMenu, resolveObs, startDemo, updateBand } from "./game.js";
 import { App, inGame, VERSION } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
@@ -104,11 +104,11 @@ export function hostData(d) {
   switch (d.t) {
     case "hello":
       if (d.v !== VERSION) toast("Dein Kumpel hat eine alte Version. Er soll die Seite neu laden.", "i-close");
-      App.opp = { name: (d.name || "Gast").slice(0, 12), ch: charById(d.ch).id };
+      App.opp = { name: (d.name || "Gast").slice(0, 12), ch: charById(d.ch).id, lv: d.lv };
       Net.send({ t: "welcome", name: S.name || "Gastgeber", ch: S.char, cfg: App.netCfg, v: VERSION });
       lobbyUI("host"); A.sfx("coin"); toast(App.opp.name + " ist da!", "i-users");
       break;
-    case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("host"); } break;
+    case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.lv) App.opp.lv = d.lv; lobbyUI("host"); } break;
     case "i": if (Array.isArray(d.i)) App.guestIn = d.i.slice(0, 8); break;
     case "emo": if (App.mode === "host" && App.st && EMOTES.includes(d.e)) emote(App.st, 1, d.e); break;
     case "ping": Net.send({ t: "pong", c: d.c }); break;
@@ -119,7 +119,9 @@ export function hostData(d) {
 export function hostStart() {
   if (!App.opp) return;
   const c = App.netCfg;
-  const cfg = { mode: "host", chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, golden: true, names: [S.name || "Du", App.opp.name], labels: ["DU", null], ball: S.ball };
+  // Kopf-Level: Gegnersuche vom Server (zum Spielbeginn festgehalten), unter Freunden das, was jeder mitbringt
+  const sv = App.mm && App.mm.heads, lv = sv && sv.p1 ? [sv.p1.level || 1, (sv.p2 && sv.p2.level) || 1] : [headLevel(S.char), Math.max(1, Math.min(HEAD_MAX_LEVEL, App.opp.lv | 0 || 1))];
+  const cfg = { mode: "host", levels: lv, chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, golden: true, names: [S.name || "Du", App.opp.name], labels: ["DU", null], ball: S.ball };
   App.mid++;
   const fixed = resolveObs(cfg);
   Net.send({ t: "start", mid: App.mid, cfg: { ...fixed, mode: "guest", labels: [null, "DU"] } });
@@ -133,7 +135,7 @@ export function tryJoin(code) {
   saveName($("nameIn").value);
   netNote("Verbinde mit " + code.toUpperCase() + "…");
   Net.join(code, {
-    onConn: () => Net.send({ t: "hello", name: S.name || "Gast", ch: S.char, v: VERSION }),
+    onConn: () => Net.send({ t: "hello", name: S.name || "Gast", ch: S.char, lv: headLevel(S.char), v: VERSION }),
     onData: guestData,
     onClose: () => { if (App.mode === "guest" || App.screen === "lobby" || App.screen === "end") { toast("Gastgeber hat das Spiel verlassen"); quitToMenu(); } },
     onError: (t, wasOk) => {

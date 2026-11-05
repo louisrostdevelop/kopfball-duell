@@ -31,7 +31,7 @@ after(async () => {
 });
 
 const db = async (sql, args = []) => (await be.pool.query(sql, args)).rows;
-const until = async (fn, ms = 8000) => { const t = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t > ms) return v; await new Promise(r => setTimeout(r, 150)); } };
+const until = async (fn, ms = 8000) => { const t = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t > ms) return v; await new Promise(r => { setTimeout(r, 150); }); } };
 const userId = page => until(() => page.evaluate(k => { const s = JSON.parse(localStorage.getItem(k) || "null"); return s && s.user && s.user.id; }, page.__key));
 async function closeModal(p) { for (let i = 0; i < 3; i++) { await p.waitForTimeout(400); if (await p.locator("#modalOk").isVisible()) await p.click("#modalOk"); } }
 // Server-Stand neu holen (nach Änderungen direkt in der Datenbank)
