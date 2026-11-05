@@ -27,6 +27,18 @@ export const MOVE = {
   tripStun: 0.35,    // Gegner stolpert kurz
   tripCD: 1.2,       // so lange kann derselbe Gegner nicht wieder umgegrätscht werden
 };
+// Ball-Tempo beim Schuss: Feintuning an einer Stelle (Varianten werden per Simulation verglichen)
+export const KICK = {
+  carry: 0.4,         // Anteil des Ankunftstempos, den ein Schuss mitnimmt (Tempo stapelt sich)
+  carryMode: "add",   // "add" = oben drauf, "max" = mindestens so schnell wie angekommen, "none" = altes Verhalten
+  memDecay: 8,        // wie schnell das Tempo-Gedächtnis (Tempo vor dem Abprall) verblasst
+  memClassify: true,  // Lupfer/Strahl nach Tempo vor dem Abprall statt nach dem gebremsten Tempo
+  lobSpeed: 300,      // darunter gilt ein Ball am Boden als ruhig
+  hsMode: "hard",     // Standbild: "all" = jeder saubere Treffer, "hard" = nur sehr harte, "none"
+  softCap: true,      // Tempo weich an die Obergrenze heranführen statt hart abschneiden
+  driveVy: 430, driveCharge: 320,
+  rollFric: 14,       // Rollreibung am Boden (x (1 - Arena-Roll) pro Sekunde)
+};
 const bombPow = p => clamp((p.y - p.bombY) / MOVE.bombFull, 0.25, 1);
 
 export function newMatch(o) {
@@ -449,6 +461,8 @@ function ballPhysics(st, dt, postGoal) {
   if (b.fx !== "giant" && b.grow > 1) b.grow = Math.max(1, b.grow - dt * 0.8);
   b.r += (tr - b.r) * Math.min(1, dt * 10);
   const fxGrav = fxGravity(b);
+  // Tempo-Gedächtnis: wie schnell war der Ball kurz vor einer Berührung?
+  b.vmem = Math.max(Math.hypot(b.vx, b.vy), (b.vmem || 0) * Math.exp(-dt * KICK.memDecay));
   if (b.fx && !postGoal) superStep(st, b, dt);
   b.vy += 1750 * gMul(st) * fxGrav * wgt(st).grav * dt;
   if (st.wind && st.wind.t > 0 && !b.fx) b.vx += st.wind.dir * 300 * dt;
@@ -468,7 +482,10 @@ function ballPhysics(st, dt, postGoal) {
     const imp = b.vy;
     b.y = G - b.r;
     const bounce = b.fx === "bouncy" ? 1.06 : clamp((ar.bounce + wgt(st).bounce) * (st.rules.bounce || 1), 0.2, 0.95);
-    b.vy = -b.vy * bounce; b.vx *= st.rules.floor === "ice" ? 0.995 : ar.roll;
+    b.vy = -b.vy * bounce;
+    // Aufprall kostet einmal etwas Tempo, Rollen nur wenig pro Sekunde (vorher wurde jeder Schritt wie ein Aufprall gebremst)
+    const roll = st.rules.floor === "ice" ? 0.995 : ar.roll;
+    if (imp > 140) b.vx *= roll; else b.vx *= 1 - (1 - roll) * KICK.rollFric * dt;
     if (Math.abs(b.vy) < 70) b.vy = 0;
     if (imp > 220) ev(st, { t: "bounce", x: b.x, y: G, v: imp });
     if (b.fx === "meteor" && b.fxP === 2) { meteorImpact(st, b); }
@@ -608,16 +625,25 @@ function ballVsPlayer(st, b, p, dt) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
       const kv = kickVec(st, p, b, c, qm, pm);
       const wk = kickMul(st);
-      b.vx = p.dir * kv.vx * wk + p.vx * 0.2;
-      b.vy = kv.vy * wk;
+      const inSpd = Math.max(b.vmem || 0, Math.hypot(b.vx, b.vy)); // Tempo vor dem Abprall an Kopf/Schuh
+      let ox = p.dir * kv.vx * wk, oy = kv.vy * wk;
+      const m = Math.hypot(ox, oy) || 1;
+      let nm = m;
+      if (KICK.carryMode === "add") nm = m + KICK.carry * inSpd * qm;
+      else if (KICK.carryMode === "max") nm = Math.max(m, inSpd * KICK.carry * qm);
+      if (KICK.softCap) { const L = maxBall(st), knee = L * 0.6; if (nm > knee) nm = knee + (L - knee) * Math.tanh((nm - knee) / (L - knee)); }
+      ox *= nm / m; oy *= nm / m;
+      b.vx = ox + p.vx * 0.2;
+      b.vy = oy;
+      b.kin = inSpd;
       b.held = 0.05;
       st.stats[p.i].shots++;
       addMeter(st, p, 6 * (st.mod === "superfast" ? 2 : 1));
       const pow = 1 + (p.kPow - 1) * qm;
       const spd = Math.hypot(b.vx, b.vy);
-      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c, spd, kind: kv.kind });
-      // jeder saubere Treffer bekommt ein kurzes Standbild, harte Schüsse ein längeres
-      if (q > 0.45 || c > 0.3) st.hs = Math.max(st.hs, 0.028 + 0.05 * c);
+      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c, spd, kind: kv.kind, inSpd });
+      if (KICK.hsMode === "all") { if (q > 0.45 || c > 0.3) st.hs = Math.max(st.hs, 0.028 + 0.05 * c); }
+      else if (KICK.hsMode === "hard") { if (spd > maxBall(st) * 0.82 || c > 0.85) st.hs = Math.max(st.hs, 0.026); }
     }
   }
 }
@@ -626,14 +652,15 @@ function ballVsPlayer(st, b, p, dt) {
 // Ball ruhig am Boden = Lupfer (steil), Ball rollt/springt flach = Strahl (hart, flach), Ball in der Luft = Volley (flach, hoch getroffen leicht nach unten)
 export function kickKind(b) {
   if (b.y + b.r < G - 34) return "volley";
-  return Math.hypot(b.vx, b.vy) < 300 ? "lob" : "drive";
+  const sp = KICK.memClassify ? Math.max(b.vmem || 0, Math.hypot(b.vx, b.vy)) : Math.hypot(b.vx, b.vy);
+  return sp < KICK.lobSpeed ? "lob" : "drive";
 }
 function kickVec(st, p, b, c, qm, pm) {
   const kind = kickKind(b), ch = charById(p.ch);
   const base = ((1050 + 340 * (ch.pow - 1)) * pm + 480 * c) * qm, lift = 0.7 + 0.3 * qm;
   if (kind === "lob") return { kind, vx: base * 0.6, vy: -(800 + 380 * c) * lift };
   if (kind === "volley") return { kind, vx: base * 1.05, vy: b.y < p.y ? -(180 + 150 * c) * lift : -(480 + 300 * c) * lift };
-  return { kind, vx: base, vy: -(470 + 320 * c) * lift };
+  return { kind, vx: base, vy: -(KICK.driveVy + KICK.driveCharge * c) * lift };
 }
 // Vorschau für den Richtungspfeil beim Halten: nur wenn der Ball in Schussnähe ist
 export function kickPreview(st, p) {
