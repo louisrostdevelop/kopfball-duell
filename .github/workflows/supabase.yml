@@ -1,0 +1,28 @@
+# Datenbank-Tests auf dem echten Supabase-Stack (Docker, ~3 min) plus Supabase-Linter.
+# Nur wenn sich Migrationen oder Katalog ändern, sonst von Hand: Actions -> Supabase -> Run workflow.
+name: Supabase
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/migrations/**", "supabase/catalog.sql", "supabase/config.toml", ".github/workflows/supabase.yml"]
+  workflow_dispatch:
+concurrency:
+  group: supabase-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  supabase:
+    name: Datenbank auf echtem Supabase-Stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+      - name: Supabase starten (wendet Migrationen, Katalog und Seed an)
+        run: supabase start -x studio,imgproxy,logflare,vector,mailpit,edge-runtime,supavisor,postgres-meta
+      - name: Tests gegen den echten Stack
+        run: DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres bash supabase/local/run-tests.sh
+      - name: Sicherheitsprüfung von Supabase (Linter)
+        run: supabase db lint --level warning

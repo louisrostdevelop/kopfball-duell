@@ -1,0 +1,21 @@
+# Datenbank-Tests auf Postgres (ohne Docker, ~1 min). Nur wenn sich am Backend etwas ändert.
+name: Datenbank
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/**", "tools/dev-backend.mjs", ".github/workflows/db.yml"]
+  pull_request:
+    paths: ["supabase/**", "tools/dev-backend.mjs"]
+  workflow_dispatch:
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  datenbank:
+    name: Datenbank (Postgres ohne Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash supabase/local/run-tests.sh

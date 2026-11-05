@@ -1,12 +1,21 @@
+# Spiel-Tests. Nicht bei reinen Doku-Änderungen; ein neuer Push bricht den laufenden Lauf ab.
 name: Tests
 on:
   push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
   pull_request:
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   spiellogik:
     name: Spiellogik (Referenzspiele + Matrix)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,8 +24,10 @@ jobs:
       - run: npm test
 
   browser:
-    name: Browser (Menüs, Steuerung, Online, Handy-Layout)
+    name: Browser (Menüs, Steuerung, Online, Server, Handy-Layout)
+    needs: spiellogik   # nur wenn die schnellen Tests grün sind
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,27 +35,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-
-  datenbank:
-    name: Datenbank (Postgres ohne Docker)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: bash supabase/local/run-tests.sh
-
-  supabase:
-    name: Datenbank auf echtem Supabase-Stack
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.122.1
-      - name: Supabase starten (wendet Migrationen, Katalog und Seed an)
-        run: supabase start -x studio,imgproxy,logflare,vector,mailpit,edge-runtime,supavisor,postgres-meta
-      - name: Tests gegen den echten Stack
-        run: DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres bash supabase/local/run-tests.sh
-      - name: Sicherheitsprüfung von Supabase (Linter)
-        run: supabase db lint --level warning
