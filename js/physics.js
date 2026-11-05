@@ -37,6 +37,12 @@ export const KICK = {
   hsMode: "hard",     // Standbild: "all" = jeder saubere Treffer, "hard" = nur sehr harte, "none"
   softCap: true,      // Tempo weich an die Obergrenze heranführen statt hart abschneiden
   driveVy: 430, driveCharge: 320,
+  tap: 1350,          // Grundtempo eines sauberen Tipp-Schusses
+  chargeAdd: 1100,    // so viel bringt volles Aufladen zusätzlich
+  cap: 2700,          // Obergrenze fürs Balltempo (vorher 1900)
+  swing: 0.18,        // Dauer der Schussbewegung (vorher 0.24)
+  hitFrom: 0.03,      // Treffer zählt ab Beginn der Bewegung (vorher erst nach 0.06 s)
+  power: 1750,        // ab diesem Tempo gilt ein Schuss als Hammer (Effekte, kurzes Standbild)
   rollFric: 14,       // Rollreibung am Boden (x (1 - Arena-Roll) pro Sekunde)
 };
 const bombPow = p => clamp((p.y - p.bombY) / MOVE.bombFull, 0.25, 1);
@@ -79,7 +85,7 @@ export const pr = p => HR * p.sc;
 export function shoePos(p) {
   if (p.slide > 0) return { x: p.x + p.slideDir * 50 * KS * p.sc, y: p.y + (FOOT + 4) * p.sc, k: 0 };
   if (p.bomb) return { x: p.x - p.dir * 8 * KS * p.sc, y: p.y + FOOT * 0.82 * p.sc, k: 0 };
-  const k = p.kick > 0 ? Math.sin((1 - p.kick / 0.24) * Math.PI) : 0;
+  const k = p.kick > 0 ? Math.sin((1 - p.kick / KICK.swing) * Math.PI) : 0;
   const wind = p.kHeld && p.charge > 0 ? -p.charge * 0.6 : 0;
   return { x: p.x + p.dir * (16 + 34 * k + 22 * wind) * KS * p.sc, y: p.y + (FOOT - 20 * KS * k) * p.sc, k };
 }
@@ -154,7 +160,9 @@ export function step(st, dt, inp) {
   st.p.forEach(p => kickPush(st, p));
   const trips = st.p.map(p => slideTripHit(st, p)); // erst beide prüfen, dann anwenden: keiner gewinnt nur wegen der Reihenfolge
   st.p.forEach((p, i) => { if (trips[i]) slideTrip(st, p); });
-  ballPhysics(st, dt, false);
+  const bsp = Math.hypot(st.b.vx, st.b.vy), sub = Math.max(1, Math.min(4, Math.ceil(bsp * dt / (st.b.r * 0.5))));
+  for (let k = 0; k < sub; k++) ballPhysics(st, dt / sub, false);
+  if (st.b.pw > 0) st.b.pw -= dt;
   unjam(st, dt);
   powerups(st, dt);
   ["wall", "bigGoal"].forEach(k => { st[k][0] = Math.max(0, st[k][0] - dt); st[k][1] = Math.max(0, st[k][1] - dt); });
@@ -311,7 +319,7 @@ function handleKick(st, p, c, dt) {
     if (before < 1 && p.charge >= 1) ev(st, { t: "charged", i: p.i });
   } else if (!c.k && p.kHeld) {
     p.kHeld = false;
-    if (can) { p.kick = 0.24; p.kHit = false; p.kHitP = false; p.kPow = 1 + p.charge * 0.75; ev(st, { t: "swing", i: p.i, pow: p.kPow }); }
+    if (can) { p.kick = KICK.swing; p.kHit = false; p.kHitP = false; p.kPow = 1 + p.charge * 0.75; ev(st, { t: "swing", i: p.i, pow: p.kPow }); }
     p.charge = 0; p.chT = 0;
   }
   if (!can) { p.kHeld = false; p.charge = 0; }
@@ -329,7 +337,7 @@ function handleSuper(st, p, c) {
 
 // Fuß trifft den Gegner: dezenter Schubser, abhängig von der Aufladung
 function kickPush(st, p) {
-  if (!(p.kick > 0.06) || p.kHitP) return;
+  if (!(p.kick > KICK.hitFrom) || p.kHitP) return;
   const o = st.p[1 - p.i];
   if (o.pushCD > 0) return;
   const fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
@@ -452,7 +460,7 @@ function slideTrip(st, p) {
 }
 
 // Ball
-function maxBall(st) { return 1900 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed) * Math.max(1, st.rules.kick || 1); }
+function maxBall(st) { return KICK.cap * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed) * Math.max(1, st.rules.kick || 1); }
 
 function ballPhysics(st, dt, postGoal) {
   const b = st.b, ar = arenaById(st.arena);
@@ -592,7 +600,7 @@ function ballVsPlayer(st, b, p, dt) {
     const atHead = b.y < p.y + r * 0.35;
     if (!atHead) { /* nichts: Schuss übernimmt */ }
     else if (p.kHeld && p.charge > 0.08) { hp = p.charge; p.kHeld = false; p.charge = 0; p.chT = 0; }
-    else if (p.kick > 0.06 && !p.kHit) { hp = Math.max(0.25, (p.kPow - 1) / 0.75); p.kHit = true; }
+    else if (p.kick > KICK.hitFrom && !p.kHit) { hp = Math.max(0.25, (p.kPow - 1) / 0.75); p.kHit = true; }
     if (hp > 0) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
       b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (540 + 460 * hp) * pm * kickMul(st)) + p.vx * 0.15;
@@ -610,7 +618,7 @@ function ballVsPlayer(st, b, p, dt) {
   const sc = collideCircle(b, s.x, s.y, SR * p.sc + b.r, p.vx, p.vy, 0.55);
   if (sc && sc.imp > 120) { touch(st, b, p, "shoe"); }
   // Schuss
-  if (p.kick > 0.06 && !p.kHit) {
+  if (p.kick > KICK.hitFrom && !p.kHit) {
     const fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
     const reach = 66 * KS * p.sc + b.r;
     const dist = Math.hypot(b.x - fx, b.y - fy);
@@ -643,7 +651,8 @@ function ballVsPlayer(st, b, p, dt) {
       const spd = Math.hypot(b.vx, b.vy);
       ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c, spd, kind: kv.kind, inSpd });
       if (KICK.hsMode === "all") { if (q > 0.45 || c > 0.3) st.hs = Math.max(st.hs, 0.028 + 0.05 * c); }
-      else if (KICK.hsMode === "hard") { if (spd > maxBall(st) * 0.82 || c > 0.85) st.hs = Math.max(st.hs, 0.026); }
+      else if (KICK.hsMode === "hard") { if (spd > KICK.power) st.hs = Math.max(st.hs, 0.03 + 0.03 * clamp((spd - KICK.power) / 900, 0, 1)); }
+      if (spd > KICK.power) { b.pw = 0.55; p.vx -= p.dir * (90 + 120 * c); } else b.pw = 0;
     }
   }
 }
@@ -657,8 +666,8 @@ export function kickKind(b) {
 }
 function kickVec(st, p, b, c, qm, pm) {
   const kind = kickKind(b), ch = charById(p.ch);
-  const base = ((1050 + 340 * (ch.pow - 1)) * pm + 480 * c) * qm, lift = 0.7 + 0.3 * qm;
-  if (kind === "lob") return { kind, vx: base * 0.6, vy: -(800 + 380 * c) * lift };
+  const base = ((KICK.tap + 400 * (ch.pow - 1)) * pm + KICK.chargeAdd * c) * qm, lift = 0.7 + 0.3 * qm;
+  if (kind === "lob") return { kind, vx: base * 0.5, vy: -(800 + 380 * c) * lift };
   if (kind === "volley") return { kind, vx: base * 1.05, vy: b.y < p.y ? -(180 + 150 * c) * lift : -(480 + 300 * c) * lift };
   return { kind, vx: base, vy: -(KICK.driveVy + KICK.driveCharge * c) * lift };
 }

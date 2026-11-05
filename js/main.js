@@ -187,20 +187,25 @@ function onEvent(e, remote) {
     case "land": fx.burst("dust", e.x, e.y, { n: 6 }); snd("land"); break;
     case "swing": if (remote && e.i === myIdx()) break; snd("swing"); break;
     case "kick": {
-      if (App.jug.n >= 3 && App.jug.i === e.i) fx.burst("text", e.x, e.y - 70, { text: "VOLLEY!", col: COL.gold, size: 30 });
+      if (App.jug.n >= 3 && App.jug.i === e.i) fx.burst("text", e.x, e.y - 76, { text: "DIREKT!", col: "#fff", size: 24 });
       App.jug.n = 0;
       const kp = st.p[e.i], dir = kp ? kp.dir : 1;
-      // Wucht nach tatsächlichem Balltempo: auch ein sauberer Tipp-Schuss soll knallen
-      const sv = clamp(((e.spd || 900) - 600) / 900, 0, 1.2), juice = Math.max(e.pow, 1 + sv * 0.6);
-      fx.burst("kick", e.x, e.y, { pow: juice, dir }); snd(e.kind === "lob" ? "chip" : "kick", juice); fx.shake(e.kind === "lob" ? 2 : 3 + 7 * sv);
-      fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.5 + sv * 0.6);
+      // Wucht nach tatsächlichem Balltempo: Tipp knallt, Hammer explodiert
+      const spd = e.spd || 1000, sv = clamp((spd - 700) / 1400, 0, 1.3), hammer = spd > 1750, juice = Math.max(e.pow, 1 + sv * 0.7);
+      const ang = Math.atan2(st.b.vy, st.b.vx);
+      fx.burst("kick", e.x, e.y, { pow: juice, dir }); snd(e.kind === "lob" ? "chip" : hammer ? "hammer" : "kick", juice);
+      fx.shake(e.kind === "lob" ? 2 : 3 + 9 * sv);
+      fx.ballHit(ang, 0.6 + sv * 0.5);
       if (kp) fx.swoosh(e.x - dir * 20, e.y, dir, juice);
-      if (sv > 0.35) fx.punch(0.012 + 0.03 * sv);
-      if (e.c > 0.85 && e.q > 0.75 && e.kind !== "lob") { fx.burst("text", e.x, e.y - 46, { text: "VOLLTREFFER!", col: COL.gold, size: 30 }); fx.shake(7); }
-      else if (e.kind === "lob") fx.burst("text", e.x, e.y - 40, { text: "LUPFER", col: "#bfe9ff", size: 22 });
-      else if (e.kind === "volley" && (e.spd || 0) > 1200) fx.burst("text", e.x, e.y - 40, { text: "VOLLEY!", col: COL.gold, size: 26 });
-      else if (e.pow > 1.4 || (e.spd || 0) > 1500) fx.burst("text", e.x, e.y - 40, { text: "WUMMS!", col: COL.gold, size: 28 });
-      if (isHuman(e.i)) I.vibrate(juice > 1.4 ? 30 : 16);
+      if (sv > 0.3) fx.punch(0.012 + 0.035 * sv);
+      if (hammer) { fx.burst("ring", e.x, e.y, { col: spd > 2300 ? COL.gold : "#fff", ang }); fx.flash("#fff", 0.12 + 0.12 * clamp((spd - 1750) / 900, 0, 1)); }
+      const T = (text, col, size, dy = 42) => fx.burst("text", e.x, e.y - dy, { text, col, size });
+      if (spd > 2300) { T("HAMMER!", COL.gold, 34, 46); fx.shake(8); }
+      else if (e.c > 0.85 && e.q > 0.75 && e.kind !== "lob") { T("VOLLTREFFER!", COL.gold, 30, 46); fx.shake(7); }
+      else if (e.kind === "lob") T("LUPFER", "#bfe9ff", 22, 40);
+      else if (e.kind === "volley" && spd > 1500) T("VOLLEY!", COL.gold, 26, 40);
+      else if (hammer) T("WUMMS!", COL.gold, 28, 40);
+      if (isHuman(e.i)) I.vibrate(hammer ? [20, 20, 40] : juice > 1.4 ? 30 : 16);
       break;
     }
     case "head": {
@@ -293,7 +298,7 @@ function packState(st) {
   return {
     s: st.s, t: r(st.t), ph: st.ph, pt: r(st.pt), gold: st.gold, wall: st.wall.map(r), bigGoal: st.bigGoal.map(r), wind: { t: r(st.wind.t), dir: st.wind.dir },
     pu: st.pu.map(u => ({ id: u.id, k: u.k, x: r(u.x), y: r(u.y), t: r(u.t) })),
-    b: { x: r(b.x), y: r(b.y), vx: r(b.vx), vy: r(b.vy), r: r(b.r), a: r(b.a), fx: b.fx, fxT: r(b.fxT), fxK: b.fxK, fxBX: r(b.fxBX), fxBY: r(b.fxBY), fxDX: r(b.fxDX), fxDY: r(b.fxDY), fxTX: r(b.fxTX || 0), fxTY: r(b.fxTY || 0), alpha: r(b.alpha), fxP: b.fxP },
+    b: { x: r(b.x), y: r(b.y), vx: r(b.vx), vy: r(b.vy), r: r(b.r), a: r(b.a), pw: r(b.pw || 0), fx: b.fx, fxT: r(b.fxT), fxK: b.fxK, fxBX: r(b.fxBX), fxBY: r(b.fxBY), fxDX: r(b.fxDX), fxDY: r(b.fxDY), fxTX: r(b.fxTX || 0), fxTY: r(b.fxTY || 0), alpha: r(b.alpha), fxP: b.fxP },
     p: st.p.map(P), stats: st.stats,
   };
 }

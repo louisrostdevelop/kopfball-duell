@@ -81,6 +81,14 @@ function burst(type, x, y, o) {
       for (let i = 0; i < n(8 + 10 * (pow - 1)); i++) { const a = (dir > 0 ? 0 : Math.PI) + rand(-0.9, 0.9) - 0.3 * dir, sp = rand(250, 650) * pow; P({ type: "spark", x, y, vx: Math.cos(a) * sp * dir * dir, vy: Math.sin(a) * sp, life: rand(0.12, 0.3), size: rand(2, 4), col: pow > 1.5 ? COL.gold : "#fff", add: true, drag: 5 }); }
       break;
     }
+    case "ring": { // Hammer-Schuss: Schockwelle und Funkenkegel in Schussrichtung
+      const ang = o.ang || 0;
+      P({ type: "ring", x, y, life: 0.32, max: 0.32, size: 14, grow: 260, col: o.col || "#fff", add: true, w: 9 });
+      P({ type: "ring", x, y, life: 0.2, max: 0.2, size: 6, grow: 140, col: "#fff", add: true, w: 6 });
+      for (let i = 0; i < n(22); i++) { const a = ang + Math.PI + rand(-0.6, 0.6), sp = rand(400, 1100); P({ type: "spark", x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(0.15, 0.35), size: rand(2.5, 5), col: o.col || "#fff", add: true, drag: 6 }); }
+      for (let i = 0; i < n(10); i++) { const a = ang + rand(-0.25, 0.25), sp = rand(700, 1500); P({ type: "spark", x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(0.08, 0.18), size: rand(2, 3.5), col: COL.gold, add: true, drag: 8 }); }
+      break;
+    }
     case "head":
       P({ type: "ring", x, y, life: 0.22, max: 0.22, size: 6, grow: 90, col: "#fff", add: true, w: 4 });
       for (let i = 0; i < n(5); i++) { const a = rand(0, TAU); P({ type: "star", x, y, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200 - 60, life: 0.4, size: rand(4, 7), col: COL.gold, vr: rand(-8, 8), drag: 3 }); }
@@ -692,6 +700,16 @@ function drawBallFx(st, b, t, skin, replay) {
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     }
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+  }
+  // Hammer: glühender Schweif mit Funken, solange der Ball noch richtig Druck hat
+  if ((b.pw || 0) > 0 && !b.fx && tr.length > 2) {
+    const a = clamp(b.pw / 0.55, 0, 1) * clamp((sp - 900) / 900, 0, 1);
+    if (a > 0.02) {
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+      for (let i = 1; i < tr.length; i++) { const p0 = tr[i - 1], p1 = tr[i], k = i / tr.length; ctx.globalAlpha = a * k * 0.9; ctx.strokeStyle = sp > 2300 ? "#ffd23f" : "#ffb36b"; ctx.lineWidth = p1.r * 1.9 * k; ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke(); }
+      ctx.restore();
+      if (!replay && Math.random() < 0.8) P({ type: "spark", x: b.x + rand(-b.r, b.r) * 0.6, y: b.y + rand(-b.r, b.r) * 0.6, vx: -b.vx * 0.15 + rand(-80, 80), vy: -b.vy * 0.15 + rand(-80, 80), life: 0.25, size: 3.5, col: "#ffd23f", add: true });
+    }
   }
   if (b.fx && !replay) {
     switch (b.fx) {
