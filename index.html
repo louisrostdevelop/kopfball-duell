@@ -20,7 +20,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preload" href="fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/nunito-900.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=7">
+<link rel="stylesheet" href="css/style.css?v=9">
 <script src="vendor/peerjs.min.js" defer></script>
 <script src="vendor/qrcode.js" defer></script>
 </head>
@@ -152,6 +152,7 @@
       <div class="panel">
         <h4>Arena</h4>
         <div class="arenas" id="arenaList"></div>
+        <div class="obsopt"><h4>Hindernisse</h4><div class="seg wrap" id="segObs"></div><div class="obsrow"><div class="obsprev" id="obsPrev"></div><p class="hint" id="obsDesc"></p></div></div>
       </div>
       <div class="panel opts">
         <div class="opt" id="optDiff"><h4>Gegner</h4><div class="seg" id="segDiff"></div></div>
@@ -225,6 +226,7 @@
         <p class="hint center" id="lobbyNote">Schick den Link. Sobald dein Kumpel ihn öffnet, ist er hier.</p>
         <div class="lobbyopts" id="lobbyOpts">
           <div class="opt"><h4>Arena</h4><div class="seg wrap" id="segLobbyArena"></div></div>
+          <div class="opt"><h4>Hindernisse</h4><div class="seg wrap" id="segLobbyObs"></div></div>
           <div class="opt"><h4>Regeln</h4><button class="rulesbtn" id="btnLobbyRules"><svg><use href="#i-sliders"/></svg><span id="lobbyRulesSum">Standard</span><em>Anpassen</em></button></div>
         </div>
         <div class="row">
@@ -323,6 +325,6 @@
 <div id="rotate" hidden><div class="phone"></div><b>Handy drehen</b><span>Quer spielt es sich viel besser.</span></div>
 <div id="loading"><b class="ld-logo">Kopfball<br>Duell</b><div class="ball"></div></div>
 
-<script type="module" src="js/main.js?v=12"></script>
+<script type="module" src="js/main.js?v=14"></script>
 </body>
 </html>

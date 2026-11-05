@@ -1,8 +1,9 @@
 // Spielphysik. Läuft beim Host bzw. offline, der Gast bekommt nur Zustände + Events.
-import { W, H, G, GOAL_W, GOAL_H, BAR_Y, BAR_T, HR, BR, SR, FOOT, REST, STEP, KS, charById, arenaById, PU_KEYS, clamp, rand } from "./config.js";
+import { buildObstacles, moveObstacles, layoutsFor } from "./layouts.js";
+import { W, W0, setFieldW, H, G, GOAL_W, GOAL_H, BAR_Y, BAR_T, HR, BR, SR, FOOT, REST, STEP, KS, charById, arenaById, PU_KEYS, clamp, rand } from "./config.js";
 
 // Eigene Regeln (für Spiele gegen Freunde). Alle Werte optional.
-export const DEFAULT_RULES = { kick: 1, bounce: 1, ball: 1, goal: 1, speed: 1, len: 90, grav: 1, floor: "normal", pu: "normal", supers: true, weight: "normal", head: 1, win: 0 };
+export const DEFAULT_RULES = { kick: 1, bounce: 1, ball: 1, goal: 1, speed: 1, len: 90, field: 1, obs: "off", grav: 1, floor: "normal", pu: "normal", supers: true, weight: "normal", head: 1, win: 0 };
 // "len": Zahl = Spielzeit in Sekunden, "w3"/"w5" = Erster bis N Tore
 export function matchLen(r) { const l = (r && r.len) ?? 90; if (typeof l === "string" && l[0] === "w") return { dur: 120, win: +l.slice(1) }; return { dur: +l || 90, win: (r && r.win) || 0 }; }
 const WEIGHT = { light: { bounce: 0.18, grav: 0.78, kick: 1.12, drag: 0.7 }, normal: { bounce: 0, grav: 1, kick: 1, drag: 1 }, heavy: { bounce: -0.22, grav: 1.25, kick: 0.86, drag: 1.4 } };
@@ -49,6 +50,7 @@ const bombPow = p => clamp((p.y - p.bombY) / MOVE.bombFull, 0.25, 1);
 
 export function newMatch(o) {
   const ar = arenaById(o.arena);
+  setFieldW(W0 * ((o.rules && o.rules.field) || 1));
   const st = {
     arena: ar.id, mod: o.mod || null, dur: o.dur || 90, pus: o.pus !== false, golden: o.golden !== false,
     rules: (() => { const r = { ...DEFAULT_RULES, ...(o.rules || {}) }; const ml = matchLen(r); if (ml.win) r.win = ml.win; return r; })(), train: !!o.train,
@@ -62,17 +64,24 @@ export function newMatch(o) {
     lastGoal: null, trail: 0, seq: 0,
   };
   if (st.rules.pu === "off") st.pus = false;
+  // Hindernisse: "off", Layout-Nummer oder "rnd" (Zufall wird offline hier gezogen, online schon vorher im Menü)
+  let oi = st.rules.obs;
+  if (oi === "rnd") oi = Math.floor(Math.random() * Math.max(1, layoutsFor(ar.id).length));
+  st.obsIdx = typeof oi === "number" ? oi : -1;
+  st.obs = st.obsIdx >= 0 ? buildObstacles(ar.id, st.obsIdx) : [];
+  moveObstacles(st.obs, 0, 0);
+  placeSpawns(st);
   st.b = mkBall(st);
   return st;
 }
 const mkStats = () => ({ bombs: 0, slides: 0, shots: 0, heads: 0, goals: 0, supers: 0, pus: 0, stomps: 0, headGoals: 0, superGoals: 0, longGoals: 0, lastSecGoals: 0, ownGoals: 0, maxTrail: 0 });
 function mkPlayer(i, ch) {
   return {
-    i, ch, x: i ? W - 430 : 430, y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
+    i, ch, x: i ? W - Math.round(W * 0.283) : Math.round(W * 0.283), y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
     kick: 0, kHit: false, kHeld: false, kPow: 1, chT: 0, charge: 0, lastJ: false, lastS: false,
     meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false, confT: 0, djT: 0, djUsed: false, kHitP: false, pushCD: 0, knock: 0,
     hc: 0, sc2: 0, mood: "", moodT: 0, emo: "", emoT: 0, land: 0,
-    coy: 0, jHeld: false, jRel: false, jT: 0, lastD: false, dBuf: 0, dAir: false, bombLock: false, stompImm: 0, bomb: 0, bombY: 0, bombRec: 0, slide: 0, slideDir: 1, slideCD: 0, slideHit: false, slideHitP: false, tripCD: 0,
+    coy: 0, slick: false, bonkT: 0, jHeld: false, jRel: false, jT: 0, lastD: false, dBuf: 0, dAir: false, bombLock: false, stompImm: 0, bomb: 0, bombY: 0, bombRec: 0, slide: 0, slideDir: 1, slideCD: 0, slideHit: false, slideHitP: false, tripCD: 0,
   };
 }
 function mkBall(st) {
@@ -97,6 +106,15 @@ export function kickoff(st) {
   st.p = [mkPlayer(0, keep[0].ch), mkPlayer(1, keep[1].ch)];
   st.p.forEach((p, i) => { p.meter = keep[i].meter; p.full = keep[i].full; p.emo = keep[i].emo; p.emoT = keep[i].emoT; });
   st.b = mkBall(st); st.pu = []; st.wall = [0, 0]; st.bigGoal = [0, 0]; st.wind = { t: 0, dir: 1 };
+  placeSpawns(st);
+}
+// Startplätze nie in oder direkt an einem Block
+function placeSpawns(st) {
+  for (const p of st.p) for (const o of st.obs || []) {
+    if (o.t !== "plat" || !o.block) continue;
+    const r = pr(p), gap = o.w / 2 + r + 20;
+    if (Math.abs(p.x - o.x) < gap) p.x = p.x > o.x ? o.x + gap : o.x - gap;
+  }
 }
 
 // Echtzeit-Fortschritt inkl. Hit-Stop und Zeitlupe
@@ -119,6 +137,7 @@ export function advance(st, dt, inp, acc) {
 
 export function step(st, dt, inp) {
   st.el += dt;
+  if (st.obs && st.obs.length) moveObstacles(st.obs, st.el, dt);
   if (st.ph === "end") { tickCosmetics(st, dt); return; }
   if (st.ph === "cd" || st.ph === "ko") {
     st.pt -= dt; tickCosmetics(st, dt);
@@ -200,7 +219,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
   const turbo = (st.mod === "turbo" ? 1.22 : 1) * st.rules.speed;
   const sp = 505 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.35 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.9 : 1);
   const dirIn = ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * (p.confT > 0 ? -1 : 1); // verwirrt: links/rechts vertauscht
-  const grip = ar.grip * (st.rules.floor === "ice" ? 0.16 : 1);
+  const grip = ar.grip * (st.rules.floor === "ice" ? 0.16 : 1) * (p.onG && p.slick ? 0.2 : 1);
   const rest = G - (FOOT + SR) * p.sc;
   // Unten wird kurz gepuffert: direkt nach einem Schuss oder kurz nach dem Absprung geht der Druck nicht verloren.
   // Ein Druck in der Luft bleibt eine Bombe, ein Druck am Boden eine Grätsche.
@@ -273,7 +292,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
       if (p.bomb) bombLand(st, p);
       else if (p.vy > 500) { ev(st, { t: "land", i: p.i, x: p.x, y: G, v: p.vy }); p.land = 0.15; }
     }
-    p.y = rest; p.vy = 0; p.onG = true; p.djUsed = false; p.jHeld = false; p.bombLock = false;
+    p.y = rest; p.vy = 0; p.onG = true; p.djUsed = false; p.jHeld = false; p.bombLock = false; p.slick = false;
   } else if (p.onG && p.y < rest - 1) {
     // steht evtl. auf Latte
     p.onG = onBar(st, p);
@@ -291,15 +310,62 @@ function movePlayer(st, p, c, dt, frozenPhase) {
     }
     if (p.y - r < by + BAR_T / 2 && p.y > by) { p.y = by + BAR_T / 2 + r; if (p.vy < 0) p.vy = 0; }
   }
+  if (st.obs && st.obs.length) obsPlayer(st, p, dt, rest);
+}
+// Spieler gegen Plattformen (draufstehen, von unten anstoßen, seitlich abprallen) und Bumper
+function obsPlayer(st, p, dt, rest) {
+  const r = pr(p), foot = (FOOT + SR) * p.sc;
+  p.bonkT = Math.max(0, p.bonkT - dt);
+  for (const o of st.obs) {
+    if (o.t === "plat") {
+      const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2, y0 = o.y, y1 = o.y + o.h;
+      const L = p.x - r * 0.8, R = p.x + r * 0.8, top = p.y - r, bot = p.y + foot;
+      if (R <= x0 || L >= x1) continue;
+      // Landen / Stehen (auch auf bewegten Plattformen)
+      if (p.vy >= o.vy - 1 && bot >= y0 - 0.5 && bot - (p.vy - o.vy) * dt <= y0 + 6) {
+        if (!p.onG && p.bomb) bombLand(st, p);
+        else if (!p.onG && p.vy > 500) { ev(st, { t: "land", i: p.i, x: p.x, y: y0, v: p.vy }); p.land = 0.15; }
+        p.y = y0 - foot; p.vy = 0; p.onG = true; p.djUsed = false; p.jHeld = false; p.bombLock = false; p.slick = o.slick;
+        p.x += o.vx * dt;
+        continue;
+      }
+      if (bot <= y0 || top >= y1) continue;
+      // Kantenhilfe: Fuß nur knapp unter der Oberkante -> hochziehen statt abprallen (fühlt sich fair an, keiner bleibt an der Kante hängen)
+      if (bot - y0 < 30 && p.vy > -400) { p.y = y0 - foot; p.vy = Math.min(p.vy, 0); p.onG = true; p.jHeld = false; p.bombLock = false; p.slick = o.slick; if (p.bomb) bombLand(st, p); continue; }
+      // Überlappung auflösen: kleinste Eindringtiefe, aber nie in den Boden drücken
+      const down = y1 - top, left = R - x0, right = x1 - L;
+      const canDown = p.y + down <= rest + 0.5;
+      if (canDown && down < left && down < right) {
+        p.y += down;
+        if (p.vy < o.vy) { if (p.vy < -250 && p.bonkT <= 0) { ev(st, { t: "bonk", i: p.i, x: p.x, y: y1 }); p.bonkT = 0.3; } p.vy = Math.max(0, o.vy); p.jHeld = false; }
+      } else {
+        // seitlich raus, aber nie mit einem Ruck (z. B. großer Kopf unter dem Aufzug wird langsam rausgeschoben)
+        const lim = canDown ? 1e9 : 10;
+        if (left < right) { p.x -= Math.min(left, lim); if (p.vx > o.vx) p.vx = o.vx; }
+        else { p.x += Math.min(right, lim); if (p.vx < o.vx) p.vx = o.vx; }
+      }
+    } else if (o.t === "bump") {
+      const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy), min = r + o.r;
+      if (d >= min || d === 0) continue;
+      const nx = dx / d, ny = dy / d;
+      p.x = o.x + nx * min; p.y = Math.min(o.y + ny * min, rest);
+      const vn = (p.vx - o.vx) * nx + (p.vy - o.vy) * ny;
+      if (vn < 0) { p.vx -= 1.5 * vn * nx; p.vy -= 1.5 * vn * ny; }
+      if (ny < -0.6) { p.vy = Math.min(p.vy, -650); p.onG = false; p.coy = 0; p.jHeld = false; p.bomb = 0; } // oben drauf = Trampolin
+      if (p.slide > 0) endSlide(p);
+    }
+  }
+  p.x = clamp(p.x, r, W - r);
 }
 function endSlide(p) { p.slide = 0; p.slideCD = MOVE.slideCD; }
 function bombLand(st, p) {
   const k = bombPow(p);
   p.bomb = 0; p.bombRec = MOVE.bombRec; p.land = 0.12 + 0.1 * k;
-  ev(st, { t: "pound", i: p.i, x: p.x, y: G, k });
+  ev(st, { t: "pound", i: p.i, x: p.x, y: p.y + (FOOT + SR) * p.sc, k });
 }
 function onBar(st, p) {
   const foot = p.y + (FOOT + SR) * p.sc, r = pr(p);
+  if (st.obs) for (const o of st.obs) if (o.t === "plat" && p.x + r * 0.8 > o.x - o.w / 2 && p.x - r * 0.8 < o.x + o.w / 2 && Math.abs(foot - o.y) < 4) return true;
   for (let side = 0; side < 2; side++) {
     const by = barY(st, side), x0 = side ? W - GOAL_W - 6 : 0, x1 = side ? W : GOAL_W + 6;
     if (p.x + r * 0.7 >= x0 && p.x - r * 0.7 <= x1 && Math.abs(foot - (by - BAR_T / 2)) < 3) return true;
@@ -406,6 +472,35 @@ function playerVsPlayer(st) {
   a.x = clamp(a.x - push, ra, W - ra); b.x = clamp(b.x + push, rb, W - rb);
 }
 
+// Ball gegen Plattformen und Bumper
+function obsBall(st, b, dt) {
+  const e = clamp(0.62 * (st.rules.bounce || 1), 0.35, 0.92);
+  if (b.fx && b.fx !== "bouncy" && b.fx !== "giant") return; // Spezialschüsse gehen durch Hindernisse
+  for (const o of st.obs) {
+    if (o.t === "plat") {
+      const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2, y0 = o.y, y1 = o.y + o.h;
+      const cx = clamp(b.x, x0, x1), cy = clamp(b.y, y0, y1), dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+      if (d >= b.r) continue;
+      let nx, ny;
+      if (d === 0) { nx = 0; ny = b.y < (y0 + y1) / 2 ? -1 : 1; } else { nx = dx / d; ny = dy / d; }
+      b.x = cx + nx * b.r; b.y = cy + ny * b.r;
+      const rvx = b.vx - o.vx, rvy = b.vy - o.vy, dot = rvx * nx + rvy * ny;
+      if (dot < 0) {
+        b.vx -= (1 + e) * dot * nx; b.vy -= (1 + e) * dot * ny;
+        if (-dot > 260) ev(st, { t: "obs", x: b.x, y: b.y, v: -dot, k: "plat" });
+      }
+      // liegt der Ball oben drauf, rollt er zur näheren Kante (nie liegen bleiben)
+      if (ny < -0.7 && Math.abs(b.vx - o.vx) < 260) b.vx += (Math.sign(b.x - o.x) || (st.el % 2 < 1 ? 1 : -1)) * 900 * dt;
+    } else if (o.t === "bump") {
+      const hit = collideCircle(b, o.x, o.y, o.r + b.r, o.vx, o.vy, 0.9);
+      if (!hit || hit.imp <= 0) continue;
+      const sp = Math.hypot(b.vx, b.vy), want = Math.min(maxBall(st), Math.max(sp * o.k, 650 * o.k));
+      if (sp > 0) { b.vx *= want / sp; b.vy *= want / sp; }
+      ev(st, { t: "obs", x: b.x - hit.nx * b.r, y: b.y - hit.ny * b.r, v: want, k: "bump" });
+    }
+  }
+}
+
 // Arschbombe trifft den Ball von oben
 function bombBall(st, b, p) {
   const r = pr(p), bottom = p.y + (FOOT + SR) * p.sc, dxb = b.x - p.x, reach = r * 0.95 + b.r * 0.6;
@@ -436,7 +531,7 @@ function bombBall(st, b, p) {
 // Grätsche spitzelt den Ball flach weg
 function slideBall(st, b, p) {
   const f = shoePos(p);
-  if (b.y < G - 110 || Math.hypot(b.x - f.x, b.y - f.y) > SR * p.sc * 1.4 + b.r) return false;
+  if (b.y < p.y + (FOOT + SR) * p.sc - 110 || Math.hypot(b.x - f.x, b.y - f.y) > SR * p.sc * 1.4 + b.r) return false;
   p.slideHit = true;
   b.nh = p.i; b.nhT = 0.12;
   if (!touch(st, b, p, "slide")) return true;
@@ -505,6 +600,7 @@ function ballPhysics(st, dt, postGoal) {
     if (b.fx === "meteor" && b.fxP === 2) { meteorImpact(st, b); }
     if (b.fx && !["bouncy", "giant"].includes(b.fx)) endFx(st);
   }
+  if (st.obs && st.obs.length) obsBall(st, b, dt);
   // Decke & Wände
   const wb = clamp(0.7 * (st.rules.bounce || 1), 0.45, 0.95);
   if (b.y - b.r < -260) { b.y = -260 + b.r; b.vy = Math.abs(b.vy) * wb; }
@@ -628,7 +724,8 @@ function ballVsPlayer(st, b, p, dt) {
     const fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
     const reach = 66 * KS * p.sc + b.r;
     const dist = Math.hypot(b.x - fx, b.y - fy);
-    if (dist < reach && (b.x - p.x) * p.dir > -18 * KS * p.sc) {
+    const through = (st.obs || []).some(o => o.t === "plat" && b.x > o.x - o.w / 2 && b.x < o.x + o.w / 2 && ((fy < o.y && b.y > o.y + o.h) || (fy > o.y + o.h && b.y < o.y)));
+    if (dist < reach && !through && (b.x - p.x) * p.dir > -18 * KS * p.sc) {
       p.kHit = true;
       if (!touch(st, b, p, "kick")) return;
       // Trefferqualität: sauber am Fuß = volle Kraft, am Rand der Reichweite deutlich weniger
@@ -801,8 +898,13 @@ function powerups(st, dt) {
   if (st.puT <= 0 && st.pu.length < 2) {
     st.puT = st.mod === "pu2" || st.rules.pu === "many" ? rand(3, 5) : rand(7, 11);
     const k = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
-    st.pu.push({ id: st.puId++, k, x: rand(360, W - 360), y: rand(260, 370), t: 0 });
-    ev(st, { t: "puSpawn" });
+    let x = 0, y = 0;
+    let ok = false;
+    for (let tries = 0; tries < 24 && !ok; tries++) {
+      x = rand(360, W - 360); y = rand(260, 370);
+      ok = !(st.obs || []).some(o => o.t === "plat" ? x > o.x - o.w / 2 - 50 && x < o.x + o.w / 2 + 50 && y > o.y - 50 && y < o.y + o.h + 50 : Math.hypot(x - o.x, y - o.y) < o.r + 60);
+    }
+    if (ok) { st.pu.push({ id: st.puId++, k, x, y, t: 0 }); ev(st, { t: "puSpawn" }); }
   }
   const b = st.b;
   for (let n = st.pu.length - 1; n >= 0; n--) {

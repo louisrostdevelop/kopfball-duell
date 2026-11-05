@@ -13,6 +13,10 @@ function predict(st, steps, dt) {
     vy += g * dt; x += vx * dt; y += vy * dt;
     if (y + r > G) { y = G - r; vy = -vy * ar.bounce; vx *= ar.roll; }
     if (x - r < 0) { x = r; vx = -vx * 0.7; } if (x + r > W) { x = W - r; vx = -vx * 0.7; }
+    if (st.obs) for (const o of st.obs) {
+      if (o.t === "plat") { if (x > o.x - o.w / 2 - r && x < o.x + o.w / 2 + r && y > o.y - r && y < o.y + o.h + r) { const fromTop = y < o.y + o.h / 2; if (Math.abs(x - o.x) < o.w / 2) { y = fromTop ? o.y - r : o.y + o.h + r; vy = -vy * 0.6; } else { x = x < o.x ? o.x - o.w / 2 - r : o.x + o.w / 2 + r; vx = -vx * 0.6; } } }
+      else { const dx = x - o.x, dy = y - o.y, d = Math.hypot(dx, dy); if (d < o.r + r && d > 0) { const nx = dx / d, ny = dy / d, dot = vx * nx + vy * ny; if (dot < 0) { vx -= 2 * dot * nx; vy -= 2 * dot * ny; } x = o.x + nx * (o.r + r); y = o.y + ny * (o.r + r); } }
+    }
     out.push({ x, y, t: (n + 1) * dt });
   }
   return out;
@@ -48,7 +52,7 @@ export function aiInput(ai, st, dt) {
       const ballOnTheirSide = (ip.x - W / 2) * dir > -80;
       const slow = Math.hypot(b.vx, b.vy) < 160;
       ai.fb = slow ? (ai.fb || 0) + d.react : 0;
-      if (ballOnTheirSide && opDist + 40 < myDist && ai.fb < 2.2 && Math.random() < 0.4 + d.kickSkill * 0.6) {
+      if (ballOnTheirSide && opDist + 40 < myDist && ai.fb < (st.obs && st.obs.length ? 1.1 : 2.2) && Math.random() < 0.4 + d.kickSkill * 0.6) {
         // Gegner ist am Ball: zurückfallen und das Tor zustellen
         const front = own + dir * (GOAL_W + r + 30);
         tx = front + (ip.x - front) * 0.3;
@@ -66,7 +70,8 @@ export function aiInput(ai, st, dt) {
     for (const q of path) {
       if (q.t > 0.45) break;
       const dx = Math.abs(q.x - p.x), hy = p.y - q.y;
-      if (dx < r + 40 && hy > r * 0.6 && hy < 260 && Math.random() < d.jumpSkill) { ai.wantJ = Math.max(0, q.t - (hy < r * 1.5 ? 0.12 : 0.22)); ai.jFull = hy >= r * 1.5; break; }
+      const roof = (st.obs || []).some(o => o.t === "plat" && !o.block && Math.abs(o.x - p.x) < o.w / 2 + r && o.y + o.h < p.y - r && o.y + o.h > p.y - r - 220 && q.y < o.y);
+      if (!roof && dx < r + 40 && hy > r * 0.6 && hy < 260 && Math.random() < d.jumpSkill) { ai.wantJ = Math.max(0, q.t - (hy < r * 1.5 ? 0.12 : 0.22)); ai.jFull = hy >= r * 1.5; break; }
     }
     // Ball liegt auf meinem Kopf: nach vorne laufen und springen
     if (Math.abs(b.x - p.x) < r * 0.6 && b.y < p.y - r && Math.abs(b.vy) < 120) { ai.tx = p.x + dir * 80; ai.wantJ = 0.01; ai.jFull = true; }
@@ -84,6 +89,14 @@ export function aiInput(ai, st, dt) {
   // Bewegung
   const dx = ai.tx - p.x;
   if (dx > 10) c.r = true; else if (dx < -10) c.l = true;
+  // Block im Weg: drüberspringen
+  if (p.onG && (c.l || c.r) && st.obs && st.obs.length && ai.jcd <= 0) {
+    const mv = c.r ? 1 : -1;
+    for (const o of st.obs) if (o.t === "plat" && o.block) {
+      const edge = mv > 0 ? o.x - o.w / 2 : o.x + o.w / 2, gap = (edge - p.x) * mv - r * 0.8;
+      if (gap > -4 && gap < 50 && (ai.tx - edge) * mv > 0) { ai.jHold = 0.3; ai.jcd = 0.4; break; }
+    }
+  }
   // Springen
   if (ai.wantJ > 0) { ai.wantJ -= dt; if (ai.wantJ <= 0 && ai.jcd <= 0) { ai.jHold = ai.jFull ? 0.32 : 0.03; ai.jcd = 0.5; ai.wantJ = 0; } }
   const sdt = st.hs > 0 ? 0 : dt * (st.slow > 0 ? 0.28 : 1); // Haltezeiten in Spielzeit, nicht in Bildzeit

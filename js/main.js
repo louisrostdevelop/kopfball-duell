@@ -1,7 +1,8 @@
 // Kopfball Duell – Ablauf, Menüs, Modi, Online, Fortschritt
 import { W, G, GOAL_W, CHARS, ARENAS, BALLS, SUPERS, POWERUPS, MODS, DIFFS, ACHIEVEMENTS, EMOTES, COL, MODES, RULE_OPTS, RULE_PRESETS, RARITY, rarityOf, charById, arenaById, clamp } from "./config.js";
 import { newMatch, advance, emote, skipCelebration, predictPlayer, REPLAY_START, REPLAY_END, fireSuper, DEFAULT_RULES, matchLen } from "./physics.js";
-import { initRender, render, fx, setQuality, arenaThumb, resize, setBand } from "./render.js";
+import { initRender, render, fx, setQuality, arenaThumb, resize, setBand, layoutPreview } from "./render.js";
+import { layoutsFor, buildObstacles, moveObstacles } from "./layouts.js";
 import { avatarCanvas, drawBall, drawHead } from "./art.js";
 import * as A from "./audio.js";
 import * as I from "./input.js";
@@ -11,7 +12,7 @@ import { S, save, reset as resetSave, addXP, addCoins, xpFor, owns, buy, dailyCh
 
 const $ = id => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-const VERSION = 3;
+const VERSION = 4;
 const PHRASES = ["WAS FÜR EIN DING!", "UNHALTBAR!", "DRIN DAS DING!", "DER SASS!", "EISKALT!", "SAUBER!", "KEINE CHANCE!", "WIE GEMALT!"];
 const CELEB = { kalle: "🔥", yuki: "❄️", bolt: "⚡", rocco: "🚀", nala: "🍌", flummi: "🎈", phantom: "👻", tank: "💪", tina: "🌪️", magnus: "🧲", max: "☄️", kaiser: "👑" };
 const RCOL = { basis: "var(--r-basis)", selten: "var(--r-selten)", episch: "var(--r-episch)", legend: "var(--r-legend)" };
@@ -74,8 +75,16 @@ function startDemo() {
 }
 
 // cfg: { mode, chars, arena, dur, rules, mod, golden, diff, names, labels, ball, keeper, train }
+function resolveObs(cfg) {
+  if (cfg.rules && cfg.rules.obs === "rnd") {
+    const n = layoutsFor(cfg.arena).length;
+    cfg = { ...cfg, rules: { ...cfg.rules, obs: n ? Math.floor(Math.random() * n) : "off" } };
+  }
+  return cfg;
+}
 function beginMatch(cfg) {
-  App.cfg = cfg; App.lastCfg = cfg;
+  const orig = cfg; cfg = resolveObs(cfg);
+  App.cfg = cfg; App.lastCfg = orig;
   App.mode = cfg.mode;
   App.st = newMatch(cfg);
   App.ai = [null, null];
@@ -174,7 +183,7 @@ function gatherInputs(dt) {
 function myIdx() { return App.mode === "guest" ? 1 : App.mode === "local" || App.mode === "demo" ? -1 : 0; }
 function isHuman(i) { if (App.mode === "local") return true; if (App.mode === "demo") return false; return i === myIdx(); }
 function snap(st) {
-  return { arena: st.arena, s: st.s, t: st.t, ph: st.ph, gold: st.gold, mod: st.mod, rules: st.rules, wind: st.wind, wall: [...st.wall], bigGoal: [...st.bigGoal], pu: st.pu.map(u => ({ ...u })), b: { ...st.b }, p: st.p.map(p => ({ ...p })) };
+  return { obsP: (st.obs || []).map(o => ({ x: o.x, y: o.y })), arena: st.arena, s: st.s, t: st.t, ph: st.ph, gold: st.gold, mod: st.mod, rules: st.rules, wind: st.wind, wall: [...st.wall], bigGoal: [...st.bigGoal], pu: st.pu.map(u => ({ ...u })), b: { ...st.b }, p: st.p.map(p => ({ ...p })) };
 }
 
 // ---------- Effekte zu Ereignissen ----------
@@ -245,6 +254,14 @@ function onEvent(e, remote) {
     case "emote": snd("emote"); break;
     case "bump": fx.burst("stomp", e.x, e.y); snd("bump", e.pow); fx.shake(3 + 4 * (e.pow - 1)); if (e.pow > 1.6) fx.burst("text", e.x, e.y - 40, { text: "SCHUBS!", col: "#fff", size: 24 }); if (isHuman(1 - e.i)) I.vibrate(20); break;
     case "pop": fx.burst("dust", e.x, e.y + 10, { n: 10 }); snd("pop"); break;
+    case "obs":
+      if (e.k === "bump") {
+        snd("bumper", e.v / 1200); fx.burst("head", e.x, e.y); fx.shake(3);
+        let best = null, bd = 1e9; for (const o of st.obs || []) if (o.t === "bump") { const d = Math.hypot(o.x - e.x, o.y - e.y); if (d < bd) { bd = d; best = o; } }
+        if (best) best.hitT = simT;
+      } else { snd("wallhit"); if (e.v > 700) fx.burst("post", e.x, e.y); }
+      break;
+    case "bonk": if (remote && e.i === myIdx()) break; snd("bump", 0.8); fx.burst("stomp", e.x, e.y); break;
     case "slide": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: 8 }); snd("slide"); break;
     case "bomb": if (remote && e.i === myIdx()) break; snd("bomb"); break;
     case "pound": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: 8 + Math.round(10 * e.k) }); fx.shake(3 + 6 * e.k); snd("pound", e.k); if (isHuman(e.i)) I.vibrate(15); break;
@@ -296,7 +313,7 @@ function packState(st) {
   const P = p => ({ x: r(p.x), y: r(p.y), vx: r(p.vx), vy: r(p.vy), kick: r(p.kick * 100) / 100, kHeld: p.kHeld, charge: r(p.charge), sc: r(p.sc * 100) / 100, frz: r(p.frz), stun: r(p.stun), meter: Math.round(p.meter), full: p.full, armed: r(p.armed), fireNext: p.fireNext, bigT: r(p.bigT), miniT: r(p.miniT), spdT: r(p.spdT), jmpT: r(p.jmpT), mood: p.mood, emo: p.emo, emoT: r(p.emoT), land: r(p.land), onG: p.onG, confT: r(p.confT), djT: r(p.djT), slide: r(p.slide * 100) / 100, slideDir: p.slideDir, bomb: p.bomb, tripCD: r(p.tripCD) });
   const b = st.b;
   return {
-    s: st.s, t: r(st.t), ph: st.ph, pt: r(st.pt), gold: st.gold, wall: st.wall.map(r), bigGoal: st.bigGoal.map(r), wind: { t: r(st.wind.t), dir: st.wind.dir },
+    s: st.s, t: r(st.t), el: Math.round(st.el * 1000) / 1000, ph: st.ph, pt: r(st.pt), gold: st.gold, wall: st.wall.map(r), bigGoal: st.bigGoal.map(r), wind: { t: r(st.wind.t), dir: st.wind.dir },
     pu: st.pu.map(u => ({ id: u.id, k: u.k, x: r(u.x), y: r(u.y), t: r(u.t) })),
     b: { x: r(b.x), y: r(b.y), vx: r(b.vx), vy: r(b.vy), r: r(b.r), a: r(b.a), pw: r(b.pw || 0), fx: b.fx, fxT: r(b.fxT), fxK: b.fxK, fxBX: r(b.fxBX), fxBY: r(b.fxBY), fxDX: r(b.fxDX), fxDY: r(b.fxDY), fxTX: r(b.fxTX || 0), fxTY: r(b.fxTY || 0), alpha: r(b.alpha), fxP: b.fxP },
     p: st.p.map(P), stats: st.stats,
@@ -327,6 +344,7 @@ function guestFrame(dt, now) {
   if (!App.gp) App.gp = Object.assign({}, st.p[1]);
   const gp = App.gp;
   ["sc", "frz", "stun", "bigT", "miniT", "spdT", "jmpT", "armed", "confT", "djT", "tripCD"].forEach(f => gp[f] = sp[f]);
+  if (st.obs && st.obs.length) moveObstacles(st.obs, st.el, dt);
   if (gp.bomb && !sp.bomb && sp.vy < 0) { gp.bomb = 0; gp.bombLock = true; gp.vy = sp.vy; gp.y = sp.y; gp.onG = false; }
   if (gp.slide > 0 && !(sp.slide > 0) && Math.abs(sp.vx) < Math.abs(gp.vx) * 0.7) { gp.slide = 0; gp.slideCD = 0.5; gp.vx = sp.vx; }
   if (sp.stun > 0 && gp.slide > 0) gp.slide = 0;
@@ -340,6 +358,7 @@ function guestFrame(dt, now) {
 }
 function applySnap(st, a, b, k) {
   const L = (x, y) => x + (y - x) * k;
+  if (b.el !== undefined) { const ne = a.el !== undefined && Math.abs(b.el - a.el) < 1 ? L(a.el, b.el) : b.el; if (ne > st.el || ne < st.el - 2) st.el = ne; }
   st.s = b.s; st.t = b.t; st.ph = b.ph; st.pt = b.pt; st.gold = b.gold; st.wall = b.wall; st.bigGoal = b.bigGoal; if (b.wind) st.wind = b.wind; st.pu = b.pu; st.stats = b.stats;
   const jump = Math.hypot(a.b.x - b.b.x, a.b.y - b.b.y) > 200;
   Object.assign(st.b, b.b);
@@ -378,6 +397,7 @@ function hostGame() {
 function hostData(d) {
   switch (d.t) {
     case "hello":
+      if (d.v !== VERSION) toast("Dein Kumpel hat eine alte Version. Er soll die Seite neu laden.", "i-close");
       App.opp = { name: (d.name || "Gast").slice(0, 12), ch: charById(d.ch).id };
       Net.send({ t: "welcome", name: S.name || "Gastgeber", ch: S.char, cfg: App.netCfg, v: VERSION });
       lobbyUI("host"); A.sfx("coin"); toast(App.opp.name + " ist da!", "i-users");
@@ -394,8 +414,9 @@ function hostStart() {
   const c = App.netCfg;
   const cfg = { mode: "host", chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, golden: true, names: [S.name || "Du", App.opp.name], labels: ["DU", null], ball: S.ball };
   App.mid++;
-  Net.send({ t: "start", mid: App.mid, cfg: { ...cfg, mode: "guest", labels: [null, "DU"] } });
-  beginMatch(cfg);
+  const fixed = resolveObs(cfg);
+  Net.send({ t: "start", mid: App.mid, cfg: { ...fixed, mode: "guest", labels: [null, "DU"] } });
+  beginMatch(fixed);
 }
 function tryJoin(code) {
   code = String(code || $("codeIn").value).trim().toLowerCase();
@@ -418,7 +439,9 @@ function tryJoin(code) {
 }
 function guestData(d) {
   switch (d.t) {
-    case "welcome": App.opp = { name: (d.name || "Gastgeber").slice(0, 12), ch: charById(d.ch).id }; App.netCfg = d.cfg; lobbyUI("guest"); showScreen("lobby"); A.sfx("coin"); break;
+    case "welcome":
+      if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote("Ihr habt verschiedene Spielversionen. Bitte beide die Seite neu laden.", true); break; }
+      App.opp = { name: (d.name || "Gastgeber").slice(0, 12), ch: charById(d.ch).id }; App.netCfg = d.cfg; lobbyUI("guest"); showScreen("lobby"); A.sfx("coin"); break;
     case "cfg": App.netCfg = d.cfg; lobbyUI("guest"); break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("guest"); } break;
     case "full": Net.close(); showScreen("online"); netNote("Der Raum ist schon voll.", true); break;
@@ -462,6 +485,7 @@ function lobbyUI(role) {
   else if (App.opp) $("lobbyNote").textContent = App.opp.name + " ist bereit. Anpfiff, wenn du willst!";
   const c = App.netCfg || { arena: S.arena, rules: {} };
   seg($("segLobbyArena"), ARENAS.map(a => ({ v: a.id, t: a.name, dis: host && !owns("arenas", a.id) })), c.arena, v => { App.netCfg.arena = v; sendNetCfg(); });
+  seg($("segLobbyObs"), obsChoices(c.arena), (c.rules && c.rules.obs) ?? "off", v => { App.netCfg.rules = App.netCfg.rules || {}; if (v === "off") delete App.netCfg.rules.obs; else App.netCfg.rules.obs = v; sendNetCfg(); });
   $("lobbyRulesSum").textContent = rulesSummary(c.rules);
 }
 function makeQR(link) {
@@ -548,7 +572,7 @@ function runNext() {
   const r = App.run; A.sfx("click");
   if (!r || r.done) { App.run = null; quitToMenu(); return; }
   if (r.kind === "cup") { const o = r.ops[r.round]; beginMatch({ mode: "cup", chars: [S.char, o.ch], arena: o.arena, dur: 60, rules: {}, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
-  else { const o = r.next; beginMatch({ mode: "endless", chars: [S.char, o.ch], arena: o.arena, dur: 90, rules: { len: "w3" }, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
+  else { const o = r.next; beginMatch({ mode: "endless", chars: [S.char, o.ch], arena: o.arena, dur: 90, rules: { len: "w3", ...(r.streak >= 2 ? { obs: "rnd" } : {}) }, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
 }
 // Tages-Challenge
 function dailyChallenge() {
@@ -872,9 +896,27 @@ function setupScreen(ctx) {
   refreshSetup();
   showScreen("setup");
 }
+function obsChoices(arena) {
+  return [{ v: "off", t: "Aus" }, ...layoutsFor(arena).map((l, i) => ({ v: i, t: l.name })), { v: "rnd", t: "Zufall" }];
+}
+function obsInfo(arena, v) {
+  if (v === "off" || v === undefined) return { desc: "Klassisch, freies Feld.", list: [] };
+  if (v === "rnd") return { desc: "Jedes Spiel ein anderes Layout dieser Arena.", list: [] };
+  const l = layoutsFor(arena)[v]; if (!l) return { desc: "", list: [] };
+  const list = buildObstacles(arena, v); moveObstacles(list, 0, 0);
+  return { desc: l.desc, list };
+}
+function renderObs() {
+  const cur = S.rules.obs ?? "off";
+  seg($("segObs"), obsChoices(S.arena), cur, v => { if (v === "off") delete S.rules.obs; else S.rules.obs = v; save(); renderObs(); });
+  const info = obsInfo(S.arena, cur);
+  const pv = $("obsPrev"); pv.innerHTML = ""; if (info.list.length) pv.append(layoutPreview(S.arena, info.list, 190, 84));
+  $("obsDesc").textContent = info.desc;
+}
 function refreshSetup() {
   if (!setupCtx) return;
   renderArenas();
+  renderObs();
   seg($("segDiff"), DIFFS.map(d => ({ v: d.id, t: d.name })), S.diff, v => { S.diff = v; save(); });
   $("rulesSum").textContent = rulesSummary(S.rules);
 }
@@ -888,7 +930,7 @@ function renderArenas() {
     b.insertAdjacentHTML("beforeend", `<span class="cap"><b>${a.name}</b><small>${a.desc}</small></span>` + (locked ? `<span class="lock"><span class="coin"></span>${a.price}</span>` : ""));
     b.onclick = () => {
       if (locked) { if (buy("arenas", a.id, a.price)) { A.sfx("coin"); toast(a.name + " freigeschaltet!", "i-stadium", true); refreshTop(); } else { toast(`Dafür brauchst du ${a.price} Münzen`, "i-lock"); return; } }
-      A.sfx("click"); S.arena = a.id; save(); renderArenas();
+      A.sfx("click"); S.arena = a.id; save(); renderArenas(); renderObs();
     };
     list.append(b);
   });
@@ -937,11 +979,12 @@ function rulesScreen(target, onDone) {
   showScreen("rules");
 }
 function setRules(r, src) {
-  const len = r.len;
+  const len = r.len, obs = r.obs;
   Object.keys(r).forEach(k => delete r[k]);
   Object.assign(r, src);
-  delete r.len;
+  delete r.len; delete r.obs;
   if (len !== undefined) r.len = len;
+  if (obs !== undefined) r.obs = obs;
 }
 function renderRules() {
   const r = rulesCtx.target, cur = presetOf(r);
@@ -1211,7 +1254,7 @@ function wireUI() {
   $("btnKickoff").onclick = kickoffFromSetup;
   $("btnRules").onclick = () => { A.sfx("click"); S.rules = S.rules || {}; rulesScreen(S.rules, () => save()); };
   $("btnRulesDone").onclick = () => goBack();
-  $("btnRulesReset").onclick = () => { A.sfx("click"); const r = rulesCtx.target; Object.keys(r).forEach(k => delete r[k]); renderRules(); };
+  $("btnRulesReset").onclick = () => { A.sfx("click"); const r = rulesCtx.target; Object.keys(r).forEach(k => { if (k !== "obs") delete r[k]; }); renderRules(); };
   $("btnRulesMore").onclick = () => { A.sfx("click"); rulesMoreOpen = !rulesMoreOpen; renderRules(); if (rulesMoreOpen) $("ruleMore").scrollIntoView({ behavior: "smooth", block: "nearest" }); };
   $("btnRunNext").onclick = runNext;
   $("btnHost").onclick = () => { A.sfx("click"); hostGame(); };

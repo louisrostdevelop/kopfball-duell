@@ -1,5 +1,6 @@
 // Speicherstand: Münzen, Level, Freischaltungen, Statistik, Erfolge
 import { CHARS, ARENAS, BALLS, ACHIEVEMENTS, CHALLENGE_SETS, RULE_KEYS, DIFFS } from "./config.js";
+import { layoutsFor } from "./layouts.js";
 
 const KEY = "kopfball-duell-save-v2";
 const def = () => ({
@@ -19,7 +20,7 @@ function load() {
 // alte Regeln (Ballgewicht, Kopfgröße, win, dur) in das neue Format bringen
 function cleanRules(r, dur) {
   const o = {};
-  if (r) for (const k of RULE_KEYS) if (r[k] !== undefined) o[k] = r[k];
+  if (r) for (const k of [...RULE_KEYS, "obs"]) if (r[k] !== undefined) o[k] = r[k];
   if (o.len === undefined) { if (r && r.win >= 5) o.len = "w5"; else if (r && r.win) o.len = "w3"; else if (dur && dur !== 90) o.len = dur; }
   return o;
 }
@@ -119,7 +120,8 @@ export function challenge() {
   const pre = pick(presets);
   const opp = pick(CHARS).id, arena = pick(ARENAS).id;
   const diff = r() < 0.5 ? 2 : r() < 0.7 ? 1 : 3;
-  return { date: d, opp, arena, diff, preset: pre.id, presetName: pre.name, rules: { ...pre.rules, len: r() < 0.5 ? "w3" : 60 }, dur: 60, reward: 150 + (diff === 3 ? 100 : 0), done: S.chDone === d };
+  const len = r() < 0.5 ? "w3" : 60, nl = layoutsFor(arena).length, obsI = r() < 0.45 && nl ? Math.floor(r() * nl) : null;
+  return { date: d, opp, arena, diff, preset: pre.id, presetName: pre.name + (obsI !== null ? " + " + layoutsFor(arena)[obsI].name : ""), rules: { ...pre.rules, len, ...(obsI !== null ? { obs: obsI } : {}) }, dur: 60, reward: 150 + (diff === 3 ? 100 : 0), done: S.chDone === d };
 }
 export function challengeDone() { S.chDone = today(); save(); }
 

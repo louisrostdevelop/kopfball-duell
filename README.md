@@ -11,6 +11,7 @@ Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy,
 - **5 Arenen** mit eigener Physik: Flutlicht, Strand (Sand bremst), Neon City (schneller), Eishalle (rutschig), Mond (wenig Schwerkraft).
 - **7 Modi:** Schnelles Spiel (4 Stufen), Cup mit 3 Runden, Online per Link oder QR-Code, zu zweit an einem Gerät, Tages-Challenge, Endlos (Siege am Stück), Training gegen einen Torwart.
 - **Eigene Regeln:** Schussstärke, Abprall, Ballgröße, Tore, Tempo, Sieg (Zeit oder Erster bis 3/5), unter „Mehr“ Schwerkraft, Boden, Power-ups, Spezialschüsse. Drei Vorlagen (Chaos, Mondfußball, Eisfläche) und bis zu fünf eigene Presets. Online stellt der Gastgeber die Regeln ein.
+- **Hindernisse:** pro Arena drei spiegelbildliche Layouts (Banden, Brücke, Treppe, Surfbretter, Welle, Wasserbälle, Flipper, Laser, Aufzug, Schollen, Eiszapfen, Gletscher, Asteroiden, Krater, Umlaufbahn) oder Zufall. Dazu Feldgröße Klein/Normal/Groß.
 - **Schuss:** halten lädt auf, loslassen schießt. Voll geladen fliegt der Ball härter und höher. Sauber mit dem Fuß getroffen gibt am meisten Wumms, ein geladener Kopfball etwas weniger.
 - Golden Goal bei Gleichstand, Zeitlupe und Wiederholung nach jedem Tor, Emotes.
 - **Fortschritt:** Münzen, Level, Tagesbonus, tägliche Aufgaben, Angebot des Tages, Shop für Köpfe, Bälle und Arenen, 16 Erfolge. Wird im Browser gespeichert.

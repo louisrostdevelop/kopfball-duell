@@ -81,6 +81,7 @@ export function sfx(kind, v = 1) {
     case "lose": [0, 0.18, 0.36].forEach((t, i) => osc("triangle", [392, 349, 262][i], [392, 349, 262][i], 0.3, 0.12, t)); break;
     case "win": [0, 0.12, 0.24, 0.36].forEach((t, i) => osc("square", [523, 659, 784, 1047][i], [523, 659, 784, 1047][i], 0.22, 0.09, t)); break;
     case "wallhit": osc("square", 400, 200, 0.12, 0.12); break;
+    case "bumper": osc("triangle", 260, 780, 0.14, 0.3 * Math.min(1.3, 0.6 + v)); osc("sine", 520, 1400, 0.1, 0.12, 0.03); break;
     case "ohh": noise(1.1, 0.25, "bandpass", 500, 0.8, 0, 380); break;
   }
 }

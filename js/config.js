@@ -1,5 +1,9 @@
 // Spielwelt, Charaktere, Arenen, Bälle, Power-ups, Erfolge
-export const W = 1520, H = 720, G = 640;
+// Feldbreite ist pro Spiel einstellbar (Regel "Feldgröße"). W ist eine Live-Bindung, alle Module sehen den aktuellen Wert.
+export const W0 = 1520;
+export let W = W0;
+export function setFieldW(w) { W = Math.round(w); }
+export const H = 720, G = 640;
 export const GOAL_W = 112, GOAL_H = 205, BAR_Y = G - GOAL_H, BAR_T = 12;
 export const HR = 54, BR = 24, SR = 16, FOOT = 55;
 export const KS = HR / 46; // Skalierung der Schuss-Geometrie
@@ -142,6 +146,7 @@ export const RULE_OPTS = [
   { k: "goal",   name: "Tore",           opts: [[0.8, "Klein"], [1, "Normal"], [1.25, "Groß"], [1.5, "Riesig"]] },
   { k: "speed",  name: "Tempo",          opts: [[0.85, "Gemütlich"], [1, "Normal"], [1.25, "Turbo"]] },
   { k: "len",    name: "Sieg",           opts: [[60, "60 s"], [90, "90 s"], [120, "120 s"], ["w3", "3 Tore"], ["w5", "5 Tore"]] },
+  { k: "field",  name: "Feldgröße",      opts: [[0.82, "Klein"], [1, "Normal"], [1.18, "Groß"]], more: true },
   { k: "grav",   name: "Schwerkraft",    opts: [[0.55, "Wenig"], [1, "Normal"], [1.35, "Viel"]], more: true },
   { k: "floor",  name: "Boden",          opts: [["normal", "Griffig"], ["ice", "Rutschig"]], more: true },
   { k: "pu",     name: "Power-ups",      opts: [["off", "Aus"], ["normal", "Normal"], ["many", "Viele"]], more: true },

@@ -643,3 +643,11 @@ body[data-scr=end] #toasts, body[data-scr=home] #toasts { top: auto; bottom: cal
 @media (orientation: portrait) and (max-height: 800px) { .nextup { display: none !important; } }
 @media (orientation: portrait) and (max-height: 720px) { .homeside { display: none; } }
 @media (orientation: portrait) and (min-height: 1000px) { .hs-tasks { display: flex; } }
+
+/* Hindernis-Auswahl */
+.obsopt { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.obsopt h4 { margin: 0; }
+.obsrow { display: flex; gap: 12px; align-items: center; }
+.obsprev { flex: none; border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; line-height: 0; background: #1f8a46; }
+.obsprev:empty { display: none; }
+.obsrow .hint { margin: 0; font-size: 14px; font-weight: 800; opacity: .75; }

@@ -12,7 +12,7 @@ let cv, ctx, cw = 0, ch = 0, dpr = 1, band = 0;
 const base = { s: 1, ox: 0, oy: 0 };
 let quality = "high";
 const cam = { z: 1, x: W / 2, y: H / 2, shake: 0, sx: 0, sy: 0, flash: 0, flashCol: "#fff", punch: 0 };
-let bgCanvas = null, crowdCanvas = null, bgKey = "", crowdRect = null;
+let bgCanvas = null, crowdCanvas = null, bgKey = "", crowdRect = null, lastW = 0;
 const parts = [];
 const callouts = [];
 const trail = [];
@@ -179,7 +179,8 @@ const srand = () => { seedN = (seedN * 16807) % 2147483647; return seedN / 21474
 const persp = x => W / 2 + (x - W / 2) * 0.82; // x an der hinteren Feldkante
 
 function buildBg(arena) {
-  const key = arena + "|" + cw + "x" + ch + "|" + dpr + "|" + base.s + "|" + base.oy;
+  if (W !== lastW) { lastW = W; resize(); } // Feldbreite hat sich geändert: Kamera neu ausrichten
+  const key = arena + "|" + W + "|" + cw + "x" + ch + "|" + dpr + "|" + base.s + "|" + base.oy;
   if (key === bgKey && bgCanvas) return;
   bgKey = key;
   const pad = 60;
@@ -779,6 +780,101 @@ function drawAim(st, p) {
   ctx.restore();
 }
 
+// ---------- Hindernisse (Stil passend zur Arena) ----------
+const OBS_STYLE = {
+  stadion: { plat: "#22305f", edge: "#3ddc84", block: "#2a3d6e", bump: "#ff5a5a" },
+  strand:  { plat: "#ff8a3d", edge: "#fff3c4", block: "#e2b36b", bump: "#ff5ca8" },
+  neon:    { plat: "#1b0c3a", edge: "#ff4fd8", block: "#241047", bump: "#22d3ee" },
+  eis:     { plat: "#bfeaff", edge: "#ffffff", block: "#9fdcf5", bump: "#e9f7ff" },
+  mond:    { plat: "#6c6e7e", edge: "#b8bac6", block: "#5d5f6e", bump: "#8d8f9e" },
+};
+function drawObstacles(st, view, t) {
+  const obs = st.obs; if (!obs || !obs.length) return;
+  const S = OBS_STYLE[st.arena] || OBS_STYLE.stadion, ar = st.arena;
+  const pos = view.obsP || obs;
+  // Schatten auf dem Boden
+  ctx.fillStyle = "rgba(0,0,0,.16)";
+  obs.forEach((o, i) => { const q = pos[i] || o; if (o.block) return; const w = o.t === "plat" ? o.w * 0.5 : o.r; const a = clamp(1 - (G - q.y) / 600, 0.25, 0.9); ctx.globalAlpha = a; ctx.beginPath(); ctx.ellipse(q.x, G - 3, w, 6, 0, 0, TAU); ctx.fill(); });
+  ctx.globalAlpha = 1;
+  obs.forEach((o, i) => {
+    const q = pos[i] || o, x = q.x, y = q.y;
+    ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
+    if (o.t === "plat" && o.block) {
+      const x0 = x - o.w / 2, w = o.w, h = G - y;
+      if (ar === "mond") { ctx.fillStyle = S.block; ctx.beginPath(); ctx.moveTo(x0 - 10, G); ctx.quadraticCurveTo(x0, y - 6, x, y - 4); ctx.quadraticCurveTo(x0 + w, y - 6, x0 + w + 10, G); ctx.closePath(); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.beginPath(); ctx.ellipse(x - w * 0.15, y + h * 0.35, w * 0.12, 5, 0, 0, TAU); ctx.fill(); }
+      else {
+        const g = ctx.createLinearGradient(0, y, 0, G); g.addColorStop(0, ar === "eis" ? "#e6f8ff" : shade(S.block, 0.25)); g.addColorStop(1, S.block);
+        ctx.fillStyle = g; roundRect(x0, y, w, h + 6, 10); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = S.edge; ctx.globalAlpha = ar === "neon" ? 0.9 : 0.75; roundRect(x0 + 4, y + 3, w - 8, 6, 3); ctx.fill(); ctx.globalAlpha = 1;
+        if (ar === "eis") { ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0 + w * 0.2, y + 16); ctx.lineTo(x0 + w * 0.32, y + h * 0.6); ctx.moveTo(x0 + w * 0.7, y + 20); ctx.lineTo(x0 + w * 0.62, y + h * 0.5); ctx.stroke(); }
+        if (ar === "stadion") { ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.font = "15px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("KD", x, y + h * 0.55); }
+      }
+    } else if (o.t === "plat") {
+      const x0 = x - o.w / 2, w = o.w, h = o.h;
+      if (ar === "stadion") { // hängende Werbebande
+        ctx.strokeStyle = "rgba(200,210,240,.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0 + 14, y); ctx.lineTo(x0 + 30, -300); ctx.moveTo(x0 + w - 14, y); ctx.lineTo(x0 + w - 30, -300); ctx.stroke();
+        ctx.fillStyle = S.plat; roundRect(x0, y, w, h, 5); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = S.edge; ctx.font = "13px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const off = (t * 40) % w; ctx.save(); ctx.beginPath(); ctx.rect(x0 + 3, y, w - 6, h); ctx.clip(); ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off + w / 2, y + h / 2 + 1); ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off - w / 2, y + h / 2 + 1); ctx.restore();
+      } else if (ar === "strand") { // Surfbrett
+        ctx.fillStyle = S.plat; ctx.beginPath(); ctx.ellipse(x, y + h / 2, w / 2, h / 2 + 2, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = S.edge; ctx.fillRect(x - w * 0.36, y + h / 2 - 2, w * 0.72, 4); ctx.fillStyle = "#2a7fc0"; ctx.fillRect(x - 4, y + 2, 8, h - 4);
+      } else if (ar === "neon") { // Laserbalken
+        ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = S.edge; ctx.shadowBlur = quality === "high" ? 18 : 0;
+        ctx.fillStyle = S.edge; roundRect(x0, y + h * 0.25, w, h * 0.5, h * 0.25); ctx.fill();
+        ctx.shadowBlur = 0; ctx.fillStyle = "#fff"; roundRect(x0 + 6, y + h * 0.42, w - 12, h * 0.16, 2); ctx.fill();
+        ctx.globalCompositeOperation = "source-over"; ctx.fillStyle = INK; ctx.fillRect(x0 - 4, y, 10, h); ctx.fillRect(x0 + w - 6, y, 10, h);
+      } else if (ar === "eis") { // Eisplatte mit Zapfen
+        ctx.fillStyle = S.plat; roundRect(x0, y, w, h, 6); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+        if (o.icicle) { ctx.fillStyle = "#e9f7ff"; for (let k = 0; k < Math.floor(w / 22); k++) { const ix = x0 + 10 + k * 22, il = 12 + ((k * 7) % 11); ctx.beginPath(); ctx.moveTo(ix - 6, y + h); ctx.lineTo(ix, y + h + il); ctx.lineTo(ix + 6, y + h); ctx.closePath(); ctx.fill(); ctx.stroke(); } }
+        ctx.fillStyle = "rgba(255,255,255,.75)"; roundRect(x0 + 6, y + 3, w * 0.4, 4, 2); ctx.fill();
+      } else { // Fels
+        ctx.fillStyle = S.plat; ctx.beginPath(); ctx.moveTo(x0, y + h); ctx.lineTo(x0 + 8, y); ctx.lineTo(x0 + w - 12, y - 2); ctx.lineTo(x0 + w, y + h); ctx.closePath(); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+      }
+    } else { // Bumper
+      const r = o.r, flash = clamp(1 - (t - (o.hitT || -9)) / 0.25, 0, 1), rr = r * (1 + 0.12 * flash);
+      if (ar === "neon") {
+        ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = S.bump; ctx.shadowBlur = quality === "high" ? 20 + 20 * flash : 0;
+        ctx.strokeStyle = S.bump; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, rr - 3, 0, TAU); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.fillStyle = flash > 0 ? "#fff" : "#ff4fd8"; ctx.beginPath(); ctx.arc(x, y, rr * 0.35, 0, TAU); ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      } else if (ar === "strand") { // Wasserball
+        const cols = ["#ff5ca8", "#ffd02b", "#2ad3f5", "#3ed46f", "#ffffff", "#ff8a3d"];
+        for (let k = 0; k < 6; k++) { ctx.fillStyle = cols[k]; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, rr, t * 0.6 + k * TAU / 6, t * 0.6 + (k + 1) * TAU / 6); ctx.closePath(); ctx.fill(); }
+        ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y, rr * 0.18, 0, TAU); ctx.fill();
+      } else if (ar === "mond") { // Asteroid
+        ctx.fillStyle = S.bump; ctx.beginPath(); for (let k = 0; k < 10; k++) { const a = k / 10 * TAU, rk = rr * (0.88 + 0.12 * Math.sin(k * 2.7)); ctx.lineTo(x + Math.cos(a) * rk, y + Math.sin(a) * rk); } ctx.closePath(); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.arc(x - rr * 0.3, y - rr * 0.2, rr * 0.22, 0, TAU); ctx.arc(x + rr * 0.35, y + rr * 0.3, rr * 0.14, 0, TAU); ctx.fill();
+      } else {
+        ctx.fillStyle = S.bump; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y, rr * 0.5, 0, TAU); ctx.fill(); ctx.fillStyle = S.bump; ctx.beginPath(); ctx.arc(x, y, rr * 0.25, 0, TAU); ctx.fill();
+      }
+      if (flash > 0) { ctx.globalAlpha = flash * 0.6; ctx.strokeStyle = "#fff"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, r + 10 + 14 * (1 - flash), 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+    }
+    ctx.restore();
+  });
+}
+
+// Kleine Vorschau eines Layouts (für Setup und Lobby)
+export function layoutPreview(arena, obsList, w, h) {
+  const c = document.createElement("canvas"), r = Math.min(2, devicePixelRatio || 1);
+  c.width = w * r; c.height = h * r; c.style.width = w + "px"; c.style.height = h + "px";
+  const x = c.getContext("2d"); x.scale(r, r);
+  const S = OBS_STYLE[arena] || OBS_STYLE.stadion, k = w / W, oy = h - G * k * 1.0;
+  x.fillStyle = "#1f8a46"; x.fillRect(0, 0, w, h); x.fillStyle = "#26a352"; x.fillRect(0, oy + 520 * k, w, h);
+  x.strokeStyle = "#fff"; x.lineWidth = 2; x.strokeRect(1, oy + 435 * k, GOAL_W * k, (G - 435) * k); x.strokeRect(w - 1 - GOAL_W * k, oy + 435 * k, GOAL_W * k, (G - 435) * k);
+  x.beginPath(); x.moveTo(w / 2, oy + 520 * k); x.lineTo(w / 2, h); x.stroke();
+  for (const o of obsList) {
+    x.fillStyle = o.t === "bump" ? S.bump : o.block ? S.block : S.edge;
+    x.strokeStyle = INK; x.lineWidth = 1.5;
+    if (o.t === "bump") { x.beginPath(); x.arc(o.x * k, oy + o.y * k, Math.max(3, o.r * k), 0, TAU); x.fill(); x.stroke(); if (o.mv) { x.setLineDash([3, 3]); x.strokeStyle = "rgba(255,255,255,.6)"; x.beginPath(); x.ellipse(o.cx * k, oy + o.cy * k, (o.mv.orbit || 0) * k, (o.mv.orbit || 0) * 0.45 * k, 0, 0, TAU); x.stroke(); x.setLineDash([]); } }
+    else { x.fillRect((o.x - o.w / 2) * k, oy + o.y * k, o.w * k, Math.max(3, (o.block ? G - o.y : o.h) * k)); x.strokeRect((o.x - o.w / 2) * k, oy + o.y * k, o.w * k, Math.max(3, (o.block ? G - o.y : o.h) * k));
+      if (o.mv) { x.strokeStyle = "rgba(255,255,255,.8)"; x.setLineDash([3, 3]); x.beginPath(); if (o.mv.ay) { x.moveTo(o.x * k, oy + (o.cy - o.mv.ay) * k); x.lineTo(o.x * k, oy + (o.cy + o.mv.ay + o.h) * k); } else { x.moveTo((o.cx - Math.abs(o.mv.ax)) * k, oy + (o.cy + o.h / 2) * k); x.lineTo((o.cx + Math.abs(o.mv.ax)) * k, oy + (o.cy + o.h / 2) * k); } x.stroke(); x.setLineDash([]); } }
+  }
+  return c;
+}
+
 function drawPowerups(st, t) {
   for (const u of st.pu) {
     const y = u.y + Math.sin(u.t * 3) * 8, col = POWERUPS[u.k].col;
@@ -987,6 +1083,7 @@ export function render(st, t, opts) {
   boards(st, t);
   lights(st, t);
   goalBack(view, 0, t); goalBack(view, 1, t);
+  drawObstacles(st, view, t);
   drawPowerups(view, t);
   view.p.forEach(p => drawPlayerBase(p));
   drawBallShadow(view.b);
@@ -1039,7 +1136,7 @@ export function render(st, t, opts) {
 // Vorschaubild einer Arena (für Menüs)
 const thumbCache = new Map();
 export function arenaThumb(arena, w, h) {
-  const k = arena + w + "x" + h;
+  const k = arena + w + "x" + h + "|" + W;
   const copy = c => { const d = document.createElement("canvas"); d.width = c.width; d.height = c.height; d.getContext("2d").drawImage(c, 0, 0); return d; };
   if (thumbCache.has(k)) return copy(thumbCache.get(k));
   const c = document.createElement("canvas"), r = Math.min(2, window.devicePixelRatio || 1);
