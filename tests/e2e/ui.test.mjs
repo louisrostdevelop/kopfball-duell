@@ -24,7 +24,8 @@ async function tour(view) {
   await page.keyboard.down("Space"); await page.waitForTimeout(300); await page.keyboard.up("Space");
   await page.keyboard.press("Escape"); await page.waitForTimeout(200); await c("#btnResume");
   await page.evaluate(() => { const st = window.__kd.st; st.s = [1, 0]; st.t = 0.5; });
-  await page.waitForTimeout(3500);
+  // bis zu 10 s (langsame CI-Rechner): fällt gerade ein Tor, läuft erst die Tor-Pause
+  await page.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 10000 }).catch(() => {});
   assert.equal(await page.evaluate(() => window.__kd.screen), "end", "Endbildschirm nach Abpfiff");
   await c("#btnEndAgain", 800); await page.keyboard.press("Escape"); await page.waitForTimeout(200); await c("#btnQuit", 600);
   // Cup, Endlos, Tagesaufgabe, Training, Lokal, Online-Seite
