@@ -966,7 +966,7 @@ export function render(st, t, opts) {
   const k = Math.min(1, dt * (rep ? 6 : 3));
   cam.z += (tz - cam.z) * k; cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   cam.punch = Math.max(0, cam.punch - dt * 0.5);
-  cam.shake *= Math.max(0, 1 - dt * 7);
+  cam.shake *= Math.max(0, 1 - dt * 11);
   cam.sx = (Math.random() - 0.5) * cam.shake; cam.sy = (Math.random() - 0.5) * cam.shake;
   const z = cam.z + cam.punch;
   const s = base.s * z;

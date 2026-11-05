@@ -194,14 +194,14 @@ function onEvent(e, remote) {
       const spd = e.spd || 1000, sv = clamp((spd - 700) / 1400, 0, 1.3), hammer = spd > 1750, juice = Math.max(e.pow, 1 + sv * 0.7);
       const ang = Math.atan2(st.b.vy, st.b.vx);
       fx.burst("kick", e.x, e.y, { pow: juice, dir }); snd(e.kind === "lob" ? "chip" : hammer ? "hammer" : "kick", juice);
-      fx.shake(e.kind === "lob" ? 2 : 3 + 9 * sv);
+      fx.shake(e.kind === "lob" ? 2 : 2 + 6 * sv);
       fx.ballHit(ang, 0.6 + sv * 0.5);
       if (kp) fx.swoosh(e.x - dir * 20, e.y, dir, juice);
-      if (sv > 0.3) fx.punch(0.012 + 0.035 * sv);
+      if (sv > 0.5) fx.punch(0.008 + 0.014 * sv);
       if (hammer) { fx.burst("ring", e.x, e.y, { col: spd > 2300 ? COL.gold : "#fff", ang }); fx.flash("#fff", 0.12 + 0.12 * clamp((spd - 1750) / 900, 0, 1)); }
       const T = (text, col, size, dy = 42) => fx.burst("text", e.x, e.y - dy, { text, col, size });
-      if (spd > 2300) { T("HAMMER!", COL.gold, 34, 46); fx.shake(8); }
-      else if (e.c > 0.85 && e.q > 0.75 && e.kind !== "lob") { T("VOLLTREFFER!", COL.gold, 30, 46); fx.shake(7); }
+      if (spd > 2300) T("HAMMER!", COL.gold, 34, 46);
+      else if (e.c > 0.85 && e.q > 0.75 && e.kind !== "lob") T("VOLLTREFFER!", COL.gold, 30, 46);
       else if (e.kind === "lob") T("LUPFER", "#bfe9ff", 22, 40);
       else if (e.kind === "volley" && spd > 1500) T("VOLLEY!", COL.gold, 26, 40);
       else if (hammer) T("WUMMS!", COL.gold, 28, 40);

@@ -34,14 +34,14 @@ export const KICK = {
   memDecay: 8,        // wie schnell das Tempo-Gedächtnis (Tempo vor dem Abprall) verblasst
   memClassify: true,  // Lupfer/Strahl nach Tempo vor dem Abprall statt nach dem gebremsten Tempo
   lobSpeed: 300,      // darunter gilt ein Ball am Boden als ruhig
-  hsMode: "hard",     // Standbild: "all" = jeder saubere Treffer, "hard" = nur sehr harte, "none"
+  hsMode: "none",     // Standbild: "all" = jeder saubere Treffer, "hard" = nur sehr harte, "none"
   softCap: true,      // Tempo weich an die Obergrenze heranführen statt hart abschneiden
   driveVy: 430, driveCharge: 320,
   tap: 1350,          // Grundtempo eines sauberen Tipp-Schusses
   chargeAdd: 1100,    // so viel bringt volles Aufladen zusätzlich
   cap: 2700,          // Obergrenze fürs Balltempo (vorher 1900)
   swing: 0.18,        // Dauer der Schussbewegung (vorher 0.24)
-  hitFrom: 0.03,      // Treffer zählt ab Beginn der Bewegung (vorher erst nach 0.06 s)
+  hitFrom: 0,         // Treffer zählt ab dem Moment des Loslassens (vorher erst nach 0.06 s)
   power: 1750,        // ab diesem Tempo gilt ein Schuss als Hammer (Effekte, kurzes Standbild)
   rollFric: 14,       // Rollreibung am Boden (x (1 - Arena-Roll) pro Sekunde)
 };
@@ -85,7 +85,8 @@ export const pr = p => HR * p.sc;
 export function shoePos(p) {
   if (p.slide > 0) return { x: p.x + p.slideDir * 50 * KS * p.sc, y: p.y + (FOOT + 4) * p.sc, k: 0 };
   if (p.bomb) return { x: p.x - p.dir * 8 * KS * p.sc, y: p.y + FOOT * 0.82 * p.sc, k: 0 };
-  const k = p.kick > 0 ? Math.sin((1 - p.kick / KICK.swing) * Math.PI) : 0;
+  const pr0 = p.kick > 0 ? 1 - p.kick / KICK.swing : 1;
+  const k = p.kick > 0 ? (pr0 < 0.3 ? Math.sin(pr0 / 0.3 * Math.PI / 2) : Math.cos((pr0 - 0.3) / 0.7 * Math.PI / 2)) : 0;
   const wind = p.kHeld && p.charge > 0 ? -p.charge * 0.6 : 0;
   return { x: p.x + p.dir * (16 + 34 * k + 22 * wind) * KS * p.sc, y: p.y + (FOOT - 20 * KS * k) * p.sc, k };
 }
@@ -306,8 +307,13 @@ function onBar(st, p) {
   return false;
 }
 
+function swingNow(st, p) {
+  p.kick = KICK.swing; p.kHit = false; p.kHitP = false; p.kPow = 1 + p.charge * 0.75;
+  ev(st, { t: "swing", i: p.i, pow: p.kPow });
+}
 function handleKick(st, p, c, dt) {
-  // Drücken = ausholen (und aufladen, solange gehalten), Loslassen = schießen.
+  // Halten = aufladen (der Ball verhält sich dabei ganz normal), Loslassen = Schuss, und zwar sofort:
+  // die Schussbewegung trifft schon im selben Physikschritt, in dem losgelassen wird.
   const can = p.frz <= 0 && p.stun <= 0 && !(p.slide > 0) && !p.bomb;
   if (p.kick > 0) p.kick = Math.max(0, p.kick - dt);
   if (can && c.k && !p.kHeld) {
@@ -319,7 +325,7 @@ function handleKick(st, p, c, dt) {
     if (before < 1 && p.charge >= 1) ev(st, { t: "charged", i: p.i });
   } else if (!c.k && p.kHeld) {
     p.kHeld = false;
-    if (can) { p.kick = KICK.swing; p.kHit = false; p.kHitP = false; p.kPow = 1 + p.charge * 0.75; ev(st, { t: "swing", i: p.i, pow: p.kPow }); }
+    if (can) swingNow(st, p);
     p.charge = 0; p.chT = 0;
   }
   if (!can) { p.kHeld = false; p.charge = 0; }
@@ -423,7 +429,7 @@ function bombBall(st, b, p) {
     ev(st, { t: "smash", i: p.i, x: b.x, y: b.y, k });
   }
   b.held = 0.05;
-  st.hs = 0.05 + 0.05 * k;
+  st.hs = Math.max(st.hs, 0.02 + 0.015 * k);
   addMeter(st, p, 6 * (st.mod === "superfast" ? 2 : 1));
   return true;
 }
@@ -605,7 +611,7 @@ function ballVsPlayer(st, b, p, dt) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
       b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (540 + 460 * hp) * pm * kickMul(st)) + p.vx * 0.15;
       b.vy = Math.min(b.vy, -(300 + 360 * hp));
-      if (hp > 0.6) st.hs = 0.05;
+      if (hp > 0.6) st.hs = Math.max(st.hs, 0.015);
     }
     if ((hc.imp > 160 || hp > 0) && p.hc <= 0) {
       p.hc = 0.12; st.stats[p.i].heads++;
