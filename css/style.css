@@ -525,10 +525,11 @@ kbd { display: inline-block; font-family: var(--body); font-weight: 900; font-si
 .tbtn svg { width: 40%; height: 40%; filter: drop-shadow(0 2px 0 var(--ink)); }
 .tbtn span { font-family: var(--display); font-size: 12px; letter-spacing: .03em; text-shadow: var(--o-sm); margin-top: 1px; }
 .tbtn.on { transform: translateY(3px) scale(.96); box-shadow: inset 0 -2px 0 rgba(0,0,0,.25), 0 1px 0 var(--ink); filter: brightness(1.15); }
-.big .kck { width: 86px; height: 86px; }
+.big .kck { width: 104px; height: 104px; }
+.big .kck span { font-size: 14px; }
 .big .jmp { width: 78px; height: 78px; }
 .big .dwn { width: 66px; height: 66px; margin-bottom: 6px; }
-.big .sup { width: 56px; height: 56px; margin-bottom: 12px; }
+.big .sup { width: 64px; height: 64px; margin-bottom: 34px; margin-right: 4px; }
 .dwn { background: linear-gradient(#ffa06b, #c8501a); }
 .p1 .kck { background: linear-gradient(#ff9a5c, #e04d00); }
 .p2 .kck { background: linear-gradient(#7eeaff, #0a95c4); }

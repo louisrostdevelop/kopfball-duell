@@ -107,7 +107,7 @@ function beginMatch(cfg) {
 }
 function tutorial() {
   const lines = I.isTouch
-    ? ["Links ziehen = laufen, nach oben ziehen = springen", "Orange Taste: Grätsche, in der Luft Arschbombe", "Schuss halten und loslassen = Powerschuss"]
+    ? ["Links ziehen = laufen, nach oben ziehen = springen", "Links nach unten: Grätsche, in der Luft Arschbombe", "Rechts tippen = Schuss, halten und loslassen = Powerschuss"]
     : ["A/D laufen · W springen (kurz = halb hoch)", "S: Grätsche, in der Luft Arschbombe", "Leertaste halten und loslassen = Powerschuss"];
   lines.forEach((t, n) => setTimeout(() => toast(t, "i-ball"), 300 + n * 1500));
 }

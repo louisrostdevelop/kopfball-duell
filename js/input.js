@@ -87,7 +87,7 @@ function stickZone(pi) {
   const z = el("div", "stickzone"), base = el("div", "stick"), knob = el("div", "knob");
   base.innerHTML = '<i class="sk-up">▲</i><i class="sk-dn">▼</i>';
   base.append(knob); z.append(base); root.append(z);
-  const hint = el("div", "stickhint"); hint.innerHTML = '<span class="sh-pad">◀ ▶</span><span>Hier ziehen zum Laufen<small>Hoch = Sprung · Runter = Grätsche</small></span>'; z.append(hint);
+  const hint = el("div", "stickhint"); hint.innerHTML = '<span class="sh-pad">◀ ▶</span><span>Hier ziehen zum Laufen<small>Hoch = Sprung · Runter = Grätsche, in der Luft Bombe</small></span>'; z.append(hint);
   let id = null, ax = 0, ay = 0;
   // Sprung: schon schräg nach oben (ab ca. 27°) reicht, damit man im Laufen springen kann.
   // Einmal ausgelöst, bleibt er gehalten, bis der Daumen fast wieder unten ist (sonst wird aus dem hohen Sprung ein halber).
@@ -150,19 +150,24 @@ function buttons(pi, side, big) {
     ["k", '<svg><use href="#i-ball"/></svg><span>SCHUSS</span><b class="charge"></b>', "kck"],
   ];
   const btn = {};
-  (big || side === "left" ? defs : defs.slice().reverse()).forEach(([act, html, cls]) => {
+  // Allein am Handy: Springen, Grätsche und Bombe kommen vom Lauf-Feld links. Rechts nur Schuss und Super.
+  const use = big ? defs.filter(([act]) => act === "s" || act === "k") : defs;
+  (big || side === "left" ? use : use.slice().reverse()).forEach(([act, html, cls]) => {
     const b = el("div", "tbtn " + cls); b.innerHTML = html; b.dataset.act = act; wrap.append(b); btn[act] = b;
   });
   zone.append(wrap); root.append(zone);
   const fingers = new Map(); // pointerId -> Aktion
   const sync = () => {
     const held = new Set(fingers.values());
-    for (const act of ["s", "d", "j", "k"]) { press(pi, act, held.has(act)); btn[act].classList.toggle("on", held.has(act)); }
+    for (const act in btn) { press(pi, act, held.has(act)); btn[act].classList.toggle("on", held.has(act)); }
   };
+  // Abstand zur Taste in Tasten-Radien
+  const dist = (act, x, y) => { const r = btn[act].getBoundingClientRect(); return Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2)) / (r.width / 2); };
   const nearest = (x, y) => {
     let best = null, bd = 1e9;
-    for (const act in btn) { const r = btn[act].getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, d = Math.hypot(x - cx, y - cy) / (r.width / 2); if (d < bd) { bd = d; best = act; } }
-    return bd < 2.6 ? best : null;
+    for (const act in btn) { const d = dist(act, x, y); if (d < bd) { bd = d; best = act; } }
+    // allein: die ganze rechte Hälfte ist Schuss, außer man trifft die Super-Taste
+    return big || bd < 2.6 ? best : null;
   };
   zone.addEventListener("pointerdown", e => {
     e.preventDefault(); try { zone.setPointerCapture(e.pointerId); } catch (_) {}
@@ -172,8 +177,9 @@ function buttons(pi, side, big) {
   zone.addEventListener("pointermove", e => {
     if (!fingers.has(e.pointerId)) return;
     const act = nearest(e.clientX, e.clientY);
-    // Schuss wird beim Loslassen ausgelöst: vom Schuss weg auf eine andere Taste rutschen = Schuss loslassen
-    if (act && act !== fingers.get(e.pointerId)) { fingers.set(e.pointerId, act); sync(); }
+    // Schuss wird beim Loslassen ausgelöst: vom Schuss weg auf eine andere Taste rutschen = Schuss loslassen.
+    // Gewechselt wird nur, wenn der Daumen wirklich auf der anderen Taste liegt (Wackeln lässt die gehaltene Taste in Ruhe).
+    if (act && act !== fingers.get(e.pointerId) && dist(act, e.clientX, e.clientY) < 1.1) { fingers.set(e.pointerId, act); sync(); }
   });
   const off = e => { if (!fingers.has(e.pointerId)) return; fingers.delete(e.pointerId); sync(); };
   zone.addEventListener("pointerup", off); zone.addEventListener("pointercancel", off); zone.addEventListener("lostpointercapture", off);
