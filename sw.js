@@ -1,6 +1,7 @@
 // Offline-Unterstützung: erst Netz, dann Cache (so kommen Updates sofort an)
-const CACHE = "kopfball-v9";
+const CACHE = "kopfball-v10";
 const CORE = ["./", "index.html", "css/style.css", "js/main.js", "js/config.js", "js/physics.js", "js/render.js", "js/art.js", "js/audio.js", "js/input.js", "js/ai.js", "js/net.js", "js/store.js", "js/layouts.js",
+  "js/sim/ball.js", "js/sim/base.js", "js/sim/goal.js", "js/sim/kick.js", "js/sim/match.js", "js/sim/obstacles.js", "js/sim/player.js", "js/sim/powerups.js", "js/sim/rules.js", "js/sim/state.js", "js/sim/supers.js", "js/sim/tricks.js", "js/sim/tuning.js",
   "fonts/lilita.woff2", "fonts/nunito-700.woff2", "fonts/nunito-800.woff2", "fonts/nunito-900.woff2", "vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "manifest.webmanifest"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
