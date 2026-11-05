@@ -1,6 +1,6 @@
 // Kopfball Duell – Ablauf, Menüs, Modi, Online, Fortschritt
 import { W, G, GOAL_W, CHARS, ARENAS, BALLS, SUPERS, POWERUPS, MODS, DIFFS, ACHIEVEMENTS, EMOTES, COL, MODES, RULE_OPTS, RULE_PRESETS, RARITY, rarityOf, charById, arenaById, clamp } from "./config.js";
-import { newMatch, advance, emote, skipCelebration, predictPlayer, REPLAY_START, REPLAY_END, fireSuper, DEFAULT_RULES } from "./physics.js";
+import { newMatch, advance, emote, skipCelebration, predictPlayer, REPLAY_START, REPLAY_END, fireSuper, DEFAULT_RULES, matchLen } from "./physics.js";
 import { initRender, render, fx, setQuality, arenaThumb, resize, setBand } from "./render.js";
 import { avatarCanvas, drawBall, drawHead } from "./art.js";
 import * as A from "./audio.js";
@@ -316,7 +316,7 @@ function hostGame() {
   if (!Net.available()) { netNote("Online-Modus konnte nicht geladen werden. Prüf deine Internetverbindung.", true); return; }
   saveName($("nameIn").value);
   App.opp = null;
-  App.netCfg = { arena: owns("arenas", S.arena) ? S.arena : "stadion", dur: S.dur, rules: { ...S.rules } };
+  App.netCfg = { arena: owns("arenas", S.arena) ? S.arena : "stadion", rules: { ...S.rules } };
   $("lobbyCode").textContent = "····"; $("lobbyLink").textContent = ""; $("qrBox").innerHTML = "";
   lobbyUI("host");
   $("lobbyNote").textContent = "Raum wird geöffnet…";
@@ -356,7 +356,7 @@ function hostData(d) {
 function hostStart() {
   if (!App.opp) return;
   const c = App.netCfg;
-  const cfg = { mode: "host", chars: [S.char, App.opp.ch], arena: c.arena, dur: c.dur, rules: c.rules, mod: null, golden: true, names: [S.name || "Du", App.opp.name], labels: ["DU", null], ball: S.ball };
+  const cfg = { mode: "host", chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, golden: true, names: [S.name || "Du", App.opp.name], labels: ["DU", null], ball: S.ball };
   App.mid++;
   Net.send({ t: "start", mid: App.mid, cfg: { ...cfg, mode: "guest", labels: [null, "DU"] } });
   beginMatch(cfg);
@@ -424,9 +424,8 @@ function lobbyUI(role) {
   put(0, left, host); put(1, right, !host);
   if (!host) $("lobbyNote").textContent = App.opp ? "Warte, bis " + App.opp.name + " anpfeift." : "Verbinde…";
   else if (App.opp) $("lobbyNote").textContent = App.opp.name + " ist bereit. Anpfiff, wenn du willst!";
-  const c = App.netCfg || { arena: S.arena, dur: S.dur, rules: {} };
+  const c = App.netCfg || { arena: S.arena, rules: {} };
   seg($("segLobbyArena"), ARENAS.map(a => ({ v: a.id, t: a.name, dis: host && !owns("arenas", a.id) })), c.arena, v => { App.netCfg.arena = v; sendNetCfg(); });
-  seg($("segLobbyDur"), [60, 90, 120].map(v => ({ v, t: v + " s", dis: !!(c.rules && c.rules.win) })), c.dur, v => { App.netCfg.dur = v; sendNetCfg(); });
   $("lobbyRulesSum").textContent = rulesSummary(c.rules);
 }
 function makeQR(link) {
@@ -513,7 +512,7 @@ function runNext() {
   const r = App.run; A.sfx("click");
   if (!r || r.done) { App.run = null; quitToMenu(); return; }
   if (r.kind === "cup") { const o = r.ops[r.round]; beginMatch({ mode: "cup", chars: [S.char, o.ch], arena: o.arena, dur: 60, rules: {}, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
-  else { const o = r.next; beginMatch({ mode: "endless", chars: [S.char, o.ch], arena: o.arena, dur: 90, rules: { win: 3 }, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
+  else { const o = r.next; beginMatch({ mode: "endless", chars: [S.char, o.ch], arena: o.arena, dur: 90, rules: { len: "w3" }, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
 }
 // Tages-Challenge
 function dailyChallenge() {
@@ -523,7 +522,7 @@ function dailyChallenge() {
 }
 function dailyBriefing() {
   const c = dailyChallenge(), o = charById(c.opp);
-  const lines = [`Gegner: <b>${o.name}</b> (${DIFFS[c.diff].name})`, `Arena: <b>${arenaById(c.arena).name}</b>`, `Regeln: <b>${c.presetName}</b>${c.rules.win ? `, Erster bis ${c.rules.win}` : ", 60 Sekunden"}`];
+  const lines = [`Gegner: <b>${o.name}</b> (${DIFFS[c.diff].name})`, `Arena: <b>${arenaById(c.arena).name}</b>`, `Regeln: <b>${c.presetName}</b>, ${matchLen(c.rules).win ? `Erster bis ${matchLen(c.rules).win}` : "60 Sekunden"}`];
   modal({ title: "Tages-Challenge", icon: "i-cal", body: `<div class="briefav"></div><p>${lines.join("<br>")}</p><p>${c.done ? "Heute schon geschafft. Du kannst trotzdem spielen." : `Sieg bringt <b>+${c.reward}</b> Münzen.`}</p>`, btn: "Anpfiff", onOk: () => beginMatch({ mode: "daily", chars: [S.char, c.opp], arena: c.arena, dur: c.dur, rules: c.rules, golden: true, diff: c.diff, names: cpuNames(c.opp), labels: ["DU", null], ball: S.ball }), cancel: "Später" });
   const box = document.querySelector(".briefav"); if (box) box.append(avatarCanvas(c.opp, 110, { dir: -1, mood: "angry" }));
 }
@@ -688,7 +687,7 @@ function homeScreen() {
   const ch = dailyChallenge();
   $("hsDaily").classList.toggle("done", ch.done);
   $("hdOpp").textContent = charById(ch.opp).name;
-  $("hdRules").textContent = ch.presetName + (ch.rules.win ? `, bis ${ch.rules.win}` : ", 60 s") + " · " + DIFFS[ch.diff].name;
+  $("hdRules").textContent = ch.presetName + (matchLen(ch.rules).win ? `, bis ${matchLen(ch.rules).win}` : ", 60 s") + " · " + DIFFS[ch.diff].name;
   $("hdRw").innerHTML = ch.done ? "✓ Geschafft" : `<span class="coin"></span>+${ch.reward}`;
   const ha = $("hdAv"); ha.innerHTML = ""; ha.append(avatarCanvas(ch.opp, 60, { dir: -1, mood: "angry" }));
   // Aufgaben
@@ -834,7 +833,6 @@ function setupScreen(ctx) {
   setupCtx = ctx;
   $("setupTitle").textContent = ctx.mode === "train" ? "Training" : ctx.mode === "local" ? "Zu zweit" : "Schnelles Spiel";
   $("optDiff").hidden = ctx.mode !== "cpu";
-  $("optDur").hidden = ctx.mode === "train";
   refreshSetup();
   showScreen("setup");
 }
@@ -842,8 +840,6 @@ function refreshSetup() {
   if (!setupCtx) return;
   renderArenas();
   seg($("segDiff"), DIFFS.map(d => ({ v: d.id, t: d.name })), S.diff, v => { S.diff = v; save(); });
-  const win = S.rules && S.rules.win;
-  seg($("segDur"), [60, 90, 120].map(v => ({ v, t: v + " s", dis: !!win })), S.dur, v => { S.dur = v; save(); });
   $("rulesSum").textContent = rulesSummary(S.rules);
 }
 function renderArenas() {
@@ -863,7 +859,7 @@ function renderArenas() {
 }
 function kickoffFromSetup() {
   A.sfx("click");
-  const base = { arena: S.arena, dur: S.dur, rules: { ...S.rules }, golden: true, ball: S.ball };
+  const base = { arena: S.arena, dur: matchLen(S.rules).dur, rules: { ...S.rules }, golden: true, ball: S.ball };
   if (setupCtx.mode === "cpu") {
     const pool = CHARS.filter(c => c.id !== S.char);
     const opp = pool[Math.floor(Math.random() * pool.length)].id;
@@ -873,39 +869,98 @@ function kickoffFromSetup() {
   } else if (setupCtx.mode === "train") {
     const pool = CHARS.filter(c => c.id !== S.char);
     const opp = pool[Math.floor(Math.random() * pool.length)].id;
-    beginMatch({ ...base, mode: "train", train: true, keeper: true, mod: "superfast", rules: { ...S.rules, win: 0 }, chars: [S.char, opp], diff: 1, golden: false, names: [S.name || "Du", "Torwart"], labels: ["DU", null] });
+    beginMatch({ ...base, mode: "train", train: true, keeper: true, mod: "superfast", rules: { ...S.rules, len: 90, win: 0 }, chars: [S.char, opp], diff: 1, golden: false, names: [S.name || "Du", "Torwart"], labels: ["DU", null] });
   }
 }
 
 // ---------- Regeln ----------
-let rulesCtx = null;
+// Ein Regelsatz enthält nur Abweichungen vom Standard. Presets setzen alles außer der Spiellänge.
+let rulesCtx = null, rulesMoreOpen = false;
+const MAX_MY_PRESETS = 5;
+const ruleVal = (r, k) => (r && r[k] !== undefined ? r[k] : DEFAULT_RULES[k]);
+const sameRules = (a, b, skipLen = true) => RULE_OPTS.every(o => (skipLen && o.k === "len") || ruleVal(a, o.k) === ruleVal(b, o.k));
+const isStd = r => sameRules(r, {}, true);
+function presetOf(r) {
+  if (isStd(r)) return STD_PRESET;
+  return RULE_PRESETS.find(p => sameRules(r, p.rules)) || (S.myPresets || []).find(p => sameRules(r, p.rules)) || null;
+}
+const STD_PRESET = { name: "Standard" };
+function lenText(r) { const ml = matchLen(r); return ml.win ? `Erster bis ${ml.win}` : ml.dur + " s"; }
+function changedText(r) {
+  return RULE_OPTS.filter(o => o.k !== "len" && ruleVal(r, o.k) !== DEFAULT_RULES[o.k]).map(o => { const v = o.opts.find(x => x[0] === r[o.k]); return v ? `${o.name} ${v[1]}` : ""; }).filter(Boolean).join(" · ");
+}
 function rulesSummary(r) {
   r = r || {};
-  const parts = RULE_OPTS.filter(o => r[o.k] !== undefined && r[o.k] !== DEFAULT_RULES[o.k]).map(o => { const v = o.opts.find(x => x[0] === r[o.k]); return v ? `${o.name}: ${v[1]}` : ""; }).filter(Boolean);
-  return parts.length ? parts.join(" · ") : "Standard";
+  const p = presetOf(r);
+  return (p ? p.name : changedText(r)) + " · " + lenText(r);
 }
 function rulesScreen(target, onDone) {
   rulesCtx = { target, onDone };
+  rulesMoreOpen = RULE_OPTS.some(o => o.more && ruleVal(target, o.k) !== DEFAULT_RULES[o.k]);
   renderRules();
   showScreen("rules");
 }
+function setRules(r, src) {
+  const len = r.len;
+  Object.keys(r).forEach(k => delete r[k]);
+  Object.assign(r, src);
+  delete r.len;
+  if (len !== undefined) r.len = len;
+}
 function renderRules() {
-  const r = rulesCtx.target;
+  const r = rulesCtx.target, cur = presetOf(r);
+  // Schnellwahl: 3 feste + eigene + Speichern
   const pr = $("rulePresets"); pr.innerHTML = "";
-  RULE_PRESETS.forEach(p => {
-    const b = document.createElement("button"); b.className = "preset"; b.style.setProperty("--c1", p.c1); b.style.setProperty("--c2", p.c2);
-    b.innerHTML = `<b>${p.name}</b><small>${p.desc}</small>`;
-    b.onclick = () => { A.sfx("click"); const win = r.win; Object.keys(r).forEach(k => delete r[k]); Object.assign(r, p.rules); if (win) r.win = win; renderRules(); };
+  const chip = (p, mine) => {
+    const b = document.createElement("button");
+    b.className = "preset" + (mine ? " mine" : "") + (cur === p ? " on" : "");
+    if (!mine) { b.style.setProperty("--c1", p.c1); b.style.setProperty("--c2", p.c2); }
+    b.innerHTML = `<b>${esc(p.name)}</b><small>${esc(mine ? changedText(p.rules) || "Standard" : p.desc)}</small>` + (cur === p ? `<span class="pchk">${svg("i-check")}</span>` : "");
+    b.onclick = () => { A.sfx("click"); setRules(r, p.rules); renderRules(); };
+    if (mine) {
+      const x = document.createElement("span"); x.className = "pdel"; x.setAttribute("role", "button"); x.setAttribute("aria-label", p.name + " löschen"); x.innerHTML = svg("i-close");
+      x.onclick = e => { e.stopPropagation(); A.sfx("click"); S.myPresets = S.myPresets.filter(q => q !== p); save(); toast(`„${p.name}“ gelöscht`, "i-close"); renderRules(); };
+      b.append(x);
+    }
     pr.append(b);
-  });
-  const list = $("ruleList"); list.innerHTML = "";
-  RULE_OPTS.forEach(o => {
-    const d = document.createElement("div"); d.className = "rule";
-    d.innerHTML = `<h4>${o.name}${o.hint ? ` <small>${o.hint}</small>` : ""}</h4><div class="seg"></div>`;
-    const cur = r[o.k] !== undefined ? r[o.k] : DEFAULT_RULES[o.k];
-    seg(d.querySelector(".seg"), o.opts.map(([v, t]) => ({ v, t })), cur, v => { if (v === DEFAULT_RULES[o.k]) delete r[o.k]; else r[o.k] = v; });
-    list.append(d);
-  });
+  };
+  RULE_PRESETS.forEach(p => chip(p, false));
+  (S.myPresets || []).forEach(p => chip(p, true));
+  const sv = document.createElement("button"); sv.className = "preset add";
+  const full = (S.myPresets || []).length >= MAX_MY_PRESETS;
+  sv.disabled = !!cur || full;
+  sv.innerHTML = `<b>${svg("i-plus")}Speichern</b><small>${full ? `Max. ${MAX_MY_PRESETS}, lösch eins` : cur ? "Erst etwas ändern" : "Als eigenes Preset"}</small>`;
+  sv.onclick = savePresetDialog;
+  pr.append(sv);
+  // Einstellungen
+  const row = o => {
+    const d = document.createElement("div");
+    const changed = ruleVal(r, o.k) !== DEFAULT_RULES[o.k];
+    d.className = "rule" + (changed ? " changed" : "");
+    d.innerHTML = `<h4>${o.name}<i class="cdot" title="geändert"></i></h4><div class="seg"></div>`;
+    seg(d.querySelector(".seg"), o.opts.map(([v, t]) => ({ v, t })), ruleVal(r, o.k), v => { if (v === DEFAULT_RULES[o.k]) delete r[o.k]; else r[o.k] = v; renderRules(); });
+    return d;
+  };
+  const list = $("ruleList"), more = $("ruleMore"); list.innerHTML = ""; more.innerHTML = "";
+  RULE_OPTS.forEach(o => (o.more ? more : list).append(row(o)));
+  const nMore = RULE_OPTS.filter(o => o.more && ruleVal(r, o.k) !== DEFAULT_RULES[o.k]).length;
+  const mc = $("moreCount"); mc.hidden = !nMore; mc.textContent = nMore + " geändert";
+  more.hidden = !rulesMoreOpen;
+  $("btnRulesMore").setAttribute("aria-expanded", rulesMoreOpen ? "true" : "false");
+  $("btnRulesReset").disabled = isStd(r) && ruleVal(r, "len") === DEFAULT_RULES.len;
+  $("rulesNow").textContent = rulesSummary(r);
+}
+function savePresetDialog() {
+  A.sfx("click");
+  const n = (S.myPresets || []).length + 1;
+  modal({ title: "Preset speichern", body: `<p style="font-size:15px">So heißt es in der Schnellwahl.</p><input class="txt" id="presetName" maxlength="16" value="Mein Preset ${n}" aria-label="Name">`, btn: "Speichern", cancel: "Abbrechen", ribbon: "",
+    onOk: () => {
+      const name = ($("presetName").value || "").trim().slice(0, 16) || `Mein Preset ${n}`;
+      const rules = { ...rulesCtx.target }; delete rules.len;
+      S.myPresets = [...(S.myPresets || []), { id: "my" + Date.now(), name, rules }]; save();
+      toast(`„${name}“ gespeichert`, "i-check", true); renderRules();
+    } });
+  setTimeout(() => { const i = $("presetName"); if (i) { i.focus(); i.select(); i.onkeydown = e => { if (e.key === "Enter") $("modalOk").click(); }; } }, 50);
 }
 
 // ---------- Shop ----------
@@ -959,7 +1014,7 @@ function tasksScreen() {
   card.innerHTML = `<div class="ch-head">${svg("i-cal")}<h3>Tages-Challenge</h3></div>`;
   const row = document.createElement("div"); row.className = "ch-row";
   row.append(avatarCanvas(c.opp, 76, { dir: -1, mood: "angry" }));
-  row.insertAdjacentHTML("beforeend", `<ul><li>Gegner: <b>${o.name}</b> (${DIFFS[c.diff].name})</li><li>Arena: <b>${arenaById(c.arena).name}</b></li><li>Regeln: <b>${c.presetName}</b>${c.rules.win ? `, bis ${c.rules.win}` : ""}</li></ul>`);
+  row.insertAdjacentHTML("beforeend", `<ul><li>Gegner: <b>${o.name}</b> (${DIFFS[c.diff].name})</li><li>Arena: <b>${arenaById(c.arena).name}</b></li><li>Regeln: <b>${c.presetName}</b>${matchLen(c.rules).win ? `, bis ${matchLen(c.rules).win}` : ", 60 s"}</li></ul>`);
   card.append(row);
   if (c.done) card.insertAdjacentHTML("beforeend", '<div class="done">Heute geschafft ✓</div>');
   const b = document.createElement("button"); b.className = "btn yellow big"; b.innerHTML = c.done ? "Nochmal spielen" : `<span class="coin"></span>+${c.reward} holen`;
@@ -1121,6 +1176,7 @@ function wireUI() {
   $("btnRules").onclick = () => { A.sfx("click"); S.rules = S.rules || {}; rulesScreen(S.rules, () => save()); };
   $("btnRulesDone").onclick = () => goBack();
   $("btnRulesReset").onclick = () => { A.sfx("click"); const r = rulesCtx.target; Object.keys(r).forEach(k => delete r[k]); renderRules(); };
+  $("btnRulesMore").onclick = () => { A.sfx("click"); rulesMoreOpen = !rulesMoreOpen; renderRules(); if (rulesMoreOpen) $("ruleMore").scrollIntoView({ behavior: "smooth", block: "nearest" }); };
   $("btnRunNext").onclick = runNext;
   $("btnHost").onclick = () => { A.sfx("click"); hostGame(); };
   $("btnJoin").onclick = () => { A.sfx("click"); tryJoin(); };

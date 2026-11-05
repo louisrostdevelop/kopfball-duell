@@ -1,5 +1,5 @@
 // Speicherstand: Münzen, Level, Freischaltungen, Statistik, Erfolge
-import { CHARS, ARENAS, BALLS, ACHIEVEMENTS, RULE_PRESETS, DIFFS } from "./config.js";
+import { CHARS, ARENAS, BALLS, ACHIEVEMENTS, CHALLENGE_SETS, RULE_KEYS, DIFFS } from "./config.js";
 
 const KEY = "kopfball-duell-save-v2";
 const def = () => ({
@@ -9,13 +9,22 @@ const def = () => ({
   name: "", diff: 1, dur: 90, pus: true, chaos: false,
   sfx: true, music: true, vib: true, quality: "high",
   stats: { games: 0, wins: 0, goals: 0, headGoals: 0, pus: 0, stomps: 0, supers: 0 },
-  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, chDone: "", endlessBest: 0, dealBought: "",
+  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, myPresets: [], chDone: "", endlessBest: 0, dealBought: "",
 });
 export let S = load();
 function load() {
   try { const raw = localStorage.getItem(KEY); if (raw) { const d = JSON.parse(raw); const b = def(); return { ...b, ...d, stats: { ...b.stats, ...(d.stats || {}) }, daily: { ...b.daily, ...(d.daily || {}) } }; } } catch (_) {}
   return def();
 }
+// alte Regeln (Ballgewicht, Kopfgröße, win, dur) in das neue Format bringen
+function cleanRules(r, dur) {
+  const o = {};
+  if (r) for (const k of RULE_KEYS) if (r[k] !== undefined) o[k] = r[k];
+  if (o.len === undefined) { if (r && r.win >= 5) o.len = "w5"; else if (r && r.win) o.len = "w3"; else if (dur && dur !== 90) o.len = dur; }
+  return o;
+}
+S.rules = cleanRules(S.rules, S.dur);
+S.myPresets = (S.myPresets || []).map(p => ({ ...p, rules: cleanRules(p.rules) }));
 export function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {} }
 export function reset() { S = def(); save(); }
 
@@ -106,11 +115,11 @@ const today = () => new Date().toISOString().slice(0, 10);
 export function challenge() {
   const d = today(), r = seeded("ch" + d);
   const pick = a => a[Math.floor(r() * a.length)];
-  const presets = RULE_PRESETS.filter(p => p.id !== "std");
+  const presets = CHALLENGE_SETS;
   const pre = pick(presets);
   const opp = pick(CHARS).id, arena = pick(ARENAS).id;
   const diff = r() < 0.5 ? 2 : r() < 0.7 ? 1 : 3;
-  return { date: d, opp, arena, diff, preset: pre.id, presetName: pre.name, rules: { ...pre.rules, win: r() < 0.5 ? 3 : 0 }, dur: 60, reward: 150 + (diff === 3 ? 100 : 0), done: S.chDone === d };
+  return { date: d, opp, arena, diff, preset: pre.id, presetName: pre.name, rules: { ...pre.rules, len: r() < 0.5 ? "w3" : 60 }, dur: 60, reward: 150 + (diff === 3 ? 100 : 0), done: S.chDone === d };
 }
 export function challengeDone() { S.chDone = today(); save(); }
 

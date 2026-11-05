@@ -2,15 +2,18 @@
 import { W, H, G, GOAL_W, GOAL_H, BAR_Y, BAR_T, HR, BR, SR, FOOT, REST, STEP, KS, charById, arenaById, PU_KEYS, clamp, rand } from "./config.js";
 
 // Eigene Regeln (für Spiele gegen Freunde). Alle Werte optional.
-export const DEFAULT_RULES = { goal: 1, ball: 1, weight: "normal", floor: "normal", grav: 1, speed: 1, head: 1, pu: "normal", supers: true, win: 0 };
+export const DEFAULT_RULES = { kick: 1, bounce: 1, ball: 1, goal: 1, speed: 1, len: 90, grav: 1, floor: "normal", pu: "normal", supers: true, weight: "normal", head: 1, win: 0 };
+// "len": Zahl = Spielzeit in Sekunden, "w3"/"w5" = Erster bis N Tore
+export function matchLen(r) { const l = (r && r.len) ?? 90; if (typeof l === "string" && l[0] === "w") return { dur: 120, win: +l.slice(1) }; return { dur: +l || 90, win: (r && r.win) || 0 }; }
 const WEIGHT = { light: { bounce: 0.18, grav: 0.78, kick: 1.12, drag: 0.7 }, normal: { bounce: 0, grav: 1, kick: 1, drag: 1 }, heavy: { bounce: -0.22, grav: 1.25, kick: 0.86, drag: 1.4 } };
 const wgt = st => WEIGHT[st.rules.weight] || WEIGHT.normal;
+const kickMul = st => wgt(st).kick * (st.rules.kick || 1);
 
 export function newMatch(o) {
   const ar = arenaById(o.arena);
   const st = {
     arena: ar.id, mod: o.mod || null, dur: o.dur || 90, pus: o.pus !== false, golden: o.golden !== false,
-    rules: { ...DEFAULT_RULES, ...(o.rules || {}) }, train: !!o.train,
+    rules: (() => { const r = { ...DEFAULT_RULES, ...(o.rules || {}) }; const ml = matchLen(r); if (ml.win) r.win = ml.win; return r; })(), train: !!o.train,
     t: o.dur || 90, ph: "cd", pt: 3, gold: false, el: 0,
     s: [0, 0],
     p: [mkPlayer(0, o.chars[0]), mkPlayer(1, o.chars[1])],
@@ -275,7 +278,7 @@ function playerVsPlayer(st) {
 }
 
 // Ball
-function maxBall(st) { return 1900 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed); }
+function maxBall(st) { return 1900 * arenaById(st.arena).maxB * (st.mod === "turbo" ? 1.15 : 1) * Math.max(1, st.rules.speed) * Math.max(1, st.rules.kick || 1); }
 
 function ballPhysics(st, dt, postGoal) {
   const b = st.b, ar = arenaById(st.arena);
@@ -301,7 +304,7 @@ function ballPhysics(st, dt, postGoal) {
   if (b.y + b.r > G && b.vy >= 0) {
     const imp = b.vy;
     b.y = G - b.r;
-    const bounce = b.fx === "bouncy" ? 1.06 : clamp(ar.bounce + wgt(st).bounce, 0.25, 0.92);
+    const bounce = b.fx === "bouncy" ? 1.06 : clamp((ar.bounce + wgt(st).bounce) * (st.rules.bounce || 1), 0.2, 0.95);
     b.vy = -b.vy * bounce; b.vx *= st.rules.floor === "ice" ? 0.995 : ar.roll;
     if (Math.abs(b.vy) < 70) b.vy = 0;
     if (imp > 220) ev(st, { t: "bounce", x: b.x, y: G, v: imp });
@@ -309,9 +312,10 @@ function ballPhysics(st, dt, postGoal) {
     if (b.fx && !["bouncy", "giant"].includes(b.fx)) endFx(st);
   }
   // Decke & Wände
-  if (b.y - b.r < -260) { b.y = -260 + b.r; b.vy = Math.abs(b.vy) * 0.7; }
-  if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.7; if (b.fx && b.fx !== "bouncy") endFx(st); }
-  if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.7; if (b.fx && b.fx !== "bouncy") endFx(st); }
+  const wb = clamp(0.7 * (st.rules.bounce || 1), 0.45, 0.95);
+  if (b.y - b.r < -260) { b.y = -260 + b.r; b.vy = Math.abs(b.vy) * wb; }
+  if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * wb; if (b.fx && b.fx !== "bouncy") endFx(st); }
+  if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * wb; if (b.fx && b.fx !== "bouncy") endFx(st); }
   // Latten
   for (let side = 0; side < 2; side++) {
     const by = barY(st, side);
@@ -388,7 +392,7 @@ function ballVsPlayer(st, b, p, dt) {
   if (b.fx && b.fxO === p.i && b.fxT < 0.25) return; // eigener Schuss löst sich erst
   // Kopf
   const preVx = b.vx, preVy = b.vy, preLt = b.lt, preK = b.ltk;
-  const hc = collideCircle(b, p.x, p.y, r + b.r, p.vx, p.vy, 0.82);
+  const hc = collideCircle(b, p.x, p.y, r + b.r, p.vx, p.vy, clamp(0.82 * Math.sqrt(st.rules.bounce || 1), 0.6, 0.95));
   if (hc) {
     // Harter Schuss des Gegners trifft mich: ich werde ein Stück zurückgedrückt
     if (preLt === 1 - p.i && (preK === "kick" || preK === "super") && hc.imp > 450 && p.pushCD <= 0) {
@@ -405,7 +409,7 @@ function ballVsPlayer(st, b, p, dt) {
     else if (p.kick > 0.06 && !p.kHit) { hp = Math.max(0.25, (p.kPow - 1) / 0.75); p.kHit = true; }
     if (hp > 0) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
-      b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (540 + 460 * hp) * pm * wgt(st).kick) + p.vx * 0.15;
+      b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (540 + 460 * hp) * pm * kickMul(st)) + p.vx * 0.15;
       b.vy = Math.min(b.vy, -(300 + 360 * hp));
       if (hp > 0.6) st.hs = 0.05;
     }
@@ -436,7 +440,7 @@ function ballVsPlayer(st, b, p, dt) {
       const air = !p.onG, high = b.y < p.y;
       const vx = ((880 + 340 * (ch.pow - 1)) * pm + 560 * c) * qm;
       const vy = ((air ? (high ? -300 : -450) : high ? -720 : -630) - 640 * c) * (0.7 + 0.3 * qm);
-      const wk = wgt(st).kick;
+      const wk = kickMul(st);
       b.vx = p.dir * vx * wk + p.vx * 0.2;
       b.vy = vy * wk;
       b.held = 0.05;

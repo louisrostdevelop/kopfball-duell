@@ -20,7 +20,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preload" href="fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/nunito-900.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 <script src="vendor/peerjs.min.js" defer></script>
 <script src="vendor/qrcode.js" defer></script>
 </head>
@@ -155,7 +155,6 @@
       </div>
       <div class="panel opts">
         <div class="opt" id="optDiff"><h4>Gegner</h4><div class="seg" id="segDiff"></div></div>
-        <div class="opt" id="optDur"><h4>Spieldauer</h4><div class="seg" id="segDur"></div></div>
         <div class="opt" id="optRules"><h4>Regeln</h4><button class="rulesbtn" id="btnRules"><svg><use href="#i-sliders"/></svg><span id="rulesSum">Standard</span><em>Anpassen</em></button></div>
         <button class="btn green big" id="btnKickoff">Anpfiff</button>
       </div>
@@ -164,10 +163,14 @@
 
   <!-- Regeln -->
   <section class="screen sheet" id="scr-rules" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Regeln</h2><span class="grow"></span><button class="btn small ghost" id="btnRulesReset">Zurücksetzen</button></header>
-    <div class="presets" id="rulePresets"></div>
-    <div class="rulelist" id="ruleList"></div>
-    <div class="sheetfoot"><button class="btn green big" id="btnRulesDone">Fertig</button></div>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Regeln</h2><span class="grow"></span><button class="btn small ghost" id="btnRulesReset">Standard</button></header>
+    <div class="rulewrap">
+      <div class="presets" id="rulePresets"></div>
+      <div class="rulelist" id="ruleList"></div>
+      <button class="moretoggle" id="btnRulesMore" aria-expanded="false"><span>Mehr Einstellungen</span><em id="moreCount" hidden></em><svg><use href="#i-back"/></svg></button>
+      <div class="rulelist" id="ruleMore" hidden></div>
+    </div>
+    <div class="sheetfoot"><span class="rulesum" id="rulesNow">Standard</span><button class="btn green big" id="btnRulesDone">Fertig</button></div>
   </section>
 
   <!-- Cup / Endlos -->
@@ -222,7 +225,6 @@
         <p class="hint center" id="lobbyNote">Schick den Link. Sobald dein Kumpel ihn öffnet, ist er hier.</p>
         <div class="lobbyopts" id="lobbyOpts">
           <div class="opt"><h4>Arena</h4><div class="seg wrap" id="segLobbyArena"></div></div>
-          <div class="opt"><h4>Spieldauer</h4><div class="seg" id="segLobbyDur"></div></div>
           <div class="opt"><h4>Regeln</h4><button class="rulesbtn" id="btnLobbyRules"><svg><use href="#i-sliders"/></svg><span id="lobbyRulesSum">Standard</span><em>Anpassen</em></button></div>
         </div>
         <div class="row">
@@ -321,6 +323,6 @@
 <div id="rotate" hidden><div class="phone"></div><b>Handy drehen</b><span>Quer spielt es sich viel besser.</span></div>
 <div id="loading"><b class="ld-logo">Kopfball<br>Duell</b><div class="ball"></div></div>
 
-<script type="module" src="js/main.js?v=5"></script>
+<script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>
