@@ -16,7 +16,8 @@
  * @property {() => boolean} available
  * @property {(h: TransportHandlers, opts?: { code?: string }) => string} host   Raum öffnen (optional mit festem Code), gibt den Code zurück
  * @property {(code: string, h: TransportHandlers) => void} join
- * @property {(msg: object) => void} send
+ * @property {(msg: object) => void} send                  zuverlässig und geordnet (Lobby, Ereignisse, Statistik)
+ * @property {(msg: object) => void} [sendFast]            häufige Daten (Zustände, Eingaben): darf verloren gehen, kommt dafür ohne Warten
  * @property {() => void} close
  * @property {() => boolean} isOpen
  * @property {() => "host"|"guest"|null} role

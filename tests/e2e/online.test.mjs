@@ -60,3 +60,34 @@ test("Online: Lobby bis Revanche", async t => {
   });
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
 });
+
+// Schlechtes Netz (90 ms, starke Schwankung, 6 % Verlust): Zustände kommen weiter an, kein Druck des Gasts geht
+// verloren (Eingaben mehrfach + Zähler), Ereignisse und Statistik kommen zuverlässig, Puffer wächst mit dem Netz.
+test("Online bei schlechtem Netz", async () => {
+  const bad = { lat: 90, jit: 45, loss: 0.06 };
+  const a = await openPage(env, VIEW, { init: [MOCK, { content: `window.__mockNet = ${JSON.stringify(bad)};` }] });
+  const A = a.page;
+  await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid .mcard:nth-child(3)"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
+  await A.click("#btnHost"); await A.waitForTimeout(500);
+  const code = (await A.textContent("#lobbyCode")).trim();
+  const B = await a.ctx.newPage(); const bErr = []; B.on("pageerror", e => bErr.push("Gast: " + e.message));
+  await B.goto(env.url + "/index.html?join=" + code); await B.waitForTimeout(3000);
+  if (await B.locator("#modalOk").isVisible()) await B.click("#modalOk");
+  await A.click("#btnLobbyStart"); await A.waitForTimeout(3800);
+  await B.bringToFront();
+  // 6 kurze Sprünge des Gasts: alle kommen beim Host an
+  await A.evaluate(() => { window.__j = 0; const st = window.__kd.st, push = st.ev.push.bind(st.ev); st.ev.push = e => { if (e.t === "jump" && e.i === 1 && !e.dbl) window.__j++; return push(e); }; });
+  for (let n = 0; n < 6; n++) { await B.keyboard.down("ArrowUp"); await B.waitForTimeout(50); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(700); }
+  await A.waitForTimeout(600);
+  const j = await A.evaluate(() => window.__j);
+  assert.ok(j >= 6, `Sprünge angekommen: ${j} von 6`);
+  // Tor beim Host: Gast hat den Stand und die Statistik
+  await A.evaluate(() => { const st = window.__kd.st; st.b.x = 1500; st.b.y = 560; st.b.vx = 900; st.b.vy = 0; });
+  await A.waitForTimeout(2500);
+  const [sa, sb] = await Promise.all([A, B].map(p => p.evaluate(() => ({ s: window.__kd.st.s.join(":"), goals: window.__kd.st.stats[0].goals }))));
+  assert.notEqual(sa.s, "0:0", "Tor gefallen"); assert.equal(sb.s, sa.s, "Spielstand gleich"); assert.equal(sb.goals, sa.goals, "Statistik gleich");
+  const g = await B.evaluate(() => ({ seq: window.__kd.lastSeq, delay: window.__kd.clock.delay() }));
+  assert.ok(g.seq > 150, "Zustände kommen an: " + g.seq);
+  assert.ok(g.delay > 90, "Puffer an schlechtes Netz angepasst: " + g.delay.toFixed(0) + " ms");
+  assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
+});

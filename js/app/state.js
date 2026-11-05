@@ -1,13 +1,13 @@
 // Laufzeitzustand der App (Modus, aktuelles Spiel, Online-Puffer) und Abfragen darauf
 
-export const VERSION = 5;
+export const VERSION = 6;   // Online-Protokoll: 6 = kompakte Zustände, schneller Kanal
 
 export const App = {
   mode: "demo", st: null, ai: [null, null], cfg: null, acc: 0, paused: false, endShown: false,
   names: ["", ""], labels: [null, null], ball: "klassik", goT: -1,
   rec: [], replay: null, maxDef: 0, screen: "home", stack: [],
   run: null, local2: null, series: {}, lastCfg: null, jug: { i: -1, n: 0 },
-  opp: null, guestIn: [0, 0, 0, 0, 0, 0, 0, 0], gPend: { j: 0, d: 0 }, gEdge: null, sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
+  opp: null, inSeq: 0, inSeqSeen: -1, inRep: 0, lastSeq: -1, clock: null, guestIn: [0, 0, 0, 0, 0, 0, 0, 0], gPend: { j: 0, d: 0 }, gEdge: null, sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
   mm: null,   // Gegnersuche: { mode, state, match, role, opp } (app/matchmaking.js)
 };
 

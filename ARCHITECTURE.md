@@ -69,6 +69,20 @@ Kollisionen) · `state` (Spiel, Spieler, Ball anlegen) · `player` (Laufen, Spri
 Online rechnet nur der Host. Der Gast schickt Eingaben, bekommt 30-mal pro Sekunde Zustände und sagt
 seine eigene Figur mit derselben Logik voraus (`app/online.js`).
 
+Netzcode (`app/netcode.js`, `adapters/net/peerjs.js`):
+- Zustände kompakt (nur Abweichungen vom Standard, ganze Zahlen, kurze Schlüssel): ~235 statt ~1260 Bytes.
+- Zustände und Eingaben über einen zweiten, ungeordneten Kanal ohne Wiederholung: ein verlorenes Paket hält
+  nichts auf. Ereignisse (Tore, Effekte) und Statistik zuverlässig über die normale Verbindung.
+- Eingaben bei Änderung plus dreimal wiederholt; Sprung- und Bomben-Zähler machen Verluste harmlos.
+- Gast zeichnet auf der Zeitachse des Hosts, der Puffer richtet sich nach der gemessenen Schwankung.
+- Messung: `node tools/net-bench.mjs` (Netz nachgespielt in `tests/e2e/mockpeer.js`).
+
+| Netz (Verzögerung, Schwankung, Verlust) | Ball-Verzug vorher → jetzt | Ball-Fehler | Sprünge/min | Daten |
+|---|---|---|---|---|
+| gut (20 ms, 5 ms, 0 %) | 110 → 75 ms | 2,1 → 1,7 px | 0 → 0 | 28 → 6,7 KB/s |
+| mobil (50 ms, 25 ms, 2 %) | 150 → 135 ms | 9,7 → 4,0 px | 68 → 0 | 28 → 6,5 KB/s |
+| schlecht (90 ms, 45 ms, 6 %) | 210 → 205 ms | 44,7 → 6,7 px | 478 → 0 | 28 → 6,0 KB/s |
+
 ## Tests
 
 ```

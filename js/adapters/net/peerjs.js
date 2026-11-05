@@ -11,12 +11,30 @@ export const mkCode = () => Array.from({ length: 4 }, () => CH[Math.floor(Math.r
 export const available = () => !!window.Peer;
 
 let cur = null;
+// Schneller Kanal für Zustände und Eingaben: ungeordnet, ohne Wiederholung (ein verlorenes Paket hält nichts auf,
+// das nächste ist eh aktueller). Beide Seiten legen ihn gleich an (negotiated), PeerJS bekommt davon nichts mit.
+const FAST = { negotiated: true, id: 77, ordered: false, maxRetransmits: 0 };
+function openFast(me, conn, h) {
+  try {
+    const pc = conn.peerConnection; if (!pc || !pc.createDataChannel) return;
+    const ch = pc.createDataChannel("fast", FAST);
+    ch.onmessage = e => { if (cur !== me) return; let d; try { d = JSON.parse(e.data); } catch (_) { return; } if (d && h.onData) h.onData(d); };
+    me.fast = ch;
+  } catch (_) { me.fast = null; }
+}
 export function close() {
   if (!cur) return; const c = cur; cur = null;
+  try { c.fast && c.fast.close(); } catch (_) {}
   try { c.conn && c.conn.close(); } catch (_) {}
   try { c.peer && c.peer.destroy(); } catch (_) {}
 }
 export function send(m) { if (cur && cur.conn && cur.conn.open) try { cur.conn.send(m); } catch (_) {} }
+/** Für Zustände und Eingaben: schneller Kanal, falls offen, sonst der normale. Bei Stau lieber auslassen. */
+export function sendFast(m) {
+  const f = cur && cur.fast;
+  if (f && f.readyState === "open") { if (!(f.bufferedAmount > 65536)) try { f.send(JSON.stringify(m)); } catch (_) {} return; }
+  send(m);
+}
 export function isOpen() { return !!(cur && cur.conn && cur.conn.open); }
 export function role() { return cur ? cur.role : null; }
 
@@ -32,9 +50,9 @@ export function host(h, { code: fixed = null, tries = 0 } = {}) {
     if (cur !== me) { conn.close(); return; }
     if (me.conn && me.conn.open) { conn.on("open", () => { try { conn.send({ t: "full" }); } catch (_) {} setTimeout(() => conn.close(), 500); }); return; }
     me.conn = conn;
-    conn.on("open", () => { if (cur === me && me.conn === conn) h.onConn && h.onConn(); });
+    conn.on("open", () => { if (cur === me && me.conn === conn) { openFast(me, conn, h); if (h.onConn) h.onConn(); } });
     conn.on("data", d => { if (cur === me && me.conn === conn && d) h.onData && h.onData(d); });
-    conn.on("close", () => { if (cur === me && me.conn === conn) { me.conn = null; h.onClose && h.onClose(); } });
+    conn.on("close", () => { if (cur === me && me.conn === conn) { me.conn = null; try { if (me.fast) me.fast.close(); } catch (_) {} me.fast = null; if (h.onClose) h.onClose(); } });
   });
   peer.on("disconnected", () => { if (cur === me && !peer.destroyed) try { peer.reconnect(); } catch (_) {} });
   peer.on("error", e => {
@@ -55,7 +73,7 @@ export function join(code, h) {
     if (cur !== me) return;
     const conn = peer.connect(PREFIX + code.toLowerCase(), { serialization: "json", reliable: true });
     me.conn = conn;
-    conn.on("open", () => { if (cur !== me) return; me.ok = true; h.onConn && h.onConn(); });
+    conn.on("open", () => { if (cur !== me) return; me.ok = true; openFast(me, conn, h); if (h.onConn) h.onConn(); });
     conn.on("data", d => { if (cur === me && d) h.onData && h.onData(d); });
     conn.on("close", () => { if (cur === me) h.onClose && h.onClose(); });
   });

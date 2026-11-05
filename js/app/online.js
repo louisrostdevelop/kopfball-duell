@@ -10,6 +10,10 @@ import { $, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
 import { lobbyUI, makeQR, netNote, saveName } from "../ui/screens/online.js";
 import { audio as A, input as I, net as Net } from "./services.js";
+import { decodeState, encodeState, makeClock } from "./netcode.js";
+
+// Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
+const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
 
 export function packState(st) {
   const r = v => Math.round(v * 10) / 10;
@@ -23,10 +27,18 @@ export function packState(st) {
   };
 }
 
+// Host: 30-mal pro Sekunde kompakter Zustand (schneller Kanal). Ereignisse und Statistik zuverlässig, nur wenn neu.
+let netSeq = 0, lastStats = "";
 export function hostSend(dt) {
   if (!Net.isOpen()) return;
   App.sendT += dt;
-  if (App.sendT >= 1 / 30) { App.sendT = 0; Net.send({ t: "s", mid: App.mid, s: packState(App.st), ev: App.outEv.splice(0).filter(e => e.t !== "bounce" || e.v > 400) }); }
+  if (App.sendT < 1 / 30) return;
+  App.sendT = 0;
+  fast({ t: "s", mid: App.mid, ...encodeState(App.st, ++netSeq, performance.now()) });
+  const ev = App.outEv.splice(0).filter(e => e.t !== "bounce" || e.v > 400);
+  if (ev.length) Net.send({ t: "ev", mid: App.mid, ev });
+  const sj = JSON.stringify(App.st.stats);
+  if (sj !== lastStats) { lastStats = sj; Net.send({ t: "stats", mid: App.mid, stats: App.st.stats }); }
 }
 
 export function guestFrame(dt, now) {
@@ -35,15 +47,20 @@ export function guestFrame(dt, now) {
   App.gEdge = App.gEdge || { j: 0, d: 0, lj: false, ld: false };
   const ge = App.gEdge; if (me.j && !ge.lj) ge.j++; if (me.d && !ge.ld) ge.d++; ge.lj = !!me.j; ge.ld = !!me.d;
   const iv = [me.l, me.r, me.j, me.k, me.s, me.d].map(v => (v ? 1 : 0)).concat([ge.j % 1000, ge.d % 1000]), key = iv.join(",");
+  // Eingaben: sofort bei Änderung, danach noch dreimal im 33-ms-Takt (falls eins verloren geht), sonst alle 100 ms.
+  // Zähler für Sprung/Bombe stecken mit drin: auch ein verlorenes Paket verschluckt keinen Druck.
   App.inT += dt;
-  if (key !== App.lastIn || App.inT > 0.15) { App.lastIn = key; App.inT = 0; Net.send({ t: "i", i: iv }); }
+  if (key !== App.lastIn) { App.lastIn = key; App.inRep = 3; App.inT = 0; fast({ t: "i", q: ++App.inSeq, i: iv }); }
+  else if ((App.inRep > 0 && App.inT >= 0.033) || App.inT >= 0.1) { App.inRep = Math.max(0, App.inRep - 1); App.inT = 0; fast({ t: "i", q: ++App.inSeq, i: iv }); }
   App.pingT += dt; if (App.pingT > 2) { App.pingT = 0; Net.send({ t: "ping", c: performance.now() }); }
+  // Zeichnen knapp hinter dem Host: Zeitachse = Sendezeit des Hosts, Puffer passt sich dem Netz an (netcode.js)
   const S2 = App.snaps;
   if (!S2.length) return;
-  const rt = now - 80;
-  while (S2.length > 2 && S2[1].at <= rt) S2.shift();
+  const rt = App.clock.renderTime(now);
+  while (S2.length > 2 && S2[1].ht <= rt) S2.shift();
   const a = S2[0], b = S2[1] || S2[0];
-  const k = b === a ? 1 : clamp((rt - a.at) / (b.at - a.at), 0, 1.3);
+  if (rt > S2[S2.length - 1].ht + 4) App.clock.starved();
+  const k = b === a ? 1 : clamp((rt - a.ht) / (b.ht - a.ht), 0, 1.3);
   applySnap(st, a.s, b.s, k);
   const sp = b.s.p[1];
   if (!App.gp) App.gp = Object.assign({}, st.p[1]);
@@ -54,7 +71,7 @@ export function guestFrame(dt, now) {
   if (gp.slide > 0 && !(sp.slide > 0) && Math.abs(sp.vx) < Math.abs(gp.vx) * 0.7) { gp.slide = 0; gp.slideCD = 0.5; gp.vx = sp.vx; }
   if (sp.stun > 0 && gp.slide > 0) gp.slide = 0;
   predictPlayer(st, gp, me, dt);
-  const lat = Math.min(0.25, App.rtt / 2000 + 0.08);
+  const lat = Math.min(0.3, App.rtt / 2000 + App.clock.delay() / 1000);   // so weit liegt der gezeichnete Host-Stand zurück
   const tx = sp.x + sp.vx * lat, ty = sp.y + sp.vy * lat * 0.5;
   const ex = tx - gp.x, ey = ty - gp.y;
   if (Math.abs(ex) > 140 || Math.abs(ey) > 160 || st.ph !== "play") { gp.x += ex * 0.35; gp.y += ey * 0.35; }
@@ -65,7 +82,8 @@ export function guestFrame(dt, now) {
 export function applySnap(st, a, b, k) {
   const L = (x, y) => x + (y - x) * k;
   if (b.el !== undefined) { const ne = a.el !== undefined && Math.abs(b.el - a.el) < 1 ? L(a.el, b.el) : b.el; if (ne > st.el || ne < st.el - 2) st.el = ne; }
-  st.s = b.s; st.t = b.t; st.ph = b.ph; st.pt = b.pt; st.gold = b.gold; st.wall = b.wall; st.bigGoal = b.bigGoal; if (b.wind) st.wind = b.wind; st.pu = b.pu; st.stats = b.stats;
+  st.s = b.s; st.t = b.t; st.ph = b.ph; st.pt = b.pt; st.gold = b.gold; st.wall = b.wall; st.bigGoal = b.bigGoal; if (b.wind) st.wind = b.wind; st.pu = b.pu;
+  if (b.stats) st.stats = b.stats;
   const jump = Math.hypot(a.b.x - b.b.x, a.b.y - b.b.y) > 200;
   Object.assign(st.b, b.b);
   if (!jump) { st.b.x = L(a.b.x, b.b.x); st.b.y = L(a.b.y, b.b.y); st.b.a = L(a.b.a, b.b.a); }
@@ -104,12 +122,15 @@ export function hostData(d) {
   switch (d.t) {
     case "hello":
       if (d.v !== VERSION) toast("Dein Kumpel hat eine alte Version. Er soll die Seite neu laden.", "i-close");
-      App.opp = { name: (d.name || "Gast").slice(0, 12), ch: charById(d.ch).id, lv: d.lv };
+      App.opp = { name: (d.name || "Gast").slice(0, 12), ch: charById(d.ch).id, lv: d.lv }; App.inSeqSeen = -1;
       Net.send({ t: "welcome", name: S.name || "Gastgeber", ch: S.char, cfg: App.netCfg, v: VERSION });
       lobbyUI("host"); A.sfx("coin"); toast(App.opp.name + " ist da!", "i-users");
       break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.lv) App.opp.lv = d.lv; lobbyUI("host"); } break;
-    case "i": if (Array.isArray(d.i)) App.guestIn = d.i.slice(0, 8); break;
+    case "i":
+      if (!Array.isArray(d.i)) break;
+      if (typeof d.q === "number") { if (d.q <= App.inSeqSeen) break; App.inSeqSeen = d.q; }   // ungeordnet: ältere verwerfen
+      App.guestIn = d.i.slice(0, 8); break;
     case "emo": if (App.mode === "host" && App.st && EMOTES.includes(d.e)) emote(App.st, 1, d.e); break;
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "rematch": toast((App.opp ? App.opp.name : "Gast") + " will Revanche!", "i-swap"); break;
@@ -158,13 +179,22 @@ export function guestData(d) {
     case "cfg": App.netCfg = d.cfg; lobbyUI("guest"); break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("guest"); } break;
     case "full": Net.close(); showScreen("online"); netNote("Der Raum ist schon voll.", true); break;
-    case "start": App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, "DU"] }); App.st.ph = "cd"; break;
-    case "s":
+    case "start": App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, "DU"] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock(); break;
+    case "s": {
       if (App.mode !== "guest" || d.mid !== App.mid) break; // alte Pakete vom letzten Spiel ignorieren
-      App.snaps.push({ at: performance.now(), s: d.s });
-      if (App.snaps.length > 12) App.snaps.shift();
-      if (Array.isArray(d.ev)) d.ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); onEvent(e, true); });
+      if (d.q <= App.lastSeq) break;                        // ungeordneter Kanal: ältere als das neueste verwerfen
+      App.lastSeq = d.q;
+      const s = decodeState(d), now = performance.now();
+      App.clock.arrive(s.ht, now);
+      App.snaps.push({ ht: s.ht, s });
+      if (App.snaps.length > 20) App.snaps.shift();
       break;
+    }
+    case "ev":
+      if (App.mode !== "guest" || d.mid !== App.mid || !Array.isArray(d.ev)) break;
+      d.ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); onEvent(e, true); });
+      break;
+    case "stats": if (App.mode === "guest" && d.mid === App.mid && App.st) App.st.stats = d.stats; break;
     case "lobby": if (!App.mm) backToLobby(); break;
     case "pong": App.rtt = performance.now() - d.c; break;
   }

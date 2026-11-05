@@ -65,7 +65,7 @@ test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "
   // Spiel gegen den Computer: Server bucht die Belohnung
   const coinsBefore = real;
   await click(page, "#btnPlay", 200); await click(page, "#btnKickoff", 3400);
-  await page.evaluate(() => { const A = window.__kd; A.t0 = Date.now() - 60000; A.st.s = [2, 0]; A.st.stats[0].goals = 2; A.st.t = 0.5; });
+  await page.evaluate(() => { const A = window.__kd; A.t0 = Date.now() - 60000; A.st.s = [3, 0]; A.st.stats[0].goals = 3; A.st.t = 0.5; });
   await until(() => page.evaluate(() => window.__kd.screen === "end"));
   const m = await until(async () => (await db("select delta from game.ledger where player_id = $1 and reason = 'match_cpu'", [id]))[0]);
   assert.ok(m && m.delta > 0, "Sieg gemeldet und belohnt");
@@ -86,7 +86,7 @@ test("Server weg: Spiel läuft weiter, Meldung wird nachgeholt", { skip: !hasPg 
   await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
   await ctx.route(be.url.replace("127.0.0.1", "localhost") + "/rest/**", r => r.abort());   // Netz zum Server weg
   await click(page, "#btnPlay", 200); await click(page, "#btnKickoff", 3400);
-  await page.evaluate(() => { const A = window.__kd; A.t0 = Date.now() - 60000; A.st.s = [1, 0]; A.st.stats[0].goals = 1; A.st.t = 0.5; });
+  await page.evaluate(() => { const A = window.__kd; A.t0 = Date.now() - 60000; A.st.s = [3, 0]; A.st.stats[0].goals = 3; A.st.t = 0.5; });
   await until(() => page.evaluate(() => window.__kd.screen === "end"));
   const pending = () => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-pending") || "[]").length);
   await until(async () => (await pending()) === 1);

@@ -23,14 +23,14 @@ async function tour(view) {
   await page.keyboard.down("KeyD"); await page.waitForTimeout(400); await page.keyboard.up("KeyD");
   await page.keyboard.down("Space"); await page.waitForTimeout(300); await page.keyboard.up("Space");
   await page.keyboard.press("Escape"); await page.waitForTimeout(200); await c("#btnResume");
-  await page.evaluate(() => { const st = window.__kd.st; st.s = [1, 0]; st.t = 0.5; });
+  await page.evaluate(() => { const st = window.__kd.st; st.s = [5, 0]; st.t = 0.5;   /* 5:0: ein Gegentor in der letzten halben Sekunde kann nicht mehr zum Golden Goal führen */ });
   // bis zu 10 s (langsame CI-Rechner): fällt gerade ein Tor, läuft erst die Tor-Pause
   await page.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 10000 }).catch(() => {});
   assert.equal(await page.evaluate(() => window.__kd.screen), "end", "Endbildschirm nach Abpfiff");
   await c("#btnEndAgain", 800); await page.keyboard.press("Escape"); await page.waitForTimeout(200); await c("#btnQuit", 600);
   // Cup, Endlos, Tagesaufgabe, Training, Lokal, Online-Seite
   await c("#modeCard"); await c("#modeGrid .mcard:nth-child(2)"); await c("#btnPlay", 400);
-  await c("#btnRunNext", 3500); await page.evaluate(() => { const st = window.__kd.st; st.s = [2, 0]; st.t = 0.2; });
+  await c("#btnRunNext", 3500); await page.evaluate(() => { const st = window.__kd.st; st.s = [5, 0]; st.t = 0.2; });
   await page.waitForTimeout(3200); await c("#btnEndAgain", 400); await c("#scr-run [data-back]");
   await c("#modeCard"); await c("#modeGrid .mcard:nth-child(6)"); await c("#btnPlay", 400); await c("#btnRunNext", 3500);
   await page.keyboard.press("Escape"); await c("#btnQuit", 500); await c("#scr-run [data-back]");
