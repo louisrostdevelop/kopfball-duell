@@ -2,16 +2,16 @@
 import { ARENAS, CHARS, DIFFS } from "../../content/config.js";
 import { buildObstacles, layoutsFor, moveObstacles } from "../../content/layouts.js";
 import { matchLen } from "../../core/physics.js";
-import { buy, owns, S, save } from "../../store.js";
+import { buy, owns, S, save } from "../../app/profile.js";
 import { arenaThumb, layoutPreview } from "../render/render.js";
 import { beginMatch } from "../../app/game.js";
 import { cpuNames } from "../../app/modes.js";
 import { App } from "../../app/state.js";
 import { $, seg, toast } from "../dom.js";
-import { showScreen } from "../nav.js";
+import { showScreen, registerScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
-import { rulesSummary } from "./rules.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { rulesSummary, rulesScreen } from "./rules.js";
+import { audio as A } from "../../app/services.js";
 
 export let setupCtx = null;
 
@@ -81,4 +81,11 @@ export function kickoffFromSetup() {
     const opp = pool[Math.floor(Math.random() * pool.length)].id;
     beginMatch({ ...base, mode: "train", train: true, keeper: true, mod: "superfast", rules: { ...S.rules, len: 90, win: 0 }, chars: [S.char, opp], diff: 1, golden: false, names: [S.name || "Du", "Torwart"], labels: ["DU", null] });
   }
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initSetup() {
+  registerScreen("setup", { resume: refreshSetup });
+  $("btnKickoff").onclick = kickoffFromSetup;
+  $("btnRules").onclick = () => { A.sfx("click"); S.rules = S.rules || {}; rulesScreen(S.rules, () => save()); };
 }

@@ -1,13 +1,14 @@
 // Cup- und Endlos-Übersicht, Briefing der Tages-Challenge
 import { arenaById, charById, DIFFS } from "../../content/config.js";
 import { matchLen } from "../../core/physics.js";
-import { S } from "../../store.js";
+import { S } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
 import { beginMatch, startDemo, updateBand } from "../../app/game.js";
-import { cpuNames, dailyChallenge } from "../../app/modes.js";
+import { cpuNames, dailyChallenge, runNext } from "../../app/modes.js";
 import { App } from "../../app/state.js";
 import { $, $$, modal, svg } from "../dom.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { audio as A } from "../../app/services.js";
+import { registerScreen } from "../nav.js";
 
 export function runScreen() {
   const r = App.run, br = $("bracket"); br.innerHTML = "";
@@ -54,4 +55,10 @@ export function dailyBriefing() {
   const lines = [`Gegner: <b>${o.name}</b> (${DIFFS[c.diff].name})`, `Arena: <b>${arenaById(c.arena).name}</b>`, `Regeln: <b>${c.presetName}</b>, ${matchLen(c.rules).win ? `Erster bis ${matchLen(c.rules).win}` : "60 Sekunden"}`];
   modal({ title: "Tages-Challenge", icon: "i-cal", body: `<div class="briefav"></div><p>${lines.join("<br>")}</p><p>${c.done ? "Heute schon geschafft. Du kannst trotzdem spielen." : `Sieg bringt <b>+${c.reward}</b> Münzen.`}</p>`, btn: "Anpfiff", onOk: () => beginMatch({ mode: "daily", chars: [S.char, c.opp], arena: c.arena, dur: c.dur, rules: c.rules, golden: true, diff: c.diff, names: cpuNames(c.opp), labels: ["DU", null], ball: S.ball }), cancel: "Später" });
   const box = document.querySelector(".briefav"); if (box) box.append(avatarCanvas(c.opp, 110, { dir: -1, mood: "angry" }));
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initRun() {
+  registerScreen("run", { back: () => { App.run = null; } });
+  $("btnRunNext").onclick = runNext;
 }

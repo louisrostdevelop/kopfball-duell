@@ -1,14 +1,15 @@
 // Startseite mit Bühne (jonglierender Kopf), Tageskarten und Kopfzeile
 import { charById, CHARS, DIFFS, MODES, RARITY, rarityOf, SUPERS } from "../../content/config.js";
 import { matchLen } from "../../core/physics.js";
-import { challenge, deal, owns, S, save, tasks, xpFor } from "../../store.js";
+import { challenge, deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
 import { avatarCanvas, drawBall, drawHead } from "../render/art.js";
-import { dailyChallenge } from "../../app/modes.js";
+import { dailyChallenge, startMode } from "../../app/modes.js";
 import { App } from "../../app/state.js";
 import { $, $$, esc, RCOL, svg } from "../dom.js";
-import { goBack } from "../nav.js";
+import { goBack, registerScreen, showScreen } from "../nav.js";
 import { selectScreen } from "./select.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { audio as A } from "../../app/services.js";
+import { dailyBriefing } from "./run.js";
 
 export let showcaseT = 0, showcaseTap = 0, juggle = { y: 0, vy: 0, a: 0, hits: 0 };
 
@@ -114,4 +115,22 @@ export function drawShowcase(dt) {
   drawHead(x, S.char, cx, headY - bump * r * 0.4, r, { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t });
   x.restore();
   drawBall(x, S.ball, bx, j.y, br, j.a);
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initHome() {
+  registerScreen("home", { show: homeScreen });
+  $("btnPlay").onclick = () => startMode(S.mode);
+  $("modeCard").onclick = () => { A.sfx("click"); showScreen("modes"); };
+  $("navHeads").onclick = () => { A.sfx("click"); selectScreen({ title: "Köpfe", okText: "Auswählen", onDone: id => { S.char = id; save(); goBack(); } }); };
+  $("showcase").onclick = tapShowcase;
+  $("hsDaily").onclick = () => { A.sfx("click"); dailyBriefing(); };
+  $("hsTasks").onclick = () => { A.sfx("click"); showScreen("tasks"); };
+  $("navShop").onclick = () => { A.sfx("click"); showScreen("shop"); };
+  $("navTasks").onclick = () => { A.sfx("click"); showScreen("tasks"); };
+  $("navAch").onclick = () => { A.sfx("click"); showScreen("ach"); };
+  $("homeStars").onclick = () => { A.sfx("click"); showScreen("ach"); };
+  $("btnProfile").onclick = () => { A.sfx("click"); showScreen("ach"); };
+  $("btnSettings").onclick = () => { A.sfx("click"); showScreen("settings"); };
+  $("homeCoins").onclick = () => { A.sfx("click"); showScreen("shop"); };
 }

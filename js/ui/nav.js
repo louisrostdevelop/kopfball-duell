@@ -1,18 +1,15 @@
-// Bildschirmwechsel und Zurück-Navigation
+// Bildschirmwechsel und Zurück-Navigation.
+// Bildschirme melden sich hier an (registerScreen) statt dass die Navigation sie alle kennt:
+//   show   – wird beim Anzeigen aufgerufen (Inhalt neu aufbauen)
+//   back   – eigenes Verhalten beim Zurück; true = erledigt, sonst geht es normal zum vorigen Bildschirm
+//   resume – wird aufgerufen, wenn man per Zurück wieder hier landet
 import { App } from "../app/state.js";
 import { $, $$ } from "./dom.js";
-import { achScreen } from "./screens/achievements.js";
-import { homeScreen } from "./screens/home.js";
-import { modesScreen } from "./screens/modes.js";
-import { lobbyUI } from "./screens/online.js";
-import { rulesCtx } from "./screens/rules.js";
-import { settingsScreen } from "./screens/settings.js";
-import { refreshSetup } from "./screens/setup.js";
-import { shopScreen } from "./screens/shop.js";
-import { tasksScreen } from "./screens/tasks.js";
-import * as A from "../adapters/audio/webaudio.js";
-import * as I from "../adapters/input/dom-input.js";
-import * as Net from "../adapters/net/peerjs.js";
+import { audio as A, input as I } from "../app/services.js";
+
+/** @type {Record<string, { show?: () => void, back?: () => boolean|void, resume?: () => void }>} */
+const screens = {};
+export function registerScreen(id, hooks) { screens[id] = { ...screens[id], ...hooks }; }
 
 export function showScreen(id, root) {
   if (id && !root && App.screen && App.screen !== id && !["end", "pause"].includes(App.screen)) App.stack.push(App.screen);
@@ -22,19 +19,21 @@ export function showScreen(id, root) {
   document.body.dataset.scr = id || "";
   $("touch").hidden = !!id;
   if (App.mode !== "demo") $("gameBtns").hidden = !!id;
-  const fn = { home: homeScreen, shop: shopScreen, ach: achScreen, settings: settingsScreen, tasks: tasksScreen, modes: modesScreen }[id];
+  const fn = id && screens[id] && screens[id].show;
   if (fn) fn();
   if (id && I.usedPad) { const f = $("scr-" + id).querySelector(".btn-play, .btn.big, .btn, button:not(.iconback)"); if (f) f.focus({ preventScroll: true }); }
 }
+// Bildschirm zeigen, ohne die Zurück-Liste oder show() anzufassen (z. B. Lobby -> Online-Seite)
+export function swapScreen(id) { $$(".screen").forEach(s => s.hidden = s.id !== "scr-" + id); App.screen = id; }
 
 export function goBack() {
   A.sfx("click");
-  if (App.screen === "lobby") { Net.close(); App.stack = ["home"]; $$(".screen").forEach(s => s.hidden = s.id !== "scr-online"); App.screen = "online"; return; }
-  if (App.screen === "run") { App.run = null; }
-  if (App.screen === "rules" && rulesCtx && rulesCtx.onDone) rulesCtx.onDone();
+  const cur = App.screen && screens[App.screen];
+  if (cur && cur.back && cur.back() === true) return;
   const prev = App.stack.pop() || "home";
   showScreen(prev, true);
   App.stack = App.stack.length ? App.stack : [];
-  if (prev === "lobby") lobbyUI(Net.role() === "host" ? "host" : "guest");
-  if (prev === "setup") refreshSetup();
+  if (screens[prev] && screens[prev].resume) screens[prev].resume();
 }
+
+export function initNav() { $$("[data-back]").forEach(b => b.onclick = goBack); }

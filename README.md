@@ -38,20 +38,23 @@ Manche Netze (Schule, Firma, manche Handynetze) blockieren direkte Verbindungen.
 
 ## Technik
 
-Reines HTML, CSS und JavaScript ohne Build-Schritt. Grafik komplett per Canvas gezeichnet, Sounds und Musik live per Web Audio erzeugt.
+Reines HTML, CSS und JavaScript (ES-Module) ohne Build-Schritt. Grafik komplett per Canvas gezeichnet, Sounds und Musik live per Web Audio erzeugt.
 
 ```
-index.html          Gerüst und Menüs
-css/style.css       Aussehen
-js/main.js          Ablauf, Menüs, Online, Belohnungen
-js/physics.js       Spielphysik, Spezialschüsse, Power-ups
-js/render.js        Arenen, Kamera, Partikel, HUD, Wiederholung
-js/art.js           Köpfe, Bälle, Icons
-js/ai.js            Computer-Gegner
-js/input.js         Tastatur, Touch, Controller
-js/audio.js         Soundeffekte und Musik
-js/net.js           PeerJS-Verbindung
-js/store.js         Speicherstand, Erfolge
+index.html, css/      Gerüst, Menüs, Aussehen
+js/main.js            Einstiegspunkt: steckt Adapter ein und startet
+js/content/           Spielinhalte: Köpfe, Arenen, Regeln, Hindernis-Layouts
+js/core/              Spiellogik (sim/), Computer-Gegner, Fortschritt und Wirtschaft
+js/app/               Ablauf: Spiel, Schleife, Effekte, Online, Modi, Spielende, Profil
+js/ui/                Bildschirme, Navigation, Dialoge, Canvas-Zeichnen
+js/ports/             Schnittstellen nach außen (Speicher, Konto, Verbindung, Ton, Eingabe)
+js/adapters/          Umsetzungen: Web Audio, Touch/Tastatur/Controller, PeerJS, localStorage, Gast
+tests/                Referenzspiele, Edge-Case-Matrix, Browser-Tests
+tools/                Testserver, Service-Worker-Liste, Balancing-Simulationen
 ```
+
+Aufbau und Regeln der Schichten, Server-Anbindung: siehe [ARCHITECTURE.md](ARCHITECTURE.md).
+
+Lokal starten: `node tools/serve.mjs` und http://localhost:8765 öffnen. Tests: `npm test` (Spiellogik, Sekunden) und `npm run test:e2e` (Browser, nach `npm ci` und `npx playwright install chromium`).
 
 Schriften: Lilita One und Nunito (SIL Open Font License), lokal eingebunden.

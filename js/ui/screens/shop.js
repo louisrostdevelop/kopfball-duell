@@ -1,12 +1,13 @@
 // Shop: Köpfe, Bälle, Arenen, Angebot des Tages
 import { ARENAS, BALLS, charById, CHARS, RARITY, rarityOf, SUPERS } from "../../content/config.js";
-import { buy, buyDeal, checkAch, deal, owns, S, save } from "../../store.js";
+import { buy, buyDeal, checkAch, deal, owns, S, save } from "../../app/profile.js";
 import { avatarCanvas, drawBall } from "../render/art.js";
 import { arenaThumb } from "../render/render.js";
 import { $, $$, RCOL, svg, toast } from "../dom.js";
 import { unlockModal } from "../modals.js";
 import { refreshTop } from "./home.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { audio as A } from "../../app/services.js";
+import { registerScreen } from "../nav.js";
 
 export let shopTab = "chars";
 
@@ -54,4 +55,10 @@ export function ballCanvas(id, px) {
   const c = document.createElement("canvas"), r = Math.min(2, devicePixelRatio || 1);
   c.width = c.height = px * r; c.style.width = c.style.height = px + "px";
   const x = c.getContext("2d"); x.scale(r, r); drawBall(x, id, px / 2, px / 2, px * 0.36, 0.4); return c;
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initShop() {
+  registerScreen("shop", { show: shopScreen });
+  $$("#shopTabs button").forEach(b => b.onclick = () => { A.sfx("click"); setShopTab(b.dataset.tab); });
 }

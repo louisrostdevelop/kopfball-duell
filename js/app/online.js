@@ -2,16 +2,14 @@
 import { charById, clamp, EMOTES } from "../content/config.js";
 import { moveObstacles } from "../content/layouts.js";
 import { emote, matchLen, predictPlayer } from "../core/physics.js";
-import { owns, S } from "../store.js";
+import { owns, S } from "./profile.js";
 import { onEvent } from "./effects.js";
 import { beginMatch, quitToMenu, resolveObs, startDemo, updateBand } from "./game.js";
 import { App, inGame, VERSION } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
 import { lobbyUI, makeQR, netNote, saveName } from "../ui/screens/online.js";
-import * as A from "../adapters/audio/webaudio.js";
-import * as I from "../adapters/input/dom-input.js";
-import * as Net from "../adapters/net/peerjs.js";
+import { audio as A, input as I, net as Net } from "./services.js";
 
 export function packState(st) {
   const r = v => Math.round(v * 10) / 10;

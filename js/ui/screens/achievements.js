@@ -1,7 +1,8 @@
 // Erfolge und Profil-Statistik
 import { ACHIEVEMENTS } from "../../content/config.js";
-import { achProgress, S } from "../../store.js";
+import { achProgress, S } from "../../app/profile.js";
 import { $, svg } from "../dom.js";
+import { registerScreen } from "../nav.js";
 
 export function achScreen() {
   const st = S.stats;
@@ -14,4 +15,9 @@ export function achScreen() {
     l.append(d);
   });
   $("achSum").textContent = Object.keys(S.ach).length + " / " + ACHIEVEMENTS.length;
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initAchievements() {
+  registerScreen("ach", { show: achScreen });
 }

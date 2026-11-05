@@ -1,11 +1,12 @@
 // Endbildschirm
-import { S, xpFor } from "../../store.js";
+import { S, xpFor } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
 import { App } from "../../app/state.js";
 import { $, esc, toast } from "../dom.js";
 import { levelModal } from "../modals.js";
 import { showScreen } from "../nav.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { audio as A } from "../../app/services.js";
+import { endAgain, endMenu, shareResult } from "../../app/results.js";
 
 export function showEnd(r) {
   const st = App.st, [a, b] = st.s, me = r.me;
@@ -39,4 +40,11 @@ export function showEnd(r) {
     default: again.textContent = "Revanche";
   }
   showScreen("end");
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initEnd() {
+  $("btnEndAgain").onclick = endAgain;
+  $("btnEndMenu").onclick = endMenu;
+  $("btnEndShare").onclick = shareResult;
 }

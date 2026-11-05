@@ -4,8 +4,7 @@ import { emote } from "../core/physics.js";
 import { fx } from "../ui/render/render.js";
 import { simT } from "./loop.js";
 import { App, isHuman, myIdx, vsCpu } from "./state.js";
-import * as A from "../adapters/audio/webaudio.js";
-import * as I from "../adapters/input/dom-input.js";
+import { audio as A, input as I } from "./services.js";
 
 export const PHRASES = ["WAS FÜR EIN DING!", "UNHALTBAR!", "DRIN DAS DING!", "DER SASS!", "EISKALT!", "SAUBER!", "KEINE CHANCE!", "WIE GEMALT!"];
 

@@ -1,10 +1,10 @@
 // Dialoge: Tagesbonus, Level, neuer Kopf, Pokal
 import { CHARS, RARITY, rarityOf, SUPERS } from "../content/config.js";
-import { addCoins, owns, save } from "../store.js";
+import { addCoins, owns, save } from "../app/profile.js";
 import { avatarCanvas } from "./render/art.js";
-import { $, modal } from "./dom.js";
+import { modal } from "./dom.js";
 import { refreshTop } from "./screens/home.js";
-import * as A from "../adapters/audio/webaudio.js";
+import { audio as A } from "../app/services.js";
 
 export function dailyModal(d) {
   const days = Array.from({ length: 7 }, (_, n) => `<i class="${n < d.streak ? "on" : ""}">${n + 1}</i>`).join("");

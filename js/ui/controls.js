@@ -5,7 +5,7 @@ import { pause, sendEmote } from "../app/game.js";
 import { App, inGame } from "../app/state.js";
 import { $, focusFirst, moveFocus } from "./dom.js";
 import { goBack } from "./nav.js";
-import * as A from "../adapters/audio/webaudio.js";
+import { audio as A } from "../app/services.js";
 
 export function onKey(code) {
   A.unlock();

@@ -1,13 +1,15 @@
 // Online-Seite und Lobby
 import { ARENAS, charById, SUPERS } from "../../content/config.js";
-import { owns, S, save } from "../../store.js";
+import { owns, S, save } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
-import { sendNetCfg } from "../../app/online.js";
+import { sendNetCfg, hostGame, tryJoin, hostStart } from "../../app/online.js";
 import { App } from "../../app/state.js";
-import { $, seg } from "../dom.js";
-import { showScreen } from "../nav.js";
-import { rulesSummary } from "./rules.js";
+import { $, seg, shareOrCopy, copyText } from "../dom.js";
+import { showScreen, registerScreen, swapScreen, goBack } from "../nav.js";
+import { rulesSummary, rulesScreen } from "./rules.js";
 import { obsChoices } from "./setup.js";
+import { selectScreen } from "./select.js";
+import { audio as A, net as Net } from "../../app/services.js";
 
 export function openOnline() { $("nameIn").value = S.name || ""; netNote(""); showScreen("online"); }
 
@@ -42,3 +44,20 @@ export function makeQR(link) {
 export function netNote(t, err) { const n = $("netNote"); n.textContent = t || "Wenn dein Kumpel dir einen Link geschickt hat, öffne einfach den Link."; n.classList.toggle("err", !!err); }
 
 export function saveName(v) { v = String(v || "").trim().slice(0, 12); if (v) { S.name = v; save(); } }
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initOnline() {
+  registerScreen("lobby", {
+    back: () => { Net.close(); App.stack = ["home"]; swapScreen("online"); return true; },
+    resume: () => lobbyUI(Net.role() === "host" ? "host" : "guest"),
+  });
+  $("btnHost").onclick = () => { A.sfx("click"); hostGame(); };
+  $("btnJoin").onclick = () => { A.sfx("click"); tryJoin(); };
+  $("codeIn").addEventListener("keydown", e => { if (e.key === "Enter") tryJoin(); });
+  $("btnLobbyLeave").onclick = goBack;
+  $("btnLobbyStart").onclick = () => { A.sfx("click"); hostStart(); };
+  $("btnLobbyRules").onclick = () => { A.sfx("click"); App.netCfg.rules = App.netCfg.rules || {}; rulesScreen(App.netCfg.rules, () => { S.rules = { ...App.netCfg.rules }; save(); Net.send({ t: "cfg", cfg: App.netCfg }); }); };
+  $("btnLobbyHead").onclick = () => { A.sfx("click"); selectScreen({ title: "Kopf wechseln", okText: "Übernehmen", onDone: id => { S.char = id; save(); Net.send({ t: "pick", ch: id }); goBack(); } }); };
+  $("btnShare").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) shareOrCopy({ title: "Kopfball Duell", text: "Kopfball Duell gegen mich? Tipp auf den Link: " + link }); };
+  $("btnCopyLink").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) copyText(link); };
+}

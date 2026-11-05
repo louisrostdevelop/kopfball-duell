@@ -3,14 +3,12 @@ import { ARENAS, CHARS } from "../content/config.js";
 import { layoutsFor } from "../content/layouts.js";
 import { makeAI } from "../core/ai.js";
 import { emote, newMatch } from "../core/physics.js";
-import { S, save } from "../store.js";
+import { S, save } from "./profile.js";
 import { fx, setBand } from "../ui/render/render.js";
 import { App, inGame, vsCpu } from "./state.js";
 import { $, $$, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
-import * as A from "../adapters/audio/webaudio.js";
-import * as I from "../adapters/input/dom-input.js";
-import * as Net from "../adapters/net/peerjs.js";
+import { audio as A, input as I, net as Net } from "./services.js";
 
 export function startDemo() {
   const pool = CHARS.map(c => c.id);

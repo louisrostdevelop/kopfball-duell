@@ -1,6 +1,6 @@
 // Spielende: Belohnungen, Serien, Revanche, Teilen
 import { COL, DIFFS, W } from "../content/config.js";
-import { addCoins, addXP, challenge, challengeDone, checkAch, S, save, taskProgress } from "../store.js";
+import { addCoins, addXP, challenge, challengeDone, checkAch, S, save, taskProgress } from "./profile.js";
 import { fx } from "../ui/render/render.js";
 import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
@@ -10,8 +10,7 @@ import { $, shareOrCopy, toast } from "../ui/dom.js";
 import { trophyModal } from "../ui/modals.js";
 import { showEnd } from "../ui/screens/end.js";
 import { runScreen } from "../ui/screens/run.js";
-import * as A from "../adapters/audio/webaudio.js";
-import * as Net from "../adapters/net/peerjs.js";
+import { audio as A, net as Net } from "./services.js";
 
 export function seriesKey() {
   if (App.mode === "local") return "local";

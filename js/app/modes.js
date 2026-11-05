@@ -1,13 +1,13 @@
 // Spielmodi: Schnelles Spiel, Cup, Endlos, Tages-Challenge, Training
 import { ARENAS, charById, CHARS } from "../content/config.js";
-import { challenge, owns, S } from "../store.js";
+import { challenge, owns, S } from "./profile.js";
 import { beginMatch, quitToMenu } from "./game.js";
 import { App } from "./state.js";
 import { openOnline } from "../ui/screens/online.js";
 import { dailyBriefing, runScreen } from "../ui/screens/run.js";
 import { selectScreen } from "../ui/screens/select.js";
 import { setupScreen } from "../ui/screens/setup.js";
-import * as A from "../adapters/audio/webaudio.js";
+import { audio as A } from "./services.js";
 
 export function cpuNames(opp) { return [S.name || "Du", charById(opp).name]; }
 

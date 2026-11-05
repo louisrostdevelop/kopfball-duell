@@ -1,13 +1,13 @@
 // Kopf-Auswahl und Freischalten
 import { charById, CHARS, clamp, RARITY, rarityOf, SUPERS } from "../../content/config.js";
-import { buy, checkAch, owns, S } from "../../store.js";
+import { buy, checkAch, owns, S } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
 import { App } from "../../app/state.js";
 import { $, $$, RCOL, svg } from "../dom.js";
 import { unlockModal } from "../modals.js";
 import { showScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { audio as A } from "../../app/services.js";
 
 export let selCtx = null;
 
@@ -55,4 +55,9 @@ export function selOk() {
   }
   A.sfx("click");
   selCtx.onDone(c.id);
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initSelect() {
+  $("btnSelOk").onclick = selOk;
 }

@@ -2,7 +2,7 @@
 import { clamp, MODS } from "../content/config.js";
 import { aiInput } from "../core/ai.js";
 import { advance, REPLAY_END, REPLAY_START } from "../core/physics.js";
-import { S, save } from "../store.js";
+import { S, save } from "./profile.js";
 import { render, setQuality } from "../ui/render/render.js";
 import { onEvent } from "./effects.js";
 import { startDemo } from "./game.js";
@@ -11,7 +11,7 @@ import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { drawShowcase } from "../ui/screens/home.js";
-import * as I from "../adapters/input/dom-input.js";
+import { input as I } from "./services.js";
 
 export let lastT = performance.now(), simT = 0, perf = { t: 0, n: 0, slow: 0 };
 

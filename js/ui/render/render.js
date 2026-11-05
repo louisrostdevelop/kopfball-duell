@@ -1,5 +1,5 @@
 // Darstellung: Kamera, Arenen, Spieler, Ball, Partikel, HUD, Wiederholung
-import { W, H, G, GOAL_W, BAR_T, HR, BR, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
+import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
 import { drawHead, drawShoe, drawBall, drawPuIcon, shade } from "./art.js";
 import { barY, shoePos, pr, kickPreview } from "../../core/physics.js";
 

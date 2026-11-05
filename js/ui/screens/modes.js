@@ -1,10 +1,10 @@
 // Modus-Auswahl
 import { MODES } from "../../content/config.js";
-import { challenge, S, save } from "../../store.js";
+import { challenge, S, save } from "../../app/profile.js";
 import { App } from "../../app/state.js";
-import { $, svg } from "../dom.js";
-import { showScreen } from "../nav.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { $ } from "../dom.js";
+import { showScreen, registerScreen } from "../nav.js";
+import { audio as A } from "../../app/services.js";
 
 export function modesScreen() {
   const g = $("modeGrid"); g.innerHTML = "";
@@ -18,4 +18,9 @@ export function modesScreen() {
     b.onclick = () => { A.sfx("click"); S.mode = m.id; save(); App.stack = []; showScreen("home", true); };
     g.append(b);
   });
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initModes() {
+  registerScreen("modes", { show: modesScreen });
 }

@@ -1,6 +1,5 @@
 // Kleine DOM-Helfer: Elemente, Umschalter, Hinweise, Dialoge, Teilen, Fokus für Controller
-import * as A from "../adapters/audio/webaudio.js";
-import * as I from "../adapters/input/dom-input.js";
+import { audio as A, input as I } from "../app/services.js";
 
 export const $ = id => document.getElementById(id);
 

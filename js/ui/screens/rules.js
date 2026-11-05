@@ -1,10 +1,10 @@
 // Regeln: Presets, eigene Presets, Einstellungen in zwei Reitern
 import { RULE_OPTS, RULE_PRESETS } from "../../content/config.js";
 import { DEFAULT_RULES, matchLen } from "../../core/physics.js";
-import { S, save } from "../../store.js";
+import { S, save } from "../../app/profile.js";
 import { $, esc, modal, seg, svg, toast } from "../dom.js";
-import { showScreen } from "../nav.js";
-import * as A from "../../adapters/audio/webaudio.js";
+import { showScreen, registerScreen, goBack } from "../nav.js";
+import { audio as A } from "../../app/services.js";
 
 // Ein Regelsatz enthält nur Abweichungen vom Standard. Presets setzen alles außer der Spiellänge.
 export let rulesCtx = null, rulesMoreOpen = false;
@@ -111,4 +111,13 @@ export function savePresetDialog() {
       toast(`„${name}“ gespeichert`, "i-check", true); renderRules();
     } });
   setTimeout(() => { const i = $("presetName"); if (i) { i.focus(); i.select(); i.onkeydown = e => { if (e.key === "Enter") $("modalOk").click(); }; } }, 50);
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initRules() {
+  registerScreen("rules", { back: () => { if (rulesCtx && rulesCtx.onDone) rulesCtx.onDone(); } });
+  $("btnRulesDone").onclick = () => goBack();
+  $("btnRulesReset").onclick = () => { A.sfx("click"); const r = rulesCtx.target; Object.keys(r).forEach(k => { if (k !== "obs") delete r[k]; }); renderRules(); };
+  $("btnRulesMore").onclick = () => { A.sfx("click"); showRulesTab(true); };
+  $("rtCore").onclick = () => { A.sfx("click"); showRulesTab(false); };
 }

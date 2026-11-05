@@ -1,11 +1,12 @@
 // Tagesaufgaben und Tages-Challenge
 import { arenaById, charById, DIFFS } from "../../content/config.js";
 import { matchLen } from "../../core/physics.js";
-import { S, save, tasks } from "../../store.js";
+import { S, save, tasks } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
 import { dailyChallenge } from "../../app/modes.js";
 import { $, esc, svg } from "../dom.js";
 import { dailyBriefing } from "./run.js";
+import { registerScreen } from "../nav.js";
 
 export function tasksScreen() {
   const c = dailyChallenge(), o = charById(c.opp), card = $("challengeCard");
@@ -20,4 +21,9 @@ export function tasksScreen() {
   card.append(b);
   const icons = { wins: "i-trophy", goals: "i-ball", headGoals: "i-ball", supers: "i-bolt", pus: "i-gift", stomps: "i-users", online: "i-globe", hard: "i-crown", cupRound: "i-trophy" };
   $("taskList").innerHTML = tasks().map(t => `<div class="task${t.done ? " done" : ""}"><span class="tk-ic">${svg(t.done ? "i-check" : icons[t.id] || "i-star")}</span><div class="tk-main"><b>${esc(t.text)}</b><div class="prog"><i style="width:${Math.round(t.prog / t.n * 100)}%"></i></div></div><span class="tk-rw">${t.done ? "✓" : `<span class="coin"></span>${t.reward}`}</span></div>`).join("");
+}
+
+// Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
+export function initTasks() {
+  registerScreen("tasks", { show: tasksScreen });
 }
