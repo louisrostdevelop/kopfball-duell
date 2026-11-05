@@ -571,7 +571,10 @@ function ballVsPlayer(st, b, p, dt) {
     if (p.vy < -150 && hc.ny < -0.3) { b.vy -= 260; b.vx += p.dir * 220; } // Kopfball-Wucht
     // Kopfball beim Aufladen/Ausholen: mehr Kraft, aber weniger als ein sauberer Schuss mit dem Fuß
     let hp = 0;
-    if (p.kHeld && p.charge > 0.08) { hp = p.charge; p.kHeld = false; p.charge = 0; p.chT = 0; }
+    // Power-Kopfball nur, wenn der Ball wirklich oben am Kopf ist. Ein Ball unten am Kinn/Fuß ist Sache des Schusses.
+    const atHead = b.y < p.y + r * 0.35;
+    if (!atHead) { /* nichts: Schuss übernimmt */ }
+    else if (p.kHeld && p.charge > 0.08) { hp = p.charge; p.kHeld = false; p.charge = 0; p.chT = 0; }
     else if (p.kick > 0.06 && !p.kHit) { hp = Math.max(0.25, (p.kPow - 1) / 0.75); p.kHit = true; }
     if (hp > 0) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
@@ -603,22 +606,43 @@ function ballVsPlayer(st, b, p, dt) {
       // aufgeladen (c = 0..1): härter UND deutlich höher
       const c = (p.kPow - 1) / 0.75;
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
-      const air = !p.onG, high = b.y < p.y;
-      const vx = ((1050 + 340 * (ch.pow - 1)) * pm + 480 * c) * qm;
-      const vy = ((air ? (high ? -300 : -450) : high ? -720 : -630) - 640 * c) * (0.7 + 0.3 * qm);
+      const kv = kickVec(st, p, b, c, qm, pm);
       const wk = kickMul(st);
-      b.vx = p.dir * vx * wk + p.vx * 0.2;
-      b.vy = vy * wk;
+      b.vx = p.dir * kv.vx * wk + p.vx * 0.2;
+      b.vy = kv.vy * wk;
       b.held = 0.05;
       st.stats[p.i].shots++;
       addMeter(st, p, 6 * (st.mod === "superfast" ? 2 : 1));
       const pow = 1 + (p.kPow - 1) * qm;
       const spd = Math.hypot(b.vx, b.vy);
-      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c, spd });
+      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c, spd, kind: kv.kind });
       // jeder saubere Treffer bekommt ein kurzes Standbild, harte Schüsse ein längeres
       if (q > 0.45 || c > 0.3) st.hs = Math.max(st.hs, 0.028 + 0.05 * c);
     }
   }
+}
+
+// Schussart nach dem, was man sieht:
+// Ball ruhig am Boden = Lupfer (steil), Ball rollt/springt flach = Strahl (hart, flach), Ball in der Luft = Volley (flach, hoch getroffen leicht nach unten)
+export function kickKind(b) {
+  if (b.y + b.r < G - 34) return "volley";
+  return Math.hypot(b.vx, b.vy) < 300 ? "lob" : "drive";
+}
+function kickVec(st, p, b, c, qm, pm) {
+  const kind = kickKind(b), ch = charById(p.ch);
+  const base = ((1050 + 340 * (ch.pow - 1)) * pm + 480 * c) * qm, lift = 0.7 + 0.3 * qm;
+  if (kind === "lob") return { kind, vx: base * 0.6, vy: -(800 + 380 * c) * lift };
+  if (kind === "volley") return { kind, vx: base * 1.05, vy: b.y < p.y ? -(180 + 150 * c) * lift : -(480 + 300 * c) * lift };
+  return { kind, vx: base, vy: -(470 + 320 * c) * lift };
+}
+// Vorschau für den Richtungspfeil beim Halten: nur wenn der Ball in Schussnähe ist
+export function kickPreview(st, p) {
+  const b = st.b, fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
+  const reach = 66 * KS * p.sc + b.r;
+  if (Math.hypot(b.x - fx, b.y - fy) > reach * 2 || (b.x - p.x) * p.dir < -18 * KS * p.sc) return null;
+  const pm = charById(p.ch).pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
+  const kv = kickVec(st, p, b, p.charge, 1, pm);
+  return { kind: kv.kind, ang: Math.atan2(kv.vy, p.dir * kv.vx), c: p.charge };
 }
 
 // ---------- Spezialschüsse ----------

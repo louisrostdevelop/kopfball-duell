@@ -44,6 +44,7 @@ export function sfx(kind, v = 1) {
     case "post": osc("sine", 920, 900, 0.5, 0.25); osc("sine", 1380, 1370, 0.35, 0.15); osc("square", 230, 220, 0.08, 0.1); break;
     case "jump": osc("square", 260, 520, 0.08, 0.05); break;
     case "land": osc("sine", 110, 60, 0.08, 0.2); break;
+    case "chip": osc("sine", 220, 90, 0.12, 0.4); osc("triangle", 500, 900, 0.1, 0.12, 0.01); noise(0.05, 0.25, "highpass", 2500); break;
     case "slide": noise(0.26, 0.22, "bandpass", 500, 0.8, 0, 1600); noise(0.18, 0.12, "highpass", 3000); break;
     case "bomb": noise(0.22, 0.14, "bandpass", 2200, 2, 0, 500); break;
     case "pound": osc("sine", 120, 38, 0.22, 0.45 * Math.min(1.3, 0.6 + v)); noise(0.16, 0.35, "lowpass", 500, 1, 0, 120); break;

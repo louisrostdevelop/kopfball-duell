@@ -1,7 +1,7 @@
 // Darstellung: Kamera, Arenen, Spieler, Ball, Partikel, HUD, Wiederholung
 import { W, H, G, GOAL_W, BAR_T, HR, BR, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "./config.js";
 import { drawHead, drawShoe, drawBall, drawPuIcon, shade } from "./art.js";
-import { barY, shoePos, pr } from "./physics.js";
+import { barY, shoePos, pr, kickPreview } from "./physics.js";
 
 const TAU = Math.PI * 2;
 const INK = COL.ink;
@@ -744,6 +744,21 @@ function drawBallFx(st, b, t, skin, replay) {
     stretch = { ang: ballSq.ang, k: 1 - 0.32 * ballSq.p * k };
   } else if (sp > 800) stretch = { ang: Math.atan2(b.vy, b.vx), k: 1 + Math.min(0.22, (sp - 800) / 3500) };
   drawBall(ctx, skin, b.x, b.y, b.r, b.a, b.alpha ?? 1, stretch);
+  if (!replay) st.p.forEach(p => drawAim(st, p));
+}
+// Richtungspfeil beim Halten: startet am Ball und zeigt, wohin er gleich geht (Lupfer / Strahl / Volley)
+function drawAim(st, p) {
+  if (!p.kHeld || st.ph !== "play") return;
+  const pv = kickPreview(st, p);
+  if (!pv) return;
+  const b = st.b, col = pv.kind === "lob" ? "#bfe9ff" : pv.kind === "volley" ? COL.gold : "#ffffff";
+  const r0 = b.r + 6, len = 30 + 26 * pv.c;
+  ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(pv.ang);
+  ctx.globalAlpha = 0.95; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.beginPath(); ctx.moveTo(r0, 0); ctx.lineTo(r0 + len, 0); ctx.moveTo(r0 + len - 11, -9); ctx.lineTo(r0 + len, 0); ctx.lineTo(r0 + len - 11, 9);
+  ctx.strokeStyle = INK; ctx.lineWidth = 9; ctx.stroke();
+  ctx.strokeStyle = col; ctx.lineWidth = 4.5; ctx.stroke();
+  ctx.restore();
 }
 
 function drawPowerups(st, t) {

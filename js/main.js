@@ -192,11 +192,13 @@ function onEvent(e, remote) {
       const kp = st.p[e.i], dir = kp ? kp.dir : 1;
       // Wucht nach tatsächlichem Balltempo: auch ein sauberer Tipp-Schuss soll knallen
       const sv = clamp(((e.spd || 900) - 600) / 900, 0, 1.2), juice = Math.max(e.pow, 1 + sv * 0.6);
-      fx.burst("kick", e.x, e.y, { pow: juice, dir }); snd("kick", juice); fx.shake(3 + 7 * sv);
+      fx.burst("kick", e.x, e.y, { pow: juice, dir }); snd(e.kind === "lob" ? "chip" : "kick", juice); fx.shake(e.kind === "lob" ? 2 : 3 + 7 * sv);
       fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.5 + sv * 0.6);
       if (kp) fx.swoosh(e.x - dir * 20, e.y, dir, juice);
       if (sv > 0.35) fx.punch(0.012 + 0.03 * sv);
-      if (e.c > 0.85 && e.q > 0.75) { fx.burst("text", e.x, e.y - 46, { text: "VOLLTREFFER!", col: COL.gold, size: 30 }); fx.shake(7); }
+      if (e.c > 0.85 && e.q > 0.75 && e.kind !== "lob") { fx.burst("text", e.x, e.y - 46, { text: "VOLLTREFFER!", col: COL.gold, size: 30 }); fx.shake(7); }
+      else if (e.kind === "lob") fx.burst("text", e.x, e.y - 40, { text: "LUPFER", col: "#bfe9ff", size: 22 });
+      else if (e.kind === "volley" && (e.spd || 0) > 1200) fx.burst("text", e.x, e.y - 40, { text: "VOLLEY!", col: COL.gold, size: 26 });
       else if (e.pow > 1.4 || (e.spd || 0) > 1500) fx.burst("text", e.x, e.y - 40, { text: "WUMMS!", col: COL.gold, size: 28 });
       if (isHuman(e.i)) I.vibrate(juice > 1.4 ? 30 : 16);
       break;
