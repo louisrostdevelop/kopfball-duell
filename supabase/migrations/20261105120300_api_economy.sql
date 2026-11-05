@@ -55,7 +55,7 @@ begin
   amount := 40 + streak * 30;
   update game.progress set daily_last = current_date, daily_streak = streak where player_id = p;
   perform game.book(p, 'coins', amount, 'daily', current_date::text);
-  return jsonb_build_object('amount', amount, 'streak', streak, 'state', game.state(p));
+  return jsonb_build_object('amount', amount, 'streak', streak, 'state', game.state_brief(p));
 end $$;
 
 -- ---------- Tagesaufgaben für heute (für alle gleich, aus dem Datum bestimmt) ----------
@@ -128,7 +128,7 @@ declare
   dur integer := coalesce((r->>'duration')::integer, 0); diff integer := coalesce((r->>'diff')::integer, 1);
   head text := r->>'head'; base integer; coins integer; capped integer; cap integer; used integer; pr game.progress;
   gained_xp integer; ups jsonb; tasks_done jsonb; achs jsonb; facts text[]; st jsonb; s jsonb := coalesce(r->'stats', '{}');
-  res jsonb; hx integer;
+  res jsonb; hx integer; farmed boolean := false; bonus integer := 0;
 begin
   prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
   perform game.limit_rate(p, 'cpu_match', 6, interval '1 minute');
@@ -155,17 +155,21 @@ begin
   select * into pr from game.progress where player_id = p for update;
   used := case when pr.cap_day = current_date then pr.cap_cpu_coins else 0 end;
   cap := game.cfg_int('cpu_daily_cap');
+  -- bis zum Deckel voll, danach nur noch ein Anteil (used zählt alle heute erhaltenen Münzen)
   capped := least(coins, greatest(0, cap - used));
   capped := capped + round((coins - capped) * game.cfg_num('cpu_after_cap'));
+  -- Harte Grenze gegen Bots: darüber gibt es heute gar nichts mehr (auch keine XP, Kopf-XP, Pass-Punkte)
+  farmed := used >= game.cfg_int('cpu_hard_cap');
+  if farmed then capped := 0; end if;
 
   -- Tages-Challenge: einmal am Tag die volle Belohnung, nicht gedeckelt
   if mode = 'daily' and won and (pr.challenge_day is null or pr.challenge_day < current_date) then
     update game.progress set challenge_day = current_date where player_id = p;
     perform game.book(p, 'gems', 15, 'challenge', current_date::text);
-    capped := capped + 150;
+    bonus := 150;
   end if;
 
-  update game.progress set cap_day = current_date, cap_cpu_coins = used + least(coins, greatest(0, cap - used)),
+  update game.progress set cap_day = current_date, cap_cpu_coins = used + capped,
          stats = jsonb_build_object(
            'games', coalesce((stats->>'games')::integer, 0) + 1,
            'wins', coalesce((stats->>'wins')::integer, 0) + case when won then 1 else 0 end,
@@ -173,15 +177,16 @@ begin
            'headGoals', coalesce((stats->>'headGoals')::integer, 0) + coalesce((s->>'headGoals')::integer, 0),
            'pus', coalesce((stats->>'pus')::integer, 0) + coalesce((s->>'pus')::integer, 0),
            'stomps', coalesce((stats->>'stomps')::integer, 0) + coalesce((s->>'stomps')::integer, 0),
-           'supers', coalesce((stats->>'supers')::integer, 0) + coalesce((s->>'supers')::integer, 0))
+           'supers', coalesce((stats->>'supers')::integer, 0) + coalesce((s->>'supers')::integer, 0),
+           'endlessWins', coalesce((stats->>'endlessWins')::integer, 0) + case when won and mode = 'endless' then 1 else 0 end)
    where player_id = p;
 
-  if capped > 0 then perform game.book(p, 'coins', capped, 'match_' || mode, request_key); end if;
-  gained_xp := round(capped * 1.2) + 15;
+  if capped + bonus > 0 then perform game.book(p, 'coins', capped + bonus, 'match_' || mode, request_key); end if;
+  gained_xp := case when farmed then 0 else round((capped + bonus) * 1.2) + 15 end;
   ups := game.add_xp(p, gained_xp);
-  hx := case when won then 30 else 15 end;
+  hx := case when farmed then 0 when won then 30 else 15 end;
   update game.heads set xp = xp + hx, games = games + 1 where player_id = p and head_id = head;
-  perform game.add_pass_points(p, case when won then 10 else 5 end);
+  if not farmed then perform game.add_pass_points(p, case when won then 10 else 5 end); end if;
 
   tasks_done := game.progress_tasks(p, jsonb_build_object('wins', case when won then 1 else 0 end, 'goals', goals,
                  'headGoals', coalesce((s->>'headGoals')::integer, 0), 'supers', coalesce((s->>'supers')::integer, 0),
@@ -195,8 +200,8 @@ begin
   if won and diff = 3 and mode = 'cpu' then facts := array_append(facts, 'legend'); end if;
   achs := game.grant_achievements(p, facts);
 
-  res := jsonb_build_object('coins', capped, 'coinsBeforeCap', coins, 'xp', gained_xp, 'levelUps', ups, 'headXp', hx,
-                            'tasksDone', tasks_done, 'achievements', achs, 'state', game.state(p));
+  res := jsonb_build_object('coins', capped + bonus, 'coinsBeforeCap', coins + bonus, 'capReached', farmed, 'xp', gained_xp, 'levelUps', ups, 'headXp', hx,
+                            'tasksDone', tasks_done, 'achievements', achs, 'state', game.state_brief(p));
   return game.idem_end(p, request_key, res);
 end $$;
 
@@ -215,7 +220,7 @@ begin
   if price > 0 then perform game.book(p, currency, -price, 'buy', item); end if;
   perform game.give_item(p, item, 'buy_' || currency);
   perform game.grant_achievements(p, '{}');
-  res := jsonb_build_object('item', item, 'price', price, 'currency', currency, 'state', game.state(p));
+  res := jsonb_build_object('item', item, 'price', price, 'currency', currency, 'state', game.state_brief(p));
   return game.idem_end(p, request_key, res);
 end $$;
 
@@ -239,7 +244,7 @@ begin
   cost := game.cfg_int('head_coins_per_level') * h.level;
   perform game.book(p, 'coins', -cost, 'head_level', head || ':' || (h.level + 1));
   update game.heads set level = level + 1, xp = greatest(0, xp - need) where player_id = p and head_id = head;
-  res := jsonb_build_object('head', head, 'level', h.level + 1, 'coins', cost, 'gems', coalesce(gems, 0), 'state', game.state(p));
+  res := jsonb_build_object('head', head, 'level', h.level + 1, 'coins', cost, 'gems', coalesce(gems, 0), 'state', game.state_brief(p));
   return game.idem_end(p, request_key, res);
 end $$;
 

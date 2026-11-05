@@ -59,6 +59,9 @@ begin
   update game.matches set status = 'review'
    where status = 'open' and created_at < now() - interval '5 minutes' and (report1 is not null or report2 is not null);
   get diagnostics b = row_count;
+  -- Strittige oder einseitige Spiele, die der Prüfdienst nach 24 h nicht entschieden hat: verfallen (keine Wertung)
+  update game.matches set status = 'void', settled_at = now()
+   where status in ('disputed', 'review') and created_at < now() - interval '24 hours';
   -- Spiele ganz ohne Meldung nach 30 Minuten: verfallen
   update game.matches set status = 'void', settled_at = now()
    where status = 'open' and created_at < now() - interval '30 minutes' and report1 is null and report2 is null;
@@ -67,13 +70,16 @@ begin
   delete from game.requests where created_at < now() - interval '2 days';
   get diagnostics d = row_count;
   delete from game.rate_limits where window_start < now() - interval '1 day';
-  -- Tages-Bestenlisten älter als 30 Tage
-  delete from game.scores where period <> 'all' and period < (current_date - 30)::text;
-  -- Gäste ohne Konto, ohne Kauf, 90 Tage nicht da: löschen (hält die Datenbank klein)
-  delete from auth.users u
-   using game.players pl
-   where pl.id = u.id and u.is_anonymous and pl.last_seen_at < now() - interval '90 days'
-     and not exists (select 1 from game.purchases pu where pu.player_id = u.id);
+  -- Tages-Bestenlisten älter als 30 Tage (in Häppchen, damit nichts lange sperrt)
+  delete from game.scores where ctid in (select ctid from game.scores where period <> 'all' and period < (current_date - 30)::text limit 5000);
+  delete from game.score_counts where period <> 'all' and period < (current_date - 30)::text;
+  -- Gäste ohne Konto, ohne Kauf, 90 Tage nicht da: löschen (hält die Datenbank klein).
+  -- Höchstens 500 pro Lauf: alle 10 Minuten = 72.000 am Tag, ohne lange Sperren.
+  delete from auth.users u where u.id in (
+    select pl.id from game.players pl join auth.users au on au.id = pl.id
+     where au.is_anonymous and pl.last_seen_at < now() - interval '90 days'
+       and not exists (select 1 from game.purchases pu where pu.player_id = pl.id)
+     limit 500);
   get diagnostics e = row_count;
   return jsonb_build_object('queue', a, 'review', b, 'void', c, 'requests', d, 'guests', e);
 end $$;
@@ -81,7 +87,20 @@ end $$;
 -- Niemand außer ausdrücklich Berechtigten darf Funktionen ausführen
 revoke execute on all functions in schema api, game from public;
 
+-- Zähler für "Mein Rang" aus den Einträgen neu aufbauen (nach Importen oder falls je etwas auseinanderläuft)
+create or replace function game.rebuild_score_counts() returns integer
+language plpgsql security definer set search_path = '' as $$
+declare k integer;
+begin
+  lock table game.score_counts in exclusive mode;
+  delete from game.score_counts;
+  insert into game.score_counts (board, period, score, n) select board, period, score, count(*) from game.scores group by 1, 2, 3;
+  get diagnostics k = row_count;
+  return k;
+end $$;
+
 grant execute on function api.grant_purchase(uuid, text, text, text, integer, text), api.refund_purchase(text, text) to service_role;
+grant execute on function game.rebuild_score_counts() to service_role;
 grant execute on function game.maintenance() to service_role;
 
 -- ---------- Regelmäßig ausführen (pg_cron gibt es auf Supabase; lokal ohne Docker evtl. nicht) ----------
@@ -125,5 +144,32 @@ do $$ begin
   end if;
 end $$;
 
+
+revoke execute on all functions in schema api, game from public;
+
+-- ---------- Storage: Eingabe-Protokolle von Online-Spielen für die Nachprüfung ----------
+-- Pfad: <Spiel-ID>/<Spieler-ID>.json. Hochladen darf nur ein Spieler dieses Spiels, und nur seine eigene Datei,
+-- bis 1 Stunde nach Spielbeginn. Lesen darf nur der Prüfdienst (Service-Schlüssel).
+create or replace function api.can_upload_log(object_name text) returns boolean
+language plpgsql stable security definer set search_path = '' as $$
+declare u uuid := auth.uid(); parts text[] := string_to_array(object_name, '/'); mid uuid;
+begin
+  if u is null or array_length(parts, 1) <> 2 or parts[2] <> u::text || '.json' then return false; end if;
+  begin mid := parts[1]::uuid; exception when others then return false; end;
+  return exists (select 1 from game.matches m where m.id = mid and u in (m.p1, m.p2) and m.created_at > now() - interval '1 hour');
+end $$;
+grant execute on function api.can_upload_log(text) to authenticated;
+
+do $$ begin
+  if exists (select 1 from information_schema.tables where table_schema = 'storage' and table_name = 'buckets') then
+    insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    values ('match-logs', 'match-logs', false, 262144, array['application/json'])
+    on conflict (id) do update set public = false, file_size_limit = 262144, allowed_mime_types = array['application/json'];
+    execute $p$ drop policy if exists "kopfball: eigenes Spielprotokoll hochladen" on storage.objects $p$;
+    execute $p$
+      create policy "kopfball: eigenes Spielprotokoll hochladen" on storage.objects for insert to authenticated
+      with check (bucket_id = 'match-logs' and api.can_upload_log(name)) $p$;
+  end if;
+end $$;
 
 revoke execute on all functions in schema api, game from public;

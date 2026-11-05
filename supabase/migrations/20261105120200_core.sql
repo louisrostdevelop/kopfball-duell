@@ -89,6 +89,17 @@ begin
   return r;
 end $$;
 
+-- ---------- Nachricht an einen Realtime-Kanal (nur ein Bonus: fehlt Realtime, passiert nichts) ----------
+create or replace function game.notify(topic text, event text, payload jsonb) returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  if to_regprocedure('realtime.send(jsonb,text,text,boolean)') is not null then
+    execute 'select realtime.send($1, $2, $3, true)' using payload, event, topic;
+  end if;
+exception when others then
+  null;
+end $$;
+
 -- ---------- Aktuelle Saison ----------
 create or replace function game.current_season() returns integer
 language sql stable security definer set search_path = '' as $$
@@ -129,8 +140,8 @@ language sql stable security definer set search_path = '' as $$
     'guest', coalesce((select u.is_anonymous from auth.users u where u.id = pl.id), true),
     'coins', w.coins, 'gems', w.gems,
     'items', coalesce((select jsonb_agg(i.item_id order by i.item_id) from game.inventory i where i.player_id = pl.id), '[]'),
-    'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', game.cfg_int('head_xp_per_level') * h.level))
-                         from game.heads h where h.player_id = pl.id), '{}'),
+    'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
+                         from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
     'daily', jsonb_build_object('last', pr.daily_last, 'streak', pr.daily_streak),
     'challengeDone', pr.challenge_day = current_date,
     'tasks', case when pr.tasks_day = current_date then pr.tasks else '[]'::jsonb end,
@@ -150,4 +161,23 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Niemand außer ausdrücklich Berechtigten darf Funktionen ausführen
+
+-- Kurzer Zustand für häufige Aufrufe (Spiel melden, kaufen, leveln): nur was sich dabei ändert.
+-- Ein Viertel der Arbeit von game.state(); der Client führt ihn mit dem letzten vollen Zustand zusammen.
+create or replace function game.state_brief(p uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'level', pl.level, 'xp', pl.xp, 'xpNext', 120 + (pl.level - 1) * 60,
+    'coins', w.coins, 'gems', w.gems,
+    'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
+                         from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
+    'tasks', case when pr.tasks_day = current_date then pr.tasks else '[]'::jsonb end,
+    'cpuCoinsToday', case when pr.cap_day = current_date then pr.cap_cpu_coins else 0 end,
+    'passPoints', (select pp.points from game.pass_progress pp where pp.player_id = pl.id and pp.season_id = game.current_season()))
+  from game.players pl
+  join game.wallets w on w.player_id = pl.id
+  join game.progress pr on pr.player_id = pl.id
+  where pl.id = p
+$$;
+
 revoke execute on all functions in schema api, game from public;

@@ -13,7 +13,7 @@ do $g$ begin execute format('grant execute on all functions in schema %I to publ
 do $$
 declare u uuid; old_guest uuid; buyer_guest uuid; r jsonb;
 begin
-  insert into auth.users (is_anonymous) values (false) returning id into u;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into u;
   set local role service_role;
   r := api.grant_purchase(u, 'stripe', 'cs_test_1', 'gems_550', 499, 'EUR');
   assert r ? 'purchase', 'Kauf gebucht';
@@ -36,8 +36,8 @@ begin
   assert (select status from game.purchases where provider_ref = 'cs_test_1') = 'refunded', 'als erstattet markiert';
 
   -- Wartung
-  insert into auth.users (is_anonymous) values (true) returning id into old_guest;
-  insert into auth.users (is_anonymous) values (true) returning id into buyer_guest;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into old_guest;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into buyer_guest;
   update game.players set last_seen_at = now() - interval '120 days' where id in (old_guest, buyer_guest);
   insert into game.purchases (player_id, provider, provider_ref, product_id, amount_cents, currency) values (buyer_guest, 'stripe', 'cs_guest', 'gems_100', 99, 'EUR');
   insert into game.match_queue (player_id, mode, mmr, head_id, seen_at) values (u, 'casual', 0, 'head:kalle', now() - interval '1 minute');

@@ -26,3 +26,25 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+
+  datenbank:
+    name: Datenbank (Postgres ohne Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash supabase/local/run-tests.sh
+
+  supabase:
+    name: Datenbank auf echtem Supabase-Stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+      - name: Supabase starten (wendet Migrationen, Katalog und Seed an)
+        run: supabase start -x studio,imgproxy,logflare,vector,mailpit,edge-runtime,supavisor,postgres-meta
+      - name: Tests gegen den echten Stack
+        run: DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres bash supabase/local/run-tests.sh
+      - name: Sicherheitsprüfung von Supabase (Linter)
+        run: supabase db lint --level warning

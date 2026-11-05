@@ -17,9 +17,9 @@ do $g$ begin execute format('grant execute on all functions in schema %I to publ
 do $$
 declare a uuid; b uuid; g uuid; ma jsonb; mb jsonb; m uuid; r jsonb; host uuid; guest uuid;
 begin
-  insert into auth.users (is_anonymous) values (false) returning id into a;
-  insert into auth.users (is_anonymous) values (false) returning id into b;
-  insert into auth.users (is_anonymous) values (true) returning id into g;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into a;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into b;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into g;
   update game.players set name = 'Anna' where id = a;
   update game.players set name = 'Ben' where id = b;
 

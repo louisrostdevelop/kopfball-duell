@@ -11,7 +11,7 @@ trap 'q "delete from auth.users where email like '"'"'$TAG%'"'"'" >/dev/null' EX
 fail() { echo "ASSERT: $1"; exit 1; }
 
 # 1) Zwei verschiedene Käufe, Geld reicht nur für einen (300 Münzen: Rocco 200, Nala 250), je 10-mal parallel
-U=$(q "insert into auth.users (email, is_anonymous) values ('$TAG-a', false) returning id")
+U=$(q "insert into auth.users (id, email, is_anonymous) values (gen_random_uuid(), '$TAG-a', false) returning id")
 q "select game.book('$U', 'coins', 150, 'test')" >/dev/null
 for i in $(seq 1 10); do
   as_user "$U" "select api.buy_item('head:rocco', 'coins', 'rocco-key-$i')" > /dev/null &
@@ -26,7 +26,7 @@ L=$(q "select sum(delta) from game.ledger where player_id = '$U' and currency = 
 [ "$C" -ge 0 ] || fail "negativer Kontostand"
 
 # 2) Dieselbe Anfrage (gleicher Schlüssel) 20-mal gleichzeitig: einmal ausgeführt
-V=$(q "insert into auth.users (email, is_anonymous) values ('$TAG-b', false) returning id")
+V=$(q "insert into auth.users (id, email, is_anonymous) values (gen_random_uuid(), '$TAG-b', false) returning id")
 q "select game.book('$V', 'coins', 1000, 'test')" >/dev/null
 for i in $(seq 1 20); do as_user "$V" "select api.buy_item('head:tank', 'coins', 'same-key-123')" > /dev/null & done
 wait
@@ -40,7 +40,7 @@ D=$(q "select count(*) from game.ledger where player_id = '$V' and reason = 'dai
 [ "$D" = "1" ] || fail "Tagesbonus $D-mal statt 1"
 
 # 4) 40 Spieler suchen gleichzeitig Casual: jeder höchstens in einem Spiel, nie gegen sich selbst
-IDS=$(q "insert into auth.users (email, is_anonymous) select '$TAG-q' || g, true from generate_series(1, 40) g returning id")
+IDS=$(q "insert into auth.users (id, email, is_anonymous) select gen_random_uuid(), '$TAG-q' || g, true from generate_series(1, 40) g returning id")
 q "update game.players set level = 5 where id in (select id from auth.users where email like '$TAG-q%')" >/dev/null
 for id in $IDS; do as_user "$id" "select api.queue_join('casual', 'head:kalle')" > /dev/null & done
 wait

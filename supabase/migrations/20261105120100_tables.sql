@@ -5,7 +5,7 @@
 -- =====================================================================================
 
 -- ---------- Katalog: was es gibt und was es kostet (wird aus js/content erzeugt, siehe supabase/catalog.sql) ----------
-create table game.items (
+create table if not exists game.items (
   id text primary key,
   kind text not null check (kind in ('head', 'ball', 'arena', 'skin', 'celebration', 'emote', 'frame', 'title')),
   rarity text not null default 'basis' check (rarity in ('basis', 'selten', 'episch', 'legend')),
@@ -16,7 +16,7 @@ create table game.items (
 );
 
 -- Echtgeld-Produkte (Juwelen-Pakete, Pass, Starter-Paket)
-create table game.products (
+create table if not exists game.products (
   id text primary key,
   gems integer not null default 0 check (gems >= 0),
   items text[] not null default '{}',
@@ -27,7 +27,7 @@ create table game.products (
 );
 
 -- ---------- Spieler ----------
-create table game.players (
+create table if not exists game.players (
   id uuid primary key references auth.users (id) on delete cascade,
   name text,
   title text,
@@ -39,11 +39,11 @@ create table game.players (
   last_seen_at timestamptz not null default now()
 );
 -- Namen eindeutig, ohne Rücksicht auf Groß/Klein
-create unique index players_name_key on game.players (lower(name)) where name is not null;
+create unique index if not exists players_name_key on game.players (lower(name)) where name is not null;
 -- Aufräumen inaktiver Gäste
-create index players_last_seen on game.players (last_seen_at);
+create index if not exists players_last_seen on game.players (last_seen_at);
 
-create table game.wallets (
+create table if not exists game.wallets (
   player_id uuid primary key references game.players (id) on delete cascade,
   coins bigint not null default 0 check (coins >= 0),
   gems bigint not null default 0 check (gems >= 0),
@@ -51,7 +51,7 @@ create table game.wallets (
 );
 
 -- Jede Buchung, nur anhängen. Kontostand = Summe; wallets hält ihn für schnelles Lesen.
-create table game.ledger (
+create table if not exists game.ledger (
   id bigint generated always as identity primary key,
   player_id uuid not null references game.players (id) on delete cascade,
   currency text not null check (currency in ('coins', 'gems')),
@@ -61,18 +61,18 @@ create table game.ledger (
   ref text,
   created_at timestamptz not null default now()
 );
-create index ledger_player on game.ledger (player_id, id desc);
+create index if not exists ledger_player on game.ledger (player_id, id desc);
 
-create table game.inventory (
+create table if not exists game.inventory (
   player_id uuid not null references game.players (id) on delete cascade,
   item_id text not null references game.items (id),
   source text not null,
   acquired_at timestamptz not null default now(),
   primary key (player_id, item_id)
 );
-create index inventory_item on game.inventory (item_id);
+create index if not exists inventory_item on game.inventory (item_id);
 
-create table game.heads (
+create table if not exists game.heads (
   player_id uuid not null references game.players (id) on delete cascade,
   head_id text not null references game.items (id),
   level smallint not null default 1 check (level between 1 and 50),
@@ -82,7 +82,7 @@ create table game.heads (
 );
 
 -- Kleine Zustände pro Spieler. Heiße Felder als Spalten, selten genutzte als JSON.
-create table game.progress (
+create table if not exists game.progress (
   player_id uuid primary key references game.players (id) on delete cascade,
   daily_last date,
   daily_streak smallint not null default 0,
@@ -98,17 +98,17 @@ create table game.progress (
 );
 
 -- Gleiche Anfrage zweimal (Netz-Wiederholung) = nur einmal ausführen
-create table game.requests (
+create table if not exists game.requests (
   player_id uuid not null references game.players (id) on delete cascade,
   key text not null check (length(key) between 8 and 64),
   result jsonb,
   created_at timestamptz not null default now(),
   primary key (player_id, key)
 );
-create index requests_created on game.requests (created_at);
+create index if not exists requests_created on game.requests (created_at);
 
 -- Anfragen pro Zeitfenster begrenzen
-create table game.rate_limits (
+create table if not exists game.rate_limits (
   player_id uuid not null references game.players (id) on delete cascade,
   action text not null,
   window_start timestamptz not null,
@@ -117,15 +117,15 @@ create table game.rate_limits (
 );
 
 -- ---------- Saison, Pass, Wertung ----------
-create table game.seasons (
+create table if not exists game.seasons (
   id integer primary key,
   starts_at timestamptz not null,
   ends_at timestamptz not null check (ends_at > starts_at),
   pass jsonb not null default '[]'   -- [{ "points": 100, "free": {...}, "premium": {...} }, ...]
 );
-create index seasons_time on game.seasons (starts_at, ends_at);
+create index if not exists seasons_time on game.seasons (starts_at, ends_at);
 
-create table game.pass_progress (
+create table if not exists game.pass_progress (
   player_id uuid not null references game.players (id) on delete cascade,
   season_id integer not null references game.seasons (id),
   points integer not null default 0,
@@ -135,7 +135,7 @@ create table game.pass_progress (
   primary key (player_id, season_id)
 );
 
-create table game.ratings (
+create table if not exists game.ratings (
   player_id uuid not null references game.players (id) on delete cascade,
   season_id integer not null references game.seasons (id),
   mmr integer not null,
@@ -144,10 +144,10 @@ create table game.ratings (
   updated_at timestamptz not null default now(),
   primary key (player_id, season_id)
 );
-create index ratings_board on game.ratings (season_id, mmr desc, player_id);
+create index if not exists ratings_board on game.ratings (season_id, mmr desc, player_id);
 
 -- ---------- Online: Warteschlange und Spiele ----------
-create table game.matches (
+create table if not exists game.matches (
   id uuid primary key default gen_random_uuid(),
   mode text not null check (mode in ('ranked', 'casual', 'friend')),
   season_id integer references game.seasons (id),
@@ -161,11 +161,11 @@ create table game.matches (
   created_at timestamptz not null default now(),
   settled_at timestamptz
 );
-create index matches_p1 on game.matches (p1, created_at desc);
-create index matches_p2 on game.matches (p2, created_at desc);
-create index matches_open on game.matches (created_at) where status in ('open', 'disputed', 'review');
+create index if not exists matches_p1 on game.matches (p1, created_at desc);
+create index if not exists matches_p2 on game.matches (p2, created_at desc);
+create index if not exists matches_open on game.matches (created_at) where status in ('open', 'disputed', 'review');
 
-create table game.match_queue (
+create table if not exists game.match_queue (
   player_id uuid primary key references game.players (id) on delete cascade,
   mode text not null check (mode in ('ranked', 'casual')),
   mmr integer not null,
@@ -174,10 +174,11 @@ create table game.match_queue (
   seen_at timestamptz not null default now(),
   match_id uuid references game.matches (id) on delete set null
 );
-create index match_queue_find on game.match_queue (mode, mmr) where match_id is null;
+create index if not exists match_queue_find on game.match_queue (mode, mmr) where match_id is null;
+create index if not exists match_queue_wait on game.match_queue (mode, enqueued_at) where match_id is null;
 
 -- ---------- Bestenlisten und Freunde ----------
-create table game.scores (
+create table if not exists game.scores (
   board text not null check (board in ('endless', 'daily')),
   period text not null,                -- 'all' oder ein Tag 'YYYY-MM-DD'
   player_id uuid not null references game.players (id) on delete cascade,
@@ -185,9 +186,21 @@ create table game.scores (
   updated_at timestamptz not null default now(),
   primary key (board, period, player_id)
 );
-create index scores_board on game.scores (board, period, score desc, updated_at);
+create index if not exists scores_board on game.scores (board, period, score desc, updated_at);
+create index if not exists scores_player on game.scores (player_id);                  -- Löschen von Spielern
+create index if not exists scores_period on game.scores (period) where period <> 'all';  -- Aufräumen alter Tage
 
-create table game.friends (
+-- Wie viele Einträge haben welchen Wert? Macht "Mein Rang" unabhängig von der Größe der Liste:
+-- Rang = Summe der Einträge mit höherem Wert (wenige hundert Zeilen statt Millionen zu zählen).
+create table if not exists game.score_counts (
+  board text not null,
+  period text not null,
+  score integer not null,
+  n integer not null check (n >= 0),
+  primary key (board, period, score)
+);
+
+create table if not exists game.friends (
   player_id uuid not null references game.players (id) on delete cascade,
   friend_id uuid not null references game.players (id) on delete cascade,
   status text not null check (status in ('pending', 'accepted')),
@@ -195,10 +208,10 @@ create table game.friends (
   primary key (player_id, friend_id),
   check (player_id <> friend_id)
 );
-create index friends_reverse on game.friends (friend_id);
+create index if not exists friends_reverse on game.friends (friend_id);
 
 -- ---------- Käufe mit echtem Geld ----------
-create table game.purchases (
+create table if not exists game.purchases (
   id uuid primary key default gen_random_uuid(),
   player_id uuid not null references game.players (id) on delete restrict,
   provider text not null,
@@ -210,16 +223,16 @@ create table game.purchases (
   created_at timestamptz not null default now(),
   unique (provider, provider_ref)
 );
-create index purchases_player on game.purchases (player_id, created_at desc);
+create index if not exists purchases_player on game.purchases (player_id, created_at desc);
 
 -- ---------- Tagesaufgaben und Erfolge (Definitionen) ----------
-create table game.task_defs (
+create table if not exists game.task_defs (
   id text primary key,
   goals integer[] not null,
   reward integer not null,
   active boolean not null default true
 );
-create table game.achievement_defs (
+create table if not exists game.achievement_defs (
   id text primary key,
   reward integer not null,
   stat text,
@@ -227,7 +240,21 @@ create table game.achievement_defs (
 );
 
 -- Wörter, die in Namen nicht vorkommen dürfen
-create table game.banned_words (word text primary key);
+create table if not exists game.banned_words (word text primary key);
+
+-- ---------- Performance ----------
+-- Oft geänderte Zeilen: Platz auf der Seite lassen, damit Updates ohne Index-Umbau gehen (HOT-Updates)
+alter table game.wallets set (fillfactor = 80);
+alter table game.progress set (fillfactor = 70);
+alter table game.heads set (fillfactor = 80);
+alter table game.players set (fillfactor = 90);
+alter table game.pass_progress set (fillfactor = 80);
+alter table game.ratings set (fillfactor = 80);
+alter table game.rate_limits set (fillfactor = 70);
+alter table game.match_queue set (fillfactor = 70);
+alter table game.score_counts set (fillfactor = 80);
+-- Ledger wächst am schnellsten: winziger Zeit-Index für Auswertungen und Archivierung
+create index if not exists ledger_time on game.ledger using brin (created_at);
 
 -- Row Level Security überall an, ohne Regeln: direkter Zugriff ist gesperrt
 do $$ declare t record; begin

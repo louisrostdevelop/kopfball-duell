@@ -50,8 +50,8 @@ begin
   assert not has_function_privilege('anon', 'api.me()', 'execute'), 'anon kann api.me';
   assert has_function_privilege('anon', 'api.leaderboard(text, text, integer, integer)', 'execute'), 'Bestenliste öffentlich';
 
-  insert into auth.users (is_anonymous) values (true) returning id into u;
-  insert into auth.users (is_anonymous) values (true) returning id into v;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into u;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into v;
   -- Als Spieler: direkter Tabellenzugriff scheitert
   perform pg_temp.login(u);
   perform pg_temp.expect_error('select * from game.wallets', '42501');

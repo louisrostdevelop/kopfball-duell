@@ -23,8 +23,8 @@ do $g$ begin execute format('grant execute on all functions in schema %I to publ
 do $$
 declare u uuid; v uuid; s jsonb; r jsonb; r2 jsonb; c0 bigint;
 begin
-  insert into auth.users (is_anonymous) values (true) returning id into u;
-  insert into auth.users (is_anonymous) values (false) returning id into v;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into u;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into v;
   perform pg_temp.login(u);
 
   -- Start
@@ -63,7 +63,7 @@ begin
   assert (r->'levelUps')::text = '[2]', 'Level-Aufstieg';
   assert r->'achievements' ? 'firstwin' and r->'achievements' ? 'cleansheet' and r->'achievements' ? 'hattrick', 'Erfolge: ' || (r->'achievements')::text;
   assert (r->'state'->'heads'->'head:kalle'->>'xp')::int = 30, 'Kopf-XP';
-  assert (r->'state'->'stats'->>'wins')::int = 1, 'Statistik';
+  assert (api.me()->'stats'->>'wins')::int = 1, 'Statistik';
   -- unplausible Meldungen
   perform pg_temp.expect_error($q$select api.report_cpu_match(pg_temp.cpu('cpu', true, 3, 0, 'head:kalle', 1, 5), 'match-key-0002')$q$, 'implausible');
   perform pg_temp.expect_error($q$select api.report_cpu_match(pg_temp.cpu('cpu', true, 1, 2), 'match-key-0003')$q$, 'implausible');
@@ -82,6 +82,16 @@ begin
   r := api.report_cpu_match(pg_temp.cpu('cpu', true, 1, 0, 'head:kalle', 0), 'match-key-0007');
   -- Sieg Locker 40 + 1 Tor 8 + zu null 20 = 68, davon 10 voll + 58 * 0.2 = 22
   assert (r->>'coins')::int = 22 and (r->>'coinsBeforeCap')::int = 68, 'Deckel: ' || r::text;
+  -- Harte Grenze: nichts mehr, auch keine XP
+  perform pg_temp.logout();
+  update game.progress set cap_cpu_coins = 1500 where player_id = u;
+  perform pg_temp.login(u);
+  r := api.report_cpu_match(pg_temp.cpu('cpu', true, 1, 0), 'match-key-0008');
+  assert (r->>'coins')::int = 0 and (r->>'xp')::int = 0 and (r->>'headXp')::int = 0 and (r->>'capReached')::boolean, 'harte Grenze: ' || r::text;
+  perform pg_temp.logout();
+  update game.progress set cap_cpu_coins = 612 where player_id = u;
+  update game.heads set xp = 60 where player_id = u and head_id = 'head:kalle';
+  perform pg_temp.login(u);
 
   -- Kopf-Level: zu wenig Kopf-XP, mit Juwelen auffüllen, Münzen nötig
   perform pg_temp.expect_error('select api.upgrade_head(''head:kalle'', false, ''upgrade-key-01'')', 'not_enough_head_xp');
@@ -113,7 +123,7 @@ begin
 
   -- Saison-Pass: Punkte aus Spielen, Stufen abholen
   r := api.report_cpu_match(pg_temp.cpu('cpu', false, 1, 3, 'head:tank'), 'match-key-v001');
-  assert (r->'state'->'season'->'pass'->>'points')::int = 5, 'Pass-Punkte';
+  assert (r->'state'->>'passPoints')::int = 5 and (api.me()->'season'->'pass'->>'points')::int = 5, 'Pass-Punkte';
   r := api.claim_pass(0, false);
   perform pg_temp.expect_error('select api.claim_pass(0, false)', 'already_claimed');
   perform pg_temp.expect_error('select api.claim_pass(0, true)', 'no_premium');

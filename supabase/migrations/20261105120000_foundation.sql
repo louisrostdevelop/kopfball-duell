@@ -20,7 +20,7 @@ alter default privileges revoke execute on functions from public;
 alter default privileges in schema game revoke all on tables from public;
 
 -- ---------- Einstellungen zum Nachjustieren ohne Migration (Belohnungen, Preise, Grenzen) ----------
-create table game.config (
+create table if not exists game.config (
   key text primary key,
   value jsonb not null,
   updated_at timestamptz not null default now()
@@ -32,6 +32,8 @@ insert into game.config (key, value) values
   ('start_items', '["head:kalle","head:yuki","head:bolt","arena:stadion","arena:strand","ball:klassik"]'),
   ('cpu_daily_cap', '600'),            -- volle Münzen aus Computer-Spielen pro Tag
   ('cpu_after_cap', '0.2'),            -- Anteil danach
+  ('cpu_hard_cap', '1500'),            -- ab hier (gezählte Münzen) gibt es heute nichts mehr: Schutz vor Bots
+  ('ranked_pair_limit', '5'),          -- gleiches Paar öfter als so oft in 24 h: keine Wertungsänderung (Absprachen)
   ('diff_mult', '[1, 1.3, 1.7, 2.4]'), -- Münz-Faktor je Schwierigkeit
   ('head_max_level', '10'),
   ('head_xp_per_level', '100'),        -- benötigte Kopf-XP: 100 * Level
