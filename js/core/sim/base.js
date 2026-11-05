@@ -1,5 +1,5 @@
 // Gemeinsame Bausteine: Ereignisse, Maße, Kollisionen, Super-Leiste
-import { G, GOAL_H, HR, FOOT, KS, clamp } from "../config.js";
+import { G, GOAL_H, HR, FOOT, KS, clamp } from "../../content/config.js";
 import { KICK } from "./tuning.js";
 
 export const barY = (st, side) => G - GOAL_H * (st.rules ? st.rules.goal : 1) - (st.bigGoal[side] > 0 ? 60 : 0);

@@ -1,5 +1,5 @@
 // Power-ups
-import { W, PU_KEYS, rand } from "../config.js";
+import { W, PU_KEYS, rand } from "../../content/config.js";
 import { ev } from "./base.js";
 
 // ---------- Power-ups ----------

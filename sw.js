@@ -1,8 +1,21 @@
 // Offline-Unterstützung: erst Netz, dann Cache (so kommen Updates sofort an)
-const CACHE = "kopfball-v10";
-const CORE = ["./", "index.html", "css/style.css", "js/main.js", "js/config.js", "js/physics.js", "js/render.js", "js/art.js", "js/audio.js", "js/input.js", "js/ai.js", "js/net.js", "js/store.js", "js/layouts.js",
-  "js/sim/ball.js", "js/sim/base.js", "js/sim/goal.js", "js/sim/kick.js", "js/sim/match.js", "js/sim/obstacles.js", "js/sim/player.js", "js/sim/powerups.js", "js/sim/rules.js", "js/sim/state.js", "js/sim/supers.js", "js/sim/tricks.js", "js/sim/tuning.js",
-  "fonts/lilita.woff2", "fonts/nunito-700.woff2", "fonts/nunito-800.woff2", "fonts/nunito-900.woff2", "vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "manifest.webmanifest"];
+const CACHE = "kopfball-v11";
+const CORE = [
+  "./", "css/style.css", "fonts/lilita.woff2", "fonts/nunito-700.woff2", "fonts/nunito-800.woff2",
+  "fonts/nunito-900.woff2", "icons/icon-192.png", "index.html", "js/adapters/audio/webaudio.js",
+  "js/adapters/input/dom-input.js", "js/adapters/net/peerjs.js", "js/app/effects.js", "js/app/game.js",
+  "js/app/loop.js", "js/app/modes.js", "js/app/online.js", "js/app/results.js", "js/app/state.js",
+  "js/content/config.js", "js/content/layouts.js", "js/core/ai.js", "js/core/physics.js",
+  "js/core/sim/ball.js", "js/core/sim/base.js", "js/core/sim/goal.js", "js/core/sim/kick.js",
+  "js/core/sim/match.js", "js/core/sim/obstacles.js", "js/core/sim/player.js", "js/core/sim/powerups.js",
+  "js/core/sim/rules.js", "js/core/sim/state.js", "js/core/sim/supers.js", "js/core/sim/tricks.js",
+  "js/core/sim/tuning.js", "js/main.js", "js/store.js", "js/ui/controls.js", "js/ui/dom.js", "js/ui/modals.js",
+  "js/ui/nav.js", "js/ui/render/art.js", "js/ui/render/render.js", "js/ui/screens/achievements.js",
+  "js/ui/screens/end.js", "js/ui/screens/home.js", "js/ui/screens/modes.js", "js/ui/screens/online.js",
+  "js/ui/screens/rules.js", "js/ui/screens/run.js", "js/ui/screens/select.js", "js/ui/screens/settings.js",
+  "js/ui/screens/setup.js", "js/ui/screens/shop.js", "js/ui/screens/tasks.js", "js/ui/wire.js",
+  "manifest.webmanifest", "vendor/peerjs.min.js", "vendor/qrcode.js"
+];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {

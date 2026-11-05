@@ -1,8 +1,8 @@
 // Balance-Werkzeug (kein Test): node tools/balance/pace.mjs [Varianten] [Spiele] [Arenen] [Regeln-JSON]
 // Vergleich von Ball-Tempo-Varianten über viele Computer-Spiele
-const P = await import("../../js/physics.js");
-const AI = await import("../../js/ai.js");
-const C = await import("../../js/config.js");
+const P = await import("../../js/core/physics.js");
+const AI = await import("../../js/core/ai.js");
+const C = await import("../../js/content/config.js");
 const base = { ...P.KICK };
 const VARIANTS = {
   A_alt:          { memClassify: false, hsMode: "all", carryMode: "none", carry: 0, softCap: false, driveVy: 470 },

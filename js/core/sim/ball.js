@@ -1,5 +1,5 @@
 // Ball: Flug, Boden, Wände, Latten, Tor-Erkennung, Kopf und Fuß
-import { W, G, GOAL_W, BAR_T, SR, KS, charById, arenaById, clamp, rand } from "../config.js";
+import { W, G, GOAL_W, BAR_T, SR, KS, charById, arenaById, clamp, rand } from "../../content/config.js";
 import { addMeter, barY, collideCircle, collideRect, ev, pr, shoePos } from "./base.js";
 import { goal } from "./goal.js";
 import { kickVec } from "./kick.js";

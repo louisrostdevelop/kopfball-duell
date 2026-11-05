@@ -1,5 +1,5 @@
 // Spieler: Laufen, Springen, Spieler gegen Spieler
-import { W, G, GOAL_W, BAR_T, SR, FOOT, charById, arenaById, clamp } from "../config.js";
+import { W, G, GOAL_W, BAR_T, SR, FOOT, charById, arenaById, clamp } from "../../content/config.js";
 import { barY, ev, pr } from "./base.js";
 import { obsPlayer } from "./obstacles.js";
 import { gMul } from "./rules.js";

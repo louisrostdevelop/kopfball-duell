@@ -1,8 +1,8 @@
 // Balance-Werkzeug (kein Test): sucht Hindernis-Layouts, in denen der Ball lange liegt oder hängt
 // Sucht in allen Layouts nach Situationen, in denen der Ball lange liegt oder ein Spieler festhängt
-const P = await import("../../js/physics.js");
-const AI = await import("../../js/ai.js");
-const { LAYOUTS } = await import("../../js/layouts.js");
+const P = await import("../../js/core/physics.js");
+const AI = await import("../../js/core/ai.js");
+const { LAYOUTS } = await import("../../js/content/layouts.js");
 const N = +(process.argv[2] || 16);
 for (const ar of (process.argv[3] ? process.argv[3].split(",") : Object.keys(LAYOUTS))) for (let li = 0; li < LAYOUTS[ar].length; li++) for (const field of [0.82, 1, 1.18]) {
   let worst = 0, where = "", onTop = 0, pStuck = 0, goals = 0;

@@ -1,5 +1,5 @@
 // Spielregeln: Standardwerte, Spiellänge und abgeleitete Faktoren (Gewicht, Schusskraft, Schwerkraft, Tempo-Limit)
-import { BR, arenaById } from "../config.js";
+import { BR, arenaById } from "../../content/config.js";
 import { BG, KICK } from "./tuning.js";
 
 // Eigene Regeln (für Spiele gegen Freunde). Alle Werte optional.

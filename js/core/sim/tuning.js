@@ -1,5 +1,5 @@
 // Feintuning an einer Stelle: Bewegung (MOVE), Schuss (KICK), Luftzeit (AIR)
-import { clamp } from "../config.js";
+import { clamp } from "../../content/config.js";
 
 // Bewegungs-Feintuning an einer Stelle
 export const MOVE = {

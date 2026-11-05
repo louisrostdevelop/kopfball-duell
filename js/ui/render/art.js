@@ -1,5 +1,5 @@
 // Prozedurale Grafik: Köpfe, Bälle, Icons. Wird im Spiel und in den Menüs benutzt.
-import { charById, COL } from "./config.js";
+import { charById, COL } from "../../content/config.js";
 
 const INK = COL.ink;
 const TAU = Math.PI * 2;

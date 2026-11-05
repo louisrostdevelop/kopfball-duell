@@ -6,8 +6,8 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { seedRandom } from "../lib/rng.mjs";
 
-const P = await import("../../js/physics.js");
-const AI = await import("../../js/ai.js");
+const P = await import("../../js/core/physics.js");
+const AI = await import("../../js/core/ai.js");
 
 const FILE = new URL("./golden.json", import.meta.url);
 const DT = 1 / 60;

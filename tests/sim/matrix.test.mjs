@@ -3,8 +3,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { seedRandom } from "../lib/rng.mjs";
 seedRandom(4242);
-const P = await import("../../js/physics.js");
-const C = await import("../../js/config.js");
+const P = await import("../../js/core/physics.js");
+const C = await import("../../js/content/config.js");
 const { W, G, FOOT, SR } = C;
 const DT = 1 / 120;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -340,7 +340,7 @@ function kickAt(o) {
 }
 
 // ---------- 8. Hindernisse und Feldgröße ----------
-const LY = await import("../../js/layouts.js");
+const LY = await import("../../js/content/layouts.js");
 {
   let asym = 0, goalArea = 0, spawn = 0, total = 0;
   for (const ar of Object.keys(LY.LAYOUTS)) for (let li = 0; li < LY.LAYOUTS[ar].length; li++) for (const field of [0.82, 1, 1.18]) {

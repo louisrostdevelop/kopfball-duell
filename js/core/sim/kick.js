@@ -1,5 +1,5 @@
 // Schuss: Ausholen, Loslassen, Schussart und Richtung
-import { G, SR, KS, charById, clamp } from "../config.js";
+import { G, SR, KS, charById, clamp } from "../../content/config.js";
 import { ev, pr, shoePos } from "./base.js";
 import { endSlide } from "./tricks.js";
 import { AIR, KICK } from "./tuning.js";

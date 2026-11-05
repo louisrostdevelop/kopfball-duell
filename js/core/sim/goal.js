@@ -1,5 +1,5 @@
 // Tore
-import { W } from "../config.js";
+import { W } from "../../content/config.js";
 import { addMeter, ev } from "./base.js";
 import { endFx } from "./supers.js";
 

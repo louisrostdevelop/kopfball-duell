@@ -1,5 +1,5 @@
 // Spezialschüsse und was passiert, wenn jemand den Ball berührt (abwehren, auslösen)
-import { W, G, GOAL_W, charById, clamp } from "../config.js";
+import { W, G, GOAL_W, charById, clamp } from "../../content/config.js";
 import { barY, ev, pr } from "./base.js";
 import { pv } from "./tuning.js";
 

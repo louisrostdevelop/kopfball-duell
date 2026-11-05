@@ -1,5 +1,5 @@
 // Hindernisse: Plattformen, Blöcke und Bumper gegen Spieler und Ball
-import { W, G, SR, FOOT, clamp } from "../config.js";
+import { W, G, SR, FOOT, clamp } from "../../content/config.js";
 import { collideCircle, ev, pr } from "./base.js";
 import { maxBall } from "./rules.js";
 import { bombLand, endSlide } from "./tricks.js";

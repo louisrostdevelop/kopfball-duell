@@ -1,6 +1,6 @@
 // Spielzustand anlegen: Match, Spieler, Ball, Anstoß
-import { buildObstacles, moveObstacles, layoutsFor } from "../layouts.js";
-import { W, W0, setFieldW, REST, arenaById, rand } from "../config.js";
+import { buildObstacles, moveObstacles, layoutsFor } from "../../content/layouts.js";
+import { W, W0, setFieldW, REST, arenaById, rand } from "../../content/config.js";
 import { pr } from "./base.js";
 import { DEFAULT_RULES, baseBR, matchLen } from "./rules.js";
 

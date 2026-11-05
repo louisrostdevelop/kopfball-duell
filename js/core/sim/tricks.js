@@ -1,5 +1,5 @@
 // Arschbombe und Grätsche: Landung, Ende, Wirkung auf Ball und Gegner
-import { G, SR, FOOT, clamp } from "../config.js";
+import { G, SR, FOOT, clamp } from "../../content/config.js";
 import { addMeter, ev, pr, shoePos } from "./base.js";
 import { kickMul } from "./rules.js";
 import { touch } from "./supers.js";

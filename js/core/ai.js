@@ -1,5 +1,5 @@
 // Computer-Gegner
-import { W, G, GOAL_W, HR, KS, DIFFS, arenaById, charById, rand, clamp } from "./config.js";
+import { W, G, GOAL_W, HR, KS, DIFFS, arenaById, charById, rand, clamp } from "../content/config.js";
 import { ballG, pr, AIR } from "./physics.js";
 
 export function makeAI(i, diff, keeper = false) {

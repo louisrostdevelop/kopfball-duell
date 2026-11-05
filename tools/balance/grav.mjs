@@ -1,8 +1,8 @@
 // Balance-Werkzeug (kein Test): node tools/balance/grav.mjs [Varianten] [Spiele] [Arenen] [Verzögerung]
 // Schwerkraft-Varianten: Spielfluss + Reaktions-Test (Bot mit Verzögerung wie ein Mensch am Handy)
-const P = await import("../../js/physics.js");
-const AI = await import("../../js/ai.js");
-const C = await import("../../js/config.js");
+const P = await import("../../js/core/physics.js");
+const AI = await import("../../js/core/ai.js");
+const C = await import("../../js/content/config.js");
 const baseK = { ...P.KICK }, baseA = { ...P.AIR };
 const VARIANTS = {
   "V0_jetzt":     {},

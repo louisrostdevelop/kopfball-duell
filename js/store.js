@@ -1,6 +1,6 @@
 // Speicherstand: Münzen, Level, Freischaltungen, Statistik, Erfolge
-import { CHARS, ARENAS, BALLS, ACHIEVEMENTS, CHALLENGE_SETS, RULE_KEYS, DIFFS } from "./config.js";
-import { layoutsFor } from "./layouts.js";
+import { CHARS, ARENAS, BALLS, ACHIEVEMENTS, CHALLENGE_SETS, RULE_KEYS, DIFFS } from "./content/config.js";
+import { layoutsFor } from "./content/layouts.js";
 
 const KEY = "kopfball-duell-save-v2";
 const def = () => ({

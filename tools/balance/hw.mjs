@@ -2,8 +2,8 @@
 // Kopfball gegen anfliegende Bälle: wie viel Zeit bleibt zum Reagieren und wie genau muss man timen?
 // Ball startet bei t=0 (= Gegner hat ihn gerade berührt). Für jeden Absprung-Zeitpunkt prüfen, ob ein Kopfball nach vorne gelingt.
 // "Reaktion" = spätester Absprung, der noch klappt (so lange hat man Zeit, den Ball zu lesen). "Fenster" = wie viele ms Absprung klappen.
-const P = await import("../../js/physics.js");
-const C = await import("../../js/config.js");
+const P = await import("../../js/core/physics.js");
+const C = await import("../../js/content/config.js");
 const M0 = { ...P.MOVE };
 const VARIANTS = {
   jetzt:            { tp: 1, tb: 1 },

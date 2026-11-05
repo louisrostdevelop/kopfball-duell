@@ -1,6 +1,6 @@
 // Spielablauf: Echtzeit-Fortschritt, Schritt, Phasen, Vorhersage für den Online-Gast
-import { moveObstacles } from "../layouts.js";
-import { STEP } from "../config.js";
+import { moveObstacles } from "../../content/layouts.js";
+import { STEP } from "../../content/config.js";
 import { ballPhysics, unjam } from "./ball.js";
 import { addMeter, ev } from "./base.js";
 import { handleKick, kickPush } from "./kick.js";
