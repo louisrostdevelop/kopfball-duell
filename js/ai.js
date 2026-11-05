@@ -1,13 +1,13 @@
 // Computer-Gegner
 import { W, G, GOAL_W, HR, KS, DIFFS, arenaById, charById, rand, clamp } from "./config.js";
-import { gMul, pr } from "./physics.js";
+import { ballG, pr, AIR } from "./physics.js";
 
 export function makeAI(i, diff, keeper = false) {
   return { i, keeper, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 340 : 340, wantJ: 0, jFull: true, jHold: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0, dcd: 0, dPulse: 0 };
 }
 
 function predict(st, steps, dt) {
-  const b = st.b, ar = arenaById(st.arena), g = 1750 * gMul(st) * (b.fx ? 0.2 : 1);
+  const b = st.b, ar = arenaById(st.arena), g = ballG(st) * (b.fx ? 0.2 : 1);
   let x = b.x, y = b.y, vx = b.vx, vy = b.vy; const r = b.r, out = [];
   for (let n = 0; n < steps; n++) {
     vy += g * dt; x += vx * dt; y += vy * dt;
@@ -33,7 +33,7 @@ export function aiInput(ai, st, dt) {
   if (ai.think <= 0) {
     ai.think = d.react * rand(0.7, 1.3);
     ai.err = rand(-d.err, d.err);
-    const path = predict(st, 70, 1 / 50);
+    const path = predict(st, Math.round(70 * AIR.tb), 1 / 50);
     // Bedrohung fürs eigene Tor?
     const towardOwn = b.vx * -dir > 250;
     const nearOwn = Math.abs(b.x - own) < 560;
@@ -68,10 +68,10 @@ export function aiInput(ai, st, dt) {
     // Sprungplanung
     ai.wantJ = 0;
     for (const q of path) {
-      if (q.t > 0.45) break;
+      if (q.t > 0.45 * AIR.tp) break;
       const dx = Math.abs(q.x - p.x), hy = p.y - q.y;
       const roof = (st.obs || []).some(o => o.t === "plat" && !o.block && Math.abs(o.x - p.x) < o.w / 2 + r && o.y + o.h < p.y - r && o.y + o.h > p.y - r - 220 && q.y < o.y);
-      if (!roof && dx < r + 40 && hy > r * 0.6 && hy < 260 && Math.random() < d.jumpSkill) { ai.wantJ = Math.max(0, q.t - (hy < r * 1.5 ? 0.12 : 0.22)); ai.jFull = hy >= r * 1.5; break; }
+      if (!roof && dx < r + 40 && hy > r * 0.6 && hy < 260 && Math.random() < d.jumpSkill) { ai.wantJ = Math.max(0, q.t - (hy < r * 1.5 ? 0.12 : 0.22) * AIR.tp); ai.jFull = hy >= r * 1.5; break; }
     }
     // Ball liegt auf meinem Kopf: nach vorne laufen und springen
     if (Math.abs(b.x - p.x) < r * 0.6 && b.y < p.y - r && Math.abs(b.vy) < 120) { ai.tx = p.x + dir * 80; ai.wantJ = 0.01; ai.jFull = true; }
@@ -94,11 +94,11 @@ export function aiInput(ai, st, dt) {
     const mv = c.r ? 1 : -1;
     for (const o of st.obs) if (o.t === "plat" && o.block) {
       const edge = mv > 0 ? o.x - o.w / 2 : o.x + o.w / 2, gap = (edge - p.x) * mv - r * 0.8;
-      if (gap > -4 && gap < 50 && (ai.tx - edge) * mv > 0) { ai.jHold = 0.3; ai.jcd = 0.4; break; }
+      if (gap > -4 && gap < 50 && (ai.tx - edge) * mv > 0) { ai.jHold = 0.3 * AIR.tp; ai.jcd = 0.4; break; }
     }
   }
   // Springen
-  if (ai.wantJ > 0) { ai.wantJ -= dt; if (ai.wantJ <= 0 && ai.jcd <= 0) { ai.jHold = ai.jFull ? 0.32 : 0.03; ai.jcd = 0.5; ai.wantJ = 0; } }
+  if (ai.wantJ > 0) { ai.wantJ -= dt; if (ai.wantJ <= 0 && ai.jcd <= 0) { ai.jHold = ai.jFull ? 0.32 * AIR.tp : 0.03; ai.jcd = 0.5 * AIR.tp; ai.wantJ = 0; } }
   const sdt = st.hs > 0 ? 0 : dt * (st.slow > 0 ? 0.28 : 1); // Haltezeiten in Spielzeit, nicht in Bildzeit
   if (ai.jHold > 0) { ai.jHold -= sdt; c.j = true; }
   if (ai.dPulse > 0) { ai.dPulse -= sdt; c.d = true; }

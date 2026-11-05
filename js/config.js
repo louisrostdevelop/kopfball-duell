@@ -53,7 +53,7 @@ export const ARENAS = [
   { id: "strand",  name: "Strand",     desc: "Sonnenuntergang. Sand bremst den Ball.", price: 0,   g: 1,    bounce: 0.5,  grip: 0.9,  roll: 0.93,  spd: 0.96, maxB: 1,    ballDrag: 0.14 },
   { id: "neon",    name: "Neon City",  desc: "Dachterrasse über der Stadt. Alles schneller.", price: 300, g: 1.05, bounce: 0.75, grip: 1.1, roll: 0.975, spd: 1.08, maxB: 1.12, ballDrag: 0.1 },
   { id: "eis",     name: "Eishalle",   desc: "Spiegelglatt. Bremsen ist Glückssache.", price: 400, g: 1,    bounce: 0.72, grip: 0.18, roll: 0.995, spd: 1.05, maxB: 1.05, ballDrag: 0.06 },
-  { id: "mond",    name: "Mond",       desc: "Wenig Schwerkraft, riesige Sprünge.",    price: 600, g: 0.5,  bounce: 0.8,  grip: 0.8,  roll: 0.985, spd: 1,    maxB: 1,    ballDrag: 0.03 },
+  { id: "mond",    name: "Mond",       desc: "Wenig Schwerkraft, riesige Sprünge.",    price: 600, g: 0.6,  bounce: 0.8,  grip: 0.8,  roll: 0.985, spd: 1,    maxB: 1,    ballDrag: 0.03 },
 ];
 export const arenaById = id => ARENAS.find(a => a.id === id) || ARENAS[0];
 

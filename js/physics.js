@@ -15,6 +15,7 @@ export const MOVE = {
   cutMin: 0.06,      // frühestens hier wird ein kurzer Sprung abgebremst
   cut: 0.45,         // Restgeschwindigkeit beim Abbremsen (kurz tippen = halber Sprung)
   apexG: 0.62,       // weniger Schwerkraft am Scheitelpunkt, solange gehalten wird
+  apexV: 220,        // ab diesem Steigtempo zählt der Sprung als "am Scheitel"
   fallG: 1.15,       // etwas schneller fallen als steigen
   turn: 1.8,         // Richtungswechsel greift schneller
   stopG: 1.2,        // ohne Eingabe schneller zum Stehen
@@ -46,6 +47,14 @@ export const KICK = {
   power: 1750,        // ab diesem Tempo gilt ein Schuss als Hammer (Effekte, kurzes Standbild)
   rollFric: 14,       // Rollreibung am Boden (x (1 - Arena-Roll) pro Sekunde)
 };
+// Luftzeit: tp (Spieler) und tb (Ball) strecken alles Vertikale zeitlich. Gleiche Höhen, nur langsamer in der Luft.
+// Schwerkraft / tau², Absprung- und Abprall-Tempo / tau. Waagrechtes Tempo (Laufen, Schusskraft) bleibt unberührt.
+// Per Simulation gewählt: Ball 1.25 bringt am meisten Reaktionszeit, Spieler 1.15 ein größeres Timing-Fenster beim Kopfball,
+// ohne dass man spürbar früher abspringen muss (ab 1.2 steigt man so langsam, dass man zu spät oben ist).
+export const AIR = { tp: 1.15, tb: 1.25 };
+const PG = () => 3000 / (AIR.tp * AIR.tp), BG = () => 1750 / (AIR.tb * AIR.tb);
+const pv = v => v / AIR.tp, bv = v => v / AIR.tb;
+export const ballG = st => BG() * gMul(st);
 const bombPow = p => clamp((p.y - p.bombY) / MOVE.bombFull, 0.25, 1);
 
 export function newMatch(o) {
@@ -264,7 +273,7 @@ function movePlayer(st, p, c, dt, frozenPhase) {
     p.vx += Math.abs(d) < mx ? d : Math.sign(d) * mx;
   }
   // Springen: halten = voller Sprung, kurz tippen = halber
-  const gm0 = gMul(st), jv = -1010 * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.min(Math.pow(gm0, 0.25), Math.sqrt(1.5 * gm0)); // weniger Schwerkraft = höhere Sprünge (max. 1,5-fach)
+  const gm0 = gMul(st), jv = -pv(1010) * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.min(Math.pow(gm0, 0.25), Math.sqrt(1.5 * gm0)); // weniger Schwerkraft = höhere Sprünge (max. 1,5-fach)
   const jPress = !!c.j && !p.lastJ;
   if (!locked && c.j && (p.onG || p.coy > 0) && !p.bomb && p.vy >= -50) {
     if (p.slide > 0) endSlide(p);
@@ -283,8 +292,8 @@ function movePlayer(st, p, c, dt, frozenPhase) {
   }
   // Schwerkraft: am Scheitel kurz schweben, beim Fallen etwas schneller
   let gm = 1;
-  if (!p.bomb) { if (p.vy > 0) gm = MOVE.fallG; else if (p.jHeld && p.vy > -220) gm = MOVE.apexG; }
-  p.vy += 3000 * gMul(st) * gm * dt;
+  if (!p.bomb) { if (p.vy > 0) gm = MOVE.fallG; else if (p.jHeld && p.vy > -pv(MOVE.apexV)) gm = MOVE.apexG; }
+  p.vy += PG() * gMul(st) * gm * dt;
   if (p.bomb) p.vy = Math.max(p.vy, MOVE.bombV);
   p.x += p.vx * dt; p.y += p.vy * dt;
   if (p.y >= rest) {
@@ -441,7 +450,7 @@ function unjam(st, dt) {
   if (st.jam > 0.7) {
     st.jamX = undefined;
     st.jam = 0;
-    b.vy = -900; b.vx = (Math.random() < 0.5 ? -1 : 1) * rand(220, 300); b.y -= 6; b.ghost = 0.3;
+    b.vy = -bv(900); b.vx = (Math.random() < 0.5 ? -1 : 1) * rand(220, 300); b.y -= 6; b.ghost = 0.3;
     ev(st, { t: "pop", x: b.x, y: b.y });
   }
 }
@@ -455,7 +464,7 @@ function playerVsPlayer(st) {
   if (top && top.vy > 150) {
     const bot = top === a ? b : a;
     const bk = top.bomb ? bombPow(top) : 0, bombed = !!top.bomb;
-    top.vy = bombed ? -620 : -820; top.onG = false; top.bomb = 0; top.jHeld = false; top.coy = 0; top.bombLock = true;
+    top.vy = -pv(bombed ? 620 : 820); top.onG = false; top.bomb = 0; top.jHeld = false; top.coy = 0; top.bombLock = true;
     top.vx = (Math.sign(top.x - bot.x) || -top.dir) * 240; // vom Kopf abprallen, nicht drauf sitzen bleiben
     top.y = bot.y - (pr(top) + pr(bot)) * 1.01;
     if (top.sc2 <= 0 && !(bot.stompImm > 0)) {
@@ -529,7 +538,7 @@ function bombBall(st, b, p) {
   if (Math.abs(dxb) > reach || b.y < p.y + r * 0.3 || b.y - b.r > bottom + 4 || b.y + b.r < p.y) return false;
   const k = bombPow(p);
   if (b.y > p.y) p.y = Math.min(p.y, b.y - b.r - (FOOT + SR) * p.sc - 1); // sauber auf den Ball setzen, nicht hinein
-  p.bomb = 0; p.vy = -(360 + 200 * k); p.onG = false; p.jHeld = false; p.coy = 0; p.bombLock = true;
+  p.bomb = 0; p.vy = -pv(360 + 200 * k); p.onG = false; p.jHeld = false; p.coy = 0; p.bombLock = true;
   b.nh = p.i; b.nhT = 0.22;
   if (!touch(st, b, p, "bomb")) return true;
   const ox = clamp(dxb / reach, -1, 1), flat = Math.min(1, Math.abs(ox) * 1.5), km = kickMul(st);
@@ -537,7 +546,7 @@ function bombBall(st, b, p) {
   if (b.y + b.r >= G - 16) {
     // gequetscht: seitlich raus, je weiter vom Rand getroffen, desto flacher und schneller
     b.vx = side * (650 + 850 * k) * (0.3 + 0.7 * Math.max(0.15, flat)) * km;
-    b.vy = -(420 + 560 * k) * (1 - 0.55 * flat) * km;
+    b.vy = -bv(420 + 560 * k) * (1 - 0.55 * flat) * km;
     b.y = G - b.r - 1;
     ev(st, { t: "squash", i: p.i, x: b.x, y: G - b.r, k, flat });
   } else {
@@ -558,7 +567,7 @@ function slideBall(st, b, p) {
   b.nh = p.i; b.nhT = 0.12;
   if (!touch(st, b, p, "slide")) return true;
   const v = clamp(380 + Math.abs(p.vx) * 0.75, 420, 1050) * kickMul(st);
-  b.vx = p.slideDir * v; b.vy = -220; b.y = Math.min(b.y, G - b.r - 1);
+  b.vx = p.slideDir * v; b.vy = -bv(220); b.y = Math.min(b.y, G - b.r - 1);
   p.vx *= 0.6;
   ev(st, { t: "poke", i: p.i, x: b.x, y: b.y, v });
   return true;
@@ -576,7 +585,7 @@ function slideTrip(st, p) {
   const o = st.p[1 - p.i];
   p.slideHitP = true; p.vx *= 0.4;
   o.stun = Math.max(o.stun, MOVE.tripStun); o.tripCD = MOVE.tripCD;
-  o.vx = p.slideDir * 260; o.vy = -240; o.onG = false; o.jHeld = false; o.coy = 0;
+  o.vx = p.slideDir * 260; o.vy = -pv(240); o.onG = false; o.jHeld = false; o.coy = 0;
   if (o.slide > 0) endSlide(o);
   if (o.kHeld) { o.kHeld = false; o.charge = 0; o.chT = 0; }
   ev(st, { t: "trip", i: p.i, x: o.x, y: G - 20 });
@@ -595,7 +604,7 @@ function ballPhysics(st, dt, postGoal) {
   // Tempo-Gedächtnis: wie schnell war der Ball kurz vor einer Berührung?
   b.vmem = Math.max(Math.hypot(b.vx, b.vy), (b.vmem || 0) * Math.exp(-dt * KICK.memDecay));
   if (b.fx && !postGoal) superStep(st, b, dt);
-  b.vy += 1750 * gMul(st) * fxGrav * wgt(st).grav * dt;
+  b.vy += BG() * gMul(st) * fxGrav * wgt(st).grav * dt;
   if (st.wind && st.wind.t > 0 && !b.fx) b.vx += st.wind.dir * 300 * dt;
   b.vx *= 1 - ar.ballDrag * wgt(st).drag * (st.rules.floor === "ice" && b.y + b.r > G - 2 ? 0.3 : 1) * dt;
   b.x += b.vx * dt; b.y += b.vy * dt;
@@ -713,11 +722,11 @@ function ballVsPlayer(st, b, p, dt) {
     if (preLt === 1 - p.i && (preK === "kick" || preK === "super") && hc.imp > 450 && p.pushCD <= 0) {
       const k = Math.min(1, (hc.imp - 450) / 900) * (p.bigT > 0 ? 0.6 : 1);
       p.vx += Math.sign(preVx || -p.dir) * (160 + 220 * k); p.pushCD = 0.35; p.knock = 0.15 + 0.1 * k;
-      if (k > 0.5) { p.vy = Math.min(p.vy, -140); p.onG = false; }
+      if (k > 0.5) { p.vy = Math.min(p.vy, -pv(140)); p.onG = false; }
     }
     if (!touch(st, b, p, "head")) return;
     b.vx += p.vx * 0.25 + (hc.ny < 0.1 ? p.dir * 160 : 0); // Schub nach vorn nur bei echtem Kopfball, nicht wenn der Ball unten am Kinn klemmt
-    if (p.vy < -150 && hc.ny < -0.3) { b.vy -= 260; b.vx += p.dir * 220; } // Kopfball-Wucht
+    if (p.vy < -150 && hc.ny < -0.3) { b.vy -= bv(260); b.vx += p.dir * 220; } // Kopfball-Wucht
     // Kopfball beim Aufladen/Ausholen: mehr Kraft, aber weniger als ein sauberer Schuss mit dem Fuß
     let hp = 0;
     // Power-Kopfball nur, wenn der Ball wirklich oben am Kopf ist. Ein Ball unten am Kinn/Fuß ist Sache des Schusses.
@@ -728,7 +737,7 @@ function ballVsPlayer(st, b, p, dt) {
     if (hp > 0) {
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
       b.vx = p.dir * (Math.abs(b.vx) * 0.25 + (540 + 460 * hp) * pm * kickMul(st)) + p.vx * 0.15;
-      b.vy = Math.min(b.vy, -(300 + 360 * hp));
+      b.vy = Math.min(b.vy, -bv(300 + 360 * hp));
       if (hp > 0.6) st.hs = Math.max(st.hs, 0.015);
     }
     if ((hc.imp > 160 || hp > 0) && p.hc <= 0) {
@@ -791,8 +800,9 @@ export function kickKind(b) {
 }
 function kickVec(st, p, b, c, qm, pm) {
   const kind = kickKind(b), ch = charById(p.ch);
-  const base = ((KICK.tap + 400 * (ch.pow - 1)) * pm + KICK.chargeAdd * c) * qm, lift = 0.7 + 0.3 * qm;
-  if (kind === "lob") return { kind, vx: base * 0.5, vy: -(800 + 380 * c) * lift };
+  const base = ((KICK.tap + 400 * (ch.pow - 1)) * pm + KICK.chargeAdd * c) * qm, lift = (0.7 + 0.3 * qm) / AIR.tb;
+  // Lupfer: auch waagrecht langsamer, damit er bei gleicher Höhe an derselben Stelle landet
+  if (kind === "lob") return { kind, vx: base * 0.5 / AIR.tb, vy: -(800 + 380 * c) * lift };
   if (kind === "volley") return { kind, vx: base * 1.05, vy: b.y < p.y ? -(180 + 150 * c) * lift : -(480 + 300 * c) * lift };
   return { kind, vx: base, vy: -(KICK.driveVy + KICK.driveCharge * c) * lift };
 }
@@ -910,7 +920,7 @@ function endFx(st) {
 }
 function meteorImpact(st, b) {
   ev(st, { t: "quake", x: b.x, y: G });
-  st.p.forEach(p => { if (p.i !== b.fxO && p.onG && Math.abs(p.x - b.x) < 170) { p.stun = 0.4; p.vy = -380; p.onG = false; } });
+  st.p.forEach(p => { if (p.i !== b.fxO && p.onG && Math.abs(p.x - b.x) < 170) { p.stun = 0.4; p.vy = -pv(380); p.onG = false; } });
 }
 
 // ---------- Power-ups ----------

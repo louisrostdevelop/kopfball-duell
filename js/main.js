@@ -12,7 +12,7 @@ import { S, save, reset as resetSave, addXP, addCoins, xpFor, owns, buy, dailyCh
 
 const $ = id => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-const VERSION = 4;
+const VERSION = 5;
 const PHRASES = ["WAS FÜR EIN DING!", "UNHALTBAR!", "DRIN DAS DING!", "DER SASS!", "EISKALT!", "SAUBER!", "KEINE CHANCE!", "WIE GEMALT!"];
 const CELEB = { kalle: "🔥", yuki: "❄️", bolt: "⚡", rocco: "🚀", nala: "🍌", flummi: "🎈", phantom: "👻", tank: "💪", tina: "🌪️", magnus: "🧲", max: "☄️", kaiser: "👑" };
 const RCOL = { basis: "var(--r-basis)", selten: "var(--r-selten)", episch: "var(--r-episch)", legend: "var(--r-legend)" };
