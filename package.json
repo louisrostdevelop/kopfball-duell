@@ -7,7 +7,9 @@
     "test:e2e": "node --test --test-concurrency=1 \"tests/e2e/*.test.mjs\"",
     "test:all": "npm test && npm run test:e2e",
     "golden:update": "UPDATE_GOLDEN=1 node tests/sim/golden.test.mjs",
-    "serve": "node tools/serve.mjs"
+    "serve": "node tools/serve.mjs",
+    "test:db": "bash supabase/local/run-tests.sh",
+    "catalog": "node tools/gen-catalog.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"
