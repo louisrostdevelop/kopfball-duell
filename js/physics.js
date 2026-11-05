@@ -295,7 +295,7 @@ function handleKick(st, p, c, dt) {
   } else if (c.k && p.kHeld && can) {
     p.chT += dt;
     const before = p.charge;
-    p.charge = clamp((p.chT - 0.1) / 0.5, 0, 1);
+    p.charge = clamp((p.chT - 0.05) / 0.3, 0, 1); // voll nach 0,35 s
     if (before < 1 && p.charge >= 1) ev(st, { t: "charged", i: p.i });
   } else if (!c.k && p.kHeld) {
     p.kHeld = false;
@@ -599,12 +599,12 @@ function ballVsPlayer(st, b, p, dt) {
       if (!touch(st, b, p, "kick")) return;
       // Trefferqualität: sauber am Fuß = volle Kraft, am Rand der Reichweite deutlich weniger
       const q = clamp((1 - dist / reach) * 1.7, 0, 1);
-      const qm = 0.55 + 0.45 * q;
+      const qm = 0.7 + 0.3 * q;
       // aufgeladen (c = 0..1): härter UND deutlich höher
       const c = (p.kPow - 1) / 0.75;
       const pm = ch.pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
       const air = !p.onG, high = b.y < p.y;
-      const vx = ((880 + 340 * (ch.pow - 1)) * pm + 560 * c) * qm;
+      const vx = ((1050 + 340 * (ch.pow - 1)) * pm + 480 * c) * qm;
       const vy = ((air ? (high ? -300 : -450) : high ? -720 : -630) - 640 * c) * (0.7 + 0.3 * qm);
       const wk = kickMul(st);
       b.vx = p.dir * vx * wk + p.vx * 0.2;
@@ -613,8 +613,10 @@ function ballVsPlayer(st, b, p, dt) {
       st.stats[p.i].shots++;
       addMeter(st, p, 6 * (st.mod === "superfast" ? 2 : 1));
       const pow = 1 + (p.kPow - 1) * qm;
-      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c });
-      if (pow > 1.45) st.hs = 0.07;
+      const spd = Math.hypot(b.vx, b.vy);
+      ev(st, { t: "kick", i: p.i, x: b.x, y: b.y, pow, q, c, spd });
+      // jeder saubere Treffer bekommt ein kurzes Standbild, harte Schüsse ein längeres
+      if (q > 0.45 || c > 0.3) st.hs = Math.max(st.hs, 0.028 + 0.05 * c);
     }
   }
 }

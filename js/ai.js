@@ -98,7 +98,7 @@ export function aiInput(ai, st, dt) {
   } else if (inReach && ai.kickT <= 0 && Math.random() < d.kickSkill) {
     // ab und zu aufladen, wenn der Ball ruhig liegt
     const calm = Math.abs(b.vx) < 160 && b.y > G - 60 && Math.abs(o.x - p.x) > 260;
-    if (calm && Math.random() < d.kickSkill * 0.5) { ai.hold = 0.75; c.k = true; }
+    if (calm && Math.random() < d.kickSkill * 0.5) { ai.hold = 0.4; c.k = true; }
     else { c.k = true; ai.kickT = 0.28; }
   }
   // Super

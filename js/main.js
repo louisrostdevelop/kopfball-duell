@@ -190,13 +190,15 @@ function onEvent(e, remote) {
       if (App.jug.n >= 3 && App.jug.i === e.i) fx.burst("text", e.x, e.y - 70, { text: "VOLLEY!", col: COL.gold, size: 30 });
       App.jug.n = 0;
       const kp = st.p[e.i], dir = kp ? kp.dir : 1;
-      fx.burst("kick", e.x, e.y, { pow: e.pow, dir }); snd("kick", e.pow); fx.shake(2 + 8 * (e.pow - 1));
-      fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.4 + (e.pow - 1));
-      if (kp) fx.swoosh(e.x - dir * 20, e.y, dir, e.pow);
-      if (e.pow > 1.3) fx.punch(0.02 + 0.03 * (e.pow - 1));
+      // Wucht nach tatsächlichem Balltempo: auch ein sauberer Tipp-Schuss soll knallen
+      const sv = clamp(((e.spd || 900) - 600) / 900, 0, 1.2), juice = Math.max(e.pow, 1 + sv * 0.6);
+      fx.burst("kick", e.x, e.y, { pow: juice, dir }); snd("kick", juice); fx.shake(3 + 7 * sv);
+      fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.5 + sv * 0.6);
+      if (kp) fx.swoosh(e.x - dir * 20, e.y, dir, juice);
+      if (sv > 0.35) fx.punch(0.012 + 0.03 * sv);
       if (e.c > 0.85 && e.q > 0.75) { fx.burst("text", e.x, e.y - 46, { text: "VOLLTREFFER!", col: COL.gold, size: 30 }); fx.shake(7); }
-      else if (e.pow > 1.5) fx.burst("text", e.x, e.y - 40, { text: "WUMMS!", col: COL.gold, size: 28 });
-      if (isHuman(e.i)) I.vibrate(e.pow > 1.4 ? 30 : 12);
+      else if (e.pow > 1.4 || (e.spd || 0) > 1500) fx.burst("text", e.x, e.y - 40, { text: "WUMMS!", col: COL.gold, size: 28 });
+      if (isHuman(e.i)) I.vibrate(juice > 1.4 ? 30 : 16);
       break;
     }
     case "head": {
