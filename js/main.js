@@ -22,7 +22,7 @@ const App = {
   names: ["", ""], labels: [null, null], ball: "klassik", goT: -1,
   rec: [], replay: null, maxDef: 0, screen: "home", stack: [],
   run: null, local2: null, series: {}, lastCfg: null, jug: { i: -1, n: 0 },
-  opp: null, guestIn: [0, 0, 0, 0, 0], sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
+  opp: null, guestIn: [0, 0, 0, 0, 0, 0], sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
 };
 const inGame = () => ["cpu", "cup", "local", "host", "guest", "endless", "daily", "train"].includes(App.mode) && App.screen === null;
 const vsCpu = () => ["cpu", "cup", "endless", "daily", "train"].includes(App.mode);
@@ -82,7 +82,7 @@ function beginMatch(cfg) {
   if (vsCpu()) App.ai[1] = makeAI(1, cfg.diff ?? 1, !!cfg.keeper);
   App.names = cfg.names; App.labels = cfg.labels; App.ball = cfg.ball || S.ball;
   App.acc = 0; App.paused = false; App.endShown = false; App.rec = []; App.replay = null; App.maxDef = 0; App.goT = -1;
-  App.snaps = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0]; App.jug = { i: -1, n: 0 };
+  App.snaps = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0, 0]; App.jug = { i: -1, n: 0 };
   fx.clear();
   showScreen(null);
   I.setLayout(cfg.mode === "local" ? "split" : "single");
@@ -98,8 +98,8 @@ function beginMatch(cfg) {
 }
 function tutorial() {
   const lines = I.isTouch
-    ? ["Links ziehen = laufen, hoch wischen = springen", "Schuss halten und loslassen = Powerschuss", "Leiste voll? SUPER drücken!"]
-    : ["A/D laufen · W springen · S schießen", "Leertaste halten und loslassen = Powerschuss", "Leiste voll? E für deinen Super!"];
+    ? ["Links ziehen = laufen, hoch wischen = springen", "Runter wischen: Grätsche, in der Luft Arschbombe", "Schuss halten und loslassen = Powerschuss"]
+    : ["A/D laufen · W springen (kurz = halb hoch)", "S: Grätsche, in der Luft Arschbombe", "Leertaste halten und loslassen = Powerschuss"];
   lines.forEach((t, n) => setTimeout(() => toast(t, "i-ball"), 300 + n * 1500));
 }
 function goFullscreen() {
@@ -160,7 +160,7 @@ function gatherInputs(dt) {
   if (App.mode === "demo") return [aiInput(App.ai[0], st, dt), aiInput(App.ai[1], st, dt)];
   if (vsCpu()) return [I.getInput(0, "single"), aiInput(App.ai[1], st, dt)];
   if (App.mode === "local") return [I.getInput(0, "local"), I.getInput(1, "local")];
-  if (App.mode === "host") { const g = App.guestIn; return [I.getInput(0, "single"), { l: !!g[0], r: !!g[1], j: !!g[2], k: !!g[3], s: !!g[4] }]; }
+  if (App.mode === "host") { const g = App.guestIn; return [I.getInput(0, "single"), { l: !!g[0], r: !!g[1], j: !!g[2], k: !!g[3], s: !!g[4], d: !!g[5] }]; }
   return [{}, {}];
 }
 function myIdx() { return App.mode === "guest" ? 1 : App.mode === "local" || App.mode === "demo" ? -1 : 0; }
@@ -217,7 +217,7 @@ function onEvent(e, remote) {
     case "puSpawn": snd("puSpawn"); break;
     case "freeze": fx.burst("freeze", e.x, e.y); snd("freeze"); break;
     case "burn": snd("burn"); fx.shake(9); break;
-    case "stomp": fx.burst("stomp", e.x, e.y); snd("stomp"); fx.burst("text", e.x, e.y - 30, { text: "BOING!", col: "#fff", size: 28 }); break;
+    case "stomp": fx.burst("stomp", e.x, e.y); snd(e.bomb ? "pound" : "stomp", e.bomb ? 1 : undefined); if (e.bomb) fx.shake(6 + 6 * e.k); fx.burst("text", e.x, e.y - 30, { text: e.bomb ? "BOMBE!" : "BOING!", col: e.bomb ? COL.gold : "#fff", size: 28 }); break;
     case "quake": fx.burst("quake", e.x, e.y); snd("quake"); fx.shake(22); break;
     case "save": snd("head"); fx.burst("text", e.x, e.y - 40, { text: "PARADE!", col: "#8ef3ff", size: 28 }); fx.hype(0.4); break;
     case "wallhit": snd("wallhit"); fx.burst("post", e.x, e.y); break;
@@ -228,6 +228,18 @@ function onEvent(e, remote) {
     case "emote": snd("emote"); break;
     case "bump": fx.burst("stomp", e.x, e.y); snd("bump", e.pow); fx.shake(3 + 4 * (e.pow - 1)); if (e.pow > 1.6) fx.burst("text", e.x, e.y - 40, { text: "SCHUBS!", col: "#fff", size: 24 }); if (isHuman(1 - e.i)) I.vibrate(20); break;
     case "pop": fx.burst("dust", e.x, e.y + 10, { n: 10 }); snd("pop"); break;
+    case "slide": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: 8 }); snd("slide"); break;
+    case "bomb": if (remote && e.i === myIdx()) break; snd("bomb"); break;
+    case "pound": fx.burst("dust", e.x, e.y, { n: 8 + Math.round(10 * e.k) }); fx.shake(3 + 6 * e.k); snd("pound", e.k); if (isHuman(e.i)) I.vibrate(15); break;
+    case "squash": {
+      fx.burst("kick", e.x, e.y, { pow: 1.3 + e.k * 0.6, dir: Math.sign(st.b.vx) || 1 }); fx.burst("dust", e.x, G, { n: 14 });
+      fx.ballHit(Math.atan2(st.b.vy, st.b.vx), 0.9 + e.k); fx.shake(6 + 10 * e.k); fx.punch(0.02 + 0.03 * e.k); snd("squash", e.k);
+      if (e.k > 0.7) fx.burst("text", e.x, e.y - 60, { text: "GEQUETSCHT!", col: COL.gold, size: 30 });
+      if (isHuman(e.i)) I.vibrate(35); App.jug.n = 0; break;
+    }
+    case "smash": fx.burst("kick", e.x, e.y, { pow: 1.2 + e.k * 0.5, dir: 1 }); fx.shake(5 + 6 * e.k); snd("squash", e.k * 0.7); if (e.k > 0.7) fx.burst("text", e.x, e.y - 50, { text: "SMASH!", col: "#fff", size: 26 }); App.jug.n = 0; break;
+    case "poke": fx.burst("kick", e.x, e.y, { pow: 1, dir: Math.sign(st.b.vx) || 1 }); snd("kick", 0.9); App.jug.n = 0; break;
+    case "trip": fx.burst("stomp", e.x, e.y); fx.burst("dust", e.x, G, { n: 10 }); snd("bump", 1.3); fx.shake(4); fx.burst("text", e.x, e.y - 70, { text: "GRÄTSCHE!", col: "#fff", size: 24 }); if (isHuman(1 - e.i)) I.vibrate(25); break;
   }
 }
 function onGoal(e) {
@@ -247,6 +259,8 @@ function onGoal(e) {
   else if (e.kind === "super") text = "SUPERTOR!";
   else if (e.long) text = "TRAUMTOR!";
   else if (e.kind === "head") text = "KOPFBALLTOR!";
+  else if (e.kind === "bomb") text = "BOMBENTOR!";
+  else if (e.kind === "slide") text = "GRÄTSCHENTOR!";
   let sub;
   if (st.stats[e.i].goals === 3 && e.kind !== "own") sub = "HATTRICK!";
   else if (e.s[0] === e.s[1]) sub = "AUSGLEICH!";
@@ -262,7 +276,7 @@ function onGoal(e) {
 // ========================================================================
 function packState(st) {
   const r = v => Math.round(v * 10) / 10;
-  const P = p => ({ x: r(p.x), y: r(p.y), vx: r(p.vx), vy: r(p.vy), kick: r(p.kick * 100) / 100, kHeld: p.kHeld, charge: r(p.charge), sc: r(p.sc * 100) / 100, frz: r(p.frz), stun: r(p.stun), meter: Math.round(p.meter), full: p.full, armed: r(p.armed), fireNext: p.fireNext, bigT: r(p.bigT), miniT: r(p.miniT), spdT: r(p.spdT), jmpT: r(p.jmpT), mood: p.mood, emo: p.emo, emoT: r(p.emoT), land: r(p.land), onG: p.onG, confT: r(p.confT), djT: r(p.djT) });
+  const P = p => ({ x: r(p.x), y: r(p.y), vx: r(p.vx), vy: r(p.vy), kick: r(p.kick * 100) / 100, kHeld: p.kHeld, charge: r(p.charge), sc: r(p.sc * 100) / 100, frz: r(p.frz), stun: r(p.stun), meter: Math.round(p.meter), full: p.full, armed: r(p.armed), fireNext: p.fireNext, bigT: r(p.bigT), miniT: r(p.miniT), spdT: r(p.spdT), jmpT: r(p.jmpT), mood: p.mood, emo: p.emo, emoT: r(p.emoT), land: r(p.land), onG: p.onG, confT: r(p.confT), djT: r(p.djT), slide: r(p.slide * 100) / 100, slideDir: p.slideDir, bomb: p.bomb, tripCD: r(p.tripCD) });
   const b = st.b;
   return {
     s: st.s, t: r(st.t), ph: st.ph, pt: r(st.pt), gold: st.gold, wall: st.wall.map(r), bigGoal: st.bigGoal.map(r), wind: { t: r(st.wind.t), dir: st.wind.dir },
@@ -279,7 +293,7 @@ function hostSend(dt) {
 function guestFrame(dt, now) {
   const st = App.st;
   const me = I.getInput(1, "single");
-  const iv = [me.l, me.r, me.j, me.k, me.s].map(v => (v ? 1 : 0)), key = iv.join("");
+  const iv = [me.l, me.r, me.j, me.k, me.s, me.d].map(v => (v ? 1 : 0)), key = iv.join("");
   App.inT += dt;
   if (key !== App.lastIn || App.inT > 0.15) { App.lastIn = key; App.inT = 0; Net.send({ t: "i", i: iv }); }
   App.pingT += dt; if (App.pingT > 2) { App.pingT = 0; Net.send({ t: "ping", c: performance.now() }); }
@@ -293,14 +307,14 @@ function guestFrame(dt, now) {
   const sp = b.s.p[1];
   if (!App.gp) App.gp = Object.assign({}, st.p[1]);
   const gp = App.gp;
-  ["sc", "frz", "stun", "bigT", "miniT", "spdT", "jmpT", "armed", "confT", "djT"].forEach(f => gp[f] = sp[f]);
+  ["sc", "frz", "stun", "bigT", "miniT", "spdT", "jmpT", "armed", "confT", "djT", "tripCD"].forEach(f => gp[f] = sp[f]);
   predictPlayer(st, gp, me, dt);
   const lat = Math.min(0.25, App.rtt / 2000 + 0.08);
   const tx = sp.x + sp.vx * lat, ty = sp.y + sp.vy * lat * 0.5;
   const ex = tx - gp.x, ey = ty - gp.y;
   if (Math.abs(ex) > 140 || Math.abs(ey) > 160 || st.ph !== "play") { gp.x += ex * 0.35; gp.y += ey * 0.35; }
   else { gp.x += ex * 0.08; gp.y += ey * (gp.onG && sp.onG ? 0.3 : 0.06); }
-  Object.assign(st.p[1], { x: gp.x, y: gp.y, kick: Math.max(gp.kick, sp.kick), kHeld: gp.kHeld, charge: gp.charge, onG: gp.onG });
+  Object.assign(st.p[1], { x: gp.x, y: gp.y, kick: Math.max(gp.kick, sp.kick), kHeld: gp.kHeld, charge: gp.charge, onG: gp.onG, slide: gp.slide, slideDir: gp.slideDir, bomb: gp.bomb, vx: gp.vx, vy: gp.vy });
 }
 function applySnap(st, a, b, k) {
   const L = (x, y) => x + (y - x) * k;
@@ -347,7 +361,7 @@ function hostData(d) {
       lobbyUI("host"); A.sfx("coin"); toast(App.opp.name + " ist da!", "i-users");
       break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("host"); } break;
-    case "i": if (Array.isArray(d.i)) App.guestIn = d.i.slice(0, 5); break;
+    case "i": if (Array.isArray(d.i)) App.guestIn = d.i.slice(0, 6); break;
     case "emo": if (App.mode === "host" && App.st && EMOTES.includes(d.e)) emote(App.st, 1, d.e); break;
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "rematch": toast((App.opp ? App.opp.name : "Gast") + " will Revanche!", "i-swap"); break;

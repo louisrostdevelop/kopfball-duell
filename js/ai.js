@@ -3,7 +3,7 @@ import { W, G, GOAL_W, HR, KS, DIFFS, arenaById, charById, rand, clamp } from ".
 import { gMul, pr } from "./physics.js";
 
 export function makeAI(i, diff, keeper = false) {
-  return { i, keeper, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 340 : 340, wantJ: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0 };
+  return { i, keeper, d: DIFFS[diff] || DIFFS[1], think: 0, tx: i ? W - 340 : 340, wantJ: 0, jFull: true, jHold: 0, hold: 0, kickT: 0, sPress: false, err: 0, jcd: 0, dcd: 0, dPulse: 0 };
 }
 
 function predict(st, steps, dt) {
@@ -24,7 +24,8 @@ export function aiInput(ai, st, dt) {
   const dir = p.dir, own = ai.i ? W : 0, r = pr(p);
   const sp = 505 * charById(p.ch).spd * arenaById(st.arena).spd * d.spd;
   if (ai.keeper) return keeperInput(ai, st, p, b, dt);
-  ai.think -= dt; ai.jcd -= dt; ai.kickT -= dt;
+  ai.think -= dt; ai.jcd -= dt; ai.kickT -= dt; ai.dcd -= dt;
+  const rest = G - 71 * p.sc; // ungefähre Standhöhe des Kopfes
   if (ai.think <= 0) {
     ai.think = d.react * rand(0.7, 1.3);
     ai.err = rand(-d.err, d.err);
@@ -65,16 +66,29 @@ export function aiInput(ai, st, dt) {
     for (const q of path) {
       if (q.t > 0.45) break;
       const dx = Math.abs(q.x - p.x), hy = p.y - q.y;
-      if (dx < r + 40 && hy > r * 0.6 && hy < 260 && Math.random() < d.jumpSkill) { ai.wantJ = Math.max(0, q.t - 0.22); break; }
+      if (dx < r + 40 && hy > r * 0.6 && hy < 260 && Math.random() < d.jumpSkill) { ai.wantJ = Math.max(0, q.t - (hy < r * 1.5 ? 0.12 : 0.22)); ai.jFull = hy >= r * 1.5; break; }
     }
     // Ball liegt auf meinem Kopf: nach vorne laufen und springen
-    if (Math.abs(b.x - p.x) < r * 0.6 && b.y < p.y - r && Math.abs(b.vy) < 120) { ai.tx = p.x + dir * 80; ai.wantJ = 0.01; }
+    if (Math.abs(b.x - p.x) < r * 0.6 && b.y < p.y - r && Math.abs(b.vy) < 120) { ai.tx = p.x + dir * 80; ai.wantJ = 0.01; ai.jFull = true; }
+    // Arschbombe: Ball liegt schräg vor mir unter mir, oder ich muss schnell zurück
+    if (!p.onG && p.vy > -150 && ai.dcd <= 0) {
+      const ox = (b.x - p.x) * dir, below = b.y > p.y + r && b.y + b.r > G - 30;
+      if (below && ox > r * 0.15 && ox < r * 0.9 && p.y < rest - 70 && Math.random() < d.kickSkill * 0.8) { ai.dPulse = 0.04; ai.dcd = 1; }
+      else if (towardOwn && (b.x - p.x) * dir < -40 && p.y < rest - 80 && Math.random() < d.jumpSkill * 0.6) { ai.dPulse = 0.04; ai.dcd = 1; }
+    }
+    // Grätsche: flacher Ball kurz vor mir, der Gegner ist dran oder er rollt Richtung meines Tors
+    if (p.onG && ai.dcd <= 0 && p.slideCD <= 0 && b.y > G - 70) {
+      const ahead = (b.x - p.x) * dir, oNear = Math.abs(o.x - b.x) < 130;
+      if (ahead > r + 30 && ahead < r + 170 && (oNear || towardOwn) && Math.random() < d.kickSkill * 0.35) { ai.dPulse = 0.04; ai.dcd = 1.4; ai.tx = b.x + dir * 40; }
+    }
   }
   // Bewegung
   const dx = ai.tx - p.x;
   if (dx > 10) c.r = true; else if (dx < -10) c.l = true;
   // Springen
-  if (ai.wantJ > 0) { ai.wantJ -= dt; if (ai.wantJ <= 0 && ai.jcd <= 0) { c.j = true; ai.jcd = 0.5; ai.wantJ = 0; } }
+  if (ai.wantJ > 0) { ai.wantJ -= dt; if (ai.wantJ <= 0 && ai.jcd <= 0) { ai.jHold = ai.jFull ? 0.32 : 0.03; ai.jcd = 0.5; ai.wantJ = 0; } }
+  if (ai.jHold > 0) { ai.jHold -= dt; c.j = true; }
+  if (ai.dPulse > 0) { ai.dPulse -= dt; c.d = true; }
   // Schießen
   const fx = p.x + dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
   const inReach = Math.hypot(b.x - fx, b.y - fy) < 66 * KS * p.sc + b.r - 6 && (b.x - p.x) * dir > -10;

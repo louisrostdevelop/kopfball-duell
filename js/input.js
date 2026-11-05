@@ -25,12 +25,12 @@ export function initInput(h) {
 function clearTouch() { [0, 1].forEach(i => { for (const k in touch[i]) touch[i][k] = false; }); }
 
 const K = [
-  { l: ["KeyA"], r: ["KeyD"], j: ["KeyW"], k: ["KeyS", "Space"], s: ["KeyE", "ShiftLeft"] },
-  { l: ["ArrowLeft"], r: ["ArrowRight"], j: ["ArrowUp"], k: ["ArrowDown", "Enter"], s: ["ShiftRight", "Period", "Numpad0", "Slash"] },
+  { l: ["KeyA"], r: ["KeyD"], j: ["KeyW"], d: ["KeyS"], k: ["Space"], s: ["KeyE", "ShiftLeft"] },
+  { l: ["ArrowLeft"], r: ["ArrowRight"], j: ["ArrowUp"], d: ["ArrowDown"], k: ["Enter", "NumpadEnter"], s: ["ShiftRight", "Period", "Numpad0", "Slash"] },
 ];
 const anyKey = list => list.some(c => keys.has(c));
-function kb(set) { const m = K[set]; return { l: anyKey(m.l), r: anyKey(m.r), j: anyKey(m.j), k: anyKey(m.k), s: anyKey(m.s) }; }
-const or = (...a) => ({ l: a.some(x => x.l), r: a.some(x => x.r), j: a.some(x => x.j), k: a.some(x => x.k), s: a.some(x => x.s) });
+function kb(set) { const m = K[set]; return { l: anyKey(m.l), r: anyKey(m.r), j: anyKey(m.j), d: anyKey(m.d), k: anyKey(m.k), s: anyKey(m.s) }; }
+const or = (...a) => ({ l: a.some(x => x.l), r: a.some(x => x.r), j: a.some(x => x.j), d: a.some(x => x.d), k: a.some(x => x.k), s: a.some(x => x.s) });
 
 // mode: "single" (ein Mensch, alle Tasten), "local" (zwei Menschen)
 export function getInput(i, mode) {
@@ -45,11 +45,11 @@ export function pollPads() {
   for (const g of list) if (g && g.connected) got.push(g);
   [0, 1].forEach(i => {
     const g = got[i], o = pads[i];
-    if (!g) { o.l = o.r = o.j = o.k = o.s = false; return; }
+    if (!g) { o.l = o.r = o.j = o.d = o.k = o.s = false; return; }
     const b = n => !!(g.buttons[n] && (g.buttons[n].pressed || g.buttons[n].value > 0.5));
     const ax = g.axes[0] || 0, ay = g.axes[1] || 0;
     o.l = ax < -0.35 || b(14); o.r = ax > 0.35 || b(15);
-    o.j = b(0) || b(12) || ay < -0.7; o.k = b(2) || b(1) || b(7); o.s = b(3) || b(5) || b(6) || b(4);
+    o.j = b(0) || b(12) || ay < -0.7; o.d = b(13) || ay > 0.75; o.k = b(2) || b(1) || b(7); o.s = b(3) || b(5) || b(6) || b(4);
     const prev = padPrev[i] || [];
     const now = g.buttons.map((_, n) => b(n));
     if (now.some((v, n) => v && !prev[n])) { usedPad = true; hooks.onPadButton && now.forEach((v, n) => { if (v && !prev[n]) hooks.onPadButton(n, i); }); }
@@ -75,8 +75,9 @@ export function setLayout(kind, force) {
 function stickZone(pi) {
   const z = el("div", "stickzone"), base = el("div", "stick"), knob = el("div", "knob");
   base.append(knob); z.append(base); root.append(z);
-  const hint = el("div", "stickhint"); hint.innerHTML = '<span class="sh-pad">◀ ▶</span><span>Hier ziehen zum Laufen<small>Hoch wischen = Sprung</small></span>'; z.append(hint);
+  const hint = el("div", "stickhint"); hint.innerHTML = '<span class="sh-pad">◀ ▶</span><span>Hier ziehen zum Laufen<small>Hoch = Sprung · Runter wischen = Grätsche</small></span>'; z.append(hint);
   let id = null, ax = 0, ay = 0;
+  const flick = downFlick(pi);
   const set = (dx, dy) => {
     const t = touch[pi];
     t.l = dx < -14; t.r = dx > 14; t.j = dy < -42;
@@ -87,10 +88,11 @@ function stickZone(pi) {
     try { z.setPointerCapture(id); } catch (_) {}
     const r = z.getBoundingClientRect(); ax = e.clientX; ay = e.clientY;
     base.style.left = (ax - r.left) + "px"; base.style.top = (ay - r.top) + "px";
-    base.classList.add("on"); hint.classList.add("gone"); set(0, 0); hooks.onTouch && hooks.onTouch();
+    base.classList.add("on"); hint.classList.add("gone"); set(0, 0); flick.reset(e.clientX, e.clientY); hooks.onTouch && hooks.onTouch();
   });
   z.addEventListener("pointermove", e => {
     if (e.pointerId !== id) return;
+    if (flick.move(e.clientX, e.clientY)) { ay = e.clientY; const r = z.getBoundingClientRect(); base.style.top = (ay - r.top) + "px"; }
     let dx = e.clientX - ax, dy = e.clientY - ay;
     // Stick folgt dem Finger, damit Richtungswechsel schnell gehen
     if (Math.abs(dx) > 60) { ax += dx - Math.sign(dx) * 60; dx = Math.sign(dx) * 60; const r = z.getBoundingClientRect(); base.style.left = (ax - r.left) + "px"; }
@@ -110,10 +112,32 @@ function slider(pi, side) {
     touch[pi].l = dx < -12; touch[pi].r = dx > 12;
     knob.style.transform = `translateX(${Math.max(-r.width / 2 + 28, Math.min(r.width / 2 - 28, dx))}px)`;
   };
-  s.addEventListener("pointerdown", e => { if (id !== null) return; e.preventDefault(); id = e.pointerId; try { s.setPointerCapture(id); } catch (_) {} s.classList.add("on"); upd(e); });
-  s.addEventListener("pointermove", e => { if (e.pointerId === id) upd(e); });
+  const flick = downFlick(pi);
+  s.addEventListener("pointerdown", e => { if (id !== null) return; e.preventDefault(); id = e.pointerId; try { s.setPointerCapture(id); } catch (_) {} s.classList.add("on"); flick.reset(e.clientX, e.clientY); upd(e); });
+  s.addEventListener("pointermove", e => { if (e.pointerId === id) { flick.move(e.clientX, e.clientY); upd(e); } });
   const up = e => { if (e.pointerId !== id) return; id = null; s.classList.remove("on"); touch[pi].l = touch[pi].r = false; knob.style.transform = ""; };
   s.addEventListener("pointerup", up); s.addEventListener("pointercancel", up); s.addEventListener("lostpointercapture", up);
+}
+
+// Schneller Wisch nach unten: deutlich, schnell und überwiegend senkrecht, damit Laufen ihn nicht auslöst
+function downFlick(pi) {
+  let hist = [], cool = 0;
+  return {
+    reset(x, y) { hist = [{ x, y, t: performance.now() }]; },
+    move(x, y) {
+      const now = performance.now();
+      hist.push({ x, y, t: now }); while (hist.length > 2 && now - hist[0].t > 140) hist.shift();
+      if (now < cool) return false;
+      const a = hist[0], dy = y - a.y, dx = Math.abs(x - a.x), dt = Math.max(16, now - a.t);
+      if (dy > 34 && dy > dx * 1.4 && dy / dt > 0.35) {
+        cool = now + 260; hist = [{ x, y, t: now }];
+        touch[pi].d = true; setTimeout(() => { touch[pi].d = false; }, 90);
+        vibrate(6);
+        return true;
+      }
+      return false;
+    },
+  };
 }
 
 function buttons(pi, side, big) {

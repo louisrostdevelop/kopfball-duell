@@ -548,7 +548,25 @@ function drawPlayer(st, p, t, label) {
   // Kopf staucht sich bei Kopfball / Landung
   const hq = headSq[p.i] > 0 ? Math.sin((1 - headSq[p.i] / 0.18) * Math.PI) * 0.16 : 0;
   const lq = p.land > 0 ? p.land * 0.9 : 0;
-  const sqY = 1 - Math.max(hq, lq), sqX = 1 + Math.max(hq, lq) * 0.7;
+  let sqY = 1 - Math.max(hq, lq), sqX = 1 + Math.max(hq, lq) * 0.7;
+  // Lebendiger: im Steigen strecken, beim Laufen in die Richtung lehnen, Grätsche nach hinten kippen, Bombe gestreckt
+  let rot = 0, dy = 0;
+  if (p.bomb) { sqY *= 1.14; sqX *= 0.88; rot = Math.sin(t * 40) * 0.05; }
+  else if (p.slide > 0) { rot = -p.slideDir * 0.34; dy = 9 * p.sc; sqY *= 0.94; sqX *= 1.04; }
+  else if (!p.onG) { const k = clamp(-p.vy / 1000, -0.6, 1); sqY *= 1 + k * 0.08; sqX *= 1 - k * 0.05; rot = clamp(p.vx / 700, -1, 1) * 0.06; }
+  else rot = clamp(p.vx / 600, -1, 1) * 0.09;
+  // Grätsche: Spur am Boden
+  if (p.slide > 0) {
+    ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = "rgba(255,255,255,.55)";
+    for (let k = 1; k <= 3; k++) { const lx = p.x - p.slideDir * (r * 0.6 + k * 22); ctx.beginPath(); ctx.ellipse(lx, G - 4, 18 - k * 3, 3, 0, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  // Arschbombe: Speedlines über dem Kopf
+  if (p.bomb) {
+    ctx.save(); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 3; ctx.lineCap = "round";
+    for (let k = -2; k <= 2; k++) { const lx = p.x + k * r * 0.35, len = r * (0.8 + 0.3 * Math.abs(Math.sin(t * 30 + k))); ctx.beginPath(); ctx.moveTo(lx, p.y - r - 10); ctx.lineTo(lx, p.y - r - 10 - len); ctx.stroke(); }
+    ctx.restore();
+  }
   // Schuh (glüht beim Aufladen)
   if (p.kHeld && p.charge > 0.1) {
     ctx.globalCompositeOperation = "lighter";
@@ -558,9 +576,9 @@ function drawPlayer(st, p, t, label) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, gr, 0, TAU); ctx.fill();
     ctx.globalCompositeOperation = "source-over";
   }
-  drawShoe(ctx, s.x, s.y, SR * p.sc, p.dir, col, p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
+  drawShoe(ctx, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, col, p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
   ctx.save();
-  ctx.translate(p.x, p.y + r); ctx.scale(sqX, sqY); ctx.translate(-p.x, -p.y - r);
+  ctx.translate(p.x, p.y + r + dy); ctx.rotate(rot); ctx.scale(sqX, sqY); ctx.translate(-p.x, -p.y - r);
   const b = st.b;
   const look = Math.atan2(b.y - p.y, b.x - p.x);
   const blink = Math.sin(t * 1.3 + p.i * 2) > 0.985;

@@ -44,6 +44,10 @@ export function sfx(kind, v = 1) {
     case "post": osc("sine", 920, 900, 0.5, 0.25); osc("sine", 1380, 1370, 0.35, 0.15); osc("square", 230, 220, 0.08, 0.1); break;
     case "jump": osc("square", 260, 520, 0.08, 0.05); break;
     case "land": osc("sine", 110, 60, 0.08, 0.2); break;
+    case "slide": noise(0.26, 0.22, "bandpass", 500, 0.8, 0, 1600); noise(0.18, 0.12, "highpass", 3000); break;
+    case "bomb": noise(0.22, 0.14, "bandpass", 2200, 2, 0, 500); break;
+    case "pound": osc("sine", 120, 38, 0.22, 0.45 * Math.min(1.3, 0.6 + v)); noise(0.16, 0.35, "lowpass", 500, 1, 0, 120); break;
+    case "squash": osc("sine", 90, 40, 0.2, 0.55); osc("triangle", 160, 620, 0.16, 0.28 * (0.6 + v), 0.03); noise(0.08, 0.35, "lowpass", 1200); break;
     case "swing": noise(0.1, 0.12, "bandpass", 900, 1.5, 0, 2400); break;
     case "whistle": [0, 0.2, 0.42].forEach((t, i) => { const d = i === 2 ? 0.55 : 0.13; whistleNote(t, d); }); break;
     case "whistle1": whistleNote(0, 0.35); break;

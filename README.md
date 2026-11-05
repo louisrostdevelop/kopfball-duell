@@ -18,12 +18,14 @@ Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy,
 
 ## Steuerung
 
-| | Laufen | Springen | Schuss (halten = Power) | Super |
-|---|---|---|---|---|
-| Touch | links ziehen | hoch wischen oder Sprung-Button | Schuss-Button | Super-Button |
-| Spieler 1 | A / D | W | S oder Leertaste | E oder Shift |
-| Spieler 2 (lokal) | ← / → | ↑ | ↓ oder Enter | . oder Shift rechts |
-| Controller | Stick / Steuerkreuz | A | X / B | Y / RB |
+| | Laufen | Springen (kurz = halb, halten = voll) | Grätsche / Arschbombe | Schuss (halten = Power) | Super |
+|---|---|---|---|---|---|
+| Touch | links ziehen | hoch wischen | runter wischen | Schuss-Button | Super-Button |
+| Spieler 1 | A / D | W | S | Leertaste | E oder Shift |
+| Spieler 2 (lokal) | ← / → | ↑ | ↓ | Enter | . oder Shift rechts |
+| Controller | Stick / Steuerkreuz | A | Stick oder Kreuz runter | X / B | Y / RB |
+
+Runter am Boden ist eine Grätsche nach vorn oder hinten (spitzelt den Ball weg, lässt den Gegner kurz stolpern). Runter in der Luft ist eine Arschbombe: bringt dich sofort nach unten und quetscht einen Ball, der unter dir liegt, seitlich raus. Je höher du fällst, desto härter.
 
 Emotes: Tasten 1 bis 6 oder der Smiley-Button oben links. Pause: Esc, P oder Start.
 
