@@ -1,0 +1,15 @@
+{
+  "name": "kopfball-duell",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/sim/*.test.mjs\"",
+    "test:e2e": "node --test --test-concurrency=1 \"tests/e2e/*.test.mjs\"",
+    "test:all": "npm test && npm run test:e2e",
+    "golden:update": "UPDATE_GOLDEN=1 node tests/sim/golden.test.mjs",
+    "serve": "node tools/serve.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
