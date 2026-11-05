@@ -20,7 +20,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preload" href="fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/nunito-900.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=12">
 <script src="vendor/peerjs.min.js" defer></script>
 <script src="vendor/qrcode.js" defer></script>
 </head>
@@ -167,8 +167,8 @@
     <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Regeln</h2><span class="grow"></span><button class="btn small ghost" id="btnRulesReset">Standard</button></header>
     <div class="rulewrap">
       <div class="presets" id="rulePresets"></div>
+      <div class="rtabs" role="tablist"><button id="rtCore" class="on" role="tab">Wichtig</button><button id="btnRulesMore" role="tab">Mehr<em id="moreCount" hidden></em></button></div>
       <div class="rulelist" id="ruleList"></div>
-      <button class="moretoggle" id="btnRulesMore" aria-expanded="false"><span>Mehr Einstellungen</span><em id="moreCount" hidden></em><svg><use href="#i-back"/></svg></button>
       <div class="rulelist" id="ruleMore" hidden></div>
     </div>
     <div class="sheetfoot"><span class="rulesum" id="rulesNow">Standard</span><button class="btn green big" id="btnRulesDone">Fertig</button></div>
@@ -240,8 +240,10 @@
   <!-- Shop -->
   <section class="screen" id="scr-shop" hidden>
     <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Shop</h2><span class="grow"></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
-    <div class="deal" id="dealBox"></div>
-    <div class="tabs" id="shopTabs"><button data-tab="chars" class="on">Köpfe</button><button data-tab="balls">Bälle</button><button data-tab="arenas">Arenen</button></div>
+    <div class="shoptop">
+      <div class="tabs" id="shopTabs"><button data-tab="chars" class="on">Köpfe</button><button data-tab="balls">Bälle</button><button data-tab="arenas">Arenen</button></div>
+      <div class="deal" id="dealBox"></div>
+    </div>
     <div class="shopgrid" id="shopGrid"></div>
   </section>
 
@@ -325,6 +327,6 @@
 <div id="rotate" hidden><div class="phone"></div><b>Handy drehen</b><span>Quer spielt es sich viel besser.</span></div>
 <div id="loading"><b class="ld-logo">Kopfball<br>Duell</b><div class="ball"></div></div>
 
-<script type="module" src="js/main.js?v=15"></script>
+<script type="module" src="js/main.js?v=17"></script>
 </body>
 </html>

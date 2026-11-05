@@ -469,7 +469,22 @@ function playerVsPlayer(st) {
     return;
   }
   const push = (min - Math.abs(dx)) / 2 * (dx >= 0 ? 1 : -1);
-  a.x = clamp(a.x - push, ra, W - ra); b.x = clamp(b.x + push, rb, W - rb);
+  // nie in einen Block schieben: wer an einer Wand steht, gibt nicht nach, der andere weicht ganz aus
+  const ma = sideRoom(st, a, -push), mb = sideRoom(st, b, push);
+  const fa = sideRoom(st, a, ma - (push - mb)), fb = sideRoom(st, b, mb - (-push - ma));
+  a.x = clamp(a.x + fa, ra, W - ra); b.x = clamp(b.x + fb, rb, W - rb);
+}
+// wie weit sich Spieler p seitlich um mx bewegen kann, ohne in einen Block zu geraten
+function sideRoom(st, p, mx) {
+  if (!st.obs || !st.obs.length || !mx) return mx;
+  const r = pr(p) * 0.8, top = p.y - pr(p), bot = p.y + (FOOT + SR) * p.sc;
+  for (const o of st.obs) {
+    if (o.t !== "plat" || bot <= o.y + 4 || top >= o.y + o.h - 4) continue;
+    const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2;
+    if (mx > 0 && p.x + r <= x0 + 1) mx = Math.min(mx, Math.max(0, x0 - (p.x + r)));
+    if (mx < 0 && p.x - r >= x1 - 1) mx = Math.max(mx, Math.min(0, x1 - (p.x - r)));
+  }
+  return mx;
 }
 
 // Ball gegen Plattformen und Bumper
@@ -482,8 +497,15 @@ function obsBall(st, b, dt) {
       const cx = clamp(b.x, x0, x1), cy = clamp(b.y, y0, y1), dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
       if (d >= b.r) continue;
       let nx, ny;
-      if (d === 0) { nx = 0; ny = b.y < (y0 + y1) / 2 ? -1 : 1; } else { nx = dx / d; ny = dy / d; }
-      b.x = cx + nx * b.r; b.y = cy + ny * b.r;
+      if (d === 0) {
+        // Mittelpunkt steckt drin (z. B. vom Spieler hineingedrückt): auf dem kürzesten Weg raus, nie in den Boden
+        const ways = [[b.x - x0, -1, 0], [x1 - b.x, 1, 0], [b.y - y0, 0, -1]];
+        if (y1 < G - 1) ways.push([y1 - b.y, 0, 1]);
+        const w = ways.reduce((m, q) => q[0] < m[0] ? q : m);
+        nx = w[1]; ny = w[2];
+        b.x = nx ? (nx < 0 ? x0 : x1) + nx * b.r : b.x; b.y = ny ? (ny < 0 ? y0 : y1) + ny * b.r : b.y;
+      } else { nx = dx / d; ny = dy / d; b.x = cx + nx * b.r; b.y = cy + ny * b.r; }
+      if (b.y + b.r > G) b.y = G - b.r;
       const rvx = b.vx - o.vx, rvy = b.vy - o.vy, dot = rvx * nx + rvy * ny;
       if (dot < 0) {
         b.vx -= (1 + e) * dot * nx; b.vy -= (1 + e) * dot * ny;

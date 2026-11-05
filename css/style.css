@@ -612,7 +612,7 @@ body[data-scr=end] #toasts, body[data-scr=home] #toasts { top: auto; bottom: cal
   #toasts { top: calc(60px + var(--st)); }
   .toast { font-size: 14px; padding: 6px 12px 7px; }
 }
-@media (orientation: portrait), (max-width: 700px) {
+@media (orientation: portrait), (max-width: 700px) and (min-height: 521px) {
   .screen.home { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto auto; gap: 10px; }
   .sidenav { flex-direction: row; justify-content: space-between; order: 4; align-self: stretch; }
   .navbtn { flex: 1; height: 66px; width: auto; }
@@ -666,3 +666,255 @@ body[data-scr=end] #toasts, body[data-scr=home] #toasts { top: auto; bottom: cal
 .stick .sk-up { top: 4px; } .stick .sk-dn { bottom: 4px; }
 .stick.up .sk-up, .stick.dn .sk-dn { color: var(--yellow); }
 .dwn span { font-size: 10px; letter-spacing: 0; }
+
+/* ---------- Regel-Reiter ---------- */
+.rtabs { display: flex; gap: 8px; }
+.rtabs button { position: relative; font-family: var(--display); font-size: 18px; padding: 8px 18px 10px; border-radius: 14px; border: 3px solid var(--ink); background: rgba(8,14,50,.6); box-shadow: 0 4px 0 var(--ink); text-shadow: var(--o-sm); display: inline-flex; align-items: center; gap: 8px; }
+.rtabs button.on { background: linear-gradient(#ffe25a, var(--yellow-d)); }
+.rtabs em { font-style: normal; font-family: var(--body); font-size: 12px; font-weight: 900; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--red); color: #fff; display: grid; place-items: center; text-shadow: none; border: 2px solid var(--ink); }
+
+/* ======================================================================
+   Handy quer (wenig Höhe): alles auf einen Bildschirm, nichts Wichtiges zum Scrollen
+   ====================================================================== */
+@media (max-height: 520px) and (orientation: landscape) {
+  .screen { padding: calc(6px + var(--st)) calc(12px + var(--sr)) calc(8px + var(--sb)) calc(12px + var(--sl)); }
+  .bar { min-height: 40px; margin-bottom: 8px; gap: 10px; }
+  .bar h2 { font-size: 22px; }
+  .iconback, .sqbtn { width: 38px; height: 38px; }
+  .panel { padding: 10px 12px; gap: 8px; border-radius: 16px; }
+  .panel h4 { font-size: 15px; }
+  .seg { gap: 6px; }
+  .seg button { font-size: 14px; padding: 6px 10px; border-radius: 10px; }
+  .btn.big { font-size: 22px; padding: 8px 16px 11px; }
+  .hint { font-size: 12px; }
+
+  /* Spielmodus: 4 x 2 Kacheln */
+  .modegrid { grid-template-columns: repeat(4, 1fr); gap: 8px; padding-bottom: 0; }
+  .mcard { min-height: 0; height: calc((100vh - 72px - var(--st) - var(--sb)) / 2); padding: 10px 12px; gap: 2px; border-radius: 16px; }
+  .mcard .big-ic { width: 34px; height: 34px; }
+  .mcard b { font-size: 18px; }
+  .mcard p { font-size: 11.5px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mcard .tags { display: none; }
+  .mcard .newflag { font-size: 11px; top: 8px; right: 8px; padding: 2px 6px; }
+  .mcard::before { width: 110px; height: 110px; }
+
+  /* Spiel einstellen: Arenen als Streifen, rechts Gegner/Regeln/Anpfiff */
+  .setupgrid { grid-template-columns: 1.45fr 1fr; gap: 10px; }
+  .arenas { grid-auto-flow: column; grid-auto-columns: 128px; grid-template-columns: none; overflow-x: auto; gap: 8px; padding: 4px 4px 8px; margin: -4px -4px -4px; scrollbar-width: none; }
+  .arenas::-webkit-scrollbar { display: none; }
+  .atile { aspect-ratio: 16 / 9.5; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+  .atile .cap { padding: 12px 8px 4px; }
+  .atile .cap b { font-size: 15px; }
+  .atile .cap small { display: none; }
+  .atile.on { outline-width: 4px; }
+  .atile .lock { top: 5px; right: 5px; font-size: 12px; padding: 1px 6px 1px 2px; }
+  .atile .lock .coin { width: 16px; height: 16px; }
+  .obsopt { margin-top: 4px; gap: 6px; }
+  .obsopt .seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+  .obsopt .seg::-webkit-scrollbar { display: none; }
+  .obsopt .seg button { flex: none; }
+  .obsrow { gap: 8px; }
+  .obsprev canvas { width: 120px !important; height: 53px !important; }
+  .obsrow .hint { font-size: 12px; line-height: 1.25; }
+  .opts .opt { gap: 6px; }
+  .opts .seg button { padding: 6px 8px; }
+  .rulesbtn { padding: 7px 10px; } .rulesbtn span { font-size: 13px; } .rulesbtn em { font-size: 11px; padding: 4px 7px; }
+
+  /* Regeln: Reiter, Zeilen mit Name links und Auswahl rechts */
+  .rulewrap { gap: 8px; }
+  .presets { flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 6px 2px 2px; scrollbar-width: none; }
+  .presets::-webkit-scrollbar { display: none; }
+  .preset { flex: none; min-width: 120px; max-width: 170px; padding: 5px 10px; border-radius: 12px; }
+  .preset b { font-size: 15px; } .preset small { font-size: 10.5px; }
+  .preset.mine { padding-right: 32px; }
+  .rtabs button { font-size: 15px; padding: 5px 14px 7px; border-radius: 11px; }
+  .rulelist { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 5px 10px; }
+  .rule { min-width: 0; flex-direction: row; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 12px; box-shadow: 0 3px 0 rgba(8,12,40,.5); }
+  .rule h4 { font-size: 13px; width: 74px; flex: none; line-height: 1.05; hyphens: auto; overflow-wrap: anywhere; }
+  .rule .seg { flex: 1; min-width: 0; gap: 4px; }
+  .rule .seg button { font-size: 12px; padding: 6px 1px; border-radius: 8px; box-shadow: 0 2px 0 var(--ink); border-width: 2px; }
+  #scr-rules .sheetfoot { padding-top: 8px; padding-bottom: calc(6px + var(--sb)); margin-top: 4px; }
+  #scr-rules .sheetfoot .btn.big { padding: 6px 18px 9px; font-size: 20px; }
+  .rulesum { font-size: 12.5px; }
+
+  /* Köpfe: 6 x 2 Raster links, Details rechts */
+  .selgrid { grid-template-columns: 1fr 240px; gap: 10px; }
+  .cardgrid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .ccard { padding: 4px 2px 5px; border-radius: 12px; gap: 0; }
+  .ccard canvas { width: 54px !important; height: 54px !important; }
+  .ccard b { font-size: 12px; margin-top: -2px; }
+  .ccard .price { font-size: 11px; padding: 1px 5px 1px 2px; } .ccard .price .coin { width: 14px; height: 14px; }
+  .ccard .lockt { width: 22px; height: 22px; }
+  .ccard .check { width: 20px; height: 20px; top: -5px; right: -5px; } .ccard .check svg { width: 12px; height: 12px; }
+  .detail { gap: 5px; padding-bottom: 8px; border-radius: 16px; position: static; }
+  .det-top { height: 92px; }
+  .det-top .rarity { font-size: 10px; padding: 2px 7px; top: 6px; left: 6px; }
+  .bigav canvas { max-height: 86px; }
+  .detail h3 { font-size: 20px; }
+  .superbox { margin: 0 8px; padding: 5px 8px; gap: 6px; border-radius: 10px; }
+  .superbox svg { width: 18px; height: 18px; } .superbox b { font-size: 14px; } .superbox p { font-size: 11px; }
+  .stats { margin: 0 8px; gap: 3px 8px; font-size: 11px; } .stats .bar { height: 8px; }
+  .detail .btn { margin: 2px 8px 0; padding: 7px 12px 9px; font-size: 16px; }
+
+  /* Shop: Reiter + Angebot in einer Zeile, Artikel als Wischreihe */
+  #scr-shop { display: flex; flex-direction: column; }
+  .shoptop { display: flex; gap: 10px; align-items: center; }
+  .tabs { margin: 0; gap: 6px; }
+  .tabs button { font-size: 15px; padding: 5px 12px 7px; border-radius: 11px; }
+  #dealBox { flex: 1; min-width: 0; }
+  .dealcard { padding: 4px 10px 4px 6px; gap: 8px; border-radius: 14px; box-shadow: 0 3px 0 var(--ink); }
+  .dealcard .dav { width: 44px; height: 44px; }
+  .dealcard .dtxt small { font-size: 9.5px; } .dealcard .dtxt b { font-size: 16px; } .dealcard .dtxt em { font-size: 11px; }
+  .dealcard .off { font-size: 13px; padding: 1px 6px; }
+  .dealcard > .btn { padding: 5px 10px 7px; font-size: 15px; }
+  .shopgrid { grid-auto-flow: column; grid-auto-columns: 136px; grid-template-columns: none; overflow-x: auto; overflow-y: hidden; gap: 10px; margin: 10px 0 0; padding: 4px 2px 10px; flex: 1; align-items: stretch; scrollbar-width: none; }
+  .shopgrid::-webkit-scrollbar { display: none; }
+  .sitem { gap: 3px; padding-bottom: 8px; border-radius: 14px; }
+  .sitem .prev { height: 92px !important; }
+  .sitem .prev canvas { max-height: 86px; width: auto !important; }
+  .sitem .prev canvas.wide { width: 100% !important; height: 100% !important; max-height: none; }
+  .sitem b { font-size: 15px; } .sitem small { font-size: 10.5px; }
+  .sitem .btn.small { font-size: 13px; padding: 4px 10px 6px; }
+
+  /* Einstellungen und Aufgaben kompakt */
+  .settingsgrid { gap: 10px; }
+  .settingsgrid .panel { gap: 6px; }
+  .setrow { min-height: 34px; font-size: 14px; }
+  .toggle { transform: scale(.85); transform-origin: right center; }
+  input { font-size: 16px; padding: 7px 10px; }
+  body.is-touch .keys, body.is-touch .settingsgrid .kbhint { display: none; }
+  .taskwrap { gap: 10px; }
+  .challenge { padding: 10px 12px; gap: 6px; }
+  .ch-row canvas { width: 54px !important; height: 54px !important; }
+  .task { padding: 6px 10px; }
+}
+/* Handy hochkant: Streifen statt Raster, damit nichts endlos scrollt */
+@media (max-width: 700px) and (orientation: portrait) {
+  .arenas { grid-auto-flow: column; grid-auto-columns: 150px; grid-template-columns: none; overflow-x: auto; scrollbar-width: none; padding: 4px; margin: -4px; }
+  .arenas::-webkit-scrollbar { display: none; }
+  .atile .cap small { display: none; }
+  .obsopt .seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .obsopt .seg button { flex: none; }
+  .modegrid { gap: 10px; }
+  .mcard { min-height: 0; padding: 12px; }
+  .mcard .big-ic { width: 40px; height: 40px; }
+  .mcard b { font-size: 20px; } .mcard p { font-size: 12.5px; } .mcard .tags { display: none; }
+  .rule { gap: 6px; padding: 8px 10px; }
+  .rule h4 { font-size: 15px; }
+  .rule .seg button { font-size: 13.5px; padding: 7px 2px; }
+  .presets .preset { flex: 1 1 140px; padding: 6px 10px; }
+  .preset small { font-size: 11px; }
+  .det-top { height: 130px; }
+  .bigav canvas { max-height: 120px; }
+  .cardgrid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .ccard canvas { width: 62px !important; height: 62px !important; }
+  .ccard b { font-size: 13px; }
+  body.is-touch .keys { display: none; }
+}
+
+/* Shop-Kopf: Reiter und Angebot (Desktop untereinander) */
+.shoptop { display: flex; flex-direction: column-reverse; gap: 14px; max-width: 1200px; margin: 0 auto 14px; }
+.shoptop .tabs { margin: 0; }
+@media (max-height: 520px) and (orientation: landscape) { .shoptop { flex-direction: row; margin: 0; max-width: none; } }
+.setupgrid > *, .selgrid > *, .taskwrap > *, .settingsgrid > * { min-width: 0; }
+.stats .bar { min-height: 0; margin: 0; }
+@media (max-height: 520px) and (orientation: landscape) {
+  .settingsgrid .panel { gap: 3px; }
+  .setrow { min-height: 30px; }
+  .challenge h3 { font-size: 18px; }
+  .ch-row ul { font-size: 13px; }
+}
+/* Sehr flache Handys (≤ 380 px hoch): letzte Pixel sparen */
+@media (max-height: 380px) and (orientation: landscape) {
+  .bar { min-height: 36px; margin-bottom: 6px; }
+  .iconback, .sqbtn { width: 34px; height: 34px; }
+  .setrow { min-height: 27px; padding: 1px 0; }
+  .settingsgrid .panel h4 { margin: 0; }
+  .tasklist { gap: 6px; }
+  .task { padding: 4px 10px; }
+  .task .tk-ic { width: 30px; height: 30px; }
+  .task b { font-size: 14px; }
+  .challenge { padding: 8px 10px; gap: 4px; }
+  .preset { padding: 3px 10px; }
+  .preset small { font-size: 11px; }
+  .rtabs button { font-size: 15px; padding: 4px 14px 6px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .shopgrid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sitem b { font-size: 14px; } .sitem small { font-size: 10px; }
+  .sitem .prev { height: 84px !important; } .sitem .prev canvas { max-height: 78px; width: auto !important; }
+  .sitem .btn.small { font-size: 12px; padding: 4px 8px 6px; }
+  .superbox { padding: 6px 8px; } .superbox p { font-size: 12px; }
+  .detail { gap: 6px; padding-bottom: 10px; }
+  .detail h3 { font-size: 24px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  /* Endkarte: zweispaltig, alles sichtbar */
+  #scr-end { padding-top: calc(26px + var(--st)); }
+  .endcard { width: min(700px, 96vw); display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "score rw" "stats rw" "stats note" "stats btns"; column-gap: 14px; row-gap: 6px; padding: 24px 14px 12px; border-radius: 20px; }
+  .endcard .ribbon { font-size: 22px; top: -20px; padding: 4px 22px 7px; }
+  .endscore { grid-area: score; gap: 8px; }
+  .endscore canvas { width: 58px !important; height: 58px !important; }
+  .endscore .es b { font-size: 13px; }
+  .es-num { font-size: 40px; } .es-num i { font-size: 28px; }
+  .endstats { grid-area: stats; align-self: start; gap: 1px 8px; }
+  .endstats .v { font-size: 15px; } .endstats .lbl { font-size: 10.5px; }
+  .rewards { grid-area: rw; align-self: start; padding: 8px 10px; gap: 4px; }
+  .rw-line { font-size: 13px; gap: 6px; } .rw-line .coin { width: 18px; height: 18px; } .rw-line b { font-size: 15px; }
+  #endNote { grid-area: note; margin: 0; font-size: 12px; }
+  .endcard .row { grid-area: btns; align-self: end; gap: 6px; flex-wrap: nowrap; }
+  .endcard .row .btn { padding: 6px 10px 8px; font-size: 14px; }
+  .endcard .row .btn.big { font-size: 17px; padding: 6px 14px 9px; }
+  .endcard .row .btn svg { width: 16px; height: 16px; }
+  /* Pause */
+  .pausecard { padding: 26px 16px 12px; gap: 8px; }
+  .pausecard .btn { padding: 7px 14px 9px; font-size: 16px; }
+  /* Lobby: Einladung schmal, Auswahl als Wischreihen */
+  .lobbygrid { grid-template-columns: 196px 1fr; gap: 10px; }
+  .invite { gap: 6px; }
+  .bigcode { font-size: 30px; }
+  .qr { padding: 4px; border-radius: 10px; } .qr img { width: 74px; height: 74px; }
+  .invite .btn { padding: 5px 10px 7px; font-size: 13px; }
+  .invite .hint { display: none; }
+  #lobbyLink { font-size: 9px; word-break: break-all; }
+  .vsrow { gap: 6px; }
+  .vsav { width: 58px; height: 58px; } .vsav .wait { font-size: 28px; }
+  .vsrow b, .vsrow .vsname { font-size: 14px; } .vsrow small { font-size: 10px; }
+  .lobbyopts { gap: 6px; }
+  .lobbyopts .seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 3px; }
+  .lobbyopts .seg::-webkit-scrollbar { display: none; }
+  .lobbyopts .seg button { flex: none; }
+  #lobbyNote { font-size: 12px; margin: 0; }
+  #scr-lobby .row .btn { padding: 6px 12px 8px; font-size: 15px; }
+  /* Modals (Tages-Challenge, Level, neuer Kopf) */
+  #modal { padding: 26px 12px 10px; }
+  .modalcard { padding: 24px 14px 12px; gap: 6px; width: min(460px, 94vw); }
+  .modalcard .ribbon { font-size: 20px; top: -18px; }
+  .modalcard .bigic { width: 40px; height: 40px; }
+  .modalcard .briefav canvas { width: 64px !important; height: 64px !important; }
+  .modalcard .briefav + p, .modalcard p { font-size: 13px; }
+  .modalcard .btn.big { font-size: 18px; padding: 6px 16px 9px; }
+  .modalcard:has(.briefav) .bigic { display: none; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .vsav { width: 52px; height: 52px; overflow: hidden; }
+  .vsav canvas { width: 100% !important; height: 100% !important; }
+  .lobbyopts .opt { flex-direction: row; align-items: center; gap: 8px; }
+  .lobbyopts .opt h4 { width: 86px; flex: none; }
+  .lobbyopts .opt .seg, .lobbyopts .opt .rulesbtn { flex: 1; min-width: 0; }
+  #scr-lobby .panel { gap: 6px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .lobbygrid { gap: 10px; }
+  .invite { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "qr code" "qr btns" "link link"; gap: 6px 12px; text-align: left; align-items: center; }
+  .invite h4 { display: none; }
+  .invite .qr { grid-area: qr; } .qr img { width: 92px; height: 92px; }
+  .bigcode { grid-area: code; font-size: 34px; }
+  .invite .row, .invite .btns { grid-area: btns; }
+  #lobbyLink { grid-area: link; font-size: 10px; word-break: break-all; }
+  .invite .hint { display: none; }
+  .vsav { width: 84px; height: 84px; overflow: hidden; } .vsav canvas { width: 100% !important; height: 100% !important; }
+  .lobbyopts .seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .lobbyopts .seg button { flex: none; }
+  .endcard { padding: 30px 14px 14px; gap: 8px; }
+}

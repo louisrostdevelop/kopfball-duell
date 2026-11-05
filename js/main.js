@@ -867,7 +867,7 @@ function selUpdate() {
   const cur = $$(".ccard").find(t => t.dataset.id === (selCtx.p2 ? "" : S.char)); if (cur && !selCtx.p2) cur.insertAdjacentHTML("beforeend", `<span class="check">${svg("i-check")}</span>`);
   $("detTop").style.setProperty("--rc", RCOL[rar]);
   $("ciRarity").textContent = RARITY[rar];
-  const big = $("bigAv"); big.innerHTML = ""; big.append(avatarCanvas(c.id, innerHeight < 520 ? 130 : 180, { mood: "happy" }));
+  const big = $("bigAv"); big.innerHTML = ""; big.append(avatarCanvas(c.id, innerHeight < 430 ? 86 : innerHeight < 520 ? 120 : 180, { mood: "happy" }));
   $("ciName").textContent = c.name;
   $("ciSuper").textContent = SUPERS[c.super].name; $("ciDesc").textContent = SUPERS[c.super].desc;
   const bar = (l, v) => `<span>${l}</span><span class="bar"><i style="width:${Math.round(clamp((v - 0.8) / 0.45, 0.08, 1) * 100)}%"></i></span>`;
@@ -974,7 +974,7 @@ function rulesSummary(r) {
 }
 function rulesScreen(target, onDone) {
   rulesCtx = { target, onDone };
-  rulesMoreOpen = RULE_OPTS.some(o => o.more && ruleVal(target, o.k) !== DEFAULT_RULES[o.k]);
+  rulesMoreOpen = false;
   renderRules();
   showScreen("rules");
 }
@@ -1023,9 +1023,11 @@ function renderRules() {
   const list = $("ruleList"), more = $("ruleMore"); list.innerHTML = ""; more.innerHTML = "";
   RULE_OPTS.forEach(o => (o.more ? more : list).append(row(o)));
   const nMore = RULE_OPTS.filter(o => o.more && ruleVal(r, o.k) !== DEFAULT_RULES[o.k]).length;
-  const mc = $("moreCount"); mc.hidden = !nMore; mc.textContent = nMore + " geändert";
-  more.hidden = !rulesMoreOpen;
-  $("btnRulesMore").setAttribute("aria-expanded", rulesMoreOpen ? "true" : "false");
+  const mc = $("moreCount"); mc.hidden = !nMore; mc.textContent = nMore;
+  more.hidden = !rulesMoreOpen; list.hidden = rulesMoreOpen;
+  $("btnRulesMore").classList.toggle("on", rulesMoreOpen); $("rtCore").classList.toggle("on", !rulesMoreOpen);
+  const nCore = RULE_OPTS.filter(o => !o.more && o.k !== "len" && ruleVal(r, o.k) !== DEFAULT_RULES[o.k]).length;
+  $("rtCore").innerHTML = "Wichtig" + (nCore ? `<em>${nCore}</em>` : "");
   $("btnRulesReset").disabled = isStd(r) && ruleVal(r, "len") === DEFAULT_RULES.len;
   $("rulesNow").textContent = rulesSummary(r);
 }
@@ -1255,7 +1257,8 @@ function wireUI() {
   $("btnRules").onclick = () => { A.sfx("click"); S.rules = S.rules || {}; rulesScreen(S.rules, () => save()); };
   $("btnRulesDone").onclick = () => goBack();
   $("btnRulesReset").onclick = () => { A.sfx("click"); const r = rulesCtx.target; Object.keys(r).forEach(k => { if (k !== "obs") delete r[k]; }); renderRules(); };
-  $("btnRulesMore").onclick = () => { A.sfx("click"); rulesMoreOpen = !rulesMoreOpen; renderRules(); if (rulesMoreOpen) $("ruleMore").scrollIntoView({ behavior: "smooth", block: "nearest" }); };
+  $("btnRulesMore").onclick = () => { A.sfx("click"); rulesMoreOpen = true; renderRules(); };
+  $("rtCore").onclick = () => { A.sfx("click"); rulesMoreOpen = false; renderRules(); };
   $("btnRunNext").onclick = runNext;
   $("btnHost").onclick = () => { A.sfx("click"); hostGame(); };
   $("btnJoin").onclick = () => { A.sfx("click"); tryJoin(); };
