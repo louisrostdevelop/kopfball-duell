@@ -1,1 +1,70 @@
-{}
+{
+  "bounce": [
+    "bounce_1",
+    "bounce_2",
+    "bounce_3"
+  ],
+  "crowd": [
+    "crowd"
+  ],
+  "goal": [
+    "goal"
+  ],
+  "goal_alt1": [
+    "goal_alt1"
+  ],
+  "hammer": [
+    "hammer_1",
+    "hammer_2"
+  ],
+  "head": [
+    "head_1",
+    "head_2",
+    "head_3"
+  ],
+  "head_alt1": [
+    "head_alt1"
+  ],
+  "kick": [
+    "kick_1",
+    "kick_2",
+    "kick_3",
+    "kick_4"
+  ],
+  "ohh": [
+    "ohh"
+  ],
+  "ohh_alt1": [
+    "ohh_alt1"
+  ],
+  "post": [
+    "post_1",
+    "post_2"
+  ],
+  "post_alt1": [
+    "post_alt1"
+  ],
+  "roar": [
+    "roar"
+  ],
+  "roar_alt1": [
+    "roar_alt1"
+  ],
+  "slide": [
+    "slide_1",
+    "slide_2"
+  ],
+  "wallhit": [
+    "wallhit_1",
+    "wallhit_2"
+  ],
+  "whistle": [
+    "whistle"
+  ],
+  "whistle1": [
+    "whistle1"
+  ],
+  "whistle1_alt1": [
+    "whistle1_alt1"
+  ]
+}

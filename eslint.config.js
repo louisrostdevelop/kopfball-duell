@@ -40,7 +40,7 @@ export default [
   { ignores: ["node_modules/**", "vendor/**", "test-results/**", "supabase/functions/**", "**/*.min.js"] },
   js.configs.recommended,
   {
-    files: ["js/**/*.js", "sw.js"],
+    files: ["js/**/*.js", "sw.js", "tools/sound-lab/**/*.js"],
     languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: { ...globals.browser } },
     rules: strict,
   },
