@@ -142,7 +142,9 @@ async function friendMatch() {
   const B = await a.ctx.newPage();
   await B.goto(env.url + "/index.html?join=" + code); await B.waitForTimeout(2500);
   if (await B.locator("#modalOk").isVisible()) await B.click("#modalOk");
-  await A.click("#btnLobbyStart"); await A.waitForTimeout(3600);
+  await A.click("#btnLobbyStart");
+  // bis der Anstoß-Countdown durch ist (auf langsamer CPU dauert er länger als 3 s)
+  await A.waitForFunction(() => window.__kd.st && window.__kd.st.ph === "play", null, { timeout: 20000 });
   return { a, A, B };
 }
 test("Online: Verbindung reißt ab und kommt zurück", async () => {
