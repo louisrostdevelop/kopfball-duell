@@ -1,1 +1,52 @@
-{}
+{
+  "bounce": [
+    "bounce_1",
+    "bounce_2",
+    "bounce_3"
+  ],
+  "crowd": [
+    "crowd"
+  ],
+  "goal": [
+    "goal"
+  ],
+  "hammer": [
+    "hammer_1",
+    "hammer_2"
+  ],
+  "head": [
+    "head_1",
+    "head_2",
+    "head_3"
+  ],
+  "kick": [
+    "kick_1",
+    "kick_2",
+    "kick_3",
+    "kick_4"
+  ],
+  "ohh": [
+    "ohh"
+  ],
+  "post": [
+    "post_1",
+    "post_2"
+  ],
+  "roar": [
+    "roar"
+  ],
+  "slide": [
+    "slide_1",
+    "slide_2"
+  ],
+  "wallhit": [
+    "wallhit_1",
+    "wallhit_2"
+  ],
+  "whistle": [
+    "whistle"
+  ],
+  "whistle1": [
+    "whistle1"
+  ]
+}

@@ -5,6 +5,21 @@ Stand 06.11.2026. Heute erzeugt das Spiel alle Sounds live im Browser (`js/adapt
 diese Namen (das Laden ist eingebaut, siehe Technik); fehlt eine Datei, spielt weiter der erzeugte Sound. So kann man
 Stück für Stück austauschen.
 
+## Klang-Motor und Sound-Lab
+
+- **Mischpult** (`js/adapters/audio/webaudio.js`): vier Kategorie-Busse (`ui`, `body`, `fx`, `big`) nach der
+  Lautstärke-Leiter, leichte Sättigung, Klangregelung, Bus-Kompressor und Limiter vor dem Ausgang, ein kurzer
+  Stadion-Hall als Send (erzeugte Impulsantwort). Tor, Super, Sieg, Kisten ducken die Menü-Musik kurz.
+- **Erzeugte Sounds** (`js/adapters/audio/synth.js`): jeder Sound in Schichten (Anschlag, Körper, Ausklang) aus wenigen
+  Bausteinen: Wumms mit Klick, Gummi-Feder, gefiltertes Rauschen, Marimba und Glocke per FM, Synth-Blech für Fanfaren,
+  Schiri-Trillerpfeife. Häufige Sounds streuen in Tonhöhe und Panorama. Belohnungen und Menü sind eine Familie
+  (Marimba/Glocke in C), keine Rechteckwellen mehr. Publikum: drei Rausch-Bänder mit langsam schwankendem Gemurmel.
+- **Pegel-Abgleich**: `TRIM` in `synth.js` hebt bzw. senkt jeden erzeugten Sound auf seine Stufe (gemessen als
+  lautestes 100-ms-Fenster, Spitze unter -2 dB). Nach Änderungen an einem Rezept im Sound-Lab neu messen.
+- **Sound-Lab** (`node tools/serve.mjs`, dann `http://localhost:8765/tools/sound-lab/`): jeder Sound mit „Alt“ (Motor
+  vor der Überarbeitung, `tools/sound-lab/old-webaudio.js`) und „Neu“, Musik und Publikum zum Umschalten, Aufnahmen aus
+  `audio/sfx` ein und aus, Messwerte je Sound gegen die Leiter.
+
 Priorität: **P1** = macht das Spielgefühl aus, zuerst. **P2** = Fortschritt und Belohnung. **P3** = pro Kosmetik-Gegenstand.
 
 ## Klangkonzept (gilt für alle)
