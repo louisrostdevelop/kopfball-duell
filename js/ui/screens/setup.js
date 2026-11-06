@@ -61,7 +61,7 @@ export function renderArenas() {
     b.append(arenaThumb(a.id, 240, 150));
     b.insertAdjacentHTML("beforeend", `<span class="cap"><b>${a.name}</b><small>${a.desc}</small></span>` + (locked ? `<span class="lock"><span class="coin"></span>${a.price}</span>` : ""));
     b.onclick = () => {
-      if (locked) { if (buy("arenas", a.id, a.price)) { A.sfx("coin"); toast(t("setup.unlocked", { name: a.name }), "i-stadium", true); refreshTop(); } else { toast(t("setup.needCoins", { n: a.price }), "i-lock"); return; } }
+      if (locked) { if (buy("arenas", a.id, a.price)) { A.sfx("coin"); toast(t("setup.unlocked", { name: a.name }), "i-stadium", true); refreshTop(); } else { if (S.coins < a.price) toast(t("setup.needCoins", { n: a.price }), "i-lock"); return; } }
       A.sfx("click"); S.arena = a.id; save(); renderArenas(); renderObs();
     };
     list.append(b);

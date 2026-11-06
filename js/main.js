@@ -15,7 +15,7 @@ import { detectLang, setLang, t } from "./content/i18n.js";
 import { dailyModal } from "./ui/modals.js";
 import { initNav, showScreen } from "./ui/nav.js";
 import { initHud } from "./ui/hud.js";
-import { homeScreen, initHome } from "./ui/screens/home.js";
+import { homeScreen, initHome, refreshTop } from "./ui/screens/home.js";
 import { initModes } from "./ui/screens/modes.js";
 import { initSelect } from "./ui/screens/select.js";
 import { initSetup } from "./ui/screens/setup.js";
@@ -43,7 +43,7 @@ import { supabaseAuth } from "./adapters/auth/supabase.js";
 import { supabaseServer } from "./adapters/server/supabase.js";
 import { turnstileToken } from "./adapters/server/turnstile.js";
 import { BACKEND } from "./content/backend.js";
-import { awaitPurchase, claimDaily, initAccount, online as serverOn, syncOnStart } from "./app/account.js";
+import { awaitPurchase, claimDaily, initAccount, onSync, online as serverOn, syncOnStart } from "./app/account.js";
 
 async function boot() {
   // 1. Dienste einstecken, Spieler und Profil laden. Mit Server (content/backend.js): Konto und Spielstand dort.
@@ -62,6 +62,7 @@ async function boot() {
   setLang(S.lang && S.lang !== "auto" ? S.lang : detectLang());   // Sprache vor dem ersten Text
   applyI18n();
   initAccount();
+  onSync(refreshTop);
   const synced = serverOn() ? syncOnStart().catch(() => null) : null;
 
   // 2. Oberfläche aufbauen
@@ -101,7 +102,7 @@ async function boot() {
     const h = /^[A-Za-z0-9]{4}$/.test(qs) ? qs : (location.hash || "").slice(1);
     if (/^[A-Za-z0-9]{4}$/.test(h)) { history.replaceState(null, "", location.pathname); $("codeIn").value = h.toUpperCase(); openOnline(); setTimeout(() => tryJoin(h), 400); }
   });
-  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || /[?&]sw=1/.test(location.search))) navigator.serviceWorker.register("sw.js").catch(() => {});   // sw=1: Test ohne https
   window.__kd = App; window.__kdFire = fireSuper; // für Tests
 }
 

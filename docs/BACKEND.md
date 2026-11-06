@@ -28,7 +28,7 @@ zeigt nur `api`.
 | Doppelte Buchungen | Anfrage-Schlüssel (gleiche Anfrage = gleiche Antwort), Webhook-Kennung eindeutig |
 | Negativer Kontostand | atomare Buchung mit Bedingung, Prüfung in der Tabelle, Buchungsjournal (`ledger`) |
 | Spam | Grenzen pro Spieler und Aktion (`rate_limits`) |
-| Bot-Farmen gegen den Computer | Zeitkonto (gemeldete Spielzeit kann nicht schneller vergehen als echte, Vorrat 30 min), 80 belohnte Spiele pro Tag, Münz-Tageslimit weich 600 / hart 1500 |
+| Bot-Farmen gegen den Computer | Zeitkonto (gemeldete Spielzeit kann nicht schneller vergehen als echte, Vorrat 90 min für offline Gespieltes), 80 belohnte Spiele pro Tag, Münz-Tageslimit weich 600 / hart 1500 |
 | Sieg-Absprachen online | mehr als 5 Spiele desselben Paars in 24 h bringen weder Wertung noch Münzen; 40 belohnte Online-Spiele pro Tag; Siege gegen neue Konten zählen anteilig; viele Streitfälle = Ranked-Pause |
 | Erfundene Ergebnisse | Statistik muss zum Ergebnis passen, Training bringt nichts; Online zählt nur, wenn beide Seiten dasselbe melden und das Spiel lange genug lief |
 | Abhauen bei Rückstand | meldet nur eine Seite "Gegner weg", gewinnt sie nach 3 min (Wartung) |
@@ -109,6 +109,26 @@ SUPABASE_DB_URL=... BACKUP_PASSPHRASE=... bash supabase/ops/restore.sh backups/k
 
 Das läuft als eine Transaktion: entweder alles oder nichts. In ein Projekt, das schon Spieler hat, wird nicht
 eingespielt. `supabase/tests/20_ops.sh` prüft Sicherung und Wiederherstellung bei jedem Testlauf.
+
+## Karriere
+
+Der Server führt die Karriere selbst (`game.progress.career`, Sterne pro Spiel). Jede Karriere-Meldung nennt das Spiel
+(`stage`, z. B. `district.0`); der Server prüft, dass es freigeschaltet ist und die Schwierigkeit stimmt. Ein gesperrtes
+Spiel wird wie ein normales Spiel belohnt, bringt aber keine Sterne. Ist eine Liga komplett, bucht er den Liga-Bonus
+genau einmal (`career_paid`), auch wenn die Tagesgrenze erreicht ist. Ligen, Spiele und Bonus kommen aus
+`js/content/career.js` über `supabase/catalog.sql`. Beim Import eines alten lokalen Spielstands werden Sterne übernommen,
+schon komplette Ligen bringen dann keinen Bonus.
+
+## Offline spielen
+
+Nach dem ersten Besuch startet das Spiel ohne Netz (Service Worker). Gegen den Computer, zu zweit und Training gehen
+offline; Casual, Ranked, Mit Freunden, Shop und Bestenlisten brauchen Netz.
+
+Mit Server-Konto warten offline gespielte Spiele im Browser (bis zu 60) und gehen der Reihe nach raus, sobald wieder
+Netz da ist (beim Start, beim Wiederverbinden, wenn der Tab wieder sichtbar wird; bei zu vielen auf einmal alle 30 s
+weiter). Das Zeitkonto erlaubt 90 Minuten nachgereichte Spielzeit, das Limit sind 20 Meldungen pro Minute. Was der
+Server nicht wertet, meldet das Spiel ("2 offline gespielte Spiele wurden nicht gewertet"). Mit Münzen kaufen geht offline
+nicht, damit nichts später zurückgedreht werden muss.
 
 ## Konto löschen
 

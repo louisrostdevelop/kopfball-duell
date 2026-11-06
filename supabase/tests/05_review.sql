@@ -33,8 +33,9 @@ begin
   perform pg_temp.expect_error('select api.claim_daily()', 'already_claimed');
   reset timezone;
 
-  -- H1: Zeitkonto. Gemeldete Spielzeit kann nicht schneller vergehen als echte Zeit (Vorrat 1800 s)
+  -- H1: Zeitkonto. Gemeldete Spielzeit kann nicht schneller vergehen als echte Zeit (hier mit 1800 s im Konto)
   perform pg_temp.sudo('delete from game.rate_limits');
+  perform pg_temp.sudo(format('update game.progress set cpu_credit = 1800 where player_id = %L', u));
   n := 0;
   for i in 1..30 loop
     perform pg_temp.sudo('delete from game.rate_limits');

@@ -15,7 +15,8 @@
  * @property {() => Promise<object>} deleteAccount                   Konto und Spielerdaten löschen (DSGVO)
  * @property {() => Promise<object[]>} shop                             Echtgeld-Produkte
  * @property {(product: string, lang?: string) => Promise<string>} checkout  URL zur Bezahlseite (lang: Sprache der Bezahlseite)
- * @property {() => Promise<number>} flush                              noch nicht gesendete Meldungen nachschicken
+ * @property {() => Promise<{ sent: number, rejected: number, results: object[], left: number }>} flush   offline Gespieltes nachschicken
+ * @property {() => number} [pending]                                    wie viele Meldungen noch warten
  * @property {(item: string) => Promise<object>} [upgradeHead]
  * @property {(tier: number, premium: boolean) => Promise<object>} claimPass   Pass-Stufe abholen, gibt vollen Zustand
  * @property {() => Promise<object>} buyPassWithGems

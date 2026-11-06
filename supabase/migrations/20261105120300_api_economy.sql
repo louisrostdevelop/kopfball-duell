@@ -118,7 +118,7 @@ end $$;
 
 -- ---------- Spiel gegen den Computer melden ----------
 -- r: {"mode":"cpu|career|endless|daily|local|train","won":bool,"goals":n,"conceded":n,"duration":s,"head":"head:kalle","diff":0-3,
---     "cup":bool, "stats":{"headGoals":n,"pus":n,"stomps":n,"supers":n}, "facts":["supergoal","lastsec",...]}
+--     "cup":bool, "stage":"district.0" (Karriere), "stats":{"headGoals":n,"pus":n,"stomps":n,"supers":n}, "facts":["supergoal","lastsec",...]}
 -- Belohnung rechnet der Server. Gegen Farmen:
 --  - Zeitkonto: gemeldete Spielzeit kann nicht schneller vergehen als echte Zeit (Vorrat cpu_time_bank für Nachgereichtes)
 --  - Tagesdeckel für Münzen (weich, dann hart) und für belohnte Spiele (cpu_daily_matches), danach gibt es nichts mehr
@@ -134,9 +134,10 @@ declare
   res jsonb; hx integer; farmed boolean := false; bonus integer := 0; today date := game.today();
   hg integer; sup integer; pus integer; stomps integer; credit numeric; matches integer; challenge boolean := false;
   streak integer; best integer; ended integer := null;
+  cs game.career_stages; car jsonb; paid text[]; stars integer; open boolean; lg game.career_leagues; cres jsonb := null;
 begin
   prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
-  perform game.limit_rate(p, 'cpu_match', 6, interval '1 minute');
+  perform game.limit_rate(p, 'cpu_match', 20, interval '1 minute');   -- Offline Gespieltes kommt gebündelt
   -- Plausibel?
   if mode is null or mode not in ('cpu', 'career', 'endless', 'daily', 'local', 'train') then perform game.fail('bad_mode'); end if;
   if dur < 15 or dur > 900 then perform game.fail('implausible', 'duration'); end if;
@@ -185,11 +186,33 @@ begin
     if won then streak := streak + 1; else ended := streak; best := greatest(best, streak); streak := 0; end if;
   end if;
 
+  -- Karriere: Sterne nur für freigeschaltete Spiele mit der richtigen Schwierigkeit; Liga komplett = Bonus, einmal
+  car := pr.career; paid := pr.career_paid;
+  if mode = 'career' then
+    select * into cs from game.career_stages where id = r->>'stage';
+    if cs.id is null or cs.diff <> diff then perform game.fail('implausible', 'stage'); end if;
+    open := case when cs.idx > 0 then coalesce((car->>(cs.league || '.' || (cs.idx - 1)))::integer, 0) > 0
+                 else not exists (select 1 from game.career_leagues l join game.career_stages x on x.league = l.id
+                                   where l.ord = (select ord from game.career_leagues where id = cs.league) - 1
+                                     and coalesce((car->>x.id)::integer, 0) = 0) end;
+    stars := case when not won then 0 when conceded = 0 then 3 when goals - conceded >= 2 then 2 else 1 end;
+    if open and stars > coalesce((car->>cs.id)::integer, 0) then car := car || jsonb_build_object(cs.id, stars); end if;
+    cres := jsonb_build_object('stage', cs.id, 'open', open, 'stars', stars, 'best', coalesce((car->>cs.id)::integer, 0));
+    if open and not (cs.league = any(paid))
+       and not exists (select 1 from game.career_stages x where x.league = cs.league and coalesce((car->>x.id)::integer, 0) = 0) then
+      select * into lg from game.career_leagues where id = cs.league;
+      paid := array_append(paid, cs.league);
+      if lg.coins > 0 then perform game.book(p, 'coins', lg.coins, 'career_league', cs.league); end if;
+      if lg.gems > 0 then perform game.book(p, 'gems', lg.gems, 'career_league', cs.league); end if;
+      cres := cres || jsonb_build_object('bonus', jsonb_build_object('league', cs.league, 'coins', lg.coins, 'gems', lg.gems));
+    end if;
+  end if;
+
   -- Ein Schreibvorgang für den Fortschritt
   update game.progress set cap_day = today, cap_cpu_coins = used + capped, cap_matches = matches + 1,
          cpu_credit = credit - dur, last_cpu_at = now(),
          challenge_day = case when challenge then today else challenge_day end,
-         endless_streak = streak, endless_best = best,
+         endless_streak = streak, endless_best = best, career = car, career_paid = paid,
          stats = jsonb_build_object(
            'games', coalesce((stats->>'games')::integer, 0) + 1,
            'wins', coalesce((stats->>'wins')::integer, 0) + case when won then 1 else 0 end,
@@ -226,7 +249,7 @@ begin
   achs := case when farmed then '[]'::jsonb else game.grant_achievements(p, facts) end;
 
   res := jsonb_build_object('coins', capped + bonus, 'coinsBeforeCap', coins + bonus, 'capReached', farmed, 'xp', gained_xp, 'levelUps', ups, 'headXp', hx,
-                            'tasksDone', tasks_done, 'achievements', achs, 'state', game.state_brief(p));
+                            'tasksDone', tasks_done, 'achievements', achs, 'career', cres, 'state', game.state_brief(p));
   return game.idem_end(p, request_key, res);
 end $$;
 
@@ -359,7 +382,13 @@ begin
   -- Startguthaben hat das Server-Konto schon: nur was darüber hinaus lokal erspielt wurde, im Rest des Budgets
   c := least(greatest(coalesce((local->>'coins')::integer, 0) - game.cfg_int('start_coins'), 0), budget);
   perform game.book(p, 'coins', c, 'import');
-  update game.progress set imported = true where player_id = p;
+  -- Karriere: Sterne übernehmen (nur gültige Spiele, 1-3); schon komplette Ligen bringen keinen Bonus mehr
+  update game.progress pr set imported = true,
+    career = pr.career || coalesce((select jsonb_object_agg(s.id, (local->'career'->>s.id)::integer) from game.career_stages s
+                                     where (local->'career'->>s.id) ~ '^[123]$'), '{}'),
+    career_paid = array(select distinct unnest(pr.career_paid || array(select l.id from game.career_leagues l
+                    where not exists (select 1 from game.career_stages x where x.league = l.id and coalesce(local->'career'->>x.id, '') !~ '^[123]$'))))
+   where pr.player_id = p;
   if local ? 'name' and local->>'name' <> '' then
     begin perform api.set_name(left(local->>'name', 16)); exception when others then null; end;
   end if;

@@ -26,6 +26,21 @@ create table if not exists game.products (
   active boolean not null default true
 );
 
+-- Karriere: Ligen mit Bonus und feste Spiele (aus js/content/career.js, siehe supabase/catalog.sql)
+create table if not exists game.career_leagues (
+  id text primary key,
+  ord integer not null unique,
+  coins integer not null default 0 check (coins >= 0),
+  gems integer not null default 0 check (gems >= 0)
+);
+create table if not exists game.career_stages (
+  id text primary key,                          -- "<liga>.<spiel>", z. B. district.0
+  league text not null references game.career_leagues (id),
+  idx integer not null check (idx >= 0),
+  diff integer not null check (diff between 0 and 3),
+  unique (league, idx)
+);
+
 -- ---------- Spieler ----------
 create table if not exists game.players (
   id uuid primary key references auth.users (id) on delete cascade,
@@ -107,6 +122,7 @@ alter table game.progress add column if not exists endless_streak integer not nu
 alter table game.progress add column if not exists endless_best integer not null default 0;
 alter table game.progress add column if not exists online_day date;
 alter table game.progress add column if not exists online_rewarded integer not null default 0; -- belohnte Online-Spiele heute
+alter table game.progress add column if not exists career_paid text[] not null default '{}';    -- Ligen, deren Bonus bezahlt ist
 
 -- Gleiche Anfrage zweimal (Netz-Wiederholung) = nur einmal ausführen
 create table if not exists game.requests (

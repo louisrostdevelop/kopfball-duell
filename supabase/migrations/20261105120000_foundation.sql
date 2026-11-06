@@ -34,7 +34,7 @@ insert into game.config (key, value) values
   ('cpu_after_cap', '0.2'),            -- Anteil danach
   ('cpu_hard_cap', '1500'),            -- ab hier (gezählte Münzen) gibt es heute nichts mehr: Schutz vor Bots
   ('cpu_daily_matches', '80'),         -- höchstens so viele belohnte CPU-Spiele am Tag
-  ('cpu_time_bank', '1800'),           -- Zeitkonto: so viele Sekunden Spielzeit dürfen auf einmal nachgemeldet werden
+  ('cpu_time_bank', '5400'),           -- Zeitkonto: so viele Sekunden Spielzeit dürfen auf einmal nachgemeldet werden (offline gespielt)
   ('online_daily_rewarded', '40'),     -- höchstens so viele belohnte Online-Spiele am Tag
   ('online_min_secs', '30'),           -- ein Online-Spiel dauert mindestens so lange (Meldung früher = ungültig)
   ('forfeit_after_secs', '180'),       -- meldet nur eine Seite, gilt ihr Ergebnis nach dieser Zeit

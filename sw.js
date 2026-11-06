@@ -1,5 +1,5 @@
 // Offline-Unterstützung: erst Netz, dann Cache (so kommen Updates sofort an)
-const CACHE = "kopfball-v14";
+const CACHE = "kopfball-v15";
 const CORE = [
   "./", "css/style.css", "fonts/lilita.woff2", "fonts/nunito-700.woff2", "fonts/nunito-800.woff2",
   "fonts/nunito-900.woff2", "icons/icon-192.png", "index.html", "js/adapters/audio/webaudio.js",

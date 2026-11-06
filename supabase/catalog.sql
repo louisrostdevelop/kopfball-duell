@@ -65,4 +65,32 @@ insert into game.achievement_defs (id, reward, stat, goal) values
   ('stomp', 80, 'stomps', 10),
   ('wins25', 300, 'wins', 25)
 on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal;
+insert into game.career_leagues (id, ord, coins, gems) values
+  ('district', 0, 200, 0),
+  ('regional', 1, 350, 0),
+  ('national', 2, 500, 10),
+  ('world', 3, 800, 30)
+on conflict (id) do update set ord = excluded.ord, coins = excluded.coins, gems = excluded.gems;
+insert into game.career_stages (id, league, idx, diff) values
+  ('district.0', 'district', 0, 0),
+  ('district.1', 'district', 1, 0),
+  ('district.2', 'district', 2, 1),
+  ('district.3', 'district', 3, 1),
+  ('district.4', 'district', 4, 1),
+  ('regional.0', 'regional', 0, 1),
+  ('regional.1', 'regional', 1, 1),
+  ('regional.2', 'regional', 2, 2),
+  ('regional.3', 'regional', 3, 2),
+  ('regional.4', 'regional', 4, 2),
+  ('national.0', 'national', 0, 2),
+  ('national.1', 'national', 1, 2),
+  ('national.2', 'national', 2, 2),
+  ('national.3', 'national', 3, 3),
+  ('national.4', 'national', 4, 2),
+  ('world.0', 'world', 0, 3),
+  ('world.1', 'world', 1, 3),
+  ('world.2', 'world', 2, 3),
+  ('world.3', 'world', 3, 3),
+  ('world.4', 'world', 4, 3)
+on conflict (id) do update set league = excluded.league, idx = excluded.idx, diff = excluded.diff;
 commit;

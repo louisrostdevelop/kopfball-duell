@@ -11,9 +11,10 @@ import { trophyModal } from "../ui/modals.js";
 import { showEnd } from "../ui/screens/end.js";
 import { runScreen } from "../ui/screens/run.js";
 import { careerScreen } from "../ui/screens/career.js";
-import { recordResult } from "../core/career.js";
+import { careerKey, recordResult } from "../core/career.js";
+import { CAREER } from "../content/career.js";
 import { audio as A, net as Net } from "./services.js";
-import { online as serverOn, reportMatch, serverMode, submitEndless } from "./account.js";
+import { careerNotice, online as serverOn, reportMatch, serverMode, submitEndless } from "./account.js";
 import { refreshTop } from "../ui/screens/home.js";
 import { again as mmAgain, leave as mmLeave, reportResult } from "./matchmaking.js";
 import { t } from "../content/i18n.js";
@@ -67,6 +68,8 @@ export function matchEnd() {
   if (App.mode === "career" && App.career && me >= 0) {
     career = recordResult(S.career, App.career.li, App.career.gi, st.s[me], st.s[op]);
     S.career = career.prog;
+    // Liga-Bonus: mit Server bucht ihn der Server (Meldung kommt mit der Antwort), sonst gleich hier
+    if (career.leagueDone && !serverOn()) add(t("career.bonusLine", { name: CAREER[App.career.li].name }), CAREER[App.career.li].bonus.coins);
   }
   addCoins(coins);
   const ups = addXP(Math.round(coins * 1.2) + 15);
@@ -99,12 +102,13 @@ export function matchEnd() {
   if (serverOn() && serverMode(App.mode)) {
     const facts = myS ? [myS.goals >= 3 && "hattrick", myS.superGoals > 0 && "supergoal", myS.lastSecGoals > 0 && "lastsec", myS.longGoals > 0 && "longshot", win && App.maxDef >= 2 && "comeback"].filter(Boolean) : [];
     reportMatch({
-      mode: serverMode(App.mode), won: win, goals: myS ? myS.goals : 0, conceded: me >= 0 ? st.s[op] : 0,
+      mode: serverMode(App.mode), won: win, ...(App.mode === "career" && App.career ? { stage: careerKey(App.career.li, App.career.gi) } : {}), goals: myS ? myS.goals : 0, conceded: me >= 0 ? st.s[op] : 0,
       duration: Math.round(Math.min(900, (Date.now() - (App.t0 || Date.now())) / 1000)), head: "head:" + (me >= 0 ? st.p[me].ch : S.char), diff: App.cfg.diff ?? 1,
       stats: myS ? { headGoals: myS.headGoals, pus: myS.pus, stomps: myS.stomps, supers: myS.supers } : {}, facts, cup: App.mode === "cup",
     }).then(res => {
       if (endlessFinal) submitEndless(endlessFinal);   // nach der Meldung: der Server zählt die Siege
       if (!res) return;
+      careerNotice(res);
       if (res.capReached) toast(t("cap.reached"), "i-lock");
       else if (res.coinsBeforeCap > res.coins) toast(t("cap.soft"), "i-clock");
       refreshTop();

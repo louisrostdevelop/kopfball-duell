@@ -35,10 +35,11 @@ export function addXP(n) {
 export function addCoins(n) { S.coins += n; if (n > 0) S.earned += n; }
 export function owns(kind, id) { return S[kind].includes(id); }
 // Mit Server (app/account.js) bestätigt der Server jeden Kauf, sonst wird er zurückgedreht
-const hooks = { buy: null, serverDaily: false };
+const hooks = { buy: null, canBuy: null, serverDaily: false };
 export function setHooks(h) { Object.assign(hooks, h); }
 export function buy(kind, id, price) {
   if (owns(kind, id) || S.coins < price) return false;
+  if (hooks.canBuy && !hooks.canBuy()) return false;
   S.coins -= price; S[kind].push(id); save();
   if (hooks.buy) hooks.buy(kind, id, () => { S.coins += price; S[kind] = S[kind].filter(x => x !== id); save(); });
   return true;

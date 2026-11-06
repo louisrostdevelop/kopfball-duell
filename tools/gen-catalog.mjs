@@ -1,12 +1,13 @@
 // Erzeugt supabase/catalog.sql aus den Spielinhalten (js/content, js/core/economy.js).
 // Gegenstände heißen auf dem Server "art:id" (head:kalle, ball:neon, arena:neon), damit gleiche Namen nicht kollidieren.
-// So gibt es nur EINE Quelle für Köpfe, Bälle, Arenen, Preise, Aufgaben und Erfolge.
+// So gibt es nur EINE Quelle für Köpfe, Bälle, Arenen, Preise, Aufgaben, Erfolge und die Karriere.
 //   node tools/gen-catalog.mjs          schreibt die Datei
 // tests/sim/catalog.test.mjs prüft, dass sie aktuell ist. Auf dem Server einspielen: siehe docs/BACKEND.md.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE } from "../js/content/config.js";
 import { TASKS } from "../js/core/economy.js";
+import { CAREER } from "../js/content/career.js";
 
 // Echtgeld-Produkte (Startwerte aus dem Spielkonzept)
 export const PRODUCTS = [
@@ -43,6 +44,12 @@ export function catalogSql() {
   L.push("insert into game.achievement_defs (id, reward, stat, goal) values");
   L.push(ACHIEVEMENTS.map(a => `  (${q(a.id)}, ${a.reward}, ${q(a.stat || null)}, ${q(a.goal || null)})`).join(",\n"));
   L.push("on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal;");
+  L.push("insert into game.career_leagues (id, ord, coins, gems) values");
+  L.push(CAREER.map((l, i) => `  (${q(l.id)}, ${i}, ${l.bonus.coins}, ${l.bonus.gems})`).join(",\n"));
+  L.push("on conflict (id) do update set ord = excluded.ord, coins = excluded.coins, gems = excluded.gems;");
+  L.push("insert into game.career_stages (id, league, idx, diff) values");
+  L.push(CAREER.flatMap(l => l.games.map((g, i) => `  (${q(l.id + "." + i)}, ${q(l.id)}, ${i}, ${g.diff})`)).join(",\n"));
+  L.push("on conflict (id) do update set league = excluded.league, idx = excluded.idx, diff = excluded.diff;");
   L.push("commit;", "");
   return L.join("\n");
 }

@@ -1,13 +1,14 @@
 // Spiel-Server über Supabase: ruft die Funktionen aus supabase/migrations (Schema api) auf.
 // Jede Anfrage, die etwas ändert, trägt einen Schlüssel: wiederholt (Netz weg, Tab zu) wird sie nur einmal gebucht.
-// Spielmeldungen, die nicht ankommen, warten im Browser und gehen beim nächsten Mal raus.
+// Spielmeldungen, die nicht ankommen (offline gespielt), warten im Browser (bis zu 60) und gehen der Reihe nach raus.
 const PENDING = "kopfball-duell-pending";
+const MAX_PENDING = 60;
 const key = () => (globalThis.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
 
 /** @returns {import("../../ports/server.js").GameServer} */
 export function supabaseServer(client, storage = globalThis.localStorage) {
   const load = () => { try { return JSON.parse(storage.getItem(PENDING) || "[]"); } catch (_) { return []; } };
-  const store = l => { try { storage.setItem(PENDING, JSON.stringify(l.slice(-20))); } catch (_) {} };
+  const store = l => { try { storage.setItem(PENDING, JSON.stringify(l.slice(-MAX_PENDING))); } catch (_) {} };
   const drop = k => store(load().filter(x => x.k !== k));
   const final = e => e && e.status >= 400 && e.status < 500 && e.code !== "rate_limited";   // Server sagt nein: nicht wiederholen
 
@@ -18,7 +19,17 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
   return {
     state: () => client.rpc("me"),
     reportMatch(r) { const job = { k: key(), r }; store([...load(), job]); return send(job); },
-    async flush() { let n = 0; for (const job of load()) { try { await send(job); n++; } catch (_) { /* später */ } } return n; },
+    pending: () => load().length,
+    // Der Reihe nach (Karriere: Spiel 2 erst nach Spiel 1). Netz weg oder zu schnell: aufhören, später weiter
+    async flush() {
+      const out = { sent: 0, rejected: 0, results: [], left: 0 };
+      for (const job of load()) {
+        try { out.results.push(await send(job)); out.sent++; }
+        catch (e) { if (final(e)) { out.rejected++; continue; } break; }
+      }
+      out.left = load().length;
+      return out;
+    },
     buy: (item, currency) => client.rpc("buy_item", { item, currency, request_key: key() }),
     upgradeHead: (head, gems) => client.rpc("upgrade_head", { head, fill_with_gems: !!gems, request_key: key() }),
     async claimDaily() {

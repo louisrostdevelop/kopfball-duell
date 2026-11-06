@@ -1,12 +1,13 @@
 // Karriere: Ligen als Reiter, fünf Gegner pro Liga mit Sternen, Anpfiff für das gewählte Spiel
 import { arenaById, charById, CHALLENGE_SETS, DIFFS } from "../../content/config.js";
 import { CAREER } from "../../content/career.js";
-import { gameOpen, gameRules, leagueOpen, leagueStars, MAX_STARS, nextGame, starsOf, totalStars } from "../../core/career.js";
+import { gameOpen, gameRules, leagueDone, leagueOpen, leagueStars, MAX_STARS, nextGame, starsOf, totalStars } from "../../core/career.js";
 import { matchLen } from "../../core/physics.js";
 import { S } from "../../app/profile.js";
 import { App } from "../../app/state.js";
 import { startDemo, updateBand } from "../../app/game.js";
 import { startCareer } from "../../app/modes.js";
+import { online as serverOn } from "../../app/account.js";
 import { audio as A } from "../../app/services.js";
 import { avatarCanvas } from "../render/art.js";
 import { $, svg } from "../dom.js";
@@ -61,8 +62,10 @@ function render() {
   const btn = $("btnCareerGo"), ok = sel && gameOpen(prog, sel.li, sel.gi);
   btn.disabled = !ok;
   btn.textContent = ok ? t("career.next", { name: charById(CAREER[sel.li].games[sel.gi].ch).name }) : t("career.play");
-  $("careerNote").textContent = !leagueOpen(prog, tab) ? t("career.locked", { name: CAREER[tab - 1].name })
-    : nextGame(prog) ? t("career.starsHelp") : t("career.allDone");
+  const b = lg.bonus, gems = serverOn() && b.gems;
+  const bonus = leagueDone(prog, tab) ? t("career.bonusDone") : t(gems ? "career.bonusInfoGems" : "career.bonusInfo", { coins: b.coins, gems: b.gems });
+  $("careerNote").textContent = (!leagueOpen(prog, tab) ? t("career.locked", { name: CAREER[tab - 1].name })
+    : nextGame(prog) ? t("career.starsHelp") : t("career.allDone")) + " · " + bonus;
 }
 
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)

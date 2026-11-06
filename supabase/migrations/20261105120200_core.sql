@@ -184,6 +184,7 @@ language sql stable security definer set search_path = '' as $$
     'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
                          from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
     'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
+    'career', pr.career,
     'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,
     'passPoints', (select pp.points from game.pass_progress pp where pp.player_id = pl.id and pp.season_id = game.current_season()))
   from game.players pl

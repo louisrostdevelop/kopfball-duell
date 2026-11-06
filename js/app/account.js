@@ -4,15 +4,26 @@
 import { S, save, setHooks } from "./profile.js";
 import { has, server } from "./services.js";
 import { t, lang } from "../content/i18n.js";
+import { CAREER } from "../content/career.js";
+import { toast } from "../ui/dom.js";
 
 const KINDS = { chars: "head", balls: "ball", arenas: "arena" };
 export const itemId = (kind, id) => KINDS[kind] + ":" + id;
 export const online = () => has("server");
 let last = null;
+let netDown = false;   // letzter Server-Aufruf kam nicht durch (offline)
+const listeners = [];
+/** Wird nach jedem Abgleich mit dem Server aufgerufen (Anzeige oben auffrischen) */
+export const onSync = fn => { listeners.push(fn); };
+/** Server gerade erreichbar? (Käufe gehen nur dann) */
+export const reachable = () => online() && !netDown && globalThis.navigator?.onLine !== false;
+// Karriere: höchste Sterne aus beiden Ständen (solange noch Offline-Spiele unterwegs sind)
+const maxMerge = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(b || {})) o[k] = Math.max(o[k] || 0, v); return o; };
 
 /** Server-Stand ins Profil übernehmen (voll oder kurz, je nachdem was kam) */
 export function applyState(st) {
   if (!st) return;
+  netDown = false;
   last = { ...(last || {}), ...st };
   for (const k of ["coins", "gems", "level", "xp"]) if (typeof st[k] === "number") S[k] = st[k];
   if (Array.isArray(st.items)) for (const [kind, pre] of Object.entries(KINDS)) {
@@ -25,6 +36,8 @@ export function applyState(st) {
   if (st.name) S.name = st.name;
   if (typeof st.passPoints === "number" && last.season && last.season.pass) last.season.pass.points = st.passPoints;
   if (typeof st.guest === "boolean") S.guest = st.guest;
+  // Karriere: der Server zählt. Warten noch Offline-Spiele, bleibt lokal Erspieltes bis zum Abgleich sichtbar
+  if (st.career && typeof st.career === "object") S.career = server.pending && server.pending() ? maxMerge(st.career, S.career) : { ...st.career };
   S.serverSynced = true;   // ab jetzt gilt der Server, lokaler Stand wird nie wieder übernommen
   save();
 }
@@ -33,27 +46,62 @@ export const serverState = () => last;
 /** Einstecken (main.js, nach provide): Käufe und Tagesbonus laufen dann über den Server */
 export function initAccount() {
   if (!online()) return;
-  setHooks({ buy: confirmBuy, serverDaily: true });
+  setHooks({ buy: confirmBuy, canBuy, serverDaily: true });
+  globalThis.addEventListener?.("online", () => { netDown = false; syncPending(); });
+  globalThis.document?.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncPending(); });
+}
+
+/** Ohne Verbindung keine Münz-Käufe: der Server würde sie später zurückdrehen */
+function canBuy() {
+  if (reachable()) return true;
+  toast(t("sync.buyOffline"), "i-lock");
+  return false;
+}
+
+/** Liga-Bonus aus einer Server-Antwort anzeigen */
+export function careerNotice(res) {
+  const b = res && res.career && res.career.bonus;
+  if (!b) return;
+  const lg = CAREER.find(l => l.id === b.league);
+  toast(t(b.gems ? "career.bonusGems" : "career.bonus", { name: lg ? lg.name : b.league, coins: b.coins, gems: b.gems }), "i-trophy", true);
+}
+
+let flushing = null, retryT = 0;
+/** Offline Gespieltes der Reihe nach nachschicken. Meldet Liga-Boni und nicht gewertete Spiele. */
+export function syncPending() {
+  if (!online() || flushing || !server.pending || !server.pending()) return flushing || Promise.resolve(null);
+  flushing = server.flush().then(async out => {
+    if (out.sent || out.rejected) { try { applyState(await server.state()); } catch (_) { netDown = true; } }
+    out.results.forEach(careerNotice);
+    if (out.rejected) toast(t("sync.rejected", { n: out.rejected }), "i-clock");
+    else if (out.sent > 1) toast(t("sync.sent", { n: out.sent }), "i-check", true);
+    clearTimeout(retryT);
+    if (out.left) retryT = setTimeout(syncPending, 30000);   // Netz weg oder zu schnell: gleich nochmal
+    listeners.forEach(fn => fn());
+    return out;
+  }).catch(() => null).finally(() => { flushing = null; });
+  return flushing;
 }
 
 /** Beim Start: Stand holen, einmalig den alten lokalen Spielstand übernehmen, liegengebliebene Meldungen senden */
 export async function syncOnStart() {
   if (!online()) return null;
-  let st = await server.state();
+  let st;
+  try { st = await server.state(); } catch (e) { netDown = true; throw e; }
   if (st && st.imported === false && !S.serverSynced && hasLocalProgress()) {
     try { st = await server.importLocal(S); } catch (_) { /* schon übernommen oder zu groß: Server-Stand gilt */ }
   }
   applyState(st);
-  server.flush().then(n => { if (n) server.state().then(applyState).catch(() => {}); }).catch(() => {});
+  syncPending();
   return st;
 }
-const hasLocalProgress = () => S.coins > 150 || S.level > 1 || S.chars.length > 3 || S.balls.length > 1 || S.arenas.length > 2;
+const hasLocalProgress = () => S.coins > 150 || S.level > 1 || S.chars.length > 3 || S.balls.length > 1 || S.arenas.length > 2 || Object.keys(S.career || {}).length > 0;
 
 /** Kaufen mit Münzen: lokal schon gebucht (sofortige Anzeige), Server bestätigt oder es wird zurückgedreht */
 export function confirmBuy(kind, id, undo) {
   if (!online()) return;
   server.buy(itemId(kind, id), "coins").then(r => applyState(r.state))
-    .catch(e => { if (e && e.status) undo(); server.state().then(applyState).catch(() => {}); });
+    .catch(e => { undo(); if (!(e && e.status)) netDown = true; server.state().then(applyState).catch(() => {}); });
 }
 
 /** Tagesbonus vom Server; null = heute schon abgeholt oder offline */
@@ -66,7 +114,7 @@ export async function claimDaily() {
 export async function reportMatch(r) {
   if (!online() || !r.mode) return null;
   try { const res = await server.reportMatch(r); applyState(res.state); return res; }
-  catch (_) { return null; }   // bleibt gespeichert und geht beim nächsten Start raus
+  catch (e) { if (!(e && e.status)) netDown = true; return null; }   // bleibt gespeichert und geht später raus (syncPending)
 }
 
 /** Lokaler Modus -> Server-Modus. Online-Spiele laufen über die Warteschlange und werden dort gewertet. */
