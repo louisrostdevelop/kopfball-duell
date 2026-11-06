@@ -63,3 +63,5 @@ Aufbau und Regeln der Schichten, Server-Anbindung: siehe [ARCHITECTURE.md](ARCHI
 Lokal starten: `node tools/serve.mjs` und http://localhost:8765 öffnen. Tests: `npm test` (Spiellogik, Sekunden) und `npm run test:e2e` (Browser, nach `npm ci` und `npx playwright install chromium`).
 
 Schriften: Lilita One und Nunito (SIL Open Font License), lokal eingebunden.
+
+**Lizenz:** © 2026 Louis-Deniel Rost, alle Rechte vorbehalten. Das Repo ist öffentlich, damit das Spiel gehostet werden kann; das ist keine Erlaubnis zum Kopieren. Fremde Bestandteile (PeerJS, QR-Code, Schriften) stehen unter eigenen Lizenzen, siehe [LICENSE](LICENSE).
