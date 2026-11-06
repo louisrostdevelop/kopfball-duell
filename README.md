@@ -15,7 +15,7 @@ Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy,
 - **Schuss:** halten lädt auf, loslassen schießt. Voll geladen fliegt der Ball härter und höher. Sauber mit dem Fuß getroffen gibt am meisten Wumms, ein geladener Kopfball etwas weniger.
 - Golden Goal bei Gleichstand, Zeitlupe und Wiederholung nach jedem Tor, Emotes.
 - **Fortschritt:** Münzen, Level, Tagesbonus, tägliche Aufgaben, Angebot des Tages, Shop für Köpfe, Bälle und Arenen, 16 Erfolge. Wird im Browser gespeichert.
-- **Kisten:** bei jedem Level-Up (Bronze bis Legendär), für Tages- und Wochenaufgaben, Tages-Challenge, Erfolgs-Stufen, Karriere-Ligen, Kopf-Meisterschaft, Pass und Ranked-Saisonende, mit Köpfen und Kosmetik (10 Schuh-Skins, Rest vorerst Platzhalter), Chancen offen, Garantien, doppelte werden zu Splittern oder Kopf-XP. Nur erspielbar.
+- **Kisten:** bei jedem Level-Up (Bronze bis Legendär), für Tages- und Wochenaufgaben, Tages-Challenge, Erfolgs-Stufen, Karriere-Ligen, Kopf-Meisterschaft, Pass und Ranked-Saisonende, mit Köpfen und Kosmetik (10 Schuh-Skins, Rest vorerst Platzhalter). Rahmen für die Spieler-Karte: Meister-Rahmen pro Kopf, Medaillen für Siege-Erfolge, Pass- und Liga-Rahmen, animiert, Chancen offen, Garantien, doppelte werden zu Splittern oder Kopf-XP. Nur erspielbar.
 - **Meisterschaft pro Kopf:** 5 Stufen mit Titel, Rahmen, eigenem Emote und eigener Torexplosion.
 - **Ausrüstung:** Hut, Schuhe, Torexplosion (sieht auch der Gegner), 4 Emote-Plätze (höchstens eins alle 3 s, Gegner stummschaltbar), Herstellen mit Splittern.
 - **Mit Server (optional):** Konto, Juwelen-Shop, Saison-Pass, Kopf-Level (bis +25 %), Bestenlisten, Freunde. Siehe [docs/BACKEND.md](docs/BACKEND.md).

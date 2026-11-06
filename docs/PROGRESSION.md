@@ -26,7 +26,8 @@ Kosmetisch heißt: kein Einfluss aufs Spiel, auch nicht auf Trefferflächen.
 | Torexplosion (beide sehen sie, es läuft die des Torschützen) | 8 + 1 pro Kopf | Spieler | Kisten, Shop, Meisterschaft |
 | Figur-Emote (Kopf macht etwas) | 8 + 1 pro Kopf | Spieler | Kisten, Shop, Meisterschaft |
 | Emoji-Emote (Sprechblase) | 12 | Spieler | Kisten, Shop, Pass |
-| Titel, Rahmen | je 1 pro Kopf + Pass | Spieler | Meisterschaft, Pass, Erfolge |
+| Titel | je 1 pro Kopf + Pass | Spieler | Meisterschaft, Pass, Erfolge |
+| Rahmen (Spieler-Karte) | 1 pro Kopf, 3 Medaillen, 6 Pass, 6 Liga | Spieler | Meisterschaft, Siege-Erfolge (25/250/1000), Pass-Stufen, Ranked-Saisonende nach Liga |
 
 Alles sind feste Varianten zum Freischalten und Ausrüsten, kein Editor.
 

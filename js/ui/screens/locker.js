@@ -1,5 +1,5 @@
 // Ausrüstung: Hut, Schuhe, Torexplosion, 4 Emote-Plätze. Besessenes antippen = tragen, Fehlendes mit Splittern herstellen.
-import { COSMETICS, cosById, MASTERY_ITEMS, SHARDS } from "../../content/cosmetics.js";
+import { COSMETICS, cosById, FRAMES, MASTERY_ITEMS, SHARDS } from "../../content/cosmetics.js";
 import { RARITY } from "../../content/config.js";
 import { S } from "../../app/profile.js";
 import { craft } from "../../app/account.js";
@@ -24,9 +24,7 @@ function slotLabel(e) {
 function render() {
   $("lockerShards").textContent = num(S.shards || 0);
   const pv = $("lockerPreview"); pv.innerHTML = "";
-  const av = avatarCanvas(S.char, 120, { hat: S.equip.hat, mood: "happy" }), fr = cosById(S.equip.frame);
-  if (fr) { av.className = "framed"; av.style.setProperty("--fc", fr.col); }
-  pv.append(av);
+  pv.append(avatarCanvas(S.char, 120, { hat: S.equip.hat, mood: "happy", frame: S.equip.frame, live: true }));
   const ti = cosById(S.equip.title); $("lockerTitle").textContent = ti ? ti.name : "";
   const tabs = $("lockerTabs"); tabs.innerHTML = "";
   for (const [id] of TABS) {
@@ -43,13 +41,13 @@ function render() {
   });
   const kinds = TABS.find(x => x[0] === tab)[1], grid = $("lockerGrid"); grid.innerHTML = "";
   // Aus Kisten: alle (Fehlendes herstellbar); aus der Meisterschaft: nur Besessenes
-  const list = [...COSMETICS.filter(x => kinds.includes(x.kind)), ...MASTERY_ITEMS.filter(x => kinds.includes(x.kind) && S.cos.includes(x.id))];
+  const list = [...COSMETICS.filter(x => kinds.includes(x.kind)), ...[...MASTERY_ITEMS, ...FRAMES].filter(x => kinds.includes(x.kind) && S.cos.includes(x.id))];
   $("lockerHint").textContent = ["title", "frame"].includes(tab) ? t("locker.masteryHint") : "";
   for (const c of list) {
     const own = S.cos.includes(c.id), on = own && isEquipped(c.id), cost = SHARDS.craft[c.rarity];
     const d = document.createElement("button"); d.className = `lcard r-${c.rarity}` + (own ? "" : " locked") + (on ? " on" : ""); d.dataset.id = c.id;
     if (c.kind === "title") d.append(Object.assign(document.createElement("span"), { className: "titletag", textContent: c.name }));
-    else if (c.kind === "frame") { const f = avatarCanvas(c.head, 52); f.className = "framed"; f.style.setProperty("--fc", c.col); d.append(f); }
+    else if (c.kind === "frame") d.append(avatarCanvas(c.head || S.char, 64, { frame: c.id }));
     else d.append(cosIcon(c.id, 52));
     d.insertAdjacentHTML("beforeend", `<b>${esc(c.name)}</b><small>${RARITY[c.rarity]}</small>` +
       (own ? `<em>${on ? t("locker.worn") : t("locker.wear")}</em>` : `<em class="craft">${t("locker.craft", { n: cost })}</em>`));

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE, SHOP_LEVEL } from "../js/content/config.js";
 import { TASKS, WEEKLY } from "../js/core/economy.js";
 import { CAREER } from "../js/content/career.js";
-import { CHESTS, CHEST_TIERS, COSMETICS, COS_PRICE, HEAD_DUP_XP, MASTERY, MASTERY_ITEMS, PITY, SHARDS } from "../js/content/cosmetics.js";
+import { CHESTS, CHEST_TIERS, COSMETICS, COS_PRICE, FRAMES, HEAD_DUP_XP, MASTERY, MASTERY_ITEMS, PITY, SHARDS } from "../js/content/cosmetics.js";
 
 // Echtgeld-Produkte (Startwerte aus dem Spielkonzept)
 export const PRODUCTS = [
@@ -33,6 +33,8 @@ export function catalogSql() {
     ...COSMETICS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: COS_PRICE[c.rarity].coins, gems: COS_PRICE[c.rarity].gems, meta: { n: c.n } })),
     // Meisterschaft: nur über die Kopf-Stufen (nicht aus Kisten, nicht herstellbar)
     ...MASTERY_ITEMS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: null, gems: null, meta: { src: "mastery", head: c.head, stage: c.stage } })),
+    // Rahmen aus Erfolgen, Pass und Liga: nicht aus Kisten, nicht herstellbar
+    ...FRAMES.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: null, gems: null, meta: { src: c.src } })),
   ];
   const ids = new Set();
   for (const it of items) { if (ids.has(it.id)) throw new Error("doppelte ID im Katalog: " + it.id); ids.add(it.id); }
@@ -47,9 +49,9 @@ export function catalogSql() {
   L.push("insert into game.task_defs (id, goals, reward) values");
   L.push(TASKS.map(t => `  (${q(t.id)}, array[${t.n.join(", ")}], ${t.reward})`).join(",\n"));
   L.push("on conflict (id) do update set goals = excluded.goals, reward = excluded.reward, active = true;");
-  L.push("insert into game.achievement_defs (id, reward, stat, goal, chest) values");
-  L.push(ACHIEVEMENTS.map(a => `  (${q(a.id)}, ${a.reward}, ${q(a.stat || null)}, ${q(a.goal || null)}, ${q(a.chest || null)})`).join(",\n"));
-  L.push("on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal, chest = excluded.chest;");
+  L.push("insert into game.achievement_defs (id, reward, stat, goal, chest, item) values");
+  L.push(ACHIEVEMENTS.map(a => `  (${q(a.id)}, ${a.reward}, ${q(a.stat || null)}, ${q(a.goal || null)}, ${q(a.chest || null)}, ${q(a.item || null)})`).join(",\n"));
+  L.push("on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal, chest = excluded.chest, item = excluded.item;");
   L.push("insert into game.chest_defs (tier, ord, coins_min, coins_max, gems, cos_p, cos_rar, head, sure) values");
   L.push(CHEST_TIERS.map((k, i) => { const c = CHESTS[k]; return `  (${q(k)}, ${i}, ${c.coins[0]}, ${c.coins[1]}, ${c.gems || 0}, ${c.cos.p}, ${q(JSON.stringify(c.cos.rar))}::jsonb, ${q(JSON.stringify(c.head))}::jsonb, ${c.sure ? "true" : "false"})`; }).join(",\n"));
   L.push("on conflict (tier) do update set ord = excluded.ord, coins_min = excluded.coins_min, coins_max = excluded.coins_max, gems = excluded.gems, cos_p = excluded.cos_p, cos_rar = excluded.cos_rar, head = excluded.head, sure = excluded.sure;");

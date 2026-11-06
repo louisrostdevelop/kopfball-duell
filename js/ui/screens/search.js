@@ -33,9 +33,8 @@ export function searchUI(mm) {
     // Spieler-Karte des Gegners: Kopf mit Hut (vom Server geprüft), Name, Level, Kopf-Level, Liga
     const h = (mm.heads && mm.heads[mm.role === "host" ? "p2" : "p1"]) || {}, card = $("srThem");
     const oav = $("srOppAv"); oav.innerHTML = "";
-    const oc = cleanCos(h.cos), ocv = avatarCanvas((h.head || "head:kalle").replace(/^head:/, ""), 120, { hat: oc.hat, dir: -1 }), fr = cosById(oc.frame);
-    if (fr) { ocv.className = "framed"; ocv.style.setProperty("--fc", fr.col); }
-    oav.append(ocv);
+    const oc = cleanCos(h.cos);
+    oav.append(avatarCanvas((h.head || "head:kalle").replace(/^head:/, ""), 120, { hat: oc.hat, dir: -1, frame: oc.frame, live: true }));
     $("srOppName").textContent = (o.name || t("search.opponent")) + (oc.title ? " · " + cosById(oc.title).name : "");
     $("srOppInfo").textContent = [t("level.title", { n: o.level || 1 }), t("search.headLevel", { n: h.level || 1 }), mm.mode === "ranked" && o.mmr ? league(o.mmr) + " " + o.mmr : ""].filter(Boolean).join(" · ");
     card.hidden = false;

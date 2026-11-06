@@ -148,6 +148,12 @@ begin
   update game.progress set stats = stats || '{"goals": 600}' where player_id = v;
   perform game.grant_achievements(v, '{}');
   assert (select string_agg(tier, ',' order by tier) from game.chests where player_id = v and source = 'ach' and ref like 'goals%') = 'bronze,silver', 'Erfolgs-Kisten';
+  -- Siege-Erfolg Stufe 1 gibt die Bronze-Medaille als Rahmen (einmal)
+  update game.progress set stats = stats || '{"wins": 30}' where player_id = v;
+  perform game.grant_achievements(v, '{}');
+  perform game.grant_achievements(v, '{}');
+  assert (select count(*) from game.inventory where player_id = v and item_id = 'frame:medal-bronze') = 1, 'Bronze-Medaille';
+  assert not exists (select 1 from game.inventory where player_id = v and item_id = 'frame:medal-silver'), 'Silber erst ab 250 Siegen';
 
   -- Meisterschaft: Stufen nacheinander, Belohnung je Stufe einmal, Kisten bei 3 und 5, nicht herstellbar, nicht aus Kisten
   update game.heads set games = 4, wins = 0, goals = 0, supers = 0, mastery = 0 where player_id = v and head_id = 'head:kalle';
@@ -189,6 +195,8 @@ begin
   r := game.maintenance();
   assert (select tier from game.chests where player_id = u and source = 'season' and ref = '900') = 'gold', 'Gold-Liga: Gold-Kiste';
   assert not exists (select 1 from game.chests where player_id = v and source = 'season'), 'zu wenige Spiele: keine';
+  assert exists (select 1 from game.inventory where player_id = u and item_id = 'frame:league-gold'), 'Gold-Liga: Liga-Rahmen';
+  assert not exists (select 1 from game.inventory where player_id = v and item_id like 'frame:league-%'), 'zu wenige Spiele: kein Rahmen';
   perform game.maintenance();
   assert (select count(*) from game.chests where player_id = u and source = 'season') = 1, 'nur einmal';
   perform game.give_reward(v, '{"chest": "bronze"}', 'pass_free', '1:2');
