@@ -8,9 +8,10 @@ const C = await import("../../js/content/config.js");
 const rng = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 const base = () => ({ owned: new Set(["head:kalle", "head:yuki", "head:bolt"]), heads: {}, pity: {} });
 
-test("Inhalte: 48 Platzhalter, IDs eindeutig, Kisten-Chancen gültig", () => {
-  assert.equal(K.COSMETICS.length, 48);
-  assert.equal(new Set(K.COSMETICS.map(c => c.id)).size, 48);
+test("Inhalte: 50 Gegenstände (10 Schuh-Skins, Rest Platzhalter), IDs eindeutig, Kisten-Chancen gültig", () => {
+  assert.equal(K.COSMETICS.length, 50);
+  assert.equal(new Set(K.COSMETICS.map(c => c.id)).size, 50);
+  assert.ok(K.COSMETICS.filter(c => c.kind === "shoes").every(c => c.skin));
   for (const k of K.CHEST_TIERS) {
     const c = K.CHESTS[k], s = Object.values(c.cos.rar).reduce((a, b) => a + b, 0);
     assert.ok(Math.abs(s - 1) < 1e-9, k + ": Seltenheiten der Kosmetik = 100 %");

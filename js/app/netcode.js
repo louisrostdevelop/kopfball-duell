@@ -8,7 +8,7 @@
 const PF = [["x", 0, 10], ["y", 0, 10], ["vx", 0, 10], ["vy", 0, 10], ["kick", 0, 100], ["kHeld", false], ["charge", 0, 10], ["sc", 1, 100],
   ["frz", 0, 10], ["stun", 0, 10], ["meter", 0, 1], ["full", false], ["armed", 0, 10], ["fireNext", false], ["bigT", 0, 10], ["miniT", 0, 10],
   ["spdT", 0, 10], ["jmpT", 0, 10], ["mood", ""], ["emo", ""], ["emoT", 0, 10], ["land", 0, 10], ["onG", true], ["confT", 0, 10], ["djT", 0, 10],
-  ["slide", 0, 100], ["slideDir", 1], ["bomb", 0], ["tripCD", 0, 10]];
+  ["slide", 0, 100], ["slideDir", 1], ["bomb", 0], ["tripCD", 0, 10], ["sadT", 0, 10], ["charmT", 0, 10]];
 const BF = [["x", 0, 10], ["y", 0, 10], ["vx", 0, 10], ["vy", 0, 10], ["r", 0, 10], ["a", 0, 10], ["pw", 0, 10], ["fx", ""], ["fxT", 0, 10], ["fxK", 0],
   ["fxBX", 0, 10], ["fxBY", 0, 10], ["fxDX", 0, 10], ["fxDY", 0, 10], ["fxTX", 0, 10], ["fxTY", 0, 10], ["alpha", 1, 10], ["fxP", 0]];
 const KEYS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";

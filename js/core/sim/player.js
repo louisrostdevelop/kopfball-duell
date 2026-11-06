@@ -18,7 +18,7 @@ export function movePlayer(st, p, c, dt, frozenPhase) {
   const ar = arenaById(st.arena), ch = headStats(st, p);
   // Timer
   p.hc = Math.max(0, p.hc - dt); p.sc2 = Math.max(0, p.sc2 - dt); p.pushCD = Math.max(0, p.pushCD - dt); p.knock = Math.max(0, p.knock - dt);
-  ["bigT", "miniT", "spdT", "jmpT", "confT", "djT"].forEach(k => { if (p[k] > 0) p[k] = Math.max(0, p[k] - dt); });
+  ["bigT", "miniT", "spdT", "jmpT", "confT", "djT", "sadT", "charmT"].forEach(k => { if (p[k] > 0) p[k] = Math.max(0, p[k] - dt); });
   if (p.frz > 0) p.frz = Math.max(0, p.frz - dt);
   if (p.stun > 0) p.stun = Math.max(0, p.stun - dt);
   if (p.armed > 0) { p.armed -= dt; if (p.armed <= 0) { p.armed = 0; p.meter = 60; ev(st, { t: "disarm", i: p.i }); } }
@@ -29,8 +29,9 @@ export function movePlayer(st, p, c, dt, frozenPhase) {
   const r = pr(p);
   const locked = frozenPhase || p.frz > 0 || p.stun > 0;
   const turbo = (st.mod === "turbo" ? 1.22 : 1) * st.rules.speed;
-  const sp = 505 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.35 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.9 : 1);
-  const dirIn = ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * (p.confT > 0 ? -1 : 1); // verwirrt: links/rechts vertauscht
+  const sp = 505 * ch.spd * ar.spd * turbo * (p.spdT > 0 ? 1.35 : 1) * (p.miniT > 0 ? 1.08 : 1) * (p.kHeld && p.charge > 0.2 ? 0.9 : 1) * (p.sadT > 0 ? 0.55 : 1);
+  // verwirrt: links/rechts vertauscht; verliebt (Rizz-Ball): läuft dem Ball hinterher, egal was gedrückt wird
+  const dirIn = p.charmT > 0 ? Math.sign(st.b.x - p.x) : ((c.r ? 1 : 0) - (c.l ? 1 : 0)) * (p.confT > 0 ? -1 : 1);
   const grip = ar.grip * (st.rules.floor === "ice" ? 0.16 : 1) * (p.onG && p.slick ? 0.2 : 1);
   const rest = G - (FOOT + SR) * p.sc;
   // Unten wird kurz gepuffert: direkt nach einem Schuss oder kurz nach dem Absprung geht der Druck nicht verloren.

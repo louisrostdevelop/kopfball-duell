@@ -1,8 +1,9 @@
 # Fortschritt: Level, Kisten, Herausforderungen, Freischalten
 
 Stand: Konzept vom 06.11.2026. Zahlen sind Startwerte, geprüft mit `node tools/balance/progression.mjs`.
-Die Kosmetik-Inhalte sind vorerst Platzhalter (einfache Formen und Farben, nummerierte Namen); die echten Inhalte
-kommen später und ersetzen nur die Daten in `js/content/cosmetics.js`.
+Die Kosmetik-Inhalte sind bis auf die Schuhe vorerst Platzhalter (einfache Formen und Farben, nummerierte Namen); die
+echten Inhalte ersetzen nur die Daten in `js/content/cosmetics.js`. Schuhe: 10 Skins (`SHOES`, gezeichnet in
+`js/ui/render/shoes.js`), 5 Selten, 4 Episch, 1 Legendär, ohne Teamfarbe.
 
 ## Grundsätze
 
@@ -172,7 +173,7 @@ der Client lokal mit denselben Tabellen.
 ## Reihenfolge beim Bauen
 
 1. **Kisten und Level-Belohnungen.** Server, Öffnen-Bildschirm, Chancen-Anzeige, Splitter, Garantien. *(fertig; Herstellen-Oberfläche kommt mit 2)*
-2. **Kosmetik:** Hüte, Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig, Platzhalter-Grafik)*
+2. **Kosmetik:** Hüte, Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig; Schuhe sind echte Skins, der Rest Platzhalter-Grafik)*
 3. **Wochenaufgaben, Erfolgs-Stufen, Meisterschaft, Freundes-Herausforderungen.** *(Wochenaufgaben, Erfolgs-Stufen, Meisterschaft und die Kisten für Tagesaufgaben, Tages-Challenge und Karriere fertig; Freundes-Herausforderungen brauchen erst vom Server gewertete Freundesspiele, Spiele unter Freunden laufen bisher ohne Server)*
 4. **Shop-Umbau:** neue Kopf-Preise, Level-Sperren, wöchentliche Kosmetik. *(fertig)*
 5. **Ranked-Saisonende-Kisten, Pass-Kisten.** *(fertig: Wartung vergibt nach Saisonende die Liga-Kiste, Pass-Stufen können Kisten sein)*

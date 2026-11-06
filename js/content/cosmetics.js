@@ -1,6 +1,7 @@
 // Kosmetik und Kisten (Konzept: docs/PROGRESSION.md).
-// Die Kosmetik ist vorerst PLATZHALTER: nummerierte Varianten mit einfachen Formen und Farben. Die echten Inhalte
-// ersetzen später nur diese Liste (gleiche Felder). Kisten-Tabellen gelten auch auf dem Server (supabase/catalog.sql).
+// Schuhe sind echte Skins (SHOES, gezeichnet in js/ui/render/shoes.js). Hüte, Torexplosionen und Emotes sind noch
+// PLATZHALTER: nummerierte Varianten mit einfachen Formen und Farben; die echten Inhalte ersetzen nur ihre Liste
+// (gleiche Felder). Kisten-Tabellen gelten auch auf dem Server (supabase/catalog.sql).
 import { t } from "./i18n.js";
 import { CHARS } from "./config.js";
 
@@ -11,12 +12,34 @@ export const OWN_KINDS = [...COS_KINDS, "title", "frame"];
 // Platzhalter-Farben und -Zeichen
 const PAL = ["#ff5a4f", "#ffd84a", "#4fd1ff", "#7fd17f", "#c8a2ff", "#ff9bd2", "#ff9f40", "#ffffff", "#3b3b58", "#2fd6b0", "#e8c170", "#9aa7ff"];
 const EMOJI = ["😂", "🔥", "😤", "😎", "🤡", "👏", "😱", "💪", "🙈", "👑", "⚽", "💤"];
-// Seltenheit je Art: so viele Selten / Episch / Legendär
-const MIX = { hat: [5, 4, 3], shoes: [4, 3, 1], goalfx: [3, 3, 2], emote: [4, 3, 1], emoji: [6, 4, 2] };
+// Seltenheit je Art: so viele Selten / Episch / Legendär (Schuhe: aus SHOES)
+const MIX = { hat: [5, 4, 3], goalfx: [3, 3, 2], emote: [4, 3, 1], emoji: [6, 4, 2] };
+/** Schuh-Skins in fester Reihenfolge: id bleibt "shoes:<Platz>" (gleich auf dem Server). skin = Zeichnung, col = Kartenfarbe */
+export const SHOES = [
+  { skin: "klassiker", rarity: "selten", col: "#f4f5f7" },
+  { skin: "stollen",   rarity: "selten", col: "#2b2f3d" },
+  { skin: "chunky",    rarity: "selten", col: "#c7ccd6" },
+  { skin: "canvas",    rarity: "selten", col: "#e63946" },
+  { skin: "latschen",  rarity: "selten", col: "#3557c7" },
+  { skin: "neon",      rarity: "episch", col: "#ff7a1a" },
+  { skin: "clog",      rarity: "episch", col: "#6ccc45" },
+  { skin: "blink",     rarity: "episch", col: "#2f6fe0" },
+  { skin: "zehen",     rarity: "episch", col: "#3ddc84" },
+  { skin: "gold",      rarity: "legend", col: "#ffd23f" },
+];
 // Preise im Shop (Münzen / Juwelen), Freischalt-Level im Shop
 export const COS_PRICE = { selten: { coins: 150, gems: 60 }, episch: { coins: 400, gems: 150 }, legend: { coins: 900, gems: 350 } };
 
+function makeShoes() {
+  return SHOES.map((sh, i) => {
+    const o = { id: `shoes:${i + 1}`, kind: "shoes", n: i + 1, rarity: sh.rarity, col: sh.col, v: i, skin: sh.skin };
+    Object.defineProperty(o, "name", { get: () => t("shoe." + sh.skin), enumerable: true });
+    return o;
+  });
+}
+
 function make(kind) {
+  if (kind === "shoes") return makeShoes();
   const [s, e, l] = MIX[kind], rar = [...Array(s).fill("selten"), ...Array(e).fill("episch"), ...Array(l).fill("legend")];
   return rar.map((rarity, i) => {
     const o = { id: `${kind}:${i + 1}`, kind, n: i + 1, rarity, col: PAL[i % PAL.length], v: i };

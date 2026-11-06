@@ -1,8 +1,8 @@
 // Darstellung: Kamera, Arenen, Spieler, Ball, Partikel, HUD, Wiederholung
 import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
-import { drawHead, drawHat, drawShoe, drawBall, drawPuIcon, shade, shoeColor } from "./art.js";
+import { drawHead, drawHat, drawWornShoe, drawBall, drawPuIcon, shade } from "./art.js";
 import { cosById } from "../../content/cosmetics.js";
-import { barY, shoePos, pr, kickPreview } from "../../core/physics.js";
+import { barY, shoePos, pr, kickPreview, superTarget } from "../../core/physics.js";
 import { t as trn } from "../../content/i18n.js";
 
 const TAU = Math.PI * 2;
@@ -175,6 +175,7 @@ function drawParts(addPass) {
       case "flash": { const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size); g.addColorStop(0, p.col); g.addColorStop(1, "rgba(255,255,255,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, TAU); ctx.fill(); break; }
       case "ring": ctx.strokeStyle = p.col; ctx.lineWidth = (p.w || 5) * a; ctx.beginPath(); if (p.flat) ctx.ellipse(p.x, p.y, p.size + (1 - a) * p.grow, (p.size + (1 - a) * p.grow) * 0.18, 0, 0, TAU); else ctx.arc(p.x, p.y, p.size + (1 - a) * p.grow, 0, TAU); ctx.stroke(); break;
       case "star": starShape(p.x, p.y, p.size, p.rot); ctx.fillStyle = p.col; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke(); break;
+      case "heart": heartShape(p.x, p.y, p.size); ctx.fillStyle = p.col; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke(); break;
       case "conf": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.rot * 1.7)); ctx.fillStyle = p.col; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); ctx.restore(); break;
       case "shard": case "rock": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath(); ctx.moveTo(0, -p.size); ctx.lineTo(p.size * 0.6, p.size * 0.5); ctx.lineTo(-p.size * 0.6, p.size * 0.5); ctx.closePath(); ctx.fillStyle = p.col; ctx.fill(); if (p.type === "shard") { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke(); } ctx.restore(); break;
       case "flame": { const r = p.size * (0.4 + a * 0.8); const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r); g.addColorStop(0, "rgba(255,240,180,.95)"); g.addColorStop(0.4, p.col); g.addColorStop(1, "rgba(255,60,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill(); break; }
@@ -614,7 +615,7 @@ function drawPlayer(st, p, t, label) {
     ctx.globalCompositeOperation = "source-over";
   }
   const mc = matchCos[p.i] || {};
-  drawShoe(ctx, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, shoeColor(mc.shoes, col), p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
+  drawWornShoe(ctx, mc.shoes, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, col, p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0, t);
   const ea = emoteAnim(p);
   if (ea) { dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; }
   ctx.save();
@@ -626,6 +627,12 @@ function drawPlayer(st, p, t, label) {
   if (mc.hat) drawHat(ctx, mc.hat, p.x, p.y, r, p.dir, t);
   ctx.restore();
   if (p.frz > 0) drawIce(p, r, s, t);
+  if (p.sadT > 0) drawCloud(p.x, p.y - r * 1.45, r * 0.42, t);
+  if (p.charmT > 0) {
+    const ex = p.x + p.dir * r * 0.14;
+    [-1, 1].forEach(k => { heartShape(ex + k * r * 0.27, p.y - r * 0.02, r * 0.2); ctx.fillStyle = "#ff4f9a"; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.stroke(); });
+    if (Math.random() < 0.08) P({ type: "heart", x: p.x + rand(-20, 20), y: p.y - r, vy: -50, life: 0.9, max: 0.9, size: 7, col: "#ff4f9a" });
+  }
   if (p.confT > 0) {
     ctx.save(); ctx.strokeStyle = "#b28cff"; ctx.lineWidth = 3;
     for (let k = 0; k < 2; k++) { ctx.beginPath(); for (let n = 0; n < 24; n++) { const a = t * 8 + k * Math.PI + n * 0.3, rr = 4 + n * 0.6; ctx.lineTo(p.x + (k ? 18 : -18) + Math.cos(a) * rr, p.y - r * 1.2 + Math.sin(a) * rr * 0.6); } ctx.stroke(); }
@@ -748,7 +755,7 @@ function drawBallFx(st, b, t, skin, replay) {
   }
   if (b.fx && !replay) {
     switch (b.fx) {
-      case "fire": case "meteor": case "rocket":
+      case "fire": case "meteor": case "rocket": case "brezel":
         if (b.fx !== "rocket" || b.fxP === 1) for (let i = 0; i < 3; i++) P({ type: "flame", x: b.x + rand(-6, 6), y: b.y + rand(-6, 6), vx: -b.vx * 0.1 + rand(-40, 40), vy: -b.vy * 0.1 + rand(-60, 0), life: 0.35, max: 0.35, size: b.r * 1.3, col: b.fx === "rocket" ? "rgba(255,61,110,.8)" : "rgba(255,110,20,.8)", add: true });
         else P({ type: "spark", x: b.x + rand(-b.r, b.r), y: b.y + b.r, vx: rand(-60, 60), vy: rand(100, 300), life: 0.2, size: 3, col: "#ff3d6e", add: true });
         break;
@@ -758,6 +765,13 @@ function drawBallFx(st, b, t, skin, replay) {
       case "magnet": if (Math.random() < 0.6) { const a = rand(0, TAU); P({ type: "dot", x: b.x + Math.cos(a) * 50, y: b.y + Math.sin(a) * 50, vx: -Math.cos(a) * 200, vy: -Math.sin(a) * 200, life: 0.25, max: 0.25, size: 4, col: "#ff4fd8", add: true }); } break;
       case "bouncy": if (Math.random() < 0.5) P({ type: "star", x: b.x, y: b.y, vx: rand(-80, 80), vy: rand(-80, 80), life: 0.4, size: 6, col: "#ff8bd1", vr: 5 }); break;
       case "banana": P({ type: "dot", x: b.x, y: b.y, life: 0.4, max: 0.4, size: 7, col: "rgba(255,212,59,.8)", add: true }); break;
+      case "sad": if (Math.random() < 0.6) P({ type: "dot", x: b.x + rand(-26, 26), y: b.y - 34, vy: 380, life: 0.3, max: 0.3, size: 2.5, col: "#7fd0ff" }); break;
+      case "flex": P({ type: "spark", x: b.x + rand(-b.r, b.r) * 0.7, y: b.y + rand(-b.r, b.r) * 0.7, vx: rand(-90, 90), vy: rand(-90, 90), life: 0.35, size: 3.5, col: "#ffe14d", add: true }); if (Math.random() < 0.25) P({ type: "star", x: b.x, y: b.y, vx: rand(-60, 60), vy: rand(-60, 60), life: 0.45, size: 6, col: "#ffd23f", vr: 6 }); break;
+      case "bassdrop": if (b.fxP !== 1 && Math.random() < 0.6) P({ type: "dot", x: b.x, y: b.y, vx: rand(-120, 120), vy: rand(-120, 120), life: 0.3, max: 0.3, size: 5, col: Math.random() < 0.5 ? "#ff4fd8" : "#5effc8", add: true }); break;
+      case "aimbot": if (Math.random() < 0.5) P({ type: "dot", x: b.x, y: b.y, life: 0.25, max: 0.25, size: 5, col: "rgba(255,61,110,.8)", add: true }); break;
+      case "stone": if (Math.random() < 0.5) P({ type: "dot", x: b.x + rand(-8, 8), y: b.y + rand(-8, 8), vx: rand(-40, 40), vy: rand(-40, 20), life: 0.5, max: 0.5, size: 7, col: "rgba(170,170,160,.5)" }); break;
+      case "crypto": P({ type: "dot", x: b.x, y: b.y, life: 0.6, max: 0.6, size: 5, col: b.fxP === 0 ? "#3ddc84" : "#ff3d6e", add: true }); break;
+      case "rizz": if (Math.random() < 0.3) P({ type: "heart", x: b.x + rand(-8, 8), y: b.y, vy: -60, life: 0.7, max: 0.7, size: 7, col: "#ff4f9a" }); break;
     }
   }
   if (b.fx) {
@@ -768,16 +782,30 @@ function drawBallFx(st, b, t, skin, replay) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.6, 0, TAU); ctx.fill();
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
   }
-  if (b.fx === "clone") {
+  if (b.fx === "clone" || b.fx === "copypaste") {
     const amp = 95 * Math.sin(Math.min(1, b.fxT / 0.35) * Math.PI / 2);
     const d = Math.hypot(b.fxDX, b.fxDY) || 1, px = -b.fxDY / d, py = b.fxDX / d;
     [-1, 0, 1].forEach(k => { if (k === b.fxK) return; drawBall(ctx, skin, b.fxBX + px * amp * k, b.fxBY + py * amp * k, b.r, b.a, 0.95); });
   }
-  // Ziel-Warnung, damit man Meteor und Rakete abwehren kann
-  if ((b.fx === "meteor" && b.fxP !== 2) || (b.fx === "rocket" && b.fxP === 0)) {
-    const tx = b.fxTX, ty = b.fx === "meteor" ? G - 6 : b.fxTY, pulse = 0.6 + Math.sin(t * 22) * 0.4;
+  if (b.fx === "aimbot") {
+    const tg = superTarget(st, b.fxO), s = 30 - Math.min(1, b.fxT / 0.3) * 12;
+    ctx.save(); ctx.strokeStyle = "rgba(255,61,110,.9)"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(tg.x, tg.y, s, 0, TAU); ctx.stroke();
+    ctx.beginPath(); [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([u, v]) => { ctx.moveTo(tg.x + u * (s - 8), tg.y + v * (s - 8)); ctx.lineTo(tg.x + u * (s + 8), tg.y + v * (s + 8)); }); ctx.stroke();
+    ctx.setLineDash([6, 6]); ctx.globalAlpha = 0.6; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(tg.x, tg.y); ctx.stroke();
+    ctx.restore();
+  }
+  if (b.fx === "bassdrop" && b.fxP === 1) {
+    ctx.save(); ctx.strokeStyle = "#5effc8"; ctx.lineWidth = 3;
+    for (let k = 0; k < 3; k++) { const ph = (t * 2.2 + k / 3) % 1; ctx.globalAlpha = 1 - ph; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * (1.3 + ph * 2.6), 0, TAU); ctx.stroke(); }
+    ctx.restore();
+  }
+  if (b.fx === "sad") drawCloud(b.x, b.y - b.r - 26, 20, t);
+  // Ziel-Warnung, damit man Meteor, Steinschlag und Rakete abwehren kann
+  if ((b.fx === "stone" && b.fxP === 0) || (b.fx === "meteor" && b.fxP !== 2) || (b.fx === "rocket" && b.fxP === 0)) {
+    const tx = b.fx === "stone" ? b.fxTX - (b.fxO ? -1 : 1) * 160 : b.fxTX, ty = b.fx === "rocket" ? b.fxTY : G - 6, pulse = 0.6 + Math.sin(t * 22) * 0.4;
     ctx.save(); ctx.strokeStyle = `rgba(255,70,70,${pulse})`; ctx.lineWidth = 4; ctx.setLineDash([10, 8]);
-    if (b.fx === "meteor") { ctx.beginPath(); ctx.ellipse(tx, ty, 70, 14, 0, 0, TAU); ctx.stroke(); }
+    if (b.fx !== "rocket") { ctx.beginPath(); ctx.ellipse(tx, ty, 70, 14, 0, 0, TAU); ctx.stroke(); }
     else { ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(tx, ty); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(tx, ty, 26, 0, TAU); ctx.stroke(); }
     ctx.restore();
   }
@@ -797,6 +825,7 @@ function drawBallFx(st, b, t, skin, replay) {
     stretch = { ang: ballSq.ang, k: 1 - 0.32 * ballSq.p * k };
   } else if (sp > 800) stretch = { ang: Math.atan2(b.vy, b.vx), k: 1 + Math.min(0.22, (sp - 800) / 3500) };
   drawBall(ctx, skin, b.x, b.y, b.r, b.a, b.alpha ?? 1, stretch);
+  if (b.fx === "stone" || b.fx === "crypto" || b.fx === "flex") ballSkinFx(b);
   if (!replay) st.p.forEach(p => drawAim(st, p));
 }
 // Richtungspfeil beim Halten: startet am Ball und zeigt, wohin er gleich geht (Lupfer / Strahl / Volley)
@@ -1190,3 +1219,33 @@ export function arenaThumb(arena, w, h) {
 }
 
 export function toWorld(x, y) { return { x: (x - base.ox) / base.s, y: (y - base.oy) / base.s }; }
+
+// ---------- Meme-Supers: kleine Zeichen-Helfer ----------
+function heartShape(x, y, s) {
+  ctx.beginPath(); ctx.moveTo(x, y + s * 0.35);
+  ctx.bezierCurveTo(x - s * 1.1, y - s * 0.35, x - s * 0.45, y - s, x, y - s * 0.42);
+  ctx.bezierCurveTo(x + s * 0.45, y - s, x + s * 1.1, y - s * 0.35, x, y + s * 0.35);
+}
+/** Regenwolke (Sad-Ball und traurige Spieler) */
+function drawCloud(x, y, s, t) {
+  ctx.save();
+  ctx.fillStyle = "#6b7590"; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x - s * 0.5, y, s * 0.45, 0, TAU); ctx.arc(x, y - s * 0.25, s * 0.55, 0, TAU); ctx.arc(x + s * 0.55, y, s * 0.42, 0, TAU); ctx.fill();
+  ctx.strokeStyle = "#7fd0ff";
+  for (let k = 0; k < 5; k++) { const ox = x - s * 0.7 + k * s * 0.35, oy = y + s * 0.4 + ((t * 120 + k * 17) % (s * 1.2)); ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox - 2, oy + 7); ctx.stroke(); }
+  ctx.restore();
+}
+/** Steinschlag als Stein, Kryptoball als Münze, Flex-Ball in Gold: über den normalen Ball gelegt */
+function ballSkinFx(b) {
+  const r = b.r;
+  ctx.save(); ctx.globalAlpha = b.alpha ?? 1; ctx.translate(b.x, b.y); ctx.rotate(b.a || 0);
+  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
+  if (b.fx === "stone") { g.addColorStop(0, "#c2c5bb"); g.addColorStop(1, "#6e716a"); }
+  else { g.addColorStop(0, "#fff3a0"); g.addColorStop(1, b.fx === "crypto" ? "#f7931a" : "#e0a800"); }
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke();
+  ctx.lineWidth = Math.max(1.5, r * 0.1);
+  if (b.fx === "stone") { ctx.strokeStyle = "#4b4e48"; ctx.beginPath(); ctx.moveTo(-r * 0.6, -r * 0.2); ctx.lineTo(-r * 0.1, 0); ctx.lineTo(r * 0.2, -r * 0.5); ctx.moveTo(-r * 0.1, 0); ctx.lineTo(r * 0.1, r * 0.6); ctx.stroke(); }
+  else if (b.fx === "crypto") { ctx.strokeStyle = "#a35a00"; ctx.beginPath(); ctx.arc(0, 0, r * 0.68, 0, TAU); ctx.moveTo(0, r * 0.4); ctx.lineTo(0, -r * 0.42); ctx.moveTo(-r * 0.25, -r * 0.12); ctx.lineTo(0, -r * 0.42); ctx.lineTo(r * 0.25, -r * 0.12); ctx.stroke(); }
+  else { ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.beginPath(); ctx.arc(-r * 0.2, -r * 0.2, r * 0.45, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke(); }
+  ctx.restore();
+}

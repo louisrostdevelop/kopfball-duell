@@ -37,7 +37,7 @@ export function mkPlayer(i, ch) {
   return {
     i, ch, x: i ? W - Math.round(W * 0.283) : Math.round(W * 0.283), y: REST, vx: 0, vy: 0, dir: i ? -1 : 1, onG: true,
     kick: 0, kHit: false, kHeld: false, kPow: 1, chT: 0, charge: 0, lastJ: false, lastS: false,
-    meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false, confT: 0, djT: 0, djUsed: false, kHitP: false, pushCD: 0, knock: 0,
+    meter: 0, full: false, armed: 0, frz: 0, stun: 0, sc: 1, bigT: 0, miniT: 0, spdT: 0, jmpT: 0, fireNext: false, confT: 0, djT: 0, sadT: 0, charmT: 0, djUsed: false, kHitP: false, pushCD: 0, knock: 0,
     hc: 0, sc2: 0, mood: "", moodT: 0, emo: "", emoT: 0, land: 0,
     coy: 0, slick: false, bonkT: 0, jHeld: false, jRel: false, jT: 0, lastD: false, dBuf: 0, dAir: false, bombLock: false, stompImm: 0, bomb: 0, bombY: 0, bombRec: 0, slide: 0, slideDir: 1, slideCD: 0, slideHit: false, slideHitP: false, tripCD: 0,
   };

@@ -1,23 +1,15 @@
 // Prozedurale Grafik: Köpfe, Bälle, Icons. Wird im Spiel und in den Menüs benutzt.
-import { charById, COL } from "../../content/config.js";
+import { charById } from "../../content/config.js";
 import { cosById } from "../../content/cosmetics.js";
-
-const INK = COL.ink;
-const TAU = Math.PI * 2;
-
-function shade(hex, f) {
-  const n = parseInt(hex.slice(1), 16);
-  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  if (f < 0) { r *= 1 + f; g *= 1 + f; b *= 1 + f; } else { r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
-  return `rgb(${r | 0},${g | 0},${b | 0})`;
-}
+import { INK, TAU, circ, shade, stroke } from "./paint.js";
+import { MEME_STYLES, drawMemeHead } from "./meme-heads.js";
+import { drawShoeSkin } from "./shoes.js";
 export { shade };
-
-function circ(ctx, x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); }
 
 // o: { dir, look (Winkel), mood, blink, effort, frozen, t }
 export function drawHead(ctx, chId, x, y, r, o = {}) {
   const c = charById(chId), dir = o.dir || 1, lw = Math.max(2, r * 0.085);
+  if (MEME_STYLES[c.style]) { drawMemeHead(ctx, c, x, y, r, o); return; }
   ctx.save();
   ctx.lineJoin = "round"; ctx.lineCap = "round";
   // Hinterkopf-Elemente
@@ -40,8 +32,6 @@ export function drawHead(ctx, chId, x, y, r, o = {}) {
   }
   ctx.restore();
 }
-
-function stroke(ctx, lw) { ctx.lineWidth = lw; ctx.strokeStyle = INK; ctx.stroke(); }
 
 function face(ctx, c, x, y, r, dir, lw, o) {
   const fx = x + dir * r * 0.14;
@@ -378,8 +368,22 @@ export function drawHat(ctx, id, x, y, r, dir = 1, t = 0) {
   if (c.rarity === "legend") { const a = (Math.sin(t * 4) + 1) / 2; ctx.globalAlpha = 0.5 + a * 0.5; star(ctx, x + r * 0.5, top - r * 0.3, r * 0.16, "#fff6b0", lw); }
   ctx.restore();
 }
-/** Schuhfarbe: ausgerüstete Schuhe, sonst Teamfarbe */
-export const shoeColor = (id, team) => { const c = cosById(id); return c ? c.col : team; };
+/** Getragener Schuh: ausgerüsteter Skin, sonst der Standardschuh in Teamfarbe */
+export function drawWornShoe(ctx, id, x, y, r, dir, team, rot, t) {
+  const c = cosById(id);
+  if (c && c.skin) drawShoeSkin(ctx, c.skin, x, y, r, dir, rot, t);
+  else drawShoe(ctx, x, y, r, dir, team, rot);
+}
+
+/** Schuh-Skin als kleines Bild für Karten (Ausrüstung, Kisten, Shop) */
+export function shoeCanvas(skin, px) {
+  const c = document.createElement("canvas");
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = c.height = Math.round(px * dpr); c.style.width = c.style.height = px + "px";
+  const x = c.getContext("2d"), r = px * 0.24; x.scale(dpr, dpr);
+  drawShoeSkin(x, skin, px / 2 - r * 0.4, px * 0.56, r, 1, 0);
+  return c;
+}
 
 // Kleines Avatar-Bild für Menüs (opts.hat: Kopfbedeckung)
 export function avatarCanvas(chId, px, opts = {}) {

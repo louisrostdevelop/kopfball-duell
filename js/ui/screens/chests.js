@@ -4,7 +4,7 @@ import { CHEST_TIERS, CHESTS, cosById, PITY } from "../../content/cosmetics.js";
 import { S } from "../../app/profile.js";
 import { onSync, openChest } from "../../app/account.js";
 import { App } from "../../app/state.js";
-import { avatarCanvas } from "../render/art.js";
+import { avatarCanvas, shoeCanvas } from "../render/art.js";
 import { refreshTop } from "./home.js";
 import { $, esc, modal, toast } from "../dom.js";
 import { registerScreen, showScreen } from "../nav.js";
@@ -26,6 +26,7 @@ export function cosIcon(id, size = 56) {
   const c = cosById(id), d = document.createElement("span");
   d.className = "cosic k-" + (c ? c.kind : "x"); d.style.setProperty("--col", c ? c.col : "#ccc"); d.style.setProperty("--s", size + "px");
   if (c && c.kind === "emoji") d.textContent = c.glyph;
+  else if (c && c.skin) d.append(shoeCanvas(c.skin, size));
   else d.innerHTML = `<svg viewBox="0 0 48 48"><use href="#cos-${c ? c.kind : "hat"}"/></svg><b>${c ? c.n : ""}</b>`;
   return d;
 }
