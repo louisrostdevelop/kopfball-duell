@@ -192,7 +192,8 @@ export function pingHud(dt) {
 }
 
 export function hostData(d) {
-  App.lastRx = performance.now();
+  // Ping/Pong beantwortet auch ein eingefrorener Tab (kommt nicht über die Spielschleife): kein Lebenszeichen
+  if (d.t !== "ping" && d.t !== "pong") App.lastRx = performance.now();
   switch (d.t) {
     case "hello":
       // Rückkehr nach Abbruch: nur derselbe Gast (Merker), dann Spiel mit dem vollen Stand fortsetzen
@@ -265,7 +266,8 @@ export function tryJoin(code) {
 }
 
 export function guestData(d) {
-  App.lastRx = performance.now();
+  // Ping/Pong beantwortet auch ein eingefrorener Tab (kommt nicht über die Spielschleife): kein Lebenszeichen
+  if (d.t !== "ping" && d.t !== "pong") App.lastRx = performance.now();
   switch (d.t) {
     case "welcome":
       if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote(t("net.versionMismatch"), true); break; }
