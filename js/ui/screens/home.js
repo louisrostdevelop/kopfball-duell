@@ -124,7 +124,7 @@ export function drawShowcase(dt) {
   const look = -Math.PI / 2 + Math.sin(t * 2) * 0.3;
   drawHead(x, S.char, cx, headY - bump * r * 0.4, r, { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t });
   x.restore();
-  drawBall(x, S.ball, bx, j.y, br, j.a);
+  drawBall(x, S.ball, bx, j.y, br, j.a, 1, null, { t, vy: j.vy });
 }
 
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)

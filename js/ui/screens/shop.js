@@ -116,7 +116,7 @@ async function gemShop() {
 export function ballCanvas(id, px) {
   const c = document.createElement("canvas"), r = Math.min(2, devicePixelRatio || 1);
   c.width = c.height = px * r; c.style.width = c.style.height = px + "px";
-  const x = c.getContext("2d"); x.scale(r, r); drawBall(x, id, px / 2, px / 2, px * 0.36, 0.4); return c;
+  const x = c.getContext("2d"); x.scale(r, r); drawBall(x, id, px / 2, px / 2, px * 0.36, 0.4, 1, null, { t: 4.28 }); return c; // t: Mond hinter dem Ball, Orakel-Auge offen
 }
 
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)

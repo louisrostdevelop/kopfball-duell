@@ -98,6 +98,18 @@ export const BALLS = [
   { id: "planet",  price: 300 },
   { id: "disco",   price: 350 },
   { id: "gold",    price: 600 },
+  { id: "auge",     price: 250 },
+  { id: "graffiti", price: 250 },
+  { id: "slime",    price: 250 },
+  { id: "blase",    price: 250 },
+  { id: "glitch",   price: 450 },
+  { id: "vapor",    price: 450 },
+  { id: "chrom",    price: 450 },
+  { id: "candy",    price: 450 },
+  { id: "galaxie",  price: 750 },
+  { id: "iceout",   price: 750 },
+  { id: "rgb",      price: 750 },
+  { id: "orakel",   price: 750 },
 ];
 
 export const POWERUPS = {

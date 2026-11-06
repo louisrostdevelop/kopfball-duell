@@ -5,6 +5,7 @@ import { INK, TAU, circ, shade, stroke } from "./paint.js";
 import { MEME_STYLES, drawMemeHead } from "./meme-heads.js";
 import { drawShoeSkin } from "./shoes.js";
 import { drawFrame } from "./frames.js";
+import { drawBallSkin } from "./balls.js";
 export { shade };
 
 // o: { dir, look (Winkel), mood, blink, effort, frozen, t }
@@ -238,82 +239,12 @@ export function drawShoe(ctx, x, y, r, dir, col, rot, stripe = "#fff") {
   ctx.restore();
 }
 
-// ---------- Bälle ----------
-const ballCache = new Map();
-export function ballSprite(skin, size) {
-  const key = skin + "@" + size;
-  if (ballCache.has(key)) return ballCache.get(key);
-  const c = document.createElement("canvas"); c.width = c.height = size;
-  const x = c.getContext("2d"), r = size / 2;
-  x.save(); circ(x, r, r, r); x.clip();
-  const pent = (cx, cy, s, col, rot = 0) => { x.beginPath(); for (let k = 0; k < 5; k++) { const a = rot - Math.PI / 2 + k * TAU / 5; x.lineTo(cx + Math.cos(a) * s, cy + Math.sin(a) * s); } x.closePath(); x.fillStyle = col; x.fill(); };
-  const classic = (base, dark, line) => {
-    x.fillStyle = base; x.fillRect(0, 0, size, size);
-    pent(r, r, r * 0.34, dark);
-    for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * TAU / 5 + Math.PI / 5; pent(r + Math.cos(a) * r * 0.92, r + Math.sin(a) * r * 0.92, r * 0.3, dark, a); }
-    x.strokeStyle = line; x.lineWidth = size * 0.025;
-    for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * TAU / 5; x.beginPath(); x.moveTo(r + Math.cos(a) * r * 0.34, r + Math.sin(a) * r * 0.34); x.lineTo(r + Math.cos(a) * r * 0.66, r + Math.sin(a) * r * 0.66); x.stroke(); }
-  };
-  switch (skin) {
-    case "retro":
-      x.fillStyle = "#a0622d"; x.fillRect(0, 0, size, size);
-      x.strokeStyle = "#5a3212"; x.lineWidth = size * 0.04;
-      [-0.35, 0.35].forEach(k => { x.beginPath(); x.ellipse(r + k * r, r, r * 0.35, r * 1.1, 0, 0, TAU); x.stroke(); });
-      x.strokeStyle = "#f3e1c0"; x.lineWidth = size * 0.02; x.setLineDash([size * 0.04, size * 0.04]);
-      x.beginPath(); x.moveTo(r * 0.85, r * 0.6); x.lineTo(r * 1.15, r * 0.6); x.moveTo(r * 0.85, r * 1.0); x.lineTo(r * 1.15, r * 1.0); x.moveTo(r * 0.85, r * 1.4); x.lineTo(r * 1.15, r * 1.4); x.stroke(); x.setLineDash([]);
-      break;
-    case "beach": {
-      const cols = ["#ff3d6e", "#fff", "#ffd43b", "#fff", "#22d3ee", "#fff", "#3ddc84", "#fff"];
-      cols.forEach((col, k) => { x.beginPath(); x.moveTo(r, r); x.arc(r, r, r, k * TAU / 8, (k + 1) * TAU / 8); x.fillStyle = col; x.fill(); });
-      circ(x, r, r, r * 0.16); x.fillStyle = "#fff"; x.fill();
-      break;
-    }
-    case "neon":
-      x.fillStyle = "#120a2e"; x.fillRect(0, 0, size, size);
-      x.shadowColor = "#ff4fd8"; x.shadowBlur = size * 0.12; x.strokeStyle = "#ff4fd8"; x.lineWidth = size * 0.05;
-      x.beginPath(); x.arc(r, r, r * 0.55, 0, TAU); x.stroke();
-      x.shadowColor = "#22d3ee"; x.strokeStyle = "#22d3ee";
-      x.beginPath(); x.moveTo(0, r); x.lineTo(size, r); x.moveTo(r, 0); x.lineTo(r, size); x.stroke();
-      x.shadowBlur = 0; break;
-    case "pixel": {
-      const n = 8, s = size / n;
-      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { x.fillStyle = (i + j) % 2 ? "#14161f" : "#f7f5ef"; if ((i * 7 + j * 3) % 5 === 0) x.fillStyle = "#3ddc84"; x.fillRect(i * s, j * s, s + 0.5, s + 0.5); }
-      break;
-    }
-    case "planet":
-      x.fillStyle = "#1e6fd9"; x.fillRect(0, 0, size, size);
-      x.fillStyle = "#3ddc84";
-      [[0.3, 0.35, 0.28], [0.7, 0.6, 0.3], [0.45, 0.8, 0.18], [0.85, 0.2, 0.15]].forEach(([a, b, s]) => { x.beginPath(); x.ellipse(a * size, b * size, s * size, s * size * 0.7, a * 3, 0, TAU); x.fill(); });
-      x.fillStyle = "rgba(255,255,255,.7)"; x.fillRect(0, size * 0.04, size, size * 0.08); x.fillRect(0, size * 0.88, size, size * 0.1);
-      break;
-    case "disco": {
-      const n = 9, s = size / n;
-      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const v = 150 + ((i * 37 + j * 91) % 100); x.fillStyle = `rgb(${v},${v},${v + 20})`; x.fillRect(i * s + 0.5, j * s + 0.5, s - 1, s - 1); }
-      x.fillStyle = "rgba(255,79,216,.35)"; x.fillRect(size * 0.55, size * 0.2, s * 2, s * 2);
-      x.fillStyle = "rgba(34,211,238,.35)"; x.fillRect(size * 0.2, size * 0.6, s * 2, s * 2);
-      break;
-    }
-    case "gold": classic("#ffd84d", "#b07d00", "#8a6200"); break;
-    default: classic("#f7f5ef", "#14161f", "#555a66");
-  }
-  x.restore();
-  ballCache.set(key, c);
-  return c;
-}
-
+// ---------- Bälle (Skins in balls.js) ----------
+// st = { t, vx, vy, hit, floor } – fehlt es, läuft die Animation über die Uhr (Menüs, Shop)
 // stretch: { ang, k } – Ball wird entlang ang um k gedehnt (k < 1 = gestaucht), Fläche bleibt gleich
-export function drawBall(ctx, skin, x, y, r, a, alpha = 1, stretch = null) {
-  const spr = ballSprite(skin, 128);
+export function drawBall(ctx, skin, x, y, r, a, alpha = 1, stretch = null, st = null) {
   ctx.save(); ctx.globalAlpha = alpha;
-  ctx.translate(x, y);
-  if (stretch && Math.abs(stretch.k - 1) > 0.01) { ctx.rotate(stretch.ang); ctx.scale(stretch.k, 1 / Math.sqrt(stretch.k)); ctx.rotate(-stretch.ang); }
-  const lw = Math.max(2, r * 0.14);
-  circ(ctx, 0, 0, r + lw * 0.9); ctx.fillStyle = "#fff"; ctx.fill();
-  circ(ctx, 0, 0, r + lw * 0.15); ctx.fillStyle = INK; ctx.fill();
-  ctx.save(); ctx.rotate(a); ctx.drawImage(spr, -r, -r, r * 2, r * 2); ctx.restore();
-  const g = ctx.createRadialGradient(-r * 0.4, -r * 0.45, r * 0.05, 0, 0, r);
-  g.addColorStop(0, "rgba(255,255,255,.6)"); g.addColorStop(0.42, "rgba(255,255,255,0)"); g.addColorStop(1, "rgba(0,0,30,.38)");
-  circ(ctx, 0, 0, r); ctx.fillStyle = g; ctx.fill();
+  drawBallSkin(ctx, skin, x, y, r, { t: st?.t ?? performance.now() / 1000, a, vx: st?.vx ?? 0, vy: st?.vy ?? 0, hit: st?.hit ?? 9, floor: st?.floor, seed: 0 }, stretch);
   ctx.restore();
 }
 
