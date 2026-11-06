@@ -132,10 +132,10 @@ export const cosById = id => ALL.find(c => c.id === id);
 // coins: [von, bis]; cos: Chance auf einen Kosmetik-Gegenstand und Verteilung der Seltenheit;
 // head: Chance je Seltenheit auf einen Kopf (doppelter Kopf = Kopf-XP); sure: sicher ein Kopf
 export const CHESTS = {
-  bronze: { coins: [40, 80], gems: 0, cos: { p: 0.35, rar: { selten: 1 } }, head: { selten: 0.05, episch: 0.01, legend: 0.002 }, c1: "#e0a36a", c2: "#9a5b2c" },
-  silver: { coins: [100, 160], gems: 0, cos: { p: 0.7, rar: { selten: 0.7, episch: 0.3 } }, head: { selten: 0.12, episch: 0.05, legend: 0.01 }, c1: "#e4ecf5", c2: "#8a99ad" },
-  gold: { coins: [250, 250], gems: 0, cos: { p: 1, rar: { episch: 0.8, legend: 0.2 } }, head: { selten: 0.25, episch: 0.18, legend: 0.06 }, c1: "#ffe27a", c2: "#d89400" },
-  legend: { coins: [0, 0], gems: 30, cos: { p: 1, rar: { legend: 1 } }, head: { episch: 0.5, legend: 0.5 }, sure: true, c1: "#d6b4ff", c2: "#7a3fe0" },
+  bronze: { coins: [20, 40], gems: 0, cos: { p: 0.21, rar: { selten: 1 } }, head: { selten: 0.05, episch: 0.01, legend: 0.002 }, c1: "#e0a36a", c2: "#9a5b2c" },
+  silver: { coins: [50, 80], gems: 0, cos: { p: 0.42, rar: { selten: 0.7, episch: 0.3 } }, head: { selten: 0.12, episch: 0.05, legend: 0.01 }, c1: "#e4ecf5", c2: "#8a99ad" },
+  gold: { coins: [125, 125], gems: 0, cos: { p: 0.6, rar: { episch: 0.8, legend: 0.2 } }, head: { selten: 0.25, episch: 0.18, legend: 0.06 }, c1: "#ffe27a", c2: "#d89400" },
+  legend: { coins: [0, 0], gems: 30, cos: { p: 0.6, rar: { legend: 1 } }, head: { episch: 0.5, legend: 0.5 }, sure: true, c1: "#d6b4ff", c2: "#7a3fe0" },
 };
 export const CHEST_TIERS = ["bronze", "silver", "gold", "legend"];
 
@@ -151,5 +151,5 @@ export const LEVEL_SURE_HEAD = { 2: "selten", 5: "episch" };
 /** XP für das nächste Level: wächst bis Level 50, danach gleich */
 export const xpForLevel = lvl => 120 + (Math.min(lvl, 50) - 1) * 60;
 /** Münzen fürs Level-Up (ab Level 50 fest), alle 5 Level Juwelen */
-export const levelCoins = lvl => 50 + Math.min(lvl, 50) * 10;
+export const levelCoins = lvl => 25 + Math.min(lvl, 50) * 5;
 export const LEVEL_GEMS = 20;

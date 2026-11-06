@@ -32,37 +32,37 @@ const db = async (sql, args = []) => (await be.pool.query(sql, args)).rows;
 const until = async (fn, ms = 6000) => { const t = Date.now(); for (;;) { const v = await fn(); if (v) return v; if (Date.now() - t > ms) return v; await new Promise(r => { setTimeout(r, 150); }); } };
 
 test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "kein Postgres" }, async () => {
-  // Lokaler Spielstand von vorher: 1200 Münzen, Tank gekauft
-  const { page, errors } = await openPage(env, VIEW.desktop, { save: { coins: 1200, chars: ["kalle", "yuki", "bolt", "tank"] }, query: `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev` });
+  // Lokaler Spielstand von vorher: 2000 Münzen, Retro-Ball gekauft
+  const { page, errors } = await openPage(env, VIEW.desktop, { save: { coins: 2000, balls: ["klassik", "retro"] }, query: `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev` });
   const sess = await until(() => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null")));
   assert.ok(sess && sess.user && sess.user.is_anonymous, "Gast-Konto auf dem Server angelegt");
   const id = sess.user.id;
 
-  // Import: 150 Start + 1050 lokal erspielt; Tank übernommen. Danach Tagesbonus 70 (Serie 1)
-  const w = await until(async () => { const r = await db("select coins from game.wallets where player_id = $1", [id]); return r[0] && Number(r[0].coins) === 1270 && r[0]; });
+  // Import (Budget 2000): Retro 100, dazu 1850 lokal erspielt; plus 150 Start. Danach Tagesbonus 35 (Serie 1)
+  const w = await until(async () => { const r = await db("select coins from game.wallets where player_id = $1", [id]); return r[0] && Number(r[0].coins) === 2035 && r[0]; });
   assert.ok(w, "Import + Tagesbonus auf dem Server: " + JSON.stringify(await db("select reason, delta from game.ledger where player_id = $1", [id])));
-  assert.equal((await db("select count(*)::int n from game.inventory where player_id = $1 and item_id = 'head:tank'", [id]))[0].n, 1, "Tank übernommen");
-  await until(async () => (await S(page)).coins === 1270);
-  assert.equal((await S(page)).coins, 1270, "Anzeige = Server");
+  assert.equal((await db("select count(*)::int n from game.inventory where player_id = $1 and item_id = 'ball:retro'", [id]))[0].n, 1, "Retro übernommen");
+  await until(async () => (await S(page)).coins === 2035);
+  assert.equal((await S(page)).coins, 2035, "Anzeige = Server");
   await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
 
   // Kauf: lokal sofort, Server bestätigt
-  await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 400));
+  await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 1600));
   await until(async () => (await db("select 1 from game.inventory where player_id = $1 and item_id = 'head:rocco'", [id])).length);
-  await until(async () => (await S(page)).coins === 870);
-  assert.equal((await S(page)).coins, 870, "Kauf gebucht");
+  await until(async () => (await S(page)).coins === 435);
+  assert.equal((await S(page)).coins, 435, "Kauf gebucht");
 
   // Geschummelt: lokal Münzen erhöht, mehr gekauft als bezahlbar -> Server lehnt ab, wird zurückgedreht
   // (Legendäres sperrt schon das Level: lokal gar nicht kaufbar)
-  assert.equal(await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.coins = 99999; return p.buy("chars", "kaiser", 1500); }), false, "Level-Sperre");
-  await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.buy("chars", "flummi", 500); p.buy("chars", "nala", 450); });
-  await until(async () => { const s = await S(page); return s.coins < 2000 && !(s.chars.includes("flummi") && s.chars.includes("nala")); });
+  assert.equal(await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.coins = 99999; return p.buy("chars", "kaiser", 6000); }), false, "Level-Sperre");
+  await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.buy("chars", "flummi", 2000); p.buy("chars", "nala", 1800); });
+  await until(async () => { const s = await S(page); return s.coins < 5000 && !(s.chars.includes("flummi") && s.chars.includes("nala")); });
   const s = await S(page);
   const real = Number((await db("select coins from game.wallets where player_id = $1", [id]))[0].coins);
   assert.equal(s.coins, real, "Münzen wieder wie auf dem Server");
   const owned = (await db("select item_id from game.inventory where player_id = $1", [id])).map(r => r.item_id.replace("head:", ""));
   assert.deepEqual([...s.chars].sort(), owned.filter(x => !x.includes(":")).sort(), "Besitz wie auf dem Server");
-  assert.ok(real >= 0 && real <= 870, "Server hat nur bezahlbare Käufe gebucht");
+  assert.ok(real >= 0 && real <= 435, "Server hat nur bezahlbare Käufe gebucht");
 
   // Spiel gegen den Computer: Server bucht die Belohnung
   const coinsBefore = real;

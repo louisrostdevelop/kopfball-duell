@@ -40,7 +40,7 @@ test("Inhalte: 38 Gegenstände (10 Schuh-Skins, keine Hüte), IDs eindeutig, Kis
 test("Chancen stimmen über viele Kisten (Bronze)", () => {
   const r = rng(1); let cos = 0, heads = 0; const n = 20000;
   for (let i = 0; i < n; i++) { const o = rollChest("bronze", { ...base(), owned: new Set() }, r); if (o.items.some(x => x.kind !== "head")) cos++; if (o.items.some(x => x.kind === "head")) heads++; }
-  assert.ok(Math.abs(cos / n - 0.35) < 0.02, "Kosmetik ~35 %: " + cos / n);
+  assert.ok(Math.abs(cos / n - 0.21) < 0.02, "Kosmetik ~21 %: " + cos / n);
   assert.ok(Math.abs(heads / n - 0.062) < 0.01, "Kopf ~6,2 %: " + heads / n);
 });
 

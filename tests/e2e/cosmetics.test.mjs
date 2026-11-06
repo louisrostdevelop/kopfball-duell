@@ -78,11 +78,11 @@ test("Meisterschaft und Kosmetik-Shop (ohne Server)", async () => {
 });
 
 test("Shop: Seltenes erst ab Level (Episch 5, Legendär 10)", async () => {
-  const { page, errors } = await openPage(env, VIEW.desktop, { save: { coins: 5000, level: 4 } });
+  const { page, errors } = await openPage(env, VIEW.desktop, { save: { coins: 9000, level: 4 } });
   await click(page, "#navShop", 400);
   const txt = await page.textContent("#shopGrid");
   assert.match(txt, /ab Level 5/); assert.match(txt, /ab Level 10/);
-  assert.equal(await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "phantom", 700)), false);
-  assert.equal(await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 400)), true);
+  assert.equal(await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "phantom", 2800)), false);
+  assert.equal(await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 1600)), true);
   assert.deepEqual(errors, []);
 });

@@ -124,6 +124,28 @@ begin
   return game.idem_end(p, request_key, res);
 end $$;
 
+-- ---------- Splitter in Kopf-XP tauschen (docs/BALANCE.md): füllt die fehlende XP bis zum nächsten Kopf-Level, so weit die
+-- Splitter reichen. 1 Splitter = shard_head_xp Kopf-XP. Aufsteigen kostet danach wie immer Münzen (api.upgrade_head).
+create or replace function api.shards_to_head_xp(head text, request_key text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare p uuid := game.me(); prev jsonb; h game.heads; rate integer := game.cfg_int('shard_head_xp'); missing integer; use integer; have integer; res jsonb;
+begin
+  prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
+  perform game.limit_rate(p, 'shard_xp', 30, interval '1 minute');
+  select * into h from game.heads where player_id = p and head_id = head for update;
+  if h.head_id is null then perform game.fail('head_not_owned'); end if;
+  if h.level >= game.cfg_int('head_max_level') then perform game.fail('max_level'); end if;
+  missing := game.cfg_int('head_xp_per_level') * h.level - h.xp;
+  if missing <= 0 then perform game.fail('nothing_missing'); end if;
+  select shards into have from game.wallets where player_id = p for update;
+  use := least(coalesce(have, 0), ceil(missing / rate::numeric)::integer);
+  if use <= 0 then perform game.fail('insufficient_funds', 'shards'); end if;
+  update game.wallets set shards = shards - use where player_id = p;
+  update game.heads set xp = least(xp + use * rate, game.cfg_int('head_xp_per_level') * h.level) where player_id = p and head_id = head;
+  res := jsonb_build_object('head', head, 'shards', use, 'xp', least(use * rate, missing), 'state', game.state_brief(p));
+  return game.idem_end(p, request_key, res);
+end $$;
+
 -- ---------- Meisterschaft pro Kopf (Konzept: docs/PROGRESSION.md) ----------
 -- Zähler des Kopfes erhöhen; jede erreichte Stufe gibt ihren Gegenstand und/oder ihre Kiste (einmal)
 create or replace function game.progress_mastery(p uuid, head text, won boolean, g integer, sup integer) returns jsonb
@@ -149,4 +171,4 @@ begin
 end $$;
 
 revoke execute on all functions in schema api, game from public;
-grant execute on function api.open_chest(uuid), api.craft_item(text, text) to authenticated;
+grant execute on function api.open_chest(uuid), api.craft_item(text, text), api.shards_to_head_xp(text, text) to authenticated;

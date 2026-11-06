@@ -30,9 +30,9 @@ alter table game.config enable row level security;
 insert into game.config (key, value) values
   ('start_coins', '150'),
   ('start_items', '["head:kalle","head:yuki","head:bolt","arena:stadion","arena:strand","ball:klassik"]'),
-  ('cpu_daily_cap', '600'),            -- volle Münzen aus Computer-Spielen pro Tag
+  ('cpu_daily_cap', '360'),            -- volle Münzen aus Computer-Spielen pro Tag (docs/BALANCE.md)
   ('cpu_after_cap', '0.2'),            -- Anteil danach
-  ('cpu_hard_cap', '1500'),            -- ab hier (gezählte Münzen) gibt es heute nichts mehr: Schutz vor Bots
+  ('cpu_hard_cap', '900'),             -- ab hier (gezählte Münzen) gibt es heute nichts mehr: Schutz vor Bots
   ('cpu_daily_matches', '80'),         -- höchstens so viele belohnte CPU-Spiele am Tag
   ('cpu_time_bank', '5400'),           -- Zeitkonto: so viele Sekunden Spielzeit dürfen auf einmal nachgemeldet werden (offline gespielt)
   ('online_daily_rewarded', '40'),     -- höchstens so viele belohnte Online-Spiele am Tag
@@ -45,9 +45,10 @@ insert into game.config (key, value) values
   ('diff_mult', '[1, 1.3, 1.7, 2.4]'), -- Münz-Faktor je Schwierigkeit
   ('head_max_level', '10'),
   ('head_xp_per_level', '100'),        -- benötigte Kopf-XP: 100 * Level
-  ('head_coins_per_level', '200'),     -- Münzen für Aufstieg: 200 * Level
+  ('head_coins_per_level', '300'),     -- Münzen für Aufstieg: 300 * Level
+  ('shard_head_xp', '2'),              -- 1 Splitter = 2 Kopf-XP (Splitter haben so auch nach aller Kosmetik einen Zweck)
   ('head_gems_per_10xp', '1'),         -- Juwelen, um fehlende Kopf-XP aufzufüllen
-  ('online_coins', '{"win": 70, "loss": 25}'),
+  ('online_coins', '{"win": 42, "loss": 15}'),
   ('elo_k', '32'),
   ('elo_start', '1000'),
   ('ranked_min_level', '5'),

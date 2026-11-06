@@ -9,7 +9,7 @@ import { unlockModal } from "../modals.js";
 import { showScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
 import { audio as A } from "../../app/services.js";
-import { online as serverOn, upgradeCost, upgradeHead } from "../../app/account.js";
+import { HEAD_COST, online as serverOn, shardsToHeadXp, upgradeCost, upgradeHead } from "../../app/account.js";
 import { headLevel } from "../../app/game.js";
 import { lang, t } from "../../content/i18n.js";
 
@@ -90,6 +90,19 @@ function levelBox(c, locked) {
     catch (e) { toast(t("head.upgradeFailed"), "i-close"); btn.disabled = false; }
   };
   box.append(btn);
+  // Splitter in Kopf-XP: füllt die fehlende XP, so weit die Splitter reichen (1 Splitter = HEAD_COST.shardXp XP)
+  if (gems && (S.shards || 0) > 0) {
+    const use = Math.min(S.shards, Math.ceil(cost.missing / HEAD_COST.shardXp)), sb = document.createElement("button");
+    sb.className = "btn small purple"; sb.id = "btnShardXp";
+    sb.innerHTML = `<svg class="ic"><use href="#i-shard"/></svg>${use} → +${Math.min(use * HEAD_COST.shardXp, cost.missing)} ${t("head.xpShort")}`;
+    sb.title = t("head.shardTitle", { n: HEAD_COST.shardXp });
+    sb.onclick = async () => {
+      sb.disabled = true;
+      try { const r = await shardsToHeadXp(c.id); A.sfx("shards"); toast(t("head.shardDone", { n: r.xp, name: c.name }), "i-shard"); selectScreen({ ...selCtx, cur: c.id }); App.stack.pop(); }
+      catch (e) { toast(t("head.upgradeFailed"), "i-close"); sb.disabled = false; }
+    };
+    box.append(sb);
+  }
   if (gems) box.insertAdjacentHTML("beforeend", `<p class="hint">${t("head.missingHint", { n: cost.missing, name: c.name })}</p>`);
 }
 

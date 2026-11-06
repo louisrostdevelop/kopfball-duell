@@ -51,21 +51,21 @@ export function matchEnd() {
   const add = (label, c) => { if (c) { coins += c; lines.push([label, c]); } };
   const m = DIFFS[(App.cfg && App.cfg.diff) ?? 1].coins;
   switch (App.mode) {
-    case "cpu": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(40 * m) : 12); break;
-    case "cup": add(t(win ? "rw.cupWin" : "rw.out"), win ? Math.round(50 * m) : 15); break;
-    case "career": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(40 * m) : 12); break;
-    case "endless": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(35 * m) : 10); break;
-    case "daily": { const c = challenge(); if (win && !c.done) { add(t("rw.daily"), c.reward); challengeDone(); } else add(t(win ? "rw.win" : "rw.played"), win ? 30 : 10); break; }
-    case "host": case "guest": add(t(win ? "rw.onlineWin" : "rw.online"), win ? 70 : 25); break;
-    case "local": add(t("rw.local"), 20); break;
+    case "cpu": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(24 * m) : 7); break;
+    case "cup": add(t(win ? "rw.cupWin" : "rw.out"), win ? Math.round(30 * m) : 9); break;
+    case "career": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(24 * m) : 7); break;
+    case "endless": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(21 * m) : 6); break;
+    case "daily": { const c = challenge(); if (win && !c.done) { add(t("rw.daily"), c.reward); challengeDone(); } else add(t(win ? "rw.win" : "rw.played"), win ? 18 : 6); break; }
+    case "host": case "guest": add(t(win ? "rw.onlineWin" : "rw.online"), win ? 42 : 15); break;
+    case "local": add(t("rw.local"), 12); break;
   }
-  if (myS && myS.goals) add(t("rw.goals", { n: myS.goals }), myS.goals * (vsCpu() ? 8 : 5));
-  if (win && st.s[op] === 0) add(t("rw.cleanSheet"), 20);
+  if (myS && myS.goals) add(t("rw.goals", { n: myS.goals }), myS.goals * (vsCpu() ? 5 : 3));
+  if (win && st.s[op] === 0) add(t("rw.cleanSheet"), 12);
   // Läufe
   let runInfo = null;
   if (App.run && App.run.kind === "cup" && App.mode === "cup") {
     const r = App.run; r.res[r.round] = { s: [a, b], win };
-    if (win) { r.round++; if (r.round >= r.ops.length) { r.done = true; add(t("rw.trophy"), 300); runInfo = "cup"; S.cupBest = 3; } } else r.done = true;
+    if (win) { r.round++; if (r.round >= r.ops.length) { r.done = true; add(t("rw.trophy"), 180); runInfo = "cup"; S.cupBest = 3; } } else r.done = true;
   }
   if (App.run && App.run.kind === "endless" && App.mode === "endless") {
     const r = App.run;
@@ -80,7 +80,8 @@ export function matchEnd() {
     if (career.leagueDone && !serverOn()) { add(t("career.bonusLine", { name: CAREER[App.career.li].name }), CAREER[App.career.li].bonus.coins); grantChest(CAREER[App.career.li].chest, "career", CAREER[App.career.li].id); }
   }
   addCoins(coins);
-  const ups = addXP(Math.round(coins * 1.2) + 15);
+  // XP doppelt so viel wie Münzen: Münzen pro Spiel sind seit docs/BALANCE.md niedriger, Level kommen gleich schnell
+  const ups = addXP(Math.round(coins * 2) + 15);
   S.stats.games++;
   if (win) S.stats.wins++;
   if (myS) ["goals", "headGoals", "pus", "stomps", "supers"].forEach(f => S.stats[f] += myS[f]);

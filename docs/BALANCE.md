@@ -1,6 +1,9 @@
 # Fortschritt geprüft: Simulation, Exploits, Bindungsdauer
 
-Stand 06.11.2026. Werkzeug: `node tools/balance/progression.mjs [Tage] [Läufe] [aktuell|vorschlag]`.
+Stand 06.11.2026. Werkzeug: `node tools/balance/progression.mjs [Tage] [Läufe] [aktuell|ohneSplitterXp]`.
+
+**Umgesetzt:** Der Vorschlag unten ist komplett in Inhalten, Client und Server. Dazu kommt: Splitter lassen sich in
+Kopf-XP tauschen. Kopf-Level in Ranked und die Endlos-Liste bleiben bewusst, wie sie sind (siehe Entscheidungen).
 
 ## Wie simuliert wird
 
@@ -28,7 +31,7 @@ zum Herstellen, Bälle und Arenen, zuletzt Kosmetik aus dem Wochenangebot.
 „geschafft mit Wahrscheinlichkeit x“ gerechnet. Die Zahlen zeigen Größenordnungen und Verhältnisse; echte Spielerdaten
 ersetzen sie, sobald es welche gibt.
 
-## Ergebnis mit den heutigen Werten
+## Ergebnis mit den alten Werten (vor dem 06.11.2026)
 
 | Meilenstein (Tag, Median) | gelegentlich | Stammspieler | Vielspieler | Bot |
 |---|---|---|---|---|
@@ -60,38 +63,60 @@ Kosmetik, Rahmen, Titel, Meisterschaft, Kopf-Level, Pass-Stufen): 38 in Woche 1,
    Doppelte bringen, die letzten Meisterschafts-Stufen (50 Siege pro Kopf) und Ranked. Der Pass bringt ab der zweiten
    Saison dieselben Rahmen noch einmal, als 200 Münzen.
 
-## Vorschlag (Vorlage `vorschlag` in der Simulation)
+## Umgesetzt am 06.11.2026
 
-| Stellschraube | heute | Vorschlag |
+| Stellschraube | vorher | jetzt |
 |---|---|---|
-| Kopf-Preise im Shop | 400–1.500 | ×4 (1.600–6.000) |
-| Münzen pro Spiel und Tagesdeckel | 40 Sieg / 12 / Tor 8, Deckel 600 | ×0,6 |
-| Tagesbonus, Level-Up-Münzen, Münzen in Kisten | | ×0,5 |
-| Chance auf Kosmetik in Kisten | 35 / 70 / 100 / 100 % | ×0,6 (21 / 42 / 60 / 60 %) |
-| Kopf-XP pro Spiel | 30 Sieg / 15 | ×2 |
+| Kopf-Preise im Shop | 400–1.500 | 1.600–6.000 |
+| Münzen pro Spiel (Computer) | 40 Sieg / 12 / Tor 8 / zu null 20 | 24 / 7 / Tor 5 / zu null 12 |
+| Münzen Online | 70 Sieg / 25 | 42 / 15 |
+| Tagesdeckel Computer | 600 voll, ab 1.500 nichts | 360 voll, ab 900 nichts |
+| Tagesbonus | 40 + 30 je Tag | 20 + 15 je Tag |
+| Münzen pro Level-Up | 50 + 10 × Level | 25 + 5 × Level |
+| Münzen in Kisten | | halbiert |
+| Chance auf Kosmetik in Kisten | 35 / 70 / 100 / 100 % | 21 / 42 / 60 / 60 % |
+| Kopf-XP pro Spiel | 30 Sieg / 15 (online 40 / 20) | 60 / 30 (online 80 / 40) |
+| Spieler-XP pro Spiel | Münzen × 1,2 + 15 | Münzen × 2 + 15 (bleibt gleich schnell) |
 | Kopf-Level-Kosten | 200 × Level | 300 × Level |
 | Juwelen für die Tages-Challenge | 15 | 5 |
+| Splitter | nur Herstellen | auch Kopf-XP: 1 Splitter = 2 Kopf-XP, bis zum nächsten Level |
 
-| Meilenstein (Tag, Median) | gelegentlich | Stammspieler | Vielspieler | Bot |
-|---|---|---|---|---|
-| erster legendärer Kopf | 112 | 42 | 14 | 14 |
-| alle 22 Köpfe | 217 | 63 | 28 | 21 |
-| alle 38 Kisten-Kosmetik | 294 | 161 | 77 | 63 |
-| erster Kopf auf Level 10 | – | 252 | 91 | 77 |
-| Hälfte der Meisterschaft | 315 | 91 | 28 | 14 |
-| alle Köpfe auf Level 10 | – | – | 224 | 189 |
+Neu simuliert (40 Läufe, Median):
 
-Münzen des Stammspielers: 150 nach 3 Monaten, 600 nach 6, 14.000 nach einem Jahr. Es gibt also immer etwas, worauf
-man spart. Köpfe kommen öfter aus Kisten (etwa 5 statt 2 bis 3). Neue Sachen pro Woche: 28 in Woche 1, 19 in Woche 13,
-5 in Woche 27.
+| Meilenstein (Tag) | gelegentlich | Stammspieler | Vielspieler | Zahler | Bot |
+|---|---|---|---|---|---|
+| erster legendärer Kopf | 119 | 35 | 14 | 35 | 14 |
+| alle 22 Köpfe | 210 | **63** | 28 | 49 | 21 |
+| alle 38 Kisten-Kosmetik | 301 | 161 | 84 | 168 | 56 |
+| Karriere komplett | 126 | 42 | 21 | 49 | – |
+| erster Kopf auf Level 10 | – | 245 | 91 | 196 | 77 |
+| Hälfte der Meisterschaft | 315 | 91 | 28 | 98 | 14 |
+| alle Köpfe auf Level 10 | – | – | 231 | – | 189 |
 
-**Was der Vorschlag nicht löst:** Nach etwa einem halben Jahr wird es auch hier dünn. Länger halten nur **neue
-Inhalte pro Saison**: zum Beispiel 1 bis 2 neue Köpfe, 4 bis 6 Kosmetik-Teile und eigene Pass-Rahmen je Saison statt
-derselben Vorlage. Dazu bräuchte es einen Zweck für Splitter, etwa Rahmen und Titel herstellen oder Kopf-XP kaufen.
+- **Münzen haben wieder Wert.** Stammspieler: 1.000 nach einem Monat, 100 nach 3, 300 nach 6, 4.500 nach einem Jahr.
+  Es gibt also fast immer etwas, worauf man spart. Erst nach etwa einem Jahr wächst der Vorrat wieder.
+- **Neue Sachen pro Woche (Stammspieler):** 27 in Woche 1, 25 in Woche 9, 17 in Woche 13, 5 in Woche 27.
+- **Splitter:** Stammspieler und Gelegenheitsspieler verbrauchen sie jetzt. Beim Vielspieler bleiben sie liegen, weil
+  Münzen für die Kopf-Level fehlen. Die Splitter halten also nur die Kopf-XP voll, die Grenze bleibt das Geld. Darum
+  bringt Splitter-zu-Kopf-XP in der Simulation keinen schnelleren Meilenstein (Vergleich `ohneSplitterXp`). Das ist
+  gewollt: Splitter haben einen Nutzen, ohne die Wirtschaft zu kippen.
+- **Zahler:** bekommt Köpfe etwa 2 Wochen früher und den ersten Kopf auf Level 10 etwa 7 Wochen früher.
+
+### Entscheidungen
+
+| Frage | Entscheidung |
+|---|---|
+| Wirtschaft | Vorschlag komplett umgesetzt |
+| Splitter ohne Verwendung | Splitter in Kopf-XP tauschen (`api.shards_to_head_xp`, Button in der Kopf-Auswahl) |
+| Kopf-Level zählen in Ranked, Juwelen füllen Kopf-XP auf | so gelassen; Münzen sind nicht käuflich, das bremst |
+| Endlos-Bestenliste ohne Wiederholungs-Prüfung | so gelassen |
+
+**Was noch fehlt:** Nach etwa einem halben Jahr wird es dünn. Länger halten nur **neue Inhalte pro Saison**: zum
+Beispiel 1 bis 2 neue Köpfe, 4 bis 6 Kosmetik-Teile und eigene Pass-Rahmen je Saison statt derselben Vorlage.
 
 ## Bindungsdauer, kurz
 
-| | heute | mit Vorschlag | mit Vorschlag + neuen Inhalten je Saison |
+| | vorher | jetzt | jetzt + neue Inhalte je Saison |
 |---|---|---|---|
 | Stammspieler: Sammeln (Köpfe, Kosmetik) | 2 Wochen / 3 Monate | 2 Monate / 5 Monate | läuft mit |
 | Stammspieler: spürbar Neues jede Woche | bis Monat 4–6 | bis Monat 6–7 | offen, solange Inhalte kommen |
@@ -104,14 +129,14 @@ Geprüft gegen den Server (alles, was der Client meldet, gilt als frei erfunden)
 
 | Weg | Wirkung | Stand |
 |---|---|---|
-| Spiele gegen den Computer erfinden (Bot) | höchstens 80 belohnte Spiele am Tag, Münzen gedeckelt (600 voll, danach 20 %, ab 1.500 nichts), Zeitkonto | **begrenzt:** der Bot ist nur 1,5- bis 2-mal so schnell wie ein Vielspieler |
+| Spiele gegen den Computer erfinden (Bot) | höchstens 80 belohnte Spiele am Tag, Münzen gedeckelt (360 voll, danach 20 %, ab 900 nichts), Zeitkonto | **begrenzt:** der Bot ist nur 1,5- bis 2-mal so schnell wie ein Vielspieler |
 | Schwierigkeit „Legende“ behaupten (×2,4 Münzen) | erreicht den Tagesdeckel schneller | begrenzt durch den Deckel |
 | Statistik in unbelohnten Spielen hochzählen | alle Erfolgs-Stufen (Kisten, Medaillen-Rahmen) an einem Tag | **behoben:** Statistik zählt nur noch belohnte Spiele |
 | Online-Absprache mit 50:0 nach 30 s | Meisterschaft „30 Tore“ und Tor-Aufgaben sofort | **behoben:** Tore müssen zur Dauer passen, gezählt werden höchstens 10 pro Spiel |
 | Ranked mit Zweitkonten hochspielen | Legende-Kiste und Liga-Rahmen am Saisonende | **erschwert:** Saison-Belohnung erst ab 5 verschiedenen Gegnern (dazu bestehen schon: 5 Spiele pro Paar und Tag, Abzug bei neuen Konten) |
-| Tages-Challenge melden, ohne sie zu spielen | 150 Münzen, Juwelen, Bronze-Kiste | einmal am Tag, nicht schlimmer als ein guter Spieler |
+| Tages-Challenge melden, ohne sie zu spielen | 150 Münzen, 5 Juwelen, Bronze-Kiste | einmal am Tag, nicht schlimmer als ein guter Spieler |
 | Karriere melden, ohne zu spielen | Liga-Boni einmal (zusammen etwa 1.850 Münzen, 40 Juwelen, 4 Kisten) | einmalig, hingenommen |
-| Endlos-Serie erfinden | Bestenliste „Endlos“ | **offen:** lässt sich ohne Wiederholungs-Prüfung nicht absichern. Empfehlung: als Spaß-Liste kennzeichnen oder nur Ranked als echte Liste zeigen |
+| Endlos-Serie erfinden | Bestenliste „Endlos“ | **hingenommen:** lässt sich ohne Wiederholungs-Prüfung nicht absichern; entschieden, die Liste so zu lassen |
 | Spielstand vor dem Konto übernehmen | höchstens 2.000 Münzen Wert, nur in den ersten 24 h | begrenzt |
-| Kisten, Splitter, Kauf, Pass doppelt auslösen | | durch Doppelt-Schutz und Sperren geschützt (getestet, auch gleichzeitig) |
-| Kopf-Level mit Juwelen kaufen | bis +25 % Werte, zählt auch in Ranked | **Pay-to-win-Gefahr**, gebremst, weil Münzen nicht käuflich sind. Mit Vorschlag kostet ein Kopf auf Level 10 13.500 Münzen |
+| Kisten, Splitter (auch in Kopf-XP), Kauf, Pass doppelt auslösen | | durch Doppelt-Schutz und Sperren geschützt (getestet, auch gleichzeitig) |
+| Kopf-Level mit Juwelen kaufen | bis +25 % Werte, zählt auch in Ranked | **hingenommen:** gebremst, weil Münzen nicht käuflich sind. Ein Kopf auf Level 10 kostet 13.500 Münzen |

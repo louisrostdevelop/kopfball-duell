@@ -83,8 +83,8 @@ begin
   perform pg_temp.logout();
   assert (select mmr from game.ratings where player_id = a) = 1016 and (select mmr from game.ratings where player_id = b) = 984, 'Wertung';
   assert not exists (select 1 from game.match_queue where player_id in (a, b)), 'Warteschlange geleert';
-  assert (select sum(delta) from game.ledger where player_id = a and reason = 'match_ranked') = 70, 'Münzen Sieger';
-  assert (select sum(delta) from game.ledger where player_id = b and reason = 'match_ranked') = 25, 'Münzen Verlierer';
+  assert (select sum(delta) from game.ledger where player_id = a and reason = 'match_ranked') = 42, 'Münzen Sieger';
+  assert (select sum(delta) from game.ledger where player_id = b and reason = 'match_ranked') = 15, 'Münzen Verlierer';
   assert exists (select 1 from game.ledger where player_id = a and reason = 'achievement' and ref = 'online'), 'Erfolg Online-König';
   -- Eigener Ranked-Platz und Stand des Spiels
   perform pg_temp.login(a);

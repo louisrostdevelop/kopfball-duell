@@ -53,7 +53,7 @@ begin
   select * into pr from game.progress where player_id = p for update;
   if pr.daily_last = game.today() then perform game.fail('already_claimed'); end if;
   streak := case when pr.daily_last = game.today() - 1 then least(7, pr.daily_streak + 1) else 1 end;
-  amount := 40 + streak * 30;
+  amount := 20 + streak * 15;   -- wie dailyBonus in js/core/economy.js
   update game.progress set daily_last = game.today(), daily_streak = streak where player_id = p;
   perform game.book(p, 'coins', amount, 'daily', game.today()::text);
   return jsonb_build_object('amount', amount, 'streak', streak, 'state', game.state_brief(p));
@@ -203,12 +203,12 @@ begin
 
   -- Münzen wie im Client, Faktor je Schwierigkeit
   base := case mode
-    when 'local' then 20
+    when 'local' then 12
     when 'train' then 0
-    when 'endless' then case when won then 35 else 10 end
-    else case when won then 40 else 12 end end;
+    when 'endless' then case when won then 21 else 6 end
+    else case when won then 24 else 7 end end;
   if mode in ('cpu', 'career', 'endless') then base := round(base * (game.cfg(('diff_mult'))->>diff)::numeric); end if;
-  coins := case when mode = 'train' then 0 else base + goals * 8 + case when won and conceded = 0 then 20 else 0 end end;
+  coins := case when mode = 'train' then 0 else base + goals * 5 + case when won and conceded = 0 then 12 else 0 end end;
 
   -- Tagesdeckel: bis zum Deckel voll, danach nur noch ein Anteil; ab der harten Grenze oder zu vielen Spielen nichts mehr
   used := case when pr.cap_day = today then pr.cap_cpu_coins else 0 end;
@@ -222,7 +222,7 @@ begin
   -- Tages-Challenge: einmal am Tag die volle Belohnung, nicht gedeckelt
   if mode = 'daily' and won and (pr.challenge_day is null or pr.challenge_day < today) then
     challenge := true; bonus := 150;
-    perform game.book(p, 'gems', 15, 'challenge', today::text);
+    perform game.book(p, 'gems', 5, 'challenge', today::text);
     perform game.grant_chest(p, 'bronze', 'challenge', today::text);
   end if;
 
@@ -274,9 +274,10 @@ begin
   if ended is not null and ended > 0 then perform game.put_score(p, 'endless', ended); end if;
 
   if capped + bonus > 0 then perform game.book(p, 'coins', capped + bonus, 'match_' || mode, request_key); end if;
-  gained_xp := case when farmed then 0 else round((capped + bonus) * 1.2) + 15 end;
+  -- XP: doppelt die Spiel-Münzen (seit docs/BALANCE.md weniger Münzen, Level gleich schnell), Challenge-Bonus wie bisher
+  gained_xp := case when farmed then 0 else round(capped * 2 + bonus * 1.2) + 15 end;
   ups := game.add_xp(p, gained_xp);
-  hx := case when farmed then 0 when won then 30 else 15 end;
+  hx := case when farmed then 0 when won then 60 else 30 end;
   update game.heads set xp = xp + hx, games = games + 1 where player_id = p and head_id = head;
   mast := case when farmed then '[]'::jsonb else game.progress_mastery(p, head, won, goals, sup) end;
   if not farmed then perform game.add_pass_points(p, case when won then 10 else 5 end); end if;

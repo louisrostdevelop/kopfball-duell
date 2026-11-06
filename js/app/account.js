@@ -167,12 +167,18 @@ export async function awaitPurchase(before, tries = 10) {
 
 // ---------- Kopf-Level ----------
 // wie auf dem Server (game.config: head_xp_per_level, head_coins_per_level, head_gems_per_10xp)
-export const HEAD_COST = { xp: 100, coins: 200, gemsPer10xp: 1 };
+export const HEAD_COST = { xp: 100, coins: 300, gemsPer10xp: 1, shardXp: 2 };
 /** Was kostet der nächste Level? null = Höchststufe oder kein Server-Kopf */
 export function upgradeCost(id, maxLevel) {
   const h = S.heads && S.heads[id]; if (!h || h.level >= maxLevel) return null;
   const need = HEAD_COST.xp * h.level, missing = Math.max(0, need - h.xp);
   return { level: h.level, xp: h.xp, need, missing, coins: HEAD_COST.coins * h.level, gems: Math.ceil(missing / 10) * HEAD_COST.gemsPer10xp };
+}
+/** Fehlende Kopf-XP bis zum nächsten Level mit Splittern füllen (so weit sie reichen). { shards, xp } */
+export async function shardsToHeadXp(id) {
+  const r = await server.shardsToHeadXp("head:" + id);
+  applyState(r.state);
+  return r;
 }
 export async function upgradeHead(id, withGems) {
   const r = await server.upgradeHead("head:" + id, withGems);

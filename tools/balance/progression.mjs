@@ -31,13 +31,13 @@ export const TYPES = {
 };
 
 // Stellschrauben zum Ausprobieren (1 = wie im Spiel). Vorlagen in PRESETS, Aufruf: node … [Tage] [Läufe] [Vorlage]
+// Der Vorschlag aus docs/BALANCE.md steckt seit 06.11.2026 in Inhalten und Server; "aktuell" rechnet damit.
 export const PRESETS = {
   aktuell: {},
-  // docs/BALANCE.md: Köpfe 4x so teuer, Münzen pro Spiel und Tagesdeckel 0,6x, Tagesbonus/Level/Kisten-Münzen halb,
-  // Kosmetik seltener in Kisten, Kopf-XP doppelt (Kopf-Level werden der große Münz-Verbraucher), Challenge 5 statt 15 Juwelen
-  vorschlag: { headPrice: 4, matchCoins: 0.6, chestCoins: 0.5, levelCoins: 0.5, daily: 0.5, cosP: 0.6, headLevelCoins: 300, headXp: 2, challengeGems: 5 },
+  // Vergleich: Splitter nicht in Kopf-XP tauschen
+  ohneSplitterXp: { shardXp: false },
 };
-const BASE = { headPrice: 1, gemPrice: 1, chestCoins: 1, levelCoins: 1, daily: 1, challengeGems: 15, cosP: 1, headLevelCoins: null, passGems: 500, matchCoins: 1, headXp: 1 };
+const BASE = { shardXp: true, headPrice: 1, gemPrice: 1, chestCoins: 1, levelCoins: 1, daily: 1, challengeGems: 5, cosP: 1, headLevelCoins: null, passGems: 500, matchCoins: 1, headXp: 1 };
 export let TUNE = { ...BASE };
 const COS_P0 = Object.fromEntries(Object.entries(K.CHESTS).map(([k, c]) => [k, c.cos.p]));
 export function useTune(t) {
@@ -120,8 +120,8 @@ export function simulate(type, days, seed) {
   // Ein Tag Computer-Münzen mit Deckel (wie api.report_cpu_match)
   let capUsed = 0, capMatches = 0, onlineToday = 0;
   const cpuMatch = (d, won, goals, conceded, mode, diff) => {
-    const base = mode === "endless" ? (won ? 35 : 10) : (won ? 40 : 12);
-    const coins = Math.round((Math.round(base * CFG.diff_mult[diff]) + goals * 8 + (won && conceded === 0 ? 20 : 0)) * TUNE.matchCoins);
+    const base = mode === "endless" ? (won ? 21 : 6) : (won ? 24 : 7);
+    const coins = Math.round((Math.round(base * CFG.diff_mult[diff]) + goals * 5 + (won && conceded === 0 ? 12 : 0)) * TUNE.matchCoins);
     const farmed = capUsed >= CFG.cpu_hard_cap * TUNE.matchCoins || capMatches >= CFG.cpu_daily_matches;
     let got = Math.min(coins, Math.max(0, CFG.cpu_daily_cap * TUNE.matchCoins - capUsed)); got += Math.round((coins - got) * CFG.cpu_after_cap);
     if (farmed) got = 0;
@@ -165,12 +165,12 @@ export function simulate(type, days, seed) {
       let farmed = false, coins = 0, xp = 0, hx = 0;
       if (online) {
         onlineToday++;
-        if (onlineToday <= CFG.online_daily_rewarded) { coins = Math.round((won ? CFG.online_coins.win : CFG.online_coins.loss) * TUNE.matchCoins); xp = 40; hx = Math.round((won ? 40 : 20) * TUNE.headXp); passPts(d, won ? 15 : 8); }
+        if (onlineToday <= CFG.online_daily_rewarded) { coins = Math.round((won ? CFG.online_coins.win : CFG.online_coins.loss) * TUNE.matchCoins); xp = 40; hx = Math.round((won ? 80 : 40) * TUNE.headXp); passPts(d, won ? 15 : 8); }
         // Ranked: Gegner hat etwa die eigene Wertung (Erwartung 50 %), gewinnen hängt an der echten Stärke
         if (P.lvl >= CFG.ranked_min_level) { P.mmr += Math.round(CFG.elo_k * ((won ? 1 : 0) - 0.5)); P.rankedGames++; }
       } else {
         const res = cpuMatch(d, won, goals, conceded, "cpu", dd); coins = res.coins; farmed = res.farmed;
-        xp = farmed ? 0 : Math.round(coins / TUNE.matchCoins * 1.2) + 15; hx = farmed ? 0 : Math.round((won ? 30 : 15) * TUNE.headXp);
+        xp = farmed ? 0 : Math.round(coins * 2) + 15; hx = farmed ? 0 : Math.round((won ? 60 : 30) * TUNE.headXp);
         if (!farmed) passPts(d, won ? 10 : 5);
       }
       inc(online ? "Online-Spiele" : "CPU-Spiele", coins); addXp(d, xp);
@@ -191,7 +191,7 @@ export function simulate(type, days, seed) {
         }
       }
     }
-    // Tagesaufgaben (alle 3 = Bronze), Tages-Challenge (150 Münzen, 15 Juwelen, Bronze), Wochenaufgaben (alle 5 = Silber)
+    // Tagesaufgaben (alle 3 = Bronze), Tages-Challenge (150 Münzen, 5 Juwelen, Bronze), Wochenaufgaben (alle 5 = Silber)
     if (r() < T.tasks) { inc("Tagesaufgaben", 165); openChest(d, "bronze"); } else inc("Tagesaufgaben", 60);
     if (r() < T.challenge) { inc("Challenge", 150); P.gems += TUNE.challengeGems; openChest(d, "bronze"); addXp(d, Math.round(150 * 1.2)); }
     if (weekTasks.done === 0 && d % 7 >= 4 && r() < T.weekly) { weekTasks.done = 1; inc("Wochenaufgaben", 480); openChest(d, "silver"); }
@@ -205,6 +205,12 @@ export function simulate(type, days, seed) {
       if (up && !buy) { const h = up[1]; pay("Kopf-Level", headLevelCoins() * h.level); h.xp -= CFG.head_xp_per_level * h.level; h.level++; ev(d, "headLevel"); continue; }
       const craft = K.COSMETICS.filter(c => !P.owned.has(c.id)).sort((a, b) => RANK[a.rarity] - RANK[b.rarity])[0];
       if (craft && P.shards >= K.SHARDS.craft[craft.rarity]) { P.shards -= K.SHARDS.craft[craft.rarity]; give(d, craft.id); continue; }
+      // Splitter in Kopf-XP (wie api.shards_to_head_xp), erst wenn nichts mehr herzustellen ist; höchster Kopf zuerst
+      if (TUNE.shardXp && !craft && P.shards > 0) {
+        const per = CFG.head_xp_per_level, rate = CFG.shard_head_xp;
+        const h = Object.values(P.heads).filter(x => x.level < CFG.head_max_level && x.xp < per * x.level).sort((a, b) => b.level - a.level || b.xp - a.xp)[0];
+        if (h) { const use = Math.min(P.shards, Math.ceil((per * h.level - h.xp) / rate)); P.shards -= use; h.xp = Math.min(per * h.level, h.xp + use * rate); continue; }
+      }
       const extra = BUYABLE.find(x => !P.owned.has(x.id) && P.coins >= x.price + 1500);
       if (extra) { pay("Bälle, Arenen", extra.price); P.owned.add(extra.id); continue; }
       const offer = E.cosOffer(E.weekOf(new Date(Date.UTC(2027, 0, 4) + d * 864e5))).map(K.cosById).find(c => c && !P.owned.has(c.id) && P.coins >= K.COS_PRICE[c.rarity].coins + 2500);

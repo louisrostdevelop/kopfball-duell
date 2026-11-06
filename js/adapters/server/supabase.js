@@ -43,6 +43,7 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     buyPassWithGems: () => client.rpc("buy_pass_with_gems", { request_key: key() }),
     openChest: chest => client.rpc("open_chest", { chest }),
     craftItem: item => client.rpc("craft_item", { item, request_key: key() }),
+    shardsToHeadXp: head => client.rpc("shards_to_head_xp", { head, request_key: key() }),
     // Online mit Warteschlange (Casual / Ranked)
     queueJoin: (mode, head, cos) => client.rpc("queue_join", { queue_mode: mode, head, cos: cos || null }),
     queuePoll: () => client.rpc("queue_poll"),

@@ -110,7 +110,7 @@ Köpfe lassen sich nicht herstellen.
 | Level-Up | Bronze, jedes 5. Level Silber, jedes 10. Gold, jedes 25. Legendär |
 | Level 2 / Level 5 | sicher ein seltener / epischer Kopf (Einstieg) |
 | Alle 3 Tagesaufgaben | Bronze |
-| Tages-Challenge gewonnen | Bronze (zusätzlich zu den 15 Juwelen) |
+| Tages-Challenge gewonnen | Bronze (zusätzlich zu den 5 Juwelen) |
 | Alle 5 Wochenaufgaben | Silber |
 | Erfolgs-Stufe | Bronze, Silber oder Gold je nach Stufe |
 | Meisterschaft (Stufe 3 und 5) | Silber, Gold |
@@ -137,9 +137,9 @@ Später als eigenes Paket: Events mit Event-Kiste und Sammel-Herausforderungen. 
 
 ## Level
 
-- **XP wie heute:** Münzen eines Spiels × 1,2 + 15. Online und Ranked zählen gleich.
+- **XP:** Münzen eines Spiels × 2 + 15 (seit den halbierten Münzen, docs/BALANCE.md). Online und Ranked zählen gleich.
 - **Kurve:** XP für das nächste Level = 120 + (Level − 1) × 60, ab Level 50 bleibt es bei 3060. Kein Maximal-Level.
-- **Belohnung je Level-Up:** wie heute Münzen (50 + 10 × Level, ab Level 50 fest 550) und alle 5 Level 20 Juwelen, dazu die Kiste.
+- **Belohnung je Level-Up:** Münzen (25 + 5 × Level, ab Level 50 fest 275) und alle 5 Level 20 Juwelen, dazu die Kiste.
 - **Was das Level sperrt:**
   - Shop-Seltenheiten (oben)
   - Casual ab Level 3, Ranked ab Level 5 (wie heute)
@@ -147,15 +147,16 @@ Später als eigenes Paket: Events mit Event-Kiste und Sammel-Herausforderungen. 
 ## Kopf-Level
 
 - **Bleibt bis Level 10** (bis +25 % Schuss und Super-Ladung, +5 % Tempo).
-- **Kopf-XP kommt aus Spielen mit dem Kopf (wie heute) und aus doppelten Köpfen in Kisten.**
-- **Aufwerten kostet weiter Münzen.** Fehlende XP lassen sich mit Juwelen auffüllen (wie heute).
+- **Kopf-XP kommt aus Spielen mit dem Kopf (60 Sieg / 30, online 80 / 40), aus doppelten Köpfen in Kisten und aus
+  Splittern (1 Splitter = 2 Kopf-XP, höchstens bis zum nächsten Level).**
+- **Aufwerten kostet weiter Münzen (300 × Level).** Fehlende XP lassen sich mit Juwelen auffüllen (wie heute).
 
 ## Juwelen
 
 - **Wofür:** Saison-Pass, Köpfe und Kosmetik im Shop, Kopf-XP auffüllen. Nie Kisten.
 - **Woher ohne Geld:**
   - alle 5 Level 20
-  - Tages-Challenge 15
+  - Tages-Challenge 5
   - Legendär-Kiste 30
   - Karriere-Weltliga 30
 

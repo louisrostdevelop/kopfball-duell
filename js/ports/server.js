@@ -22,6 +22,7 @@
  * @property {() => Promise<object>} buyPassWithGems
  * @property {(chest: string) => Promise<{ result: object, state: object }>} openChest   Kiste öffnen (Server würfelt)
  * @property {(item: string) => Promise<{ state: object }>} craftItem                    Kosmetik mit Splittern herstellen
+ * @property {(head: string) => Promise<{ state: object, shards: number, xp: number }>} shardsToHeadXp  fehlende Kopf-XP mit Splittern füllen
  * @property {(mode: "casual"|"ranked", head: string, cos?: object) => Promise<object>} queueJoin   in die Warteschlange (Kosmetik prüft der Server)
  * @property {() => Promise<{ matched: boolean, waited?: number, match?: string, role?: "host"|"guest", opponent?: object }>} queuePoll
  * @property {() => Promise<object>} queueLeave

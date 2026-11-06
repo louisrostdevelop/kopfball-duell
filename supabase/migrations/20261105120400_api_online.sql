@@ -225,7 +225,7 @@ begin
     perform game.book(pl, 'coins', case when won then (oc->>'win')::integer else (oc->>'loss')::integer end, 'match_' || mt.mode, match::text);
     perform game.add_xp(pl, 40);
     perform game.add_pass_points(pl, case when won then 15 else 8 end);
-    update game.heads set xp = xp + case when won then 40 else 20 end, games = games + 1 where player_id = pl and head_id = mt.heads->('p' || idx)->>'head';
+    update game.heads set xp = xp + case when won then 80 else 40 end, games = games + 1 where player_id = pl and head_id = mt.heads->('p' || idx)->>'head';
     -- Tore für Meisterschaft und Aufgaben höchstens 10 pro Spiel (abgesprochene Kantersiege bringen nichts extra)
     perform game.progress_mastery(pl, mt.heads->('p' || idx)->>'head', won, least(10, case when idx = 1 then a else b end), 0);
     perform game.progress_tasks(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', least(10, case when idx = 1 then a else b end)));

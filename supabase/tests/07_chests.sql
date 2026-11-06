@@ -107,6 +107,28 @@ begin
   perform pg_temp.expect_error($q$select api.craft_item('goalfx:5', 'craft-0004')$q$, 'insufficient_funds');
   perform pg_temp.logout();
 
+  -- Splitter in Kopf-XP: füllt bis zum nächsten Level, so weit die Splitter reichen (2 XP je Splitter)
+  update game.heads set level = 1, xp = 40 where player_id = u and head_id = 'head:kalle';
+  perform pg_temp.login(u);
+  r := api.shards_to_head_xp('head:kalle', 'shardxp-0001');   -- 60 fehlen, nur 10 Splitter da
+  assert (r->>'shards')::int = 10 and (r->>'xp')::int = 20 and (r->'state'->>'shards')::int = 0, 'Splitter teilweise: ' || r::text;
+  assert api.shards_to_head_xp('head:kalle', 'shardxp-0001') = r, 'gleicher Schlüssel nur einmal';
+  perform pg_temp.expect_error($q$select api.shards_to_head_xp('head:kalle', 'shardxp-0002')$q$, 'insufficient_funds');
+  perform pg_temp.expect_error($q$select api.shards_to_head_xp('head:gibtsnicht', 'shardxp-0003')$q$, 'head_not_owned');
+  perform pg_temp.logout();
+  update game.wallets set shards = 100 where player_id = u;
+  perform pg_temp.login(u);
+  r := api.shards_to_head_xp('head:kalle', 'shardxp-0004');   -- 40 fehlen = 20 Splitter, Rest bleibt
+  assert (r->>'shards')::int = 20 and (r->>'xp')::int = 40 and (r->'state'->>'shards')::int = 80, 'Splitter bis zum Level: ' || r::text;
+  perform pg_temp.expect_error($q$select api.shards_to_head_xp('head:kalle', 'shardxp-0005')$q$, 'nothing_missing');
+  perform pg_temp.logout();
+  assert (select xp from game.heads where player_id = u and head_id = 'head:kalle') = 100, 'Kopf-XP voll';
+  update game.heads set level = game.cfg_int('head_max_level') where player_id = u and head_id = 'head:kalle';
+  perform pg_temp.login(u);
+  perform pg_temp.expect_error($q$select api.shards_to_head_xp('head:kalle', 'shardxp-0006')$q$, 'max_level');
+  perform pg_temp.logout();
+  update game.heads set level = 1, xp = 0 where player_id = u and head_id = 'head:kalle';
+
   -- Kosmetik in der Gegnersuche: nur Besessenes der passenden Art
   update game.players set level = 10 where id = u;
   delete from game.inventory where player_id = u and item_id in ('emoji:12', 'goalfx:8');   -- sicher nicht besessen (Kisten oben sind Zufall)

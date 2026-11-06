@@ -91,7 +91,7 @@ begin
   update game.players set xp = xp + amount where id = p returning level, xp into lvl, cur;
   while cur >= 120 + (least(lvl, 50) - 1) * 60 loop
     cur := cur - (120 + (least(lvl, 50) - 1) * 60); lvl := lvl + 1; ups := ups || lvl;
-    perform game.book(p, 'coins', 50 + least(lvl, 50) * 10, 'level', lvl::text);
+    perform game.book(p, 'coins', 25 + least(lvl, 50) * 5, 'level', lvl::text);   -- wie levelCoins in js/content/cosmetics.js
     if lvl % 5 = 0 then perform game.book(p, 'gems', 20, 'level', lvl::text); end if;
     perform game.grant_chest(p, case when lvl % 25 = 0 then 'legend' when lvl % 10 = 0 then 'gold' when lvl % 5 = 0 then 'silver' else 'bronze' end,
                              'level', lvl::text, case lvl when 2 then 'selten' when 5 then 'episch' end);

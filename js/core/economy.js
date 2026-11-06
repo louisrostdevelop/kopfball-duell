@@ -40,7 +40,7 @@ export function cleanRules(r, dur) {
 export { xpForLevel as xpFor } from "../content/cosmetics.js";   // wächst bis Level 50, dann gleich
 export const today = () => new Date().toISOString().slice(0, 10);
 export const yesterday = () => new Date(Date.now() - 864e5).toISOString().slice(0, 10);
-export const dailyBonus = streak => 40 + streak * 30;
+export const dailyBonus = streak => 20 + streak * 15;   // wie api.claim_daily (docs/BALANCE.md)
 
 // Zufall aus einem Text: alle Spieler bekommen am selben Tag dieselben Aufgaben und dieselbe Challenge
 export function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
