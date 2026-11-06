@@ -6,7 +6,7 @@
 let ac = null, bus = null, noiseBuf = null, level = 1;
 // Pegel-Abgleich je Sound in dB, gemessen mit tools/sound-lab (lautestes 100-ms-Fenster gegen die Lautstärke-Leiter in
 // docs/SOUNDS.md, Spitze bleibt unter -2 dB). Häufige oder dezente Sounds zielen 4 dB unter ihre Stufe, höchstens +18 dB.
-const TRIM = { hammer: -4, chip: 7, head: 5, bounce: 7, post: 1, wallhit: 13, bumper: 4, swing: 18, jump: 16, land: 11, slide: 18, bomb: 13, pound: -1, stomp: 6, bump: 7, pop: 13, full: 10, arm: 15, charged: 18, super: -1, launch: 8, zap: 11, freeze: 11, burn: 14, quake: -6, tick: 18, emote: 18, puSpawn: 18, pu: 11, count: 18, go: 17, whistle: 11, whistle1: 11, goal: 7, ohh: 18, win: 16, lose: 18, click: 18, coin: 13, levelup: 9, "chest-shake": 16, "chest-open": -5, "chest-selten": 9, "chest-episch": 9, "chest-legend": 1, "chest-head": -9, "chest-item": 12, shards: 14 };
+const TRIM = { hammer: -4, chip: 7, head: 5, bounce: 7, post: 1, wallhit: 13, bumper: 4, swing: 18, jump: 16, land: 11, slide: 18, bomb: 15, pound: -1, stomp: 6, bump: 7, pop: 13, full: 10, arm: 15, charged: 18, super: -1, launch: 8, zap: 11, freeze: 11, burn: 14, quake: -6, tick: 18, emote: 18, puSpawn: 18, pu: 11, count: 18, go: 17, whistle: 11, whistle1: 11, goal: 7, ohh: 18, win: 16, lose: 18, click: 18, coin: 13, levelup: 9, "chest-shake": 16, "chest-open": -5, "chest-selten": 9, "chest-episch": 9, "chest-legend": 1, "chest-head": -9, "chest-item": 12, shards: 14 };
 /** Verbindet die Bausteine mit dem Mischpult aus webaudio.js. bus: { ui, body, fx, big, verb } */
 export function initSynth(ctx, buses, noise) { ac = ctx; bus = buses; noiseBuf = noise; }
 
@@ -171,8 +171,10 @@ function recipe(kind, v) {
       hiss(0, { type: "bandpass", f0: 1900 * sp, f1: 900, q: 0.7, vol: 0.2, a: 0.02, d: 0.26, flutter: 38, cat: "body", pan });
       hiss(0, { type: "lowpass", f0: 600, vol: 0.12, d: 0.2, cat: "body", pan });
       return true;
-    case "bomb": // fallender Cartoon-Pfeifton
-      tone(0, { type: "sine", f0: 1500 * sp, f1: 520, glide: 0.34, vol: 0.09, a: 0.02, d: 0.32, cat: "fx", pan, send: 0.1 });
+    case "bomb": // kurzer Luftzug nach unten; der Fall dauert nur 0.1–0.25 s, danach kommt "pound"
+      hiss(0, { type: "bandpass", f0: 3000 * sp, f1: 450, q: 1.3, vol: 0.3, a: 0.025, d: 0.15, cat: "fx", pan });
+      hiss(0, { type: "lowpass", f0: 1400, f1: 300, vol: 0.14, a: 0.03, d: 0.14, cat: "fx", pan });
+      tone(0, { type: "triangle", f0: 360 * sp, f1: 130, glide: 0.15, vol: 0.06, a: 0.02, d: 0.14, cat: "fx", pan });
       return true;
     case "pound":
       thump(0, 130 * sp, 34, 0.26, 0.55 * Math.min(1.3, 0.6 + v), { pan, send: 0.2 });

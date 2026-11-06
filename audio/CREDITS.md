@@ -18,19 +18,15 @@ angeglichen, ausgeblendet, mono 48 kHz (`crowd` Stereo, als Loop überblendet).
 | `head_1` | https://freesound.org/people/Luisa_Sanchez/sounds/813420/ | Luisa_Sanchez | CC0 1.0 |
 | `head_2` | https://freesound.org/people/16F_Panska_Knott_Jakub/sounds/498559/ | 16F_Panska_Knott_Jakub | CC0 1.0 |
 | `head_3` | https://freesound.org/people/blindmanonacid/sounds/117111/ | blindmanonacid | CC0 1.0 |
-| `head_alt1` | https://freesound.org/people/stuniverso/sounds/761558/ | stuniverso | CC0 1.0 |
 | `bounce_1`, `bounce_2`, `bounce_3` | https://freesound.org/people/cb9382/sounds/873899/ | cb9382 | CC0 1.0 |
 | `post_1`, `post_2` | https://freesound.org/people/YannSauvin/sounds/781717/ | YannSauvin | CC0 1.0 |
-| `post_alt1` | https://freesound.org/people/Anthousai/sounds/406490/ | Anthousai | CC0 1.0 |
 | `wallhit_1` | https://freesound.org/people/Khanyisile56/sounds/707487/ | Khanyisile56 | CC0 1.0 |
 | `wallhit_2` | https://freesound.org/people/Kiano.ow/sounds/594142/ | Kiano.ow | CC0 1.0 |
 | `slide_1` | https://freesound.org/people/C-V/sounds/813533/ | C-V | CC0 1.0 |
 | `slide_2` | https://freesound.org/people/alegemaate/sounds/364712/ | alegemaate | CC0 1.0 |
 | `whistle` | https://freesound.org/people/Chaos-Kid/sounds/817398/ | Chaos-Kid | CC0 1.0 |
 | `whistle1` | https://freesound.org/people/Rosa-Orenes256/sounds/538422/ | Rosa-Orenes256 | CC0 1.0 |
-| `whistle1_alt1` | https://freesound.org/people/SpliceSound/sounds/218318/ | SpliceSound | CC0 1.0 |
 | `goal` | https://freesound.org/people/mcpable/sounds/131930/ | mcpable | CC0 1.0 |
-| `goal_alt1` | https://freesound.org/people/gemgem88/sounds/728683/ | gemgem88 | CC0 1.0 |
 | `crowd` | https://freesound.org/people/itmightgetloud/sounds/829454/ | itmightgetloud (Philipp Feit) | CC0 1.0 |
-| `roar`, `roar_alt1` | https://freesound.org/people/itmightgetloud/sounds/829455/ | itmightgetloud (Philipp Feit) | CC0 1.0 |
-| `ohh`, `ohh_alt1` | https://freesound.org/people/itmightgetloud/sounds/829452/ | itmightgetloud (Philipp Feit) | CC0 1.0 |
+| `roar` | https://freesound.org/people/itmightgetloud/sounds/829455/ | itmightgetloud (Philipp Feit) | CC0 1.0 |
+| `ohh` | https://freesound.org/people/itmightgetloud/sounds/829452/ | itmightgetloud (Philipp Feit) | CC0 1.0 |
