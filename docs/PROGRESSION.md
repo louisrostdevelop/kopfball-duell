@@ -29,7 +29,7 @@ Kosmetisch heißt: kein Einfluss aufs Spiel, auch nicht auf Trefferflächen. Kop
 Alles sind feste Varianten zum Freischalten und Ausrüsten, kein Editor.
 
 **Ausrüstung:**
-- 1 Hut, 1 Paar Schuhe, 1 Torexplosion
+- 1 Paar Schuhe, 1 Torexplosion
 - 4 Emote-Plätze (Figur oder Emoji)
 - 1 Titel, 1 Rahmen
 
@@ -171,7 +171,7 @@ der Client lokal mit denselben Tabellen.
 ## Reihenfolge beim Bauen
 
 1. **Kisten und Level-Belohnungen.** Server, Öffnen-Bildschirm, Chancen-Anzeige, Splitter, Garantien. *(fertig; Herstellen-Oberfläche kommt mit 2)*
-2. **Kosmetik:** Hüte, Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig, Platzhalter-Grafik)*
+2. **Kosmetik:** Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig, Platzhalter-Grafik)*
 3. **Wochenaufgaben, Erfolgs-Stufen, Meisterschaft, Freundes-Herausforderungen.** *(Wochenaufgaben, Erfolgs-Stufen, Meisterschaft und die Kisten für Tagesaufgaben, Tages-Challenge und Karriere fertig; Freundes-Herausforderungen brauchen erst vom Server gewertete Freundesspiele, Spiele unter Freunden laufen bisher ohne Server)*
 4. **Shop-Umbau:** neue Kopf-Preise, Level-Sperren, wöchentliche Kosmetik. *(fertig)*
 5. **Ranked-Saisonende-Kisten, Pass-Kisten.** *(fertig: Wartung vergibt nach Saisonende die Liga-Kiste, Pass-Stufen können Kisten sein)*
