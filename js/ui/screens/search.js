@@ -7,6 +7,7 @@ import { App } from "../../app/state.js";
 import { cancelSearch, league } from "../../app/matchmaking.js";
 import { serverState } from "../../app/account.js";
 import { cleanCos, myCos } from "../../app/cosmetics.js";
+import { cosById } from "../../content/cosmetics.js";
 import { t } from "../../content/i18n.js";
 
 let clock = null;
@@ -32,8 +33,10 @@ export function searchUI(mm) {
     // Spieler-Karte des Gegners: Kopf mit Hut (vom Server geprüft), Name, Level, Kopf-Level, Liga
     const h = (mm.heads && mm.heads[mm.role === "host" ? "p2" : "p1"]) || {}, card = $("srThem");
     const oav = $("srOppAv"); oav.innerHTML = "";
-    oav.append(avatarCanvas((h.head || "head:kalle").replace(/^head:/, ""), 120, { hat: cleanCos(h.cos).hat, dir: -1 }));
-    $("srOppName").textContent = o.name || t("search.opponent");
+    const oc = cleanCos(h.cos), ocv = avatarCanvas((h.head || "head:kalle").replace(/^head:/, ""), 120, { hat: oc.hat, dir: -1 }), fr = cosById(oc.frame);
+    if (fr) { ocv.className = "framed"; ocv.style.setProperty("--fc", fr.col); }
+    oav.append(ocv);
+    $("srOppName").textContent = (o.name || t("search.opponent")) + (oc.title ? " · " + cosById(oc.title).name : "");
     $("srOppInfo").textContent = [t("level.title", { n: o.level || 1 }), t("search.headLevel", { n: h.level || 1 }), mm.mode === "ranked" && o.mmr ? league(o.mmr) + " " + o.mmr : ""].filter(Boolean).join(" · ");
     card.hidden = false;
   }

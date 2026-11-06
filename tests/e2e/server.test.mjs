@@ -47,20 +47,22 @@ test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "
   await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
 
   // Kauf: lokal sofort, Server bestätigt
-  await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 200));
+  await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 400));
   await until(async () => (await db("select 1 from game.inventory where player_id = $1 and item_id = 'head:rocco'", [id])).length);
-  await until(async () => (await S(page)).coins === 1070);
-  assert.equal((await S(page)).coins, 1070, "Kauf gebucht");
+  await until(async () => (await S(page)).coins === 870);
+  assert.equal((await S(page)).coins, 870, "Kauf gebucht");
 
-  // Geschummelt: lokal Münzen erhöht, teuren Kopf gekauft -> Server lehnt ab, wird zurückgedreht
-  await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.coins = 99999; p.buy("chars", "kaiser", 900); p.buy("chars", "max", 600); p.buy("chars", "magnus", 500); });
-  await until(async () => { const s = await S(page); return s.coins < 2000 && !s.chars.includes("max"); });
+  // Geschummelt: lokal Münzen erhöht, mehr gekauft als bezahlbar -> Server lehnt ab, wird zurückgedreht
+  // (Legendäres sperrt schon das Level: lokal gar nicht kaufbar)
+  assert.equal(await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.coins = 99999; return p.buy("chars", "kaiser", 1500); }), false, "Level-Sperre");
+  await page.evaluate(async () => { const p = await import("/js/app/profile.js"); p.buy("chars", "flummi", 500); p.buy("chars", "nala", 450); });
+  await until(async () => { const s = await S(page); return s.coins < 2000 && !(s.chars.includes("flummi") && s.chars.includes("nala")); });
   const s = await S(page);
   const real = Number((await db("select coins from game.wallets where player_id = $1", [id]))[0].coins);
   assert.equal(s.coins, real, "Münzen wieder wie auf dem Server");
   const owned = (await db("select item_id from game.inventory where player_id = $1", [id])).map(r => r.item_id.replace("head:", ""));
   assert.deepEqual([...s.chars].sort(), owned.filter(x => !x.includes(":")).sort(), "Besitz wie auf dem Server");
-  assert.ok(real >= 0 && real <= 1070, "Server hat nur bezahlbare Käufe gebucht");
+  assert.ok(real >= 0 && real <= 870, "Server hat nur bezahlbare Käufe gebucht");
 
   // Spiel gegen den Computer: Server bucht die Belohnung
   const coinsBefore = real;

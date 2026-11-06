@@ -785,7 +785,7 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   .ccard .price { font-size: 11px; padding: 1px 5px 1px 2px; } .ccard .price .coin { width: 14px; height: 14px; }
   .ccard .lockt { width: 22px; height: 22px; }
   .ccard .check { width: 20px; height: 20px; top: -5px; right: -5px; } .ccard .check svg { width: 12px; height: 12px; }
-  .detail { gap: 5px; padding-bottom: 8px; border-radius: 16px; position: static; }
+  .detail { gap: 5px; padding-bottom: 8px; border-radius: 16px; position: relative; }
   .det-top { height: 92px; }
   .det-top .rarity { font-size: 10px; padding: 2px 7px; top: 6px; left: 6px; }
   .bigav canvas { max-height: 86px; }
@@ -1264,3 +1264,39 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 .tk-main small { font-size: 12px; font-weight: 800; opacity: .55; }
 .ach .tier { color: var(--yellow-d); font-size: 13px; }
 .ach .achchest { font-weight: 800; color: var(--purple-d); }
+
+/* Meisterschaft, Titel, Rahmen */
+.mastery { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; margin: 0 12px; border: 3px solid var(--ink); border-radius: 14px; background: rgb(255 255 255 / 92%); color: var(--ink); }
+.mastery[hidden] { display: none; }
+.ms-top { display: flex; align-items: center; gap: 10px; }
+.ms-top b { font-family: var(--display); font-size: 17px; }
+.ms-dots { display: flex; gap: 5px; }
+.ms-dots i { width: 24px; height: 24px; border-radius: 12px; border: 2px solid var(--ink); display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 800; background: #ddd; }
+.ms-dots i.on { background: var(--yellow); }
+.ms-dots i.next { background: #fff; outline: 2px dashed var(--ink); outline-offset: 1px; }
+.mastery small { font-weight: 800; opacity: .75; font-size: 13px; }
+.titletag { display: inline-block; padding: 3px 10px; border-radius: 10px; background: var(--ink); color: #ffe27a; font-family: var(--display); font-size: 14px; }
+.titletag:empty { display: none; }
+canvas.framed { border-radius: 50%; box-shadow: 0 0 0 5px var(--fc), 0 0 0 8px var(--ink); }
+
+@media (max-height: 520px) and (orientation: landscape) { .mastery { padding: 4px 8px; gap: 2px; } .ms-top b { font-size: 14px; } .ms-dots i { width: 18px; height: 18px; font-size: 10px; } .mastery small { font-size: 11px; } }
+
+/* Aufgaben: Heute und Woche untereinander, auf kleinen Bildschirmen umschaltbar */
+.taskwrap .challenge { grid-row: span 3; }
+.tasktabs { display: none; }
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .tasktabs { display: flex; margin: 0; }
+  .tasktabs button { font-size: 14px; padding: 4px 10px 6px; }
+  .taskwrap:not([data-tab="week"]) #weekPanel, .taskwrap[data-tab="week"] #dayPanel { display: none; }
+  #dayPanel h4, #weekPanel h4 { display: none; }
+  #weekPanel .task { padding: 3px 8px; }
+  #weekPanel .tk-main b { font-size: 13px; }
+  .weekchest { margin-top: 2px; font-size: 13px; }
+  .mastery small, .ms-top b { display: none; }
+  .mastery { position: absolute; top: 36px; right: 6px; margin: 0; padding: 3px 5px; border-width: 2px; z-index: 2; }
+  .ms-dots { flex-direction: column; gap: 3px; }
+  #btnSelLocker span { display: none; }
+  #btnSelLocker { padding: 4px 10px; height: 38px; }
+  #btnSelLocker svg { width: 20px; height: 20px; margin: 0; }
+}

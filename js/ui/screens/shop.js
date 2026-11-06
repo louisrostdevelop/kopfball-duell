@@ -1,6 +1,8 @@
 // Shop: Köpfe, Bälle, Arenen, Angebot des Tages
 import { ARENAS, BALLS, charById, CHARS, gemPrice, gemsInEuro, RARITY, rarityOf, SUPERS } from "../../content/config.js";
-import { buy, buyDeal, checkAch, deal, owns, S, save } from "../../app/profile.js";
+import { buy, buyDeal, checkAch, deal, owns, S, save, shopLevel } from "../../app/profile.js";
+import { cosById, COS_PRICE } from "../../content/cosmetics.js";
+import { cosIcon } from "./chests.js";
 import { avatarCanvas, drawBall } from "../render/art.js";
 import { arenaThumb } from "../render/render.js";
 import { $, $$, RCOL, svg, toast } from "../dom.js";
@@ -8,7 +10,7 @@ import { unlockModal } from "../modals.js";
 import { refreshTop } from "./home.js";
 import { audio as A } from "../../app/services.js";
 import { registerScreen, showScreen } from "../nav.js";
-import { buyWithGems, online as serverOn, shopProducts, startCheckout } from "../../app/account.js";
+import { buyCos, buyWithGems, cosOfferNow, online as serverOn, shopProducts, startCheckout } from "../../app/account.js";
 import { money, t } from "../../content/i18n.js";
 
 export let shopTab = "chars";
@@ -21,6 +23,7 @@ export function shopScreen() {
   $$("#shopTabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === shopTab));
   $$(".gemNum").forEach(e => e.textContent = S.gems || 0);
   if (shopTab === "gems") { gemShop(); return; }
+  if (shopTab === "cos") { cosShop(); return; }
   const dl = deal(), db = $("dealBox"); db.innerHTML = "";
   if (dl) {
     const c = document.createElement("div"); c.className = "dealcard";
@@ -49,7 +52,9 @@ export function shopScreen() {
     d.insertAdjacentHTML("beforeend", `<b>${it.name}</b><small>${desc}</small>`);
     const btn = document.createElement("button");
     const equip = () => { if (kind === "chars") S.char = it.id; else if (kind === "balls") S.ball = it.id; else S.arena = it.id; save(); };
+    const need = shopLevel(kind, it.id);
     if (eq) { btn.className = "btn ghost small"; btn.innerHTML = svg("i-check") + t("shop.selected"); btn.disabled = true; }
+    else if (!own && S.level < need) { btn.className = "btn ghost small"; btn.innerHTML = svg("i-lock") + t("shop.fromLevel", { n: need }); btn.disabled = true; }
     else if (own) { btn.className = "btn green small"; btn.textContent = t("ui.select"); btn.onclick = () => { A.sfx("click"); equip(); shopScreen(); }; }
     else if (kind === "chars" && serverOn() && gemPrice(it)) {
       // Seltene Köpfe auch für Juwelen (Euro-Wert daneben)
@@ -116,4 +121,33 @@ export function ballCanvas(id, px) {
 export function initShop() {
   registerScreen("shop", { show: shopScreen });
   $$("#shopTabs button").forEach(b => b.onclick = () => { A.sfx("click"); setShopTab(b.dataset.tab); });
+}
+
+// Kosmetik: 6 Angebote pro Woche, für Münzen oder Juwelen (Kisten gibt es hier nie)
+function cosShop() {
+  $("dealBox").innerHTML = `<p class="hint">${t("shop.cosWeek")}</p>`;
+  const g = $("shopGrid"); g.innerHTML = "";
+  for (const id of cosOfferNow()) {
+    const c = cosById(id); if (!c) continue;
+    const d = document.createElement("div"); d.className = "sitem"; d.style.setProperty("--rc", RCOL[c.rarity]); d.dataset.id = id;
+    const prev = document.createElement("div"); prev.className = "prev"; prev.append(cosIcon(id, 84)); d.append(prev);
+    d.insertAdjacentHTML("beforeend", `<span class="rarity" style="--rc:${RCOL[c.rarity]}">${RARITY[c.rarity]}</span><b>${c.name}</b><small>${t("cos.kind." + c.kind)}</small>`);
+    const own = S.cos.includes(id), need = shopLevel("cos", id), pr = COS_PRICE[c.rarity];
+    if (own) { const b = document.createElement("button"); b.className = "btn ghost small"; b.innerHTML = svg("i-check") + t("shop.owned"); b.disabled = true; d.append(b); }
+    else if (S.level < need) { const b = document.createElement("button"); b.className = "btn ghost small"; b.innerHTML = svg("i-lock") + t("shop.fromLevel", { n: need }); b.disabled = true; d.append(b); }
+    else {
+      const row = document.createElement("div"); row.className = "buy2";
+      const go = async (cur, b) => {
+        b.disabled = true;
+        try { await buyCos(id, cur); A.sfx("levelup"); toast(t("shop.bought", { name: c.name }), "i-star", true); refreshTop(); shopScreen(); }
+        catch (e) { toast(t(e && e.code === "offline" ? "sync.buyOffline" : "shop.buyFailed"), "i-close"); b.disabled = false; }
+      };
+      const bc = document.createElement("button"); bc.className = "btn yellow small"; bc.innerHTML = `<span class="coin"></span>${pr.coins}`; bc.disabled = S.coins < pr.coins; bc.onclick = () => go("coins", bc);
+      row.append(bc);
+      if (serverOn()) { const bg = document.createElement("button"); bg.className = "btn pink small"; bg.innerHTML = `<span class="gem"></span>${pr.gems}`; bg.title = "≈ " + gemsInEuro(pr.gems); bg.disabled = (S.gems || 0) < pr.gems; bg.onclick = () => go("gems", bg); row.append(bg); }
+      d.append(row);
+    }
+    g.append(d);
+  }
+  $$(".coinNum").forEach(e => e.textContent = S.coins);
 }

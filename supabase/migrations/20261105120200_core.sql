@@ -178,6 +178,13 @@ create or replace function game.week() returns text language sql stable security
   select to_char(game.today(), 'IYYY-"W"IW')
 $$;
 
+-- ---------- Kosmetik-Wochenangebot: 6 Gegenstände, für alle gleich ----------
+create or replace function game.cos_offer() returns text[]
+language sql stable security definer set search_path = '' as $$
+  select array(select id from game.items where kind in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') and active and meta->>'src' is distinct from 'mastery'
+                order by md5(game.week() || id) limit 6)
+$$;
+
 -- ---------- Gesamter Zustand des Spielers in EINER Antwort ----------
 create or replace function game.state(p uuid) returns jsonb
 language sql stable security definer set search_path = '' as $$
@@ -189,12 +196,13 @@ language sql stable security definer set search_path = '' as $$
     'guest', coalesce((select u.is_anonymous from auth.users u where u.id = pl.id), true),
     'coins', w.coins, 'gems', w.gems,
     'items', coalesce((select jsonb_agg(i.item_id order by i.item_id) from game.inventory i where i.player_id = pl.id), '[]'),
-    'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
+    'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level, 'games', h.games, 'wins', h.wins, 'goals', h.goals, 'supers', h.supers, 'mastery', h.mastery))
                          from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
     'daily', jsonb_build_object('last', pr.daily_last, 'streak', pr.daily_streak),
     'challengeDone', pr.challenge_day = game.today(),
     'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
     'weekly', case when pr.weekly->>'week' = game.week() then pr.weekly else '{}'::jsonb end,
+    'offer', to_jsonb(game.cos_offer()),
     'career', pr.career, 'achievements', pr.achievements, 'stats', pr.stats,
     'chests', game.closed_chests(pl.id), 'shards', w.shards, 'pity', pr.pity,
     'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,
@@ -221,7 +229,7 @@ language sql stable security definer set search_path = '' as $$
   select jsonb_build_object(
     'level', pl.level, 'xp', pl.xp, 'xpNext', 120 + (pl.level - 1) * 60,
     'coins', w.coins, 'gems', w.gems,
-    'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
+    'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level, 'games', h.games, 'wins', h.wins, 'goals', h.goals, 'supers', h.supers, 'mastery', h.mastery))
                          from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
     'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
     'weekly', case when pr.weekly->>'week' = game.week() then pr.weekly else '{}'::jsonb end,

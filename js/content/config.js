@@ -33,18 +33,18 @@ export const SUPERS = {
 
 // hair: spikes | bob | mohawk | goggles | puffs | hood | beard | ponytail | slick | helmet | curly | crown
 export const CHARS = [
-  { id: "kalle",  name: "Kalle",  super: "fire",    price: 0,   skin: "#f2c79b", hair: "#2b1a12", acc: "#ff3b30", style: "spikes",   spd: 1.0,  jmp: 1.0,  pow: 1.05 },
-  { id: "yuki",   name: "Yuki",   super: "ice",     price: 0,   skin: "#ffe0c4", hair: "#1d2b5a", acc: "#7fe3ff", style: "bob",      spd: 1.05, jmp: 1.0,  pow: 0.95 },
-  { id: "bolt",   name: "Bolt",   super: "thunder", price: 0,   skin: "#d9a374", hair: "#ffd43b", acc: "#ffe14d", style: "mohawk",   spd: 1.12, jmp: 0.95, pow: 0.95 },
-  { id: "rocco",  name: "Rocco",  super: "rocket",  price: 200, skin: "#c98b5e", hair: "#3b2416", acc: "#ff3d6e", style: "goggles",  spd: 1.0,  jmp: 1.05, pow: 1.05 },
-  { id: "nala",   name: "Nala",   super: "banana",  price: 250, skin: "#8d5a3b", hair: "#1a0f0a", acc: "#3ddc84", style: "puffs",    spd: 1.08, jmp: 1.08, pow: 0.92 },
-  { id: "flummi", name: "Flummi", super: "bouncy",  price: 300, skin: "#ffd9c2", hair: "#ff6fb5", acc: "#ff8bd1", style: "ponytail", spd: 1.02, jmp: 1.15, pow: 0.9 },
-  { id: "phantom",name: "Phantom",super: "ghost",   price: 350, skin: "#dfe6f5", hair: "#5b4b8a", acc: "#c8b6ff", style: "hood",     spd: 1.06, jmp: 1.02, pow: 0.98 },
-  { id: "tank",   name: "Tank",   super: "giant",   price: 400, skin: "#e0a77a", hair: "#7a3e1d", acc: "#ff9f43", style: "beard",    spd: 0.88, jmp: 0.92, pow: 1.2 },
-  { id: "tina",   name: "Tina",   super: "tornado", price: 450, skin: "#f5c6a0", hair: "#14b8a6", acc: "#5effc8", style: "curly",    spd: 1.05, jmp: 1.06, pow: 0.98 },
-  { id: "magnus", name: "Magnus", super: "magnet",  price: 500, skin: "#eac09a", hair: "#9aa3b5", acc: "#ff4fd8", style: "slick",    spd: 0.98, jmp: 1.0,  pow: 1.08 },
-  { id: "max",    name: "Max",    super: "meteor",  price: 600, skin: "#b8794f", hair: "#222",    acc: "#ff7a1a", style: "helmet",   spd: 1.0,  jmp: 1.1,  pow: 1.05 },
-  { id: "kaiser", name: "Kaiser", super: "clone",   price: 900, skin: "#f0c090", hair: "#e8e3d6", acc: "#ffe14d", style: "crown",    spd: 1.06, jmp: 1.06, pow: 1.08 },
+  { id: "kalle",  name: "Kalle",  super: "fire",    price: 0, rarity: "basis",   skin: "#f2c79b", hair: "#2b1a12", acc: "#ff3b30", style: "spikes",   spd: 1.0,  jmp: 1.0,  pow: 1.05 },
+  { id: "yuki",   name: "Yuki",   super: "ice",     price: 0, rarity: "basis",   skin: "#ffe0c4", hair: "#1d2b5a", acc: "#7fe3ff", style: "bob",      spd: 1.05, jmp: 1.0,  pow: 0.95 },
+  { id: "bolt",   name: "Bolt",   super: "thunder", price: 0, rarity: "basis",   skin: "#d9a374", hair: "#ffd43b", acc: "#ffe14d", style: "mohawk",   spd: 1.12, jmp: 0.95, pow: 0.95 },
+  { id: "rocco",  name: "Rocco",  super: "rocket",  price: 400, rarity: "selten", skin: "#c98b5e", hair: "#3b2416", acc: "#ff3d6e", style: "goggles",  spd: 1.0,  jmp: 1.05, pow: 1.05 },
+  { id: "nala",   name: "Nala",   super: "banana",  price: 450, rarity: "selten", skin: "#8d5a3b", hair: "#1a0f0a", acc: "#3ddc84", style: "puffs",    spd: 1.08, jmp: 1.08, pow: 0.92 },
+  { id: "flummi", name: "Flummi", super: "bouncy",  price: 500, rarity: "selten", skin: "#ffd9c2", hair: "#ff6fb5", acc: "#ff8bd1", style: "ponytail", spd: 1.02, jmp: 1.15, pow: 0.9 },
+  { id: "phantom",name: "Phantom",super: "ghost",   price: 700, rarity: "episch", skin: "#dfe6f5", hair: "#5b4b8a", acc: "#c8b6ff", style: "hood",     spd: 1.06, jmp: 1.02, pow: 0.98 },
+  { id: "tank",   name: "Tank",   super: "giant",   price: 750, rarity: "episch", skin: "#e0a77a", hair: "#7a3e1d", acc: "#ff9f43", style: "beard",    spd: 0.88, jmp: 0.92, pow: 1.2 },
+  { id: "tina",   name: "Tina",   super: "tornado", price: 800, rarity: "episch", skin: "#f5c6a0", hair: "#14b8a6", acc: "#5effc8", style: "curly",    spd: 1.05, jmp: 1.06, pow: 0.98 },
+  { id: "magnus", name: "Magnus", super: "magnet",  price: 850, rarity: "episch", skin: "#eac09a", hair: "#9aa3b5", acc: "#ff4fd8", style: "slick",    spd: 0.98, jmp: 1.0,  pow: 1.08 },
+  { id: "max",    name: "Max",    super: "meteor",  price: 1300, rarity: "legend", skin: "#b8794f", hair: "#222",    acc: "#ff7a1a", style: "helmet",   spd: 1.0,  jmp: 1.1,  pow: 1.05 },
+  { id: "kaiser", name: "Kaiser", super: "clone",   price: 1500, rarity: "legend", skin: "#f0c090", hair: "#e8e3d6", acc: "#ffe14d", style: "crown",    spd: 1.06, jmp: 1.06, pow: 1.08 },
 ];
 export const charById = id => CHARS.find(c => c.id === id) || CHARS[0];
 
@@ -135,9 +135,11 @@ export const EMOTES = ["😂", "🔥", "😤", "😎", "🤡", "GG"];
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const rand = (a, b) => a + Math.random() * (b - a);
 
-// Seltenheit nach Preis (für Karten und Shop)
+// Seltenheit: Köpfe fest (rarity), Bälle und Arenen nach Preis
 export const RARITY = localizeKeys({ basis: 0, selten: 0, episch: 0, legend: 0 }, "rarity");
-export const rarityOf = c => !c.price ? "basis" : c.price <= 300 ? "selten" : c.price <= 500 ? "episch" : "legend";
+export const rarityOf = c => c.rarity || (!c.price ? "basis" : c.price <= 300 ? "selten" : c.price <= 500 ? "episch" : "legend");
+/** Shop: ab welchem Level eine Seltenheit kaufbar ist (Kisten sind nicht gesperrt) */
+export const SHOP_LEVEL = { basis: 1, selten: 1, episch: 5, legend: 10 };
 // Juwelen-Preis von Köpfen nach Seltenheit (Basis-Köpfe gibt es nur für Münzen). Gilt auch auf dem Server (catalog.sql).
 // Kopf-Level 1 bis 10 (Server: head_max_level). Stufe 10 = +25 % Schusskraft, +25 % schnellere Super-Ladung, +5 % Tempo.
 // Sprung bleibt gleich (höhere Sprünge verändern das Timing, das hilft kaum und fühlt sich fremd an).
@@ -148,7 +150,7 @@ export function leveledStats(c, lvl) {
   const b = headBonus(lvl);
   return b ? { ...c, pow: c.pow * (1 + b), spd: c.spd * (1 + b * 0.2) } : c;
 }
-export const GEM_PRICE = { basis: null, selten: 300, episch: 450, legend: 600 };
+export const GEM_PRICE = { basis: null, selten: 450, episch: 700, legend: 900 };
 export const gemPrice = c => GEM_PRICE[rarityOf(c)];
 // Euro-Wert von Juwelen, immer neben Juwelen-Preisen angezeigt (Basis: kleinstes Paket, 100 Juwelen = 0,99 €)
 export const gemsInEuro = n => money(Math.round(n * 0.99));

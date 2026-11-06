@@ -48,7 +48,7 @@ begin
   end if;
 
   if cos_rar is not null then
-    select id into it from game.items where kind in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') and rarity = cos_rar and active order by random() limit 1;
+    select id into it from game.items where kind in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') and rarity = cos_rar and active and meta->>'src' is distinct from 'mastery' order by random() limit 1;
     if it is not null then
       if game.give_item(p, it, 'chest') then items := items || jsonb_build_object('id', it, 'rarity', cos_rar, 'dup', false);
       else
@@ -114,7 +114,7 @@ begin
   prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
   perform game.limit_rate(p, 'craft', 20, interval '1 minute');
   select * into it from game.items where id = item and active;
-  if it.id is null or it.kind not in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') then perform game.fail('not_craftable'); end if;
+  if it.id is null or it.kind not in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') or it.meta->>'src' = 'mastery' then perform game.fail('not_craftable'); end if;
   if exists (select 1 from game.inventory where player_id = p and item_id = item) then perform game.fail('already_owned'); end if;
   cost := (game.cfg('chest_shards')->'craft'->>it.rarity)::integer;
   update game.wallets set shards = shards - cost where player_id = p and shards >= cost;
@@ -122,6 +122,30 @@ begin
   perform game.give_item(p, item, 'craft');
   res := jsonb_build_object('item', item, 'shards', cost, 'state', game.state_brief(p));
   return game.idem_end(p, request_key, res);
+end $$;
+
+-- ---------- Meisterschaft pro Kopf (Konzept: docs/PROGRESSION.md) ----------
+-- Zähler des Kopfes erhöhen; jede erreichte Stufe gibt ihren Gegenstand und/oder ihre Kiste (einmal)
+create or replace function game.progress_mastery(p uuid, head text, won boolean, g integer, sup integer) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare h game.heads; m jsonb := game.cfg('mastery'); st integer; e jsonb; got jsonb := '[]'; val integer; hid text := replace(head, 'head:', ''); item text;
+begin
+  update game.heads set wins = wins + won::integer, goals = goals + greatest(0, g), supers = supers + greatest(0, sup)
+   where player_id = p and head_id = head returning * into h;
+  if h.head_id is null or m is null then return got; end if;
+  st := h.mastery;
+  while st < jsonb_array_length(m) loop
+    e := m->st;
+    val := case e->>'stat' when 'games' then h.games when 'wins' then h.wins when 'goals' then h.goals else h.supers end;
+    exit when val < (e->>'n')::integer;
+    st := st + 1;
+    item := case e->>'item' when 'title:fan' then 'title:fan-' || hid when 'title:master' then 'title:master-' || hid else (e->>'item') || ':m-' || hid end;
+    if exists (select 1 from game.items where id = item) then perform game.give_item(p, item, 'mastery'); else item := null; end if;
+    if e->>'chest' is not null then perform game.grant_chest(p, e->>'chest', 'mastery', hid || ':' || st); end if;
+    got := got || jsonb_strip_nulls(jsonb_build_object('head', head, 'stage', st, 'item', item, 'chest', e->>'chest'));
+  end loop;
+  if st > h.mastery then update game.heads set mastery = st where player_id = p and head_id = head; end if;
+  return got;
 end $$;
 
 revoke execute on all functions in schema api, game from public;

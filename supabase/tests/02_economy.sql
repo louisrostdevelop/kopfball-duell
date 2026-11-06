@@ -39,13 +39,16 @@ begin
   assert (r->>'amount')::int = 70 and (r->>'streak')::int = 1, 'Tagesbonus Tag 1';
   perform pg_temp.expect_error('select api.claim_daily()', 'already_claimed');
 
-  -- Kaufen: zu teuer, dann genug Münzen
-  perform pg_temp.expect_error('select api.buy_item(''head:kaiser'', ''coins'', ''key-kaiser-1'')', 'insufficient_funds');
+  -- Kaufen: Legendäres erst ab Level 10, zu teuer, dann genug Münzen
+  perform pg_temp.expect_error('select api.buy_item(''head:kaiser'', ''coins'', ''key-kaiser-1'')', 'level_required');
+  perform pg_temp.expect_error('select api.buy_item(''head:max'', ''coins'', ''key-max-0001'')', 'level_required');
+  perform pg_temp.expect_error('select api.buy_item(''head:rocco'', ''coins'', ''key-rocco-00'')', 'insufficient_funds');
+  perform pg_temp.logout(); perform game.book(u, 'coins', 200, 'test'); perform pg_temp.login(u);
   perform pg_temp.expect_error('select api.buy_item(''head:kalle'', ''coins'', ''key-kalle-01'')', 'already_owned');
   perform pg_temp.expect_error('select api.buy_item(''head:nope'', ''coins'', ''key-nope-001'')', 'unknown_item');
   perform pg_temp.expect_error('select api.buy_item(''ball:retro'', ''gems'', ''key-retro-01'')', 'not_for_sale');
   r := api.buy_item('head:rocco', 'coins', 'key-rocco-01');
-  assert (r->'state'->>'coins')::int = 20, 'Rocco 200 Münzen';
+  assert (r->'state'->>'coins')::int = 20, 'Rocco 400 Münzen';
   assert r->'state'->'heads' ? 'head:rocco', 'Rocco hat Level-Eintrag';
   -- Gleiche Anfrage nochmal (Netz-Wiederholung): kein zweites Abbuchen, gleiche Antwort
   r2 := api.buy_item('head:rocco', 'coins', 'key-rocco-01');
@@ -117,8 +120,8 @@ begin
 
   -- Import des Browser-Spielstands: einmal, gedeckelt, nur Münz-Inhalte
   r := api.import_local('{"coins": 99999, "chars": ["kalle","tank","gibtsnicht"], "balls": ["gold"], "arenas": ["mond"]}');
-  -- Budget 2000: Tank 400 + Gold 600 + Mond 600 = 1600, Rest 400 als Münzen
-  assert (r->>'coins')::int = 150 + 400, 'Import gedeckelt (Gegenstände + Münzen zusammen): ' || (r->>'coins');
+  -- Budget 2000: Tank 750 + Gold 600 + Mond 600 = 1950, Rest 50 als Münzen
+  assert (r->>'coins')::int = 150 + 50, 'Import gedeckelt (Gegenstände + Münzen zusammen): ' || (r->>'coins');
   assert r->'items' ? 'head:tank' and r->'items' ? 'ball:gold' and r->'items' ? 'arena:mond', 'Import Gegenstände';
   perform pg_temp.expect_error('select api.import_local(''{}'')', 'already_imported');
 

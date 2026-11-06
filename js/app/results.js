@@ -1,6 +1,8 @@
 // Spielende: Belohnungen, Serien, Revanche, Teilen
-import { COL, DIFFS, W } from "../content/config.js";
-import { addCoins, addXP, challenge, challengeDone, checkAch, grantChest, S, save, taskProgress, weeklyProgress } from "./profile.js";
+import { charById, COL, DIFFS, W } from "../content/config.js";
+import { addCoins, addXP, challenge, challengeDone, checkAch, grantChest, masteryProgress, S, save, taskProgress, weeklyProgress } from "./profile.js";
+import { cosById } from "../content/cosmetics.js";
+
 import { fx } from "../ui/render/render.js";
 import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
@@ -18,6 +20,12 @@ import { careerNotice, online as serverOn, reportMatch, serverMode, submitEndles
 import { refreshTop } from "../ui/screens/home.js";
 import { again as mmAgain, leave as mmLeave, reportResult } from "./matchmaking.js";
 import { t } from "../content/i18n.js";
+
+// Meisterschaft: neue Stufe melden
+function masteryToast(m, n = 0) {
+  const c = charById(m.head.replace(/^head:/, "")), it = m.item && cosById(m.item);
+  setTimeout(() => { toast(t("mastery.reached", { name: c.name, n: m.stage, item: it ? it.name : t("chest." + m.chest) }), "i-crown", true); A.sfx("levelup"); }, 1600 + n * 1300);
+}
 
 export function seriesKey() {
   if (App.mode === "local") return "local";
@@ -78,6 +86,7 @@ export function matchEnd() {
   if (myS) ["goals", "headGoals", "pus", "stomps", "supers"].forEach(f => S.stats[f] += myS[f]);
   const online = App.mode === "guest" || App.mode === "host";
   const inc = myS ? { wins: win ? 1 : 0, goals: myS.goals, headGoals: myS.headGoals, supers: myS.supers, pus: myS.pus, stomps: myS.stomps, online: online ? 1 : 0, hard: win && vsCpu() && (App.cfg.diff ?? 1) >= 2 ? 1 : 0, cupRound: win && App.mode === "cup" ? 1 : 0 } : { pus: st.stats[0].pus + st.stats[1].pus, stomps: st.stats[0].stomps + st.stats[1].stomps };
+  if (myS) masteryProgress(st.p[me].ch, win, myS.goals, myS.supers).forEach(masteryToast);
   if (myS) weeklyProgress({ wins: win ? 1 : 0, goals: myS.goals, supers: myS.supers, headGoals: myS.headGoals, career: App.mode === "career" ? 1 : 0, clean: win && st.s[op] === 0 ? 1 : 0, online: online ? 1 : 0 }, "head:" + st.p[me].ch)
     .forEach((w, n) => setTimeout(() => { toast(t("week.done", { text: w.text, n: w.reward }), "i-cal", true); A.sfx("coin"); }, 900 + n * 1300));
   taskProgress(inc).forEach((task, n) => setTimeout(() => { toast(t("task.done", { text: task.text, n: task.reward }), "i-tasks", true); A.sfx("coin"); }, 600 + n * 1300));
@@ -111,6 +120,7 @@ export function matchEnd() {
       if (endlessFinal) submitEndless(endlessFinal);   // nach der Meldung: der Server zählt die Siege
       if (!res) return;
       careerNotice(res);
+      (res.mastery || []).forEach(masteryToast);
       if (res.capReached) toast(t("cap.reached"), "i-lock");
       else if (res.coinsBeforeCap > res.coins) toast(t("cap.soft"), "i-clock");
       refreshTop();

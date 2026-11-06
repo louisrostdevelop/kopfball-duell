@@ -1,7 +1,8 @@
 // Fortschritt und Wirtschaft als reine Regeln (kein Speicher, kein Browser):
 // Standard-Profil, Umzug alter Spielstände, Level-Kurve, Tagesaufgaben, Tages-Challenge, Angebot des Tages.
 // Läuft genauso auf einem Server (z. B. in einer Supabase Edge Function), damit Belohnungen dort geprüft werden können.
-import { CHARS, ARENAS, BALLS, CHALLENGE_SETS, RULE_KEYS } from "../content/config.js";
+import { CHARS, ARENAS, BALLS, CHALLENGE_SETS, RULE_KEYS, rarityOf, SHOP_LEVEL } from "../content/config.js";
+import { COSMETICS } from "../content/cosmetics.js";
 import { layoutsFor } from "../content/layouts.js";
 import { t as tr } from "../content/i18n.js";
 
@@ -16,7 +17,7 @@ export const defaultProfile = () => ({
   stats: { games: 0, wins: 0, goals: 0, headGoals: 0, pus: 0, stomps: 0, supers: 0 },
   ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, myPresets: [], chDone: "", endlessBest: 0, dealBought: "", career: {},
   // Kisten und Kosmetik (docs/PROGRESSION.md): Besitz als volle IDs ("hat:3"), ausgerüstet, ungeöffnete Kisten, Splitter, Garantie-Zähler
-  cos: [], equip: { hat: null, shoes: null, goalfx: null, emotes: [null, null, null, null] }, chests: [], shards: 0, pity: {},
+  cos: [], equip: { hat: null, shoes: null, goalfx: null, title: null, frame: null, emotes: [null, null, null, null] }, chests: [], shards: 0, pity: {},
 });
 
 // Gespeicherte Daten (evtl. aus alter Version) auf das aktuelle Format bringen
@@ -88,6 +89,13 @@ export function weeklyList(week) {
 }
 export const weeklyText = w => tr("week." + w.id, { n: w.n });
 
+// ---------- Kosmetik im Shop: 6 Angebote pro Woche (mit Server kommt die Liste vom Server) ----------
+export function cosOffer(week) {
+  const r = seeded("cos" + week), pool = [...COSMETICS], out = [];
+  while (out.length < 6 && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0].id);
+  return out;
+}
+
 // ---------- Tages-Challenge ----------
 export function challengeFor(d) {
   const r = seeded("ch" + d);
@@ -102,7 +110,8 @@ export function challengeFor(d) {
 // ---------- Angebot des Tages: 30 % auf etwas, das man noch nicht hat ----------
 export function dealFor(d, owned) {
   const r = seeded("deal" + d);
-  const pool = [...CHARS.filter(c => c.price && !owned.chars.includes(c.id)).map(c => ({ kind: "chars", it: c })), ...BALLS.filter(b => b.price && !owned.balls.includes(b.id)).map(b => ({ kind: "balls", it: b }))];
+  const lvl = owned.level || 1, ok = x => x.price && (SHOP_LEVEL[rarityOf(x)] || 1) <= lvl;
+  const pool = [...CHARS.filter(c => ok(c) && !owned.chars.includes(c.id)).map(c => ({ kind: "chars", it: c })), ...BALLS.filter(b => ok(b) && !owned.balls.includes(b.id)).map(b => ({ kind: "balls", it: b }))];
   if (!pool.length) return null;
   const x = pool[Math.floor(r() * pool.length)];
   return { kind: x.kind, id: x.it.id, name: x.it.name, old: x.it.price, price: Math.round(x.it.price * 0.7 / 10) * 10 };

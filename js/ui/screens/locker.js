@@ -1,5 +1,5 @@
 // Ausrüstung: Hut, Schuhe, Torexplosion, 4 Emote-Plätze. Besessenes antippen = tragen, Fehlendes mit Splittern herstellen.
-import { COSMETICS, SHARDS } from "../../content/cosmetics.js";
+import { COSMETICS, cosById, MASTERY_ITEMS, SHARDS } from "../../content/cosmetics.js";
 import { RARITY } from "../../content/config.js";
 import { S } from "../../app/profile.js";
 import { craft } from "../../app/account.js";
@@ -11,7 +11,7 @@ import { registerScreen, showScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
 import { num, t } from "../../content/i18n.js";
 
-const TABS = [["hat", ["hat"]], ["shoes", ["shoes"]], ["goalfx", ["goalfx"]], ["emotes", ["emote", "emoji"]]];
+const TABS = [["hat", ["hat"]], ["shoes", ["shoes"]], ["goalfx", ["goalfx"]], ["emotes", ["emote", "emoji"]], ["title", ["title"]], ["frame", ["frame"]]];
 let tab = "hat", slot = 0;
 
 export function lockerScreen() { showScreen("locker"); }
@@ -24,7 +24,10 @@ function slotLabel(e) {
 function render() {
   $("lockerShards").textContent = num(S.shards || 0);
   const pv = $("lockerPreview"); pv.innerHTML = "";
-  pv.append(avatarCanvas(S.char, 120, { hat: S.equip.hat, mood: "happy" }));
+  const av = avatarCanvas(S.char, 120, { hat: S.equip.hat, mood: "happy" }), fr = cosById(S.equip.frame);
+  if (fr) { av.className = "framed"; av.style.setProperty("--fc", fr.col); }
+  pv.append(av);
+  const ti = cosById(S.equip.title); $("lockerTitle").textContent = ti ? ti.name : "";
   const tabs = $("lockerTabs"); tabs.innerHTML = "";
   for (const [id] of TABS) {
     const b = document.createElement("button"); b.className = id === tab ? "on" : ""; b.textContent = t("locker.tab." + id); b.dataset.tab = id;
@@ -39,10 +42,15 @@ function render() {
     sl.append(b);
   });
   const kinds = TABS.find(x => x[0] === tab)[1], grid = $("lockerGrid"); grid.innerHTML = "";
-  for (const c of COSMETICS.filter(x => kinds.includes(x.kind))) {
+  // Aus Kisten: alle (Fehlendes herstellbar); aus der Meisterschaft: nur Besessenes
+  const list = [...COSMETICS.filter(x => kinds.includes(x.kind)), ...MASTERY_ITEMS.filter(x => kinds.includes(x.kind) && S.cos.includes(x.id))];
+  $("lockerHint").textContent = ["title", "frame"].includes(tab) ? t("locker.masteryHint") : "";
+  for (const c of list) {
     const own = S.cos.includes(c.id), on = own && isEquipped(c.id), cost = SHARDS.craft[c.rarity];
     const d = document.createElement("button"); d.className = `lcard r-${c.rarity}` + (own ? "" : " locked") + (on ? " on" : ""); d.dataset.id = c.id;
-    d.append(cosIcon(c.id, 52));
+    if (c.kind === "title") d.append(Object.assign(document.createElement("span"), { className: "titletag", textContent: c.name }));
+    else if (c.kind === "frame") { const f = avatarCanvas(c.head, 52); f.className = "framed"; f.style.setProperty("--fc", c.col); d.append(f); }
+    else d.append(cosIcon(c.id, 52));
     d.insertAdjacentHTML("beforeend", `<b>${esc(c.name)}</b><small>${RARITY[c.rarity]}</small>` +
       (own ? `<em>${on ? t("locker.worn") : t("locker.wear")}</em>` : `<em class="craft">${t("locker.craft", { n: cost })}</em>`));
     d.onclick = async () => {

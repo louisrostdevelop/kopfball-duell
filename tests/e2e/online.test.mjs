@@ -48,9 +48,13 @@ test("Online: Lobby bis Revanche", async t => {
   });
   await t.test("Kosmetik: Gast sieht Hut und Torexplosion des Hosts, Emotes kommen an (höchstens eins in 3 s)", async () => {
     assert.deepEqual(await B.evaluate(() => [window.__kd.cfg.cos[0].hat, window.__kd.cfg.cos[0].goalfx]), ["hat:2", "goalfx:3"]);
-    await B.evaluate(async () => { const g = await import("/js/app/game.js"); g.sendEmote("😂"); g.sendEmote("🔥"); });
-    await A.waitForTimeout(500);
-    assert.equal(await A.evaluate(() => window.__kd.st.p[1].emo), "😂");
+    // (🔥 wäre auch der Torjubel, deshalb GG als zweites Emote)
+    await B.evaluate(async () => { const g = await import("/js/app/game.js"); g.sendEmote("😂"); g.sendEmote("GG"); });
+    let seen = "";
+    for (let i = 0; i < 15 && seen !== "😂"; i++) { await A.waitForTimeout(100); seen = await A.evaluate(() => window.__kd.st.p[1].emo); }
+    assert.equal(seen, "😂");
+    await A.waitForTimeout(400);
+    assert.notEqual(await A.evaluate(() => window.__kd.st.p[1].emo), "GG", "zweites Emote innerhalb von 3 s verworfen");
     await A.evaluate(async () => { (await import("/js/app/game.js")).sendEmote("emoji:5"); });
     await B.waitForTimeout(400);
     assert.equal(await B.evaluate(() => window.__kd.st.p[0].emo), "emoji:5", "Host-Emote beim Gast");

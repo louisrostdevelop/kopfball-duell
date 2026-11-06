@@ -5,10 +5,10 @@
 // tests/sim/catalog.test.mjs prüft, dass sie aktuell ist. Auf dem Server einspielen: siehe docs/BACKEND.md.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE } from "../js/content/config.js";
+import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE, SHOP_LEVEL } from "../js/content/config.js";
 import { TASKS, WEEKLY } from "../js/core/economy.js";
 import { CAREER } from "../js/content/career.js";
-import { CHESTS, CHEST_TIERS, COSMETICS, HEAD_DUP_XP, PITY, SHARDS } from "../js/content/cosmetics.js";
+import { CHESTS, CHEST_TIERS, COSMETICS, COS_PRICE, HEAD_DUP_XP, MASTERY, MASTERY_ITEMS, PITY, SHARDS } from "../js/content/cosmetics.js";
 
 // Echtgeld-Produkte (Startwerte aus dem Spielkonzept)
 export const PRODUCTS = [
@@ -29,7 +29,10 @@ export function catalogSql() {
     ...BALLS.map(b => ({ id: "ball:" + b.id, kind: "ball", rarity: rarityOf(b), coins: b.price, gems: null, meta: { name: b.name } })),
     ...ARENAS.map(a => ({ id: "arena:" + a.id, kind: "arena", rarity: rarityOf(a), coins: a.price, gems: null, meta: { name: a.name } })),
     // Kosmetik: (noch) nicht im Shop, nur aus Kisten und zum Herstellen
-    ...COSMETICS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: null, gems: null, meta: { n: c.n } })),
+    // Kosmetik: aus Kisten, herstellbar, im Shop nur im Wochenangebot (game.cos_offer)
+    ...COSMETICS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: COS_PRICE[c.rarity].coins, gems: COS_PRICE[c.rarity].gems, meta: { n: c.n } })),
+    // Meisterschaft: nur über die Kopf-Stufen (nicht aus Kisten, nicht herstellbar)
+    ...MASTERY_ITEMS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: null, gems: null, meta: { src: "mastery", head: c.head, stage: c.stage } })),
   ];
   const ids = new Set();
   for (const it of items) { if (ids.has(it.id)) throw new Error("doppelte ID im Katalog: " + it.id); ids.add(it.id); }
@@ -51,7 +54,7 @@ export function catalogSql() {
   L.push(CHEST_TIERS.map((k, i) => { const c = CHESTS[k]; return `  (${q(k)}, ${i}, ${c.coins[0]}, ${c.coins[1]}, ${c.gems || 0}, ${c.cos.p}, ${q(JSON.stringify(c.cos.rar))}::jsonb, ${q(JSON.stringify(c.head))}::jsonb, ${c.sure ? "true" : "false"})`; }).join(",\n"));
   L.push("on conflict (tier) do update set ord = excluded.ord, coins_min = excluded.coins_min, coins_max = excluded.coins_max, gems = excluded.gems, cos_p = excluded.cos_p, cos_rar = excluded.cos_rar, head = excluded.head, sure = excluded.sure;");
   L.push("insert into game.config (key, value) values");
-  L.push([["chest_pity", PITY], ["chest_shards", SHARDS], ["head_dup_xp", HEAD_DUP_XP], ["weekly_defs", WEEKLY]].map(([k, v]) => `  (${q(k)}, ${q(JSON.stringify(v))}::jsonb)`).join(",\n"));
+  L.push([["chest_pity", PITY], ["chest_shards", SHARDS], ["head_dup_xp", HEAD_DUP_XP], ["weekly_defs", WEEKLY], ["mastery", MASTERY], ["shop_level", SHOP_LEVEL]].map(([k, v]) => `  (${q(k)}, ${q(JSON.stringify(v))}::jsonb)`).join(",\n"));
   L.push("on conflict (key) do update set value = excluded.value;");
   L.push("insert into game.career_leagues (id, ord, coins, gems, chest) values");
   L.push(CAREER.map((l, i) => `  (${q(l.id)}, ${i}, ${l.bonus.coins}, ${l.bonus.gems}, ${q(l.chest)})`).join(",\n"));

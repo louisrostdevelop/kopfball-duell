@@ -149,6 +149,40 @@ begin
   perform game.grant_achievements(v, '{}');
   assert (select string_agg(tier, ',' order by tier) from game.chests where player_id = v and source = 'ach' and ref like 'goals%') = 'bronze,silver', 'Erfolgs-Kisten';
 
+  -- Meisterschaft: Stufen nacheinander, Belohnung je Stufe einmal, Kisten bei 3 und 5, nicht herstellbar, nicht aus Kisten
+  update game.heads set games = 4, wins = 0, goals = 0, supers = 0, mastery = 0 where player_id = v and head_id = 'head:kalle';
+  r := game.progress_mastery(v, 'head:kalle', false, 0, 0);
+  assert r = '[]'::jsonb, 'noch nicht: ' || r::text;
+  update game.heads set games = 5 where player_id = v and head_id = 'head:kalle';
+  r := game.progress_mastery(v, 'head:kalle', true, 30, 0);
+  assert jsonb_array_length(r) = 1 and r->0->>'item' = 'title:fan-kalle', 'Stufe 1: ' || r::text;
+  update game.heads set wins = 60, goals = 100, supers = 20 where player_id = v and head_id = 'head:kalle';
+  r := game.progress_mastery(v, 'head:kalle', false, 0, 0);
+  assert jsonb_array_length(r) = 4 and r->3->>'item' = 'title:master-kalle', 'Stufen 2-5 auf einmal: ' || r::text;
+  assert (select mastery from game.heads where player_id = v and head_id = 'head:kalle') = 5;
+  assert (select string_agg(tier, ',' order by tier) from game.chests where player_id = v and source = 'mastery') = 'gold,silver', 'Kisten bei 3 und 5';
+  assert (select count(*) from game.inventory where player_id = v and item_id in ('title:fan-kalle', 'frame:m-kalle', 'emote:m-kalle', 'goalfx:m-kalle', 'title:master-kalle')) = 5, 'alle 5 Belohnungen';
+  assert game.progress_mastery(v, 'head:kalle', true, 5, 5) = '[]'::jsonb, 'nichts doppelt';
+  perform pg_temp.login(u);
+  perform pg_temp.expect_error($q$select api.craft_item('goalfx:m-yuki', 'craft-0009')$q$, 'not_craftable');
+  perform pg_temp.logout();
+
+  -- Kosmetik im Shop: nur das Wochenangebot (6 Stück, im Zustand), Legendäres erst ab Level 10
+  perform pg_temp.login(v); r := api.me(); perform pg_temp.logout();
+  assert jsonb_array_length(r->'offer') = 6, 'Wochenangebot im Zustand: ' || (r->'offer')::text;
+  perform game.book(v, 'coins', 5000, 'test');
+  update game.players set level = 4 where id = v;
+  -- ein Gegenstand außerhalb des Angebots
+  it := (select id from game.items where kind = 'hat' and not (id = any(game.cos_offer())) and id not in (select item_id from game.inventory where player_id = v) limit 1);
+  perform pg_temp.login(v);
+  perform pg_temp.expect_error(format('select api.buy_item(%L, ''coins'', ''cos-buy-0002'')', it), 'not_in_offer');
+  perform pg_temp.logout();
+  it := (select x from unnest(game.cos_offer()) x join game.items i on i.id = x where i.rarity <> 'legend' and x not in (select item_id from game.inventory where player_id = v) limit 1);
+  if it is not null then
+    perform pg_temp.login(v); r := api.buy_item(it, 'coins', 'cos-buy-0003'); perform pg_temp.logout();
+    assert exists (select 1 from game.inventory where player_id = v and item_id = it), 'Angebot gekauft';
+  end if;
+
   -- Ohne Anmeldung nichts
   perform pg_temp.expect_error(format('select api.open_chest(%L)', c), 'not_authenticated');
 end $$;

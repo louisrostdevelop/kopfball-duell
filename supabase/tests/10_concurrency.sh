@@ -10,9 +10,9 @@ TAG="conc$(date +%s%N)"
 trap 'q "delete from auth.users where email like '"'"'$TAG%'"'"'" >/dev/null' EXIT
 fail() { echo "ASSERT: $1"; exit 1; }
 
-# 1) Zwei verschiedene Käufe, Geld reicht nur für einen (300 Münzen: Rocco 200, Nala 250), je 10-mal parallel
+# 1) Zwei verschiedene Käufe, Geld reicht nur für einen (600 Münzen: Rocco 400, Nala 450), je 10-mal parallel
 U=$(q "insert into auth.users (id, email, is_anonymous) values (gen_random_uuid(), '$TAG-a', false) returning id")
-q "select game.book('$U', 'coins', 150, 'test')" >/dev/null
+q "select game.book('$U', 'coins', 450, 'test')" >/dev/null
 for i in $(seq 1 10); do
   as_user "$U" "select api.buy_item('head:rocco', 'coins', 'rocco-key-$i')" > /dev/null &
   as_user "$U" "select api.buy_item('head:nala', 'coins', 'nala-key-$i')" > /dev/null &
@@ -28,7 +28,7 @@ L=$(q "select sum(delta) from game.ledger where player_id = '$U' and currency = 
 # 2) Dieselbe Anfrage (gleicher Schlüssel) 20-mal gleichzeitig: einmal ausgeführt
 V=$(q "insert into auth.users (id, email, is_anonymous) values (gen_random_uuid(), '$TAG-b', false) returning id")
 q "select game.book('$V', 'coins', 1000, 'test')" >/dev/null
-for i in $(seq 1 20); do as_user "$V" "select api.buy_item('head:tank', 'coins', 'same-key-123')" > /dev/null & done
+for i in $(seq 1 20); do as_user "$V" "select api.buy_item('head:rocco', 'coins', 'same-key-123')" > /dev/null & done
 wait
 D=$(q "select count(*) from game.ledger where player_id = '$V' and reason = 'buy'")
 [ "$D" = "1" ] || fail "gleicher Schlüssel: $D Abbuchungen statt 1"

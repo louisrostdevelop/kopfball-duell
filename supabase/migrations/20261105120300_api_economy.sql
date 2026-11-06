@@ -178,7 +178,7 @@ declare
   res jsonb; hx integer; farmed boolean := false; bonus integer := 0; today date := game.today();
   hg integer; sup integer; pus integer; stomps integer; credit numeric; matches integer; challenge boolean := false;
   streak integer; best integer; ended integer := null;
-  cs game.career_stages; car jsonb; paid text[]; stars integer; open boolean; lg game.career_leagues; cres jsonb := null;
+  cs game.career_stages; car jsonb; paid text[]; stars integer; open boolean; lg game.career_leagues; cres jsonb := null; mast jsonb;
 begin
   prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
   perform game.limit_rate(p, 'cpu_match', 20, interval '1 minute');   -- Offline Gespieltes kommt gebündelt
@@ -276,6 +276,7 @@ begin
   ups := game.add_xp(p, gained_xp);
   hx := case when farmed then 0 when won then 30 else 15 end;
   update game.heads set xp = xp + hx, games = games + 1 where player_id = p and head_id = head;
+  mast := case when farmed then '[]'::jsonb else game.progress_mastery(p, head, won, goals, sup) end;
   if not farmed then perform game.add_pass_points(p, case when won then 10 else 5 end); end if;
 
   tasks_done := '[]';
@@ -297,7 +298,7 @@ begin
   achs := case when farmed then '[]'::jsonb else game.grant_achievements(p, facts) end;
 
   res := jsonb_build_object('coins', capped + bonus, 'coinsBeforeCap', coins + bonus, 'capReached', farmed, 'xp', gained_xp, 'levelUps', ups, 'headXp', hx,
-                            'tasksDone', tasks_done, 'achievements', achs, 'career', cres, 'state', game.state_brief(p));
+                            'tasksDone', tasks_done, 'achievements', achs, 'career', cres, 'mastery', mast, 'state', game.state_brief(p));
   return game.idem_end(p, request_key, res);
 end $$;
 
@@ -312,6 +313,11 @@ begin
   if it.id is null then perform game.fail('unknown_item'); end if;
   price := case currency when 'coins' then it.price_coins when 'gems' then it.price_gems end;
   if price is null then perform game.fail('not_for_sale', currency); end if;
+  -- Seltenes erst ab einem Level; Kosmetik nur im Wochenangebot
+  if (select level from game.players where id = p) < coalesce((game.cfg('shop_level')->>it.rarity)::integer, 1) then
+    perform game.fail('level_required', (game.cfg('shop_level')->>it.rarity));
+  end if;
+  if it.kind in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') and not (item = any(game.cos_offer())) then perform game.fail('not_in_offer'); end if;
   if exists (select 1 from game.inventory where player_id = p and item_id = item) then perform game.fail('already_owned'); end if;
   if price > 0 then perform game.book(p, currency, -price, 'buy', item); end if;
   perform game.give_item(p, item, 'buy_' || currency);

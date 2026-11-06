@@ -38,4 +38,6 @@ export function tasksScreen() {
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
 export function initTasks() {
   registerScreen("tasks", { show: tasksScreen });
+  // Kleine Bildschirme: Heute / Woche umschalten
+  $("taskTabs").onclick = e => { const b = e.target.closest("button"); if (!b) return; document.querySelector(".taskwrap").dataset.tab = b.dataset.tab; $("taskTabs").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); };
 }

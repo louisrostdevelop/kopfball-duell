@@ -1,8 +1,8 @@
 // Spielerprofil zur Laufzeit: Münzen, Level, Freischaltungen, Statistik, Erfolge, Einstellungen.
 // Wo gespeichert wird, entscheidet der eingesteckte ProfileStore (siehe ports/storage.js):
 // heute der Browser-Speicher, später zusätzlich ein Server. Die Regeln selbst liegen in core/economy.js.
-import { ACHIEVEMENTS } from "../content/config.js";
-import { cosById, LEVEL_SURE_HEAD, levelChest, SHARDS } from "../content/cosmetics.js";
+import { ACHIEVEMENTS, ARENAS, BALLS, CHARS, rarityOf, SHOP_LEVEL } from "../content/config.js";
+import { COSMETICS, cosById, COS_PRICE, LEVEL_SURE_HEAD, levelChest, MASTERY, masteryReward, SHARDS } from "../content/cosmetics.js";
 import { rollChest } from "../core/chests.js";
 import { defaultProfile, migrateProfile, xpFor, today, yesterday, dailyBonus, dailyTaskList, taskText, challengeFor, dealFor, earnedAchievements, weekOf, weeklyList, weeklyText } from "../core/economy.js";
 
@@ -66,20 +66,52 @@ export function applyChestItems(items) {
     } else if (!it.dup && !S.cos.includes(it.id)) S.cos.push(it.id);
   }
 }
+// ---------- Meisterschaft pro Kopf (ohne Server lokal; mit Server zählt der Server) ----------
+export const headStat = id => ({ level: 1, xp: 0, games: 0, wins: 0, goals: 0, supers: 0, mastery: 0, ...((S.heads && S.heads[id]) || {}) });
+/** Zähler des Kopfes erhöhen, erreichte Stufen belohnen. Gibt [{ head, stage, item, chest }] zurück. */
+export function masteryProgress(head, won, goals, supers) {
+  if (hooks.serverChests) return [];
+  S.heads = S.heads || {};
+  const h = S.heads[head] = { level: 1, xp: 0, games: 0, wins: 0, goals: 0, supers: 0, mastery: 0, ...(S.heads[head] || {}) };
+  h.games++; h.wins += won ? 1 : 0; h.goals += goals || 0; h.supers += supers || 0;
+  const got = [];
+  while (h.mastery < MASTERY.length && h[MASTERY[h.mastery].stat] >= MASTERY[h.mastery].n) {
+    h.mastery++;
+    const m = MASTERY[h.mastery - 1], item = masteryReward(head, h.mastery);
+    if (!S.cos.includes(item)) S.cos.push(item);
+    if (m.chest) grantChest(m.chest, "mastery", `${head}:${h.mastery}`);
+    got.push({ head: "head:" + head, stage: h.mastery, item, chest: m.chest || null });
+  }
+  save();
+  return got;
+}
+
 /** Mit Splittern herstellen (lokal) */
 export function craftLocal(id) {
-  const c = cosById(id); if (!c || S.cos.includes(id)) return false;
+  const c = cosById(id); if (!c || c.mastery || S.cos.includes(id)) return false;
   const cost = SHARDS.craft[c.rarity]; if (S.shards < cost) return false;
   S.shards -= cost; S.cos.push(id); save();
   return true;
 }
 export function addCoins(n) { S.coins += n; if (n > 0) S.earned += n; }
-export function owns(kind, id) { return S[kind].includes(id); }
+export function owns(kind, id) { return kind === "cos" ? S.cos.includes(id) : S[kind].includes(id); }
+/** Kosmetik aus dem Wochenangebot kaufen (lokal; mit Server: account.buyCos) */
+export function buyCosLocal(id) {
+  const c = cosById(id); if (!c || S.cos.includes(id) || S.level < shopLevel("cos", id)) return false;
+  const price = COS_PRICE[c.rarity].coins; if (S.coins < price) return false;
+  S.coins -= price; S.cos.push(id); save();
+  return true;
+}
 // Mit Server (app/account.js) bestätigt der Server jeden Kauf, sonst wird er zurückgedreht
 const hooks = { buy: null, canBuy: null, serverDaily: false, serverChests: false };
 export function setHooks(h) { Object.assign(hooks, h); }
+/** Ab welchem Level ist ein Gegenstand im Shop kaufbar (0 = sofort) */
+export function shopLevel(kind, id) {
+  const it = (kind === "chars" ? CHARS : kind === "balls" ? BALLS : kind === "arenas" ? ARENAS : COSMETICS).find(x => x.id === id);
+  return it ? SHOP_LEVEL[rarityOf(it)] || 1 : 1;
+}
 export function buy(kind, id, price) {
-  if (owns(kind, id) || S.coins < price) return false;
+  if (owns(kind, id) || S.coins < price || S.level < shopLevel(kind, id)) return false;
   if (hooks.canBuy && !hooks.canBuy()) return false;
   S.coins -= price; S[kind].push(id); save();
   if (hooks.buy) hooks.buy(kind, id, () => { S.coins += price; S[kind] = S[kind].filter(x => x !== id); save(); });

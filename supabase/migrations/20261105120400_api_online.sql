@@ -23,6 +23,8 @@ language sql stable security definer set search_path = '' as $$
     'hat', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'hat' and x.kind = 'hat'),
     'shoes', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'shoes' and x.kind = 'shoes'),
     'goalfx', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'goalfx' and x.kind = 'goalfx'),
+    'title', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'title' and x.kind = 'title'),
+    'frame', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'frame' and x.kind = 'frame'),
     'emotes', (select coalesce(jsonb_agg(e), '[]') from (select e from jsonb_array_elements_text(case when jsonb_typeof(c->'emotes') = 'array' then c->'emotes' else '[]' end) e
                 where (e not like '%:%' and char_length(e) <= 4)
                    or exists (select 1 from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = e and x.kind in ('emote', 'emoji'))
@@ -223,6 +225,7 @@ begin
     perform game.add_xp(pl, 40);
     perform game.add_pass_points(pl, case when won then 15 else 8 end);
     update game.heads set xp = xp + case when won then 40 else 20 end, games = games + 1 where player_id = pl and head_id = mt.heads->('p' || idx)->>'head';
+    perform game.progress_mastery(pl, mt.heads->('p' || idx)->>'head', won, case when idx = 1 then a else b end, 0);
     perform game.progress_tasks(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', case when idx = 1 then a else b end));
     perform game.progress_weekly(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', case when idx = 1 then a else b end,
                    'clean', case when won and (case when idx = 1 then b else a end) = 0 then 1 else 0 end), mt.heads->('p' || idx)->>'head');

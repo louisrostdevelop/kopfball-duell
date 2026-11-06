@@ -2,9 +2,11 @@
 // Die Kosmetik ist vorerst PLATZHALTER: nummerierte Varianten mit einfachen Formen und Farben. Die echten Inhalte
 // ersetzen später nur diese Liste (gleiche Felder). Kisten-Tabellen gelten auch auf dem Server (supabase/catalog.sql).
 import { t } from "./i18n.js";
+import { CHARS } from "./config.js";
 
-/** Arten in Reihenfolge der Sammlung */
+/** Arten in Reihenfolge der Sammlung (aus Kisten); OWN_KINDS: alles, was man besitzen kann (dazu Titel, Rahmen) */
 export const COS_KINDS = ["hat", "shoes", "goalfx", "emote", "emoji"];
+export const OWN_KINDS = [...COS_KINDS, "title", "frame"];
 
 // Platzhalter-Farben und -Zeichen
 const PAL = ["#ff5a4f", "#ffd84a", "#4fd1ff", "#7fd17f", "#c8a2ff", "#ff9bd2", "#ff9f40", "#ffffff", "#3b3b58", "#2fd6b0", "#e8c170", "#9aa7ff"];
@@ -24,9 +26,29 @@ function make(kind) {
   });
 }
 
-/** Alle Kosmetik-Gegenstände. id = "art:nummer" (gleich auf dem Server) */
+/** Alle Kosmetik-Gegenstände aus Kisten und Herstellen. id = "art:nummer" (gleich auf dem Server) */
 export const COSMETICS = COS_KINDS.flatMap(make);
-export const cosById = id => COSMETICS.find(c => c.id === id);
+
+// ---------- Meisterschaft pro Kopf: 5 Stufen, Belohnungen nur hier (nicht aus Kisten, nicht herstellbar) ----------
+// need: Spiele / Siege / Tore / Super-Tore / Siege mit diesem Kopf. Belohnung: Gegenstand und/oder Kiste.
+export const MASTERY = [
+  { stat: "games", n: 5, item: "title:fan" },
+  { stat: "wins", n: 10, item: "frame" },
+  { stat: "goals", n: 30, item: "emote", chest: "silver" },
+  { stat: "supers", n: 10, item: "goalfx" },
+  { stat: "wins", n: 50, item: "title:master", chest: "gold" },
+];
+const masteryId = (kind, head) => (kind === "title:fan" ? `title:fan-${head}` : kind === "title:master" ? `title:master-${head}` : `${kind}:m-${head}`);
+/** Belohnungen der Meisterschaft (PLATZHALTER-Grafik in der Farbe des Kopfes) */
+export const MASTERY_ITEMS = CHARS.flatMap((c, hi) => MASTERY.map((m, si) => {
+  const id = masteryId(m.item, c.id), kind = id.split(":")[0];
+  const o = { id, kind, head: c.id, stage: si + 1, rarity: "legend", col: c.acc, v: hi, n: "M", mastery: true };
+  Object.defineProperty(o, "name", { get: () => (kind === "title" ? t(m.item === "title:fan" ? "mastery.titleFan" : "mastery.titleMaster", { name: c.name }) : t("mastery.item." + kind, { name: c.name })), enumerable: true });
+  return o;
+}));
+export const masteryReward = (head, stage) => masteryId(MASTERY[stage - 1].item, head);
+const ALL = [...COSMETICS, ...MASTERY_ITEMS];
+export const cosById = id => ALL.find(c => c.id === id);
 
 // ---------- Kisten ----------
 // coins: [von, bis]; cos: Chance auf einen Kosmetik-Gegenstand und Verteilung der Seltenheit;

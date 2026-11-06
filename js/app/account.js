@@ -1,8 +1,9 @@
 // Server-Konto: Wenn ein Spiel-Server eingesteckt ist, gilt sein Stand für alles, was zählt (Münzen, Juwelen,
 // Level, Besitz). Das Spiel rechnet weiter lokal vor (sofortige Anzeige) und übernimmt danach die Zahlen vom Server.
 // Ohne Server passiert hier nichts, das Spiel läuft lokal wie bisher.
-import { applyChestItems, craftLocal, openChestLocal, S, save, setHooks } from "./profile.js";
-import { COS_KINDS } from "../content/cosmetics.js";
+import { applyChestItems, buyCosLocal, craftLocal, openChestLocal, S, save, setHooks } from "./profile.js";
+import { cosOffer, weekOf } from "../core/economy.js";
+import { OWN_KINDS } from "../content/cosmetics.js";
 import { has, server } from "./services.js";
 import { t, lang } from "../content/i18n.js";
 import { CAREER } from "../content/career.js";
@@ -34,9 +35,9 @@ export function applyState(st) {
     if (mine.length && !mine.includes(S[sel])) S[sel] = mine[0];
   }
   if (Array.isArray(st.items)) {
-    S.cos = st.items.filter(i => COS_KINDS.includes(i.split(":")[0]));
+    S.cos = st.items.filter(i => OWN_KINDS.includes(i.split(":")[0]));
     // Ausgerüstetes, das man nicht (mehr) hat, ablegen
-    for (const k of ["hat", "shoes", "goalfx"]) if (S.equip[k] && !S.cos.includes(S.equip[k])) S.equip[k] = null;
+    for (const k of ["hat", "shoes", "goalfx", "title", "frame"]) if (S.equip[k] && !S.cos.includes(S.equip[k])) S.equip[k] = null;
     S.equip.emotes = S.equip.emotes.map(e => (e && S.cos.includes(e) ? e : null));
   }
   if (Array.isArray(st.chests)) S.chests = st.chests.map(c => ({ id: c.id, tier: c.tier, source: c.source, ref: c.ref, sure: c.sure || null }));
@@ -138,6 +139,17 @@ export async function buyWithGems(kind, id) {
   applyState(r.state);
   if (!S[kind].includes(id)) S[kind].push(id);
   save();
+  return true;
+}
+/** Wochenangebot Kosmetik: mit Server die Liste des Servers, sonst lokal */
+export const cosOfferNow = () => (online() && last && Array.isArray(last.offer) ? last.offer : cosOffer(weekOf()));
+/** Kosmetik aus dem Wochenangebot kaufen (Münzen oder Juwelen) */
+export async function buyCos(id, currency = "coins") {
+  if (!online()) { if (currency !== "coins" || !buyCosLocal(id)) throw new Error("buy"); return true; }
+  if (!reachable()) throw Object.assign(new Error("offline"), { code: "offline" });
+  const r = await server.buy(id, currency);
+  if (!S.cos.includes(id)) S.cos.push(id);
+  applyState(r.state); save();
   return true;
 }
 /** Echtgeld-Produkte vom Server (mit "buyable" für diesen Spieler) */

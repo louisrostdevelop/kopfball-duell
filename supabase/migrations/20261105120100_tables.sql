@@ -125,6 +125,11 @@ alter table game.progress add column if not exists online_rewarded integer not n
 alter table game.progress add column if not exists career_paid text[] not null default '{}';    -- Ligen, deren Bonus bezahlt ist
 alter table game.career_leagues add column if not exists chest text;                           -- Kiste für die komplette Liga
 alter table game.progress add column if not exists weekly jsonb not null default '{}';           -- Wochenaufgaben {week, list, heads}
+-- Meisterschaft pro Kopf: Zähler und erreichte Stufe (0-5)
+alter table game.heads add column if not exists wins integer not null default 0;
+alter table game.heads add column if not exists goals integer not null default 0;
+alter table game.heads add column if not exists supers integer not null default 0;
+alter table game.heads add column if not exists mastery smallint not null default 0;
 
 -- ---------- Kisten (docs/PROGRESSION.md) ----------
 -- Kosmetik-Arten im Katalog

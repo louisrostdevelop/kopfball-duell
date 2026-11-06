@@ -152,6 +152,7 @@
         <div class="superbox"><svg><use href="#i-bolt"/></svg><div><b id="ciSuper"></b><p id="ciDesc"></p></div></div>
         <div class="stats" id="ciStats"></div>
         <div class="headlv" id="ciLevel" hidden></div>
+        <div class="mastery" id="ciMastery"></div>
         <button class="btn green" id="btnSelOk"></button>
       </aside>
     </div>
@@ -277,7 +278,7 @@
   <section class="screen" id="scr-shop" hidden>
     <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.shop.shop">Shop</h2><span class="grow"></span><span class="chip gem-chip static gemOnly" hidden><span class="gem"></span><b class="gemNum">0</b></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
     <div class="shoptop">
-      <div class="tabs" id="shopTabs"><button data-tab="chars" class="on" data-i18n="html.shop.koepfe">Köpfe</button><button data-tab="balls" data-i18n="html.shop.baelle">Bälle</button><button data-tab="arenas" data-i18n="html.shop.arenen">Arenen</button><button data-tab="gems" class="gemtab gemOnly" hidden><span class="gem"></span><span data-i18n="html.shop.juwelen">Juwelen</span></button></div>
+      <div class="tabs" id="shopTabs"><button data-tab="chars" class="on" data-i18n="html.shop.koepfe">Köpfe</button><button data-tab="balls" data-i18n="html.shop.baelle">Bälle</button><button data-tab="arenas" data-i18n="html.shop.arenen">Arenen</button><button data-tab="cos" data-i18n="shop.tabCos">Kosmetik</button><button data-tab="gems" class="gemtab gemOnly" hidden><span class="gem"></span><span data-i18n="html.shop.juwelen">Juwelen</span></button></div>
       <div class="deal" id="dealBox"></div>
     </div>
     <div class="shopgrid" id="shopGrid"></div>
@@ -299,8 +300,9 @@
     <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.tasks.aufgaben">Aufgaben</h2><span class="grow"></span><button class="btn small purple" id="btnPass" hidden><svg><use href="#i-crown"/></svg><span data-i18n="html.tasks.saisonPass">Saison-Pass</span><i class="badge" id="passBadge" hidden></i></button></header>
     <div class="taskwrap">
       <div class="challenge" id="challengeCard"></div>
-      <div class="panel"><h4 data-i18n="html.tasks.heute">Heute</h4><div class="tasklist" id="taskList"></div><p class="hint" data-i18n="html.tasks.jedenTagGibtS">Jeden Tag gibt's drei neue.</p></div>
-      <div class="panel"><h4 data-i18n="week.title">Diese Woche</h4><div class="tasklist" id="weekList"></div><div class="weekchest" id="weekChest"></div></div>
+      <div class="tasktabs tabs" id="taskTabs"><button data-tab="day" class="on" data-i18n="html.tasks.heute">Heute</button><button data-tab="week" data-i18n="week.title">Diese Woche</button></div>
+      <div class="panel" id="dayPanel"><h4 data-i18n="html.tasks.heute">Heute</h4><div class="tasklist" id="taskList"></div><p class="hint" data-i18n="html.tasks.jedenTagGibtS">Jeden Tag gibt's drei neue.</p></div>
+      <div class="panel" id="weekPanel"><h4 data-i18n="week.title">Diese Woche</h4><div class="tasklist" id="weekList"></div><div class="weekchest" id="weekChest"></div></div>
     </div>
   </section>
 
@@ -322,8 +324,8 @@
   <section class="screen" id="scr-locker" hidden>
     <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="locker.title">Ausrüstung</h2><span class="grow"></span><span class="chip static shard-chip" data-i18n-attr="title:chest.shardsTitle"><svg class="ic"><use href="#i-shard"/></svg><b id="lockerShards">0</b></span></header>
     <div class="lockerwrap">
-      <div class="lockerside"><div class="lockerprev" id="lockerPreview"></div><div class="eslots" id="lockerSlots" hidden></div></div>
-      <div class="lockermain"><div class="tabs" id="lockerTabs"></div><div class="lockergrid" id="lockerGrid"></div></div>
+      <div class="lockerside"><div class="lockerprev" id="lockerPreview"></div><small class="titletag" id="lockerTitle"></small><div class="eslots" id="lockerSlots" hidden></div></div>
+      <div class="lockermain"><div class="tabs" id="lockerTabs"></div><p class="hint" id="lockerHint"></p><div class="lockergrid" id="lockerGrid"></div></div>
     </div>
   </section>
 

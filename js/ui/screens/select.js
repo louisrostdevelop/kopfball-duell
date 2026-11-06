@@ -1,9 +1,10 @@
 // Kopf-Auswahl und Freischalten
 import { charById, CHARS, clamp, HEAD_MAX_LEVEL, headBonus, leveledStats, RARITY, rarityOf, SUPERS } from "../../content/config.js";
-import { buy, checkAch, owns, S } from "../../app/profile.js";
+import { buy, checkAch, headStat, owns, S, shopLevel } from "../../app/profile.js";
+import { cosById, MASTERY, masteryReward } from "../../content/cosmetics.js";
 import { avatarCanvas } from "../render/art.js";
 import { App } from "../../app/state.js";
-import { $, $$, RCOL, svg, toast } from "../dom.js";
+import { $, $$, esc, RCOL, svg, toast } from "../dom.js";
 import { unlockModal } from "../modals.js";
 import { showScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
@@ -47,10 +48,23 @@ export function selUpdate() {
   const lc = leveledStats(c, locked ? 1 : headLevel(c.id));   // Balken mit Kopf-Level
   $("ciStats").innerHTML = bar(t("head.speed"), lc.spd) + bar(t("head.jump"), lc.jmp) + bar(t("head.shot"), lc.pow);
   levelBox(c, locked);
+  masteryBox(c, locked);
   const ok = $("btnSelOk");
-  if (locked) { ok.className = "btn yellow"; ok.disabled = S.coins < c.price; ok.innerHTML = S.coins >= c.price ? `<span class="coin"></span>${t("head.unlock", { n: c.price })}` : t("head.coinsMissing", { n: c.price - S.coins }); }
+  const need = shopLevel("chars", c.id);
+  if (locked && S.level < need) { ok.className = "btn ghost"; ok.disabled = true; ok.innerHTML = svg("i-lock") + t("shop.fromLevel", { n: need }); }
+  else if (locked) { ok.className = "btn yellow"; ok.disabled = S.coins < c.price; ok.innerHTML = S.coins >= c.price ? `<span class="coin"></span>${t("head.unlock", { n: c.price })}` : t("head.coinsMissing", { n: c.price - S.coins }); }
   else { ok.className = "btn green"; ok.disabled = false; ok.textContent = selCtx.okText || t("ui.select"); }
   $$(".coinNum").forEach(e => e.textContent = S.coins);
+}
+
+// Meisterschaft: 5 Stufen pro Kopf, nächstes Ziel, nächste Belohnung
+function masteryBox(c, locked) {
+  const box = $("ciMastery"); box.hidden = locked; if (locked) return;
+  const h = headStat(c.id), next = MASTERY[h.mastery];
+  const dots = MASTERY.map((m, i) => `<i class="${i < h.mastery ? "on" : i === h.mastery ? "next" : ""}" title="${esc(cosById(masteryReward(c.id, i + 1)).name)}">${i + 1}</i>`).join("");
+  box.innerHTML = `<div class="ms-top"><b>${t("mastery.title")}</b><span class="ms-dots">${dots}</span></div>` + (next
+    ? `<small>${t("mastery.need." + next.stat, { n: next.n, name: c.name })}: ${Math.min(h[next.stat] || 0, next.n)}/${next.n} · ${t("mastery.next", { item: cosById(masteryReward(c.id, h.mastery + 1)).name })}${next.chest ? " + " + t("chest." + next.chest) : ""}</small>`
+    : `<small>${t("mastery.done", { name: c.name })}</small>`);
 }
 
 // Kopf-Level (nur mit Server): Stufe, Kopf-XP aus Spielen, Aufwerten mit Münzen (fehlende XP mit Juwelen)
