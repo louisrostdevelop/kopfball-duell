@@ -1,6 +1,7 @@
 // Darstellung: Kamera, Arenen, Spieler, Ball, Partikel, HUD, Wiederholung
 import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
 import { drawHead, drawWornShoe, drawBall, drawPuIcon, shade } from "./art.js";
+import { TRAIL, drawBallTrail } from "./balls.js";
 import { cosById } from "../../content/cosmetics.js";
 import { GFX, REACT, REACT_DUR } from "./goalfx.js";
 import { makeArenaArt } from "./arena-art.js";
@@ -20,6 +21,7 @@ let bgCanvas = null, crowdCanvas = null, bgKey = "", crowdRect = null, lastW = 0
 const parts = [];
 const callouts = [];
 const trail = [];
+let trailId = 0;
 const netHit = [{ t: 9, y: 0, p: 0 }, { t: 9, y: 0, p: 0 }];
 const barWob = [9, 9];
 const headSq = [0, 0];
@@ -898,17 +900,30 @@ function drawBallShadow(b) {
 function drawBallFx(st, b, t, skin, replay) {
   const sp = Math.hypot(b.vx || 0, b.vy || 0);
   const col = b.fx ? SUPERS[b.fx].col : "#fff";
-  if (!replay) { trail.push({ x: b.x, y: b.y, r: b.r, fx: b.fx, sp }); if (trail.length > 12) trail.shift(); }
-  const tr = replay ? replay : trail;
-  // Tempo-Streifen bei harten Schüssen, Farbschweif bei Spezialschüssen
+  // Spurpunkte mit fester Rate (60/s), damit die Spur bei 120 Hz gleich aussieht
+  if (!replay) {
+    const last = trail[trail.length - 1];
+    if (!last || t - last.t0 >= 1 / 61 || t < last.t0) trail.push({ x: b.x, y: b.y, r: b.r, fx: b.fx, sp, id: trailId++, t0: t });
+    while (trail.length > 32) trail.shift();
+  }
+  const all = replay ? replay : trail, tr = all.slice(-12);
+  // Spur des Ball-Skins (neueste zuerst); beim Super-Schuss gedämpft, damit dessen Effekt lesbar bleibt
+  const pts = [];
+  for (let i = all.length - 1; i >= 0; i--) {
+    const p = all[i], age = replay ? (all.length - 1 - i) / 60 : t - p.t0;
+    if (age < 0 || age > TRAIL) continue;
+    pts.push({ x: p.x, y: p.y, id: p.id, age, k: clamp((p.sp - 650) / 500, 0, 1) * (p.fx ? 0.25 : 1) });
+  }
+  ctx.globalAlpha = b.alpha ?? 1; drawBallTrail(ctx, skin, pts, b.r, t); ctx.globalAlpha = 1;
+  // Farbschweif bei Spezialschüssen
   if (tr.length > 2) {
     ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
     for (let i = 1; i < tr.length; i++) {
       const p0 = tr[i - 1], p1 = tr[i], k = i / tr.length;
-      if (p1.sp < 700 && !p1.fx) continue;
-      ctx.globalAlpha = k * (p1.fx ? 0.6 : clamp((p1.sp - 700) / 900, 0, 0.5)) * (b.alpha ?? 1);
-      ctx.strokeStyle = p1.fx ? SUPERS[p1.fx].col : "#ffffff";
-      ctx.lineWidth = p1.r * (p1.fx ? 1.6 : 1.1) * k;
+      if (!p1.fx) continue;
+      ctx.globalAlpha = k * 0.6 * (b.alpha ?? 1);
+      ctx.strokeStyle = SUPERS[p1.fx].col;
+      ctx.lineWidth = p1.r * 1.6 * k;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     }
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
@@ -952,10 +967,11 @@ function drawBallFx(st, b, t, skin, replay) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2.6, 0, TAU); ctx.fill();
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
   }
+  const bst = { t, vx: b.vx, vy: b.vy, hit: replay ? 9 : ballSq.t, floor: G - b.y };
   if (b.fx === "clone" || b.fx === "copypaste") {
     const amp = 95 * Math.sin(Math.min(1, b.fxT / 0.35) * Math.PI / 2);
     const d = Math.hypot(b.fxDX, b.fxDY) || 1, px = -b.fxDY / d, py = b.fxDX / d;
-    [-1, 0, 1].forEach(k => { if (k === b.fxK) return; drawBall(ctx, skin, b.fxBX + px * amp * k, b.fxBY + py * amp * k, b.r, b.a, 0.95); });
+    [-1, 0, 1].forEach(k => { if (k === b.fxK) return; drawBall(ctx, skin, b.fxBX + px * amp * k, b.fxBY + py * amp * k, b.r, b.a, 0.95, null, bst); });
   }
   if (b.fx === "aimbot") {
     const tg = superTarget(st, b.fxO), s = 30 - Math.min(1, b.fxT / 0.3) * 12;
@@ -994,7 +1010,7 @@ function drawBallFx(st, b, t, skin, replay) {
     const k = Math.sin((ballSq.t / 0.12) * Math.PI);
     stretch = { ang: ballSq.ang, k: 1 - 0.32 * ballSq.p * k };
   } else if (sp > 800) stretch = { ang: Math.atan2(b.vy, b.vx), k: 1 + Math.min(0.22, (sp - 800) / 3500) };
-  drawBall(ctx, skin, b.x, b.y, b.r, b.a, b.alpha ?? 1, stretch);
+  drawBall(ctx, skin, b.x, b.y, b.r, b.a, b.alpha ?? 1, stretch, bst);
   if (b.fx === "stone" || b.fx === "crypto" || b.fx === "flex") ballSkinFx(b);
   if (!replay) st.p.forEach(p => drawAim(st, p));
 }
@@ -1293,7 +1309,8 @@ export function render(st, t, opts) {
   let view = st, rep = null;
   if (opts.replay && opts.replay.length > 2) {
     const idx = clamp(Math.floor(opts.replayFrac * (opts.replay.length - 1)), 0, opts.replay.length - 1);
-    view = opts.replay[idx]; rep = opts.replay.slice(Math.max(0, idx - 10), idx + 1).map(s => ({ x: s.b.x, y: s.b.y, r: s.b.r, fx: s.b.fx, sp: Math.hypot(s.b.vx, s.b.vy) }));
+    view = opts.replay[idx]; const from = Math.max(0, idx - 27);
+    rep = opts.replay.slice(from, idx + 1).map((s, j) => ({ x: s.b.x, y: s.b.y, r: s.b.r, fx: s.b.fx, sp: Math.hypot(s.b.vx, s.b.vy), id: from + j }));
   }
   let tz = 1, tx = W / 2, ty = H / 2;
   if (rep) {
