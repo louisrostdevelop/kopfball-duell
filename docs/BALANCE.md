@@ -114,6 +114,26 @@ Neu simuliert (40 Läufe, Median):
 **Was noch fehlt:** Nach etwa einem halben Jahr wird es dünn. Länger halten nur **neue Inhalte pro Saison**: zum
 Beispiel 1 bis 2 neue Köpfe, 4 bis 6 Kosmetik-Teile und eigene Pass-Rahmen je Saison statt derselben Vorlage.
 
+## Bälle und Shop-Arenen (06.11.2026)
+
+- **Bälle:** 20 Stück, nach Seltenheit bepreist (`BALL_PRICE` in `js/content/config.js`):
+  - Selten 500 Münzen, Episch 1.200 (ab Level 5), Legendär 2.500 (ab Level 10).
+  - Alle zusammen kosten etwa 26.000 Münzen.
+  - Es gibt sie nur im Shop und im Saison-Pass, nicht aus Kisten.
+- **Arenen:** Neon, Eis und Mond werden ab Level frei. Die vier neuen kommen je Saison in den Pass, danach kosten sie
+  2.500 im Shop (docs/ARENEN.md).
+
+Simulation (Median, die Spieler kaufen Bälle und Arenen, sobald 1.500 Münzen Reserve übrig bleiben):
+
+| Meilenstein (Tag) | gelegentlich | Stammspieler | Vielspieler | Zahler | Bot |
+|---|---|---|---|---|---|
+| alle Bälle | 245 | 84 | 35 | 308 | 28 |
+| alle Shop-Arenen | 301 | 98 | 245 | 364 | 196 |
+| alle 22 Köpfe (vorher ohne Bälle) | 322 (210) | 98 (63) | 42 (28) | 56 (49) | 35 (21) |
+
+Bälle und Arenen sind damit ein spürbarer Münz-Verbraucher neben den Köpfen. Wer zuerst Köpfe will, kommt so schnell an
+sie wie vorher. Der Zahler kauft in der Simulation Köpfe mit Juwelen, spart darum keine Münzen an und kauft Bälle später.
+
 ## Bindungsdauer, kurz
 
 | | vorher | jetzt | jetzt + neue Inhalte je Saison |

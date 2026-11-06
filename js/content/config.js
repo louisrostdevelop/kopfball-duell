@@ -89,28 +89,16 @@ export const ARENAS = [
 export const arenaFree = (a, level) => !a.season && (!a.level || level >= a.level);
 export const arenaById = id => ARENAS.find(a => a.id === id) || ARENAS[0];
 
+// Bälle: reine Optik (js/ui/render/balls.js). Preis nach Seltenheit (BALL_PRICE), Level-Sperre wie alles im Shop
+// (SHOP_LEVEL). Nur Shop und Saison-Pass, nicht aus Kisten (entschieden 06.11.2026, docs/BALANCE.md).
+export const BALL_PRICE = { basis: 0, selten: 500, episch: 1200, legend: 2500 };
 export const BALLS = [
-  { id: "klassik", price: 0 },
-  { id: "retro",   price: 100 },
-  { id: "beach",   price: 150 },
-  { id: "neon",    price: 200 },
-  { id: "pixel",   price: 200 },
-  { id: "planet",  price: 300 },
-  { id: "disco",   price: 350 },
-  { id: "gold",    price: 600 },
-  { id: "auge",     price: 250 },
-  { id: "graffiti", price: 250 },
-  { id: "slime",    price: 250 },
-  { id: "blase",    price: 250 },
-  { id: "glitch",   price: 450 },
-  { id: "vapor",    price: 450 },
-  { id: "chrom",    price: 450 },
-  { id: "candy",    price: 450 },
-  { id: "galaxie",  price: 750 },
-  { id: "iceout",   price: 750 },
-  { id: "rgb",      price: 750 },
-  { id: "orakel",   price: 750 },
-];
+  ["klassik", "basis"], ["retro", "selten"], ["beach", "selten"], ["neon", "selten"], ["pixel", "selten"],
+  ["planet", "episch"], ["disco", "episch"], ["gold", "legend"],
+  ["auge", "selten"], ["graffiti", "selten"], ["slime", "selten"], ["blase", "selten"],
+  ["glitch", "episch"], ["vapor", "episch"], ["chrom", "episch"], ["candy", "episch"],
+  ["galaxie", "legend"], ["iceout", "legend"], ["rgb", "legend"], ["orakel", "legend"],
+].map(([id, rarity]) => ({ id, rarity, price: BALL_PRICE[rarity] }));
 
 export const POWERUPS = {
   bighead: { icon: "big",    col: "#ff9f43", self: true },

@@ -123,10 +123,10 @@ begin
   perform api.set_name('Kumpel');
 
   -- Import des Browser-Spielstands: einmal, gedeckelt, nur Münz-Inhalte
-  r := api.import_local('{"coins": 99999, "chars": ["kalle","tank","gibtsnicht"], "balls": ["gold"], "arenas": ["mond"]}');
-  -- Budget 2000, billigste zuerst: Gold 600; Mond ist ab Level frei (nicht käuflich), Tank (3000) passt nicht, Rest 1400 als Münzen
-  assert (r->>'coins')::int = 150 + 1400, 'Import gedeckelt (Gegenstände + Münzen zusammen): ' || (r->>'coins');
-  assert r->'items' ? 'ball:gold' and not r->'items' ? 'arena:mond' and not r->'items' ? 'head:tank', 'Import Gegenstände';
+  r := api.import_local('{"coins": 99999, "chars": ["kalle","tank","gibtsnicht"], "balls": ["retro", "gold"], "arenas": ["mond"]}');
+  -- Budget 2000, billigste zuerst: Leder 500; Gold (2500) und Tank (3000) passen nicht, Mond ist ab Level frei; Rest 1500 als Münzen
+  assert (r->>'coins')::int = 150 + 1500, 'Import gedeckelt (Gegenstände + Münzen zusammen): ' || (r->>'coins');
+  assert r->'items' ? 'ball:retro' and not r->'items' ? 'ball:gold' and not r->'items' ? 'arena:mond' and not r->'items' ? 'head:tank', 'Import Gegenstände';
   perform pg_temp.expect_error('select api.import_local(''{}'')', 'already_imported');
 
   -- Saison-Pass: Punkte aus Spielen, Stufen abholen

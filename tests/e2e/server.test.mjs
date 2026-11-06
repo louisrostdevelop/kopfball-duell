@@ -38,19 +38,19 @@ test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "
   assert.ok(sess && sess.user && sess.user.is_anonymous, "Gast-Konto auf dem Server angelegt");
   const id = sess.user.id;
 
-  // Import (Budget 2000): Retro 100, dazu 1850 lokal erspielt; plus 150 Start. Danach Tagesbonus 35 (Serie 1)
-  const w = await until(async () => { const r = await db("select coins from game.wallets where player_id = $1", [id]); return r[0] && Number(r[0].coins) === 2035 && r[0]; });
+  // Import (Budget 2000): Retro 500, dazu 1500 der lokal erspielten Münzen; plus 150 Start. Danach Tagesbonus 35 (Serie 1)
+  const w = await until(async () => { const r = await db("select coins from game.wallets where player_id = $1", [id]); return r[0] && Number(r[0].coins) === 1685 && r[0]; });
   assert.ok(w, "Import + Tagesbonus auf dem Server: " + JSON.stringify(await db("select reason, delta from game.ledger where player_id = $1", [id])));
   assert.equal((await db("select count(*)::int n from game.inventory where player_id = $1 and item_id = 'ball:retro'", [id]))[0].n, 1, "Retro übernommen");
-  await until(async () => (await S(page)).coins === 2035);
-  assert.equal((await S(page)).coins, 2035, "Anzeige = Server");
+  await until(async () => (await S(page)).coins === 1685);
+  assert.equal((await S(page)).coins, 1685, "Anzeige = Server");
   await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
 
   // Kauf: lokal sofort, Server bestätigt
   await page.evaluate(async () => (await import("/js/app/profile.js")).buy("chars", "rocco", 1600));
   await until(async () => (await db("select 1 from game.inventory where player_id = $1 and item_id = 'head:rocco'", [id])).length);
-  await until(async () => (await S(page)).coins === 435);
-  assert.equal((await S(page)).coins, 435, "Kauf gebucht");
+  await until(async () => (await S(page)).coins === 85);
+  assert.equal((await S(page)).coins, 85, "Kauf gebucht");
 
   // Geschummelt: lokal Münzen erhöht, mehr gekauft als bezahlbar -> Server lehnt ab, wird zurückgedreht
   // (Legendäres sperrt schon das Level: lokal gar nicht kaufbar)
@@ -62,7 +62,7 @@ test("Server-Konto: Import, Tagesbonus, Kauf, Spielmeldung", { skip: !hasPg && "
   assert.equal(s.coins, real, "Münzen wieder wie auf dem Server");
   const owned = (await db("select item_id from game.inventory where player_id = $1", [id])).map(r => r.item_id.replace("head:", ""));
   assert.deepEqual([...s.chars].sort(), owned.filter(x => !x.includes(":")).sort(), "Besitz wie auf dem Server");
-  assert.ok(real >= 0 && real <= 435, "Server hat nur bezahlbare Käufe gebucht");
+  assert.ok(real >= 0 && real <= 85, "Server hat nur bezahlbare Käufe gebucht");
 
   // Spiel gegen den Computer: Server bucht die Belohnung
   const coinsBefore = real;
@@ -161,7 +161,7 @@ test("Offline spielen: Meldung wartet, Kaufen gesperrt, beim Wiederverbinden gew
   assert.equal(await page.locator("#careerGrid .cstage:nth-child(1) .stars svg.on").count(), 3, "lokal 3 Sterne");
   // Kaufen ohne Verbindung: gesperrt, nichts abgebucht
   const coins = (await S(page)).coins;
-  const bought = await page.evaluate(async () => (await import("/js/app/profile.js")).buy("balls", "retro", 100));
+  const bought = await page.evaluate(async () => (await import("/js/app/profile.js")).buy("balls", "beach", 500));
   assert.equal(bought, false); assert.equal((await S(page)).coins, coins);
   assert.match(await page.textContent("#toasts"), /Keine Verbindung/);
 

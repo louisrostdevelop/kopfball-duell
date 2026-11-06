@@ -227,7 +227,7 @@ function snapshot(P) {
   return {
     lvl: P.lvl, coins: P.coins, gems: P.gems, shards: P.shards, heads: hs.length, legend: Object.keys(P.heads).filter(k => C.rarityOf(C.charById(k)) === "legend").length, maxHeads: hs.filter(h => h.level >= CFG.head_max_level).length,
     cos: COS_IDS.filter(id => P.owned.has(id)).length, mastery: hs.reduce((a, h) => a + h.mastery, 0), frames: [...P.owned].filter(x => x.startsWith("frame:")).length,
-    ach: P.ach.size, career: Object.keys(P.career).length,
+    ach: P.ach.size, career: Object.keys(P.career).length, balls: C.BALLS.filter(b => P.owned.has(b.id)).length, arenas: C.ARENAS.filter(a => a.price && P.owned.has(a.id)).length,
   };
 }
 
@@ -244,6 +244,8 @@ export function report(days = 540, runs = 60) {
       "erster legendärer Kopf": med(res.map(x => firstDay(x.log, s => s.legend >= 1))),
       "alle Köpfe": med(res.map(x => firstDay(x.log, s => s.heads >= HEAD_N))),
       "alle Kisten-Kosmetik": med(res.map(x => firstDay(x.log, s => s.cos >= COS_IDS.length))),
+      "alle Bälle": med(res.map(x => firstDay(x.log, s => s.balls >= C.BALLS.length - 1))),
+      "alle Shop-Arenen": med(res.map(x => firstDay(x.log, s => s.arenas >= C.ARENAS.filter(a => a.price).length))),
       "Karriere komplett": med(res.map(x => firstDay(x.log, s => s.career >= 20))),
       "Level 25": med(res.map(x => firstDay(x.log, s => s.lvl >= 25))),
       "Level 50": med(res.map(x => firstDay(x.log, s => s.lvl >= 50))),
