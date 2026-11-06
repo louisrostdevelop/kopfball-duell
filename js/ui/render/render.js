@@ -507,7 +507,11 @@ function lights(st, t) {
 }
 
 // ---------- Tore ----------
-const DEPTH = 34; // Tiefe des Tors (nach hinten oben versetzt)
+// Räumlich: vorderer Rahmen (Pfosten an der Torlinie, obere Stange) liegt dort, wo die Physik ihn hat. Dahinter, nach oben
+// und leicht zur Mitte versetzt wie der Boden in der Perspektive (pitch), der hintere Rahmen. Rückwand, hinteres
+// Seitennetz und Dach liegen hinter dem Ball, das vordere Seitennetz und die Querlatte davor: Der Ball fliegt sichtbar ins Tor.
+const GZ = 46, GK = 1 - 0.18 * GZ / (G - FT);   // Tiefe des Tors auf dem Bildschirm, Verkleinerung nach hinten
+const far = (x, y) => [W / 2 + (x - W / 2) * GK, y - GZ];
 function netOffset(side, x, y) {
   // Netz beult sich am Einschlagpunkt nach außen und schwingt aus
   const nh = netHit[side];
@@ -515,55 +519,76 @@ function netOffset(side, x, y) {
   const d = Math.abs(y - nh.y);
   return Math.max(0, Math.sin(nh.t * 16 + 0.6) * Math.exp(-nh.t * 3.5)) * 26 * nh.p * Math.exp(-(d * d) / 9000) * x;
 }
+/** Rohr mit Kontur, Grundfarbe, Glanz- und Schattenkante */
+function tube(x1, y1, x2, y2, w, dim = 0) {
+  const len = Math.hypot(x2 - x1, y2 - y1) || 1, nx = -(y2 - y1) / len, ny = (x2 - x1) / len;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = INK; ctx.lineWidth = w + 3.5; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.strokeStyle = dim ? shade("#e8eef8", -dim) : "#e8eef8"; ctx.lineWidth = w; ctx.stroke();
+  const o = w * 0.22;
+  ctx.strokeStyle = "rgba(20,30,70,.22)"; ctx.lineWidth = w * 0.3; ctx.beginPath(); ctx.moveTo(x1 - nx * o, y1 - ny * o); ctx.lineTo(x2 - nx * o, y2 - ny * o); ctx.stroke();
+  ctx.strokeStyle = dim ? "rgba(255,255,255,.55)" : "#fff"; ctx.lineWidth = w * 0.28; ctx.beginPath(); ctx.moveTo(x1 + nx * o, y1 + ny * o); ctx.lineTo(x2 + nx * o, y2 + ny * o); ctx.stroke();
+}
+/** Rautennetz über einem Viereck (a oben vorn, b oben hinten, c unten hinten, e unten vorn); bulge(u, y) verschiebt waagerecht */
+function netQuad(A, B, Cc, E, n, alpha, bulge) {
+  const at = (u, v) => { const tx = A[0] + (B[0] - A[0]) * u, ty = A[1] + (B[1] - A[1]) * u, bx = E[0] + (Cc[0] - E[0]) * u, by2 = E[1] + (Cc[1] - E[1]) * u; const x = tx + (bx - tx) * v, y = ty + (by2 - ty) * v; return [x + (bulge ? bulge(u, y) : 0), y]; };
+  ctx.strokeStyle = `rgba(255,255,255,${alpha})`; ctx.lineWidth = 1.3;
+  const m = n * 2, steps = 14;
+  for (let k = -m; k <= m; k++) for (const dir of [1, -1]) {
+    ctx.beginPath(); let on = false;
+    for (let i = 0; i <= steps; i++) {
+      const v = i / steps, u = (k / m) + dir * v * (n / m) * 1.6;
+      if (u < 0 || u > 1) { on = false; continue; }
+      const [x, y] = at(u, v); if (!on) { ctx.moveTo(x, y); on = true; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+}
+function goalGeom(st, side) {
+  const by = barY(st, side), d = side ? -1 : 1, gl = side ? W - GOAL_W : GOAL_W, xb = side ? W - 8 : 8;
+  return { by, d, gl, xb, fGlT: far(gl, by), fGlB: far(gl, G), fXbT: far(xb, by), fXbB: far(xb, G) };
+}
 function goalBack(st, side, _t) {
-  const by = barY(st, side), d = side ? -1 : 1, gl = side ? W - GOAL_W : GOAL_W; // Torlinie (vorne)
-  const xb = side ? W : 0;
+  const g = goalGeom(st, side), { by, d, gl, xb } = g;
   netHit[side].t += 1 / 60;
-  ctx.save();
-  // Innenraum
-  ctx.fillStyle = "rgba(0,0,0,.22)";
-  ctx.beginPath(); ctx.moveTo(gl, by); ctx.lineTo(gl - d * 8, by - DEPTH * 0.6); ctx.lineTo(xb - d * 0, by - DEPTH * 0.6); ctx.lineTo(xb, G); ctx.lineTo(gl, G); ctx.closePath(); ctx.fill();
-  // Netz: senkrechte Fäden (von vorne nach hinten), waagerechte Fäden
-  ctx.strokeStyle = "rgba(255,255,255,.42)"; ctx.lineWidth = 1.4;
-  const cols = 9;
-  for (let k = 0; k <= cols; k++) {
-    const f = k / cols, x = gl - d * f * GOAL_W;
-    ctx.beginPath();
-    for (let y = by - DEPTH * 0.6 * f; y <= G; y += 10) ctx.lineTo(x - d * netOffset(side, f, y), y);
-    ctx.stroke();
-  }
-  for (let y = by + 8; y <= G; y += 12) {
-    ctx.beginPath();
-    for (let k = 0; k <= cols; k++) { const f = k / cols, x = gl - d * f * GOAL_W; ctx.lineTo(x - d * netOffset(side, f, y), y); }
-    ctx.stroke();
-  }
-  // Dachnetz
-  for (let k = 0; k <= 4; k++) { const yy = by - DEPTH * 0.6 * (k / 4); ctx.beginPath(); ctx.moveTo(gl - d * 8 * (k / 4), yy); ctx.lineTo(xb, yy); ctx.stroke(); }
-  // hintere Stange
-  ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.moveTo(gl - d * 8, by - DEPTH * 0.6); ctx.lineTo(xb, by - DEPTH * 0.6); ctx.stroke();
+  ctx.save(); ctx.lineJoin = "round";
+  // Schatten des Tors auf dem Boden und dunkler Innenraum
+  ctx.fillStyle = "rgba(0,0,20,.28)";
+  ctx.beginPath(); ctx.moveTo(gl, G); ctx.lineTo(xb, G); ctx.lineTo(...g.fXbB); ctx.lineTo(...g.fGlB); ctx.closePath(); ctx.fill();
+  const inner = ctx.createLinearGradient(gl, 0, xb, 0); inner.addColorStop(0, "rgba(0,0,20,.10)"); inner.addColorStop(1, "rgba(0,0,20,.32)");
+  ctx.fillStyle = inner; ctx.beginPath(); ctx.moveTo(...g.fGlT); ctx.lineTo(...g.fXbT); ctx.lineTo(...g.fXbB); ctx.lineTo(...g.fGlB); ctx.closePath(); ctx.fill();
+  const bul = (u, y) => -d * netOffset(side, u, y);
+  // Rückwand (zwischen hinterer Stütze vorn und hinten), hinteres Seitennetz, Dach
+  netQuad([xb, by], g.fXbT, g.fXbB, [xb, G], 3, 0.35);
+  netQuad(g.fGlT, g.fXbT, g.fXbB, g.fGlB, 6, 0.38, bul);
+  netQuad([gl, by], [xb, by], g.fXbT, g.fGlT, 6, 0.3);
+  // hinterer Rahmen, etwas dunkler (weiter weg)
+  tube(...g.fGlB, ...g.fGlT, 7, 0.12); tube(...g.fGlT, ...g.fXbT, 6, 0.12); tube(...g.fXbT, ...g.fXbB, 5, 0.14);
+  tube(...g.fXbB, ...g.fGlB, 4, 0.16); tube(xb, G, ...g.fXbB, 4, 0.16); tube(xb, by, ...g.fXbT, 4, 0.14);
   ctx.restore();
 }
 function goalFront(st, side, t) {
-  const by = barY(st, side), x0 = side ? W - GOAL_W : 0;
+  const g = goalGeom(st, side), { by, d, gl, xb } = g;
   const big = st.bigGoal[side] > 0;
   const w = barWob[side] < 0.6 ? Math.sin(barWob[side] * 60) * Math.exp(-barWob[side] * 8) * 4 : 0;
-  ctx.save();
-  ctx.lineJoin = "round";
-  // Latte
-  ctx.fillStyle = "#fff"; ctx.strokeStyle = INK; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.rect(x0 - 2, by - BAR_T / 2 + w, GOAL_W + 4, BAR_T); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "rgba(0,0,40,.18)"; ctx.fillRect(x0, by + w + 1, GOAL_W, BAR_T / 2 - 2);
-  // Pfosten vorne
-  const px = side ? W - GOAL_W - 5 : GOAL_W - 5;
-  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.rect(px, by - BAR_T / 2 + w, 10, G - by + BAR_T / 2 - w); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "rgba(0,0,40,.18)"; ctx.fillRect(px + (side ? 1 : 6), by + 6, 3, G - by - 6);
-  if (big) { ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = `rgba(255,79,216,${0.4 + Math.sin(t * 10) * 0.2})`; ctx.fillRect(x0, by - 8, GOAL_W, 16); ctx.globalCompositeOperation = "source-over"; }
+  ctx.save(); ctx.lineJoin = "round";
+  // vorderes Seitennetz: fein, der Ball dahinter bleibt gut zu sehen
+  netQuad([gl, by + w], [xb, by], [xb, G], [gl, G], 6, 0.26, (u, y) => -d * netOffset(side, u, y) * 0.6);
+  // Querlatte (von vorn nach hinten), hintere Stütze vorn, Bodenstange vorn
+  tube(gl, by + w, g.fGlT[0], g.fGlT[1], 8, 0.04);
+  tube(xb, by, xb, G, 5, 0.06);
+  tube(gl, G, xb, G, 4, 0.08);
+  // obere Stange (Physik: Latte) und Pfosten an der Torlinie
+  tube(gl, by + w, xb, by, 9);
+  tube(gl, by + w, gl, G, 10);
+  // Pfostenfuß
+  ctx.fillStyle = "rgba(0,0,20,.25)"; ctx.beginPath(); ctx.ellipse(gl, G + 2, 12, 3.5, 0, 0, TAU); ctx.fill();
+  if (big) { ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = `rgba(255,79,216,${0.4 + Math.sin(t * 10) * 0.2})`; ctx.fillRect(Math.min(gl, xb), by - 8, GOAL_W, 16); ctx.globalCompositeOperation = "source-over"; }
   if (st.wall[side] > 0) {
     const wx = side ? W - GOAL_W - 10 : GOAL_W + 10, a = Math.min(1, st.wall[side]) * (0.6 + Math.sin(t * 12) * 0.15);
     ctx.globalAlpha = a; ctx.globalCompositeOperation = "lighter";
-    const g = ctx.createLinearGradient(wx - 14, 0, wx + 14, 0); g.addColorStop(0, "rgba(120,200,255,0)"); g.addColorStop(0.5, "rgba(170,230,255,.9)"); g.addColorStop(1, "rgba(120,200,255,0)");
-    ctx.fillStyle = g; ctx.fillRect(wx - 14, by + BAR_T / 2, 28, G - by);
+    const gr = ctx.createLinearGradient(wx - 14, 0, wx + 14, 0); gr.addColorStop(0, "rgba(120,200,255,0)"); gr.addColorStop(0.5, "rgba(170,230,255,.9)"); gr.addColorStop(1, "rgba(120,200,255,0)");
+    ctx.fillStyle = gr; ctx.fillRect(wx - 14, by + BAR_T / 2, 28, G - by);
     ctx.globalCompositeOperation = "source-over";
     ctx.strokeStyle = "#e6f7ff"; ctx.lineWidth = 2;
     for (let y = by + 20; y < G; y += 26) { ctx.beginPath(); ctx.moveTo(wx - 7, y); ctx.lineTo(wx + 7, y + 13); ctx.stroke(); }
@@ -1368,8 +1393,14 @@ export function arenaThumb(arena, w, h) {
   ARENA_BG[arena](b, R);
   const cr = CROWD[arena];
   if (cr) { seedN = 777; paintCrowd(b, R, cr); }
-  b.fillStyle = "#fff"; b.fillRect(0, G - 205 - 6, GOAL_W, 12); b.fillRect(W - GOAL_W, G - 205 - 6, GOAL_W, 12);
-  b.fillRect(GOAL_W - 5, G - 211, 10, 211); b.fillRect(W - GOAL_W - 5, G - 211, 10, 211);
+  // Tore wie im Spiel, vereinfacht: vorderer und hinterer Rahmen
+  b.lineCap = "round"; b.lineJoin = "round";
+  for (const side of [0, 1]) {
+    const gl = side ? W - GOAL_W : GOAL_W, xb = side ? W - 8 : 8, by = G - 205, fa = far(gl, by), fb = far(gl, G), fq = far(xb, by);
+    b.fillStyle = "rgba(0,0,20,.25)"; b.beginPath(); b.moveTo(...fa); b.lineTo(...fq); b.lineTo(fq[0], fb[1]); b.lineTo(...fb); b.closePath(); b.fill();
+    b.strokeStyle = "#cfd8e8"; b.lineWidth = 6; b.beginPath(); b.moveTo(...fb); b.lineTo(...fa); b.lineTo(...fq); b.stroke();
+    b.strokeStyle = "#fff"; b.lineWidth = 10; b.beginPath(); b.moveTo(gl, G); b.lineTo(gl, by); b.lineTo(xb, by); b.moveTo(gl, by); b.lineTo(...fa); b.stroke();
+  }
   thumbCache.set(k, c);
   return copy(c);
 }
