@@ -260,7 +260,8 @@ begin
          cpu_credit = credit - dur, last_cpu_at = now(),
          challenge_day = case when challenge then today else challenge_day end,
          endless_streak = streak, endless_best = best, career = car, career_paid = paid,
-         stats = jsonb_build_object(
+         -- Statistik (Erfolge mit Zielwert) zählt nur belohnte Spiele: sonst ließen sich alle Erfolgs-Stufen an einem Tag erschleichen
+         stats = case when farmed then stats else jsonb_build_object(
            'games', coalesce((stats->>'games')::integer, 0) + 1,
            'wins', coalesce((stats->>'wins')::integer, 0) + case when won then 1 else 0 end,
            'goals', coalesce((stats->>'goals')::integer, 0) + goals,
@@ -268,7 +269,7 @@ begin
            'pus', coalesce((stats->>'pus')::integer, 0) + pus,
            'stomps', coalesce((stats->>'stomps')::integer, 0) + stomps,
            'supers', coalesce((stats->>'supers')::integer, 0) + sup,
-           'endlessWins', coalesce((stats->>'endlessWins')::integer, 0) + case when won and mode = 'endless' then 1 else 0 end)
+           'endlessWins', coalesce((stats->>'endlessWins')::integer, 0) + case when won and mode = 'endless' then 1 else 0 end) end
    where player_id = p;
   if ended is not null and ended > 0 then perform game.put_score(p, 'endless', ended); end if;
 

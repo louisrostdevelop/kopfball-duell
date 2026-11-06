@@ -1,6 +1,6 @@
 # Fortschritt: Level, Kisten, Herausforderungen, Freischalten
 
-Stand: Konzept vom 06.11.2026. Zahlen sind Startwerte, geprüft mit `node tools/balance/progression.mjs`.
+Stand: Konzept vom 06.11.2026. Zahlen sind Startwerte; geprüft mit `node tools/balance/progression.mjs`, Ergebnis in docs/BALANCE.md.
 Die Kosmetik-Inhalte sind bis auf die Schuhe vorerst Platzhalter (einfache Formen und Farben, nummerierte Namen); die
 echten Inhalte ersetzen nur die Daten in `js/content/cosmetics.js`. Schuhe: 10 Skins (`SHOES`, gezeichnet in
 `js/ui/render/shoes.js`), 5 Selten, 4 Episch, 1 Legendär, ohne Teamfarbe.
@@ -119,12 +119,9 @@ Köpfe lassen sich nicht herstellen.
 | Ranked-Saisonende | Bronze- bis Diamant-Liga: Bronze, Silber, Gold, Gold, Legendär |
 | Freundes-Herausforderungen | Silber |
 
-Ziel und Simulation (180 Tage, ohne Shop-Käufe):
-
-| Spieler | Kisten/Tag | Erster legendärer Kopf | Alle Köpfe | Level nach 6 Monaten |
-|---|---|---|---|---|
-| Aktiv (12 Spiele am Tag) | ~2,2 | nach ~3,5 Wochen | nach ~2 Monaten | ~74 |
-| Gelegentlich (4 Spiele am Tag) | ~1,1 | nach ~10 Wochen | nach ~5 Monaten | ~40 |
+Die alte Schätzung (nur Kisten, ohne Shop, 9 Köpfe) ist überholt. Die vollständige Simulation mit Shop, allen
+Quellen und Server-Regeln steht in **docs/BALANCE.md**: Mit den heutigen Werten hat ein Stammspieler alle Köpfe nach
+etwa 2 Wochen, dort steht auch ein Vorschlag zum Nachjustieren.
 
 Später als eigenes Paket: Events mit Event-Kiste und Sammel-Herausforderungen. Beides braucht laufend neue Inhalte.
 

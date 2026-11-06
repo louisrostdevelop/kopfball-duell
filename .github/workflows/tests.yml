@@ -29,7 +29,7 @@ jobs:
     name: Browser (Menüs, Steuerung, Online, Server, Handy-Layout)
     needs: spiellogik   # nur wenn die schnellen Tests grün sind
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25   # Browser-Tests laufen nacheinander (~8 min lokal, auf GitHub langsamer)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

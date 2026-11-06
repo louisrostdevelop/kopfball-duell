@@ -71,7 +71,9 @@ export async function openChestOverlay(c) {
   // 1. Kiste fällt herein, 2. wackelt, bis der Server geantwortet hat (mindestens 1 s)
   const ch = chestEl(tier, 180); ch.classList.add("drop"); stage.append(ch);
   ov.hidden = false; A.sfx("click");
-  const wait = ms => new Promise(res => { setTimeout(res, ms); });
+  // Weniger Bewegung gewünscht (Systemeinstellung): kurzer Ablauf ohne Wackeln und Aufladen
+  const quick = !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches, q = ms => (quick ? Math.min(ms, 60) : ms); // i18n-ok: Media-Query
+  const wait = ms => new Promise(res => { setTimeout(res, q(ms)); });
   const shake = { on: true };
   (async () => { await wait(420); if (!shake.on) return; ch.classList.remove("drop"); ch.classList.add("shake"); while (shake.on) { A.sfx("chest-shake"); await wait(260); } })();
   let r;
@@ -80,7 +82,7 @@ export async function openChestOverlay(c) {
   shake.on = false;
   // Beste Seltenheit bestimmt Farbe und Größe der Enthüllung; der beste Gegenstand kommt zuletzt
   const isHead = it => it.id.startsWith("head:");
-  const items = [...r.items].sort((p, q) => isHead(p) - isHead(q) || RANK[p.rarity] - RANK[q.rarity]);
+  const items = [...r.items].sort((x, y) => isHead(x) - isHead(y) || RANK[x.rarity] - RANK[y.rarity]);
   const best = items.reduce((m, it) => (RANK[it.rarity] > RANK[m] ? it.rarity : m), "basis");
   const newHead = items.some(it => isHead(it) && !it.dup), big = newHead || best === "legend";
   stage.style.setProperty("--rc", RC[best]);
@@ -107,19 +109,19 @@ export async function openChestOverlay(c) {
     el.insertAdjacentHTML("beforeend", `<b>${esc(itemName(it.id))}</b><small>${RARITY[it.rarity]}${kind === "head" ? " · " + t("chest.head") : ""}</small><em class="${it.dup ? "dup" : "new"}">${sub}</em>`);
     list.push({ el, cls: it.rarity + (kind === "head" && !it.dup ? " newhead" : ""), snd: it.dup && it.shards ? "shards" : "chest-item" });
   }
-  const t0 = 480;
+  const t0 = q(480), gap = q(360);
   list.forEach((x, i) => setTimeout(() => {
     const d = document.createElement("div"); d.className = "cocard r-" + x.cls;
     if (x.el) d.append(...x.el.childNodes); else d.innerHTML = x.html;
     cards.append(d); A.sfx(x.snd);
-  }, t0 + i * 360));
+  }, t0 + i * gap));
   setTimeout(() => {
     busy = false; refreshTop();
     const more = S.chests.some(x => x.tier === tier);
     $("coNext").hidden = !more; $("coDone").hidden = false;
     $("coNext").onclick = () => openNext(tier);
     if (App.screen === "chests") render();
-  }, t0 + 120 + list.length * 360);
+  }, t0 + q(120) + list.length * gap);
 }
 
 function oddsModal() {

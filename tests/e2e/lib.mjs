@@ -25,7 +25,8 @@ export const SAVE_KEY = "kopfball-duell-save-v2";
 
 // Neue Seite mit Spielstand (Tutorial gesehen, Tagesbonus schon abgeholt, damit kein Dialog stört)
 export async function openPage(env, view, { save = {}, init = [], query = "" } = {}) {
-  const ctx = await env.browser.newContext({ locale: "de-DE", ...view });
+  // Weniger Bewegung: Animationen (z. B. Kisten öffnen) laufen kurz, die Tests sind schneller
+  const ctx = await env.browser.newContext({ locale: "de-DE", reducedMotion: "reduce", ...view });
   for (const s of init) await ctx.addInitScript(s);
   await ctx.route("**/vendor/peerjs.min.js", r => r.fulfill({ body: "", contentType: "text/javascript" }));
   await ctx.addInitScript(([key, val]) => { if (!sessionStorage.getItem("seeded")) { localStorage.clear(); localStorage.setItem(key, val); sessionStorage.setItem("seeded", "1"); } },

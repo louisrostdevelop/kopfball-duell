@@ -147,6 +147,8 @@ begin
   if jsonb_typeof(r->'score') <> 'array' or jsonb_array_length(r->'score') <> 2 then perform game.fail('bad_report'); end if;
   if (r->'score'->>0)::integer not between 0 and 50 or (r->'score'->>1)::integer not between 0 and 50 then perform game.fail('bad_report'); end if;
   if dur not between 10 and 900 then perform game.fail('bad_report', 'duration'); end if;
+  -- Tore passen zur Dauer (wie bei Computer-Spielen): 50:0 in 30 Sekunden ist eine Absprache, kein Spiel
+  if (r->'score'->>0)::integer + (r->'score'->>1)::integer > dur / 3 + 2 then perform game.fail('implausible', 'goal_rate'); end if;
   select * into mt from game.matches where id = match for update;
   if mt.id is null or p not in (mt.p1, mt.p2) then perform game.fail('unknown_match'); end if;
   if mt.status <> 'open' then return jsonb_build_object('status', mt.status, 'result', mt.result); end if;
@@ -224,9 +226,10 @@ begin
     perform game.add_xp(pl, 40);
     perform game.add_pass_points(pl, case when won then 15 else 8 end);
     update game.heads set xp = xp + case when won then 40 else 20 end, games = games + 1 where player_id = pl and head_id = mt.heads->('p' || idx)->>'head';
-    perform game.progress_mastery(pl, mt.heads->('p' || idx)->>'head', won, case when idx = 1 then a else b end, 0);
-    perform game.progress_tasks(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', case when idx = 1 then a else b end));
-    perform game.progress_weekly(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', case when idx = 1 then a else b end,
+    -- Tore für Meisterschaft und Aufgaben höchstens 10 pro Spiel (abgesprochene Kantersiege bringen nichts extra)
+    perform game.progress_mastery(pl, mt.heads->('p' || idx)->>'head', won, least(10, case when idx = 1 then a else b end), 0);
+    perform game.progress_tasks(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', least(10, case when idx = 1 then a else b end)));
+    perform game.progress_weekly(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', least(10, case when idx = 1 then a else b end),
                    'clean', case when won and (case when idx = 1 then b else a end) = 0 then 1 else 0 end), mt.heads->('p' || idx)->>'head');
     if won then perform game.grant_achievements(pl, '{online,firstwin}'); end if;
   end loop;

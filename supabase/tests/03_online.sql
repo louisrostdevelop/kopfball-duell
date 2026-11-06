@@ -71,6 +71,7 @@ begin
   perform pg_temp.login(a);
   assert api.can_use_channel('match:' || m), 'Spieler im Spielkanal';
   perform pg_temp.expect_error(format('select api.report_match(%L, ''{"score":[3,1],"duration":3,"inputs":"h"}'')', m), 'bad_report');
+  perform pg_temp.expect_error(format('select api.report_match(%L, ''{"score":[40,0],"duration":90,"inputs":"h"}'')', m), 'implausible');
   r := api.report_match(m, '{"score":[3,1],"duration":90,"inputs":"h1"}');
   assert r->>'status' = 'waiting', 'wartet auf die andere Seite';
   perform pg_temp.expect_error(format('select api.report_match(%L, ''{"score":[3,1],"duration":90,"inputs":"h1"}'')', m), 'already_reported');

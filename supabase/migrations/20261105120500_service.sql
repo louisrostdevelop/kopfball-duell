@@ -79,6 +79,13 @@ begin
 end $$;
 
 -- ---------- Wartung (alle 10 Minuten) ----------
+-- Verschiedene Gegner eines Spielers in einer Ranked-Saison (gewertete Spiele)
+create or replace function game.season_opponents(p uuid, se integer) returns integer
+language sql stable security definer set search_path = '' as $$
+  select count(distinct case when m.p1 = p then m.p2 else m.p1 end)::integer from game.matches m
+   where m.season_id = se and m.mode = 'ranked' and m.status = 'settled' and p in (m.p1, m.p2)
+$$;
+
 create or replace function game.maintenance() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare a integer; b integer := 0; c integer; d integer; e integer; f integer; g integer; se integer; m record; rep jsonb; side integer;
@@ -119,18 +126,19 @@ begin
        and not exists (select 1 from game.purchases pu where pu.player_id = pl.id)
      limit 500);
   get diagnostics e = row_count;
-  -- Saisonende: Ranked-Kiste nach erreichter Liga (wer mindestens 5 Spiele hatte), einmal pro Saison
+  -- Saisonende: Ranked-Kiste nach erreichter Liga (wer mindestens 5 Spiele gegen mindestens 5 verschiedene Gegner hatte:
+  -- hochgespielte Zweitkonten bringen so wenig), einmal pro Saison
   f := 0;
   for se in select id from game.seasons where ends_at < now() and rewarded_at is null order by id loop
     insert into game.chests (player_id, tier, source, ref)
     select r.player_id, case when r.mmr >= 1700 then 'legend' when r.mmr >= 1250 then 'gold' when r.mmr >= 1100 then 'silver' else 'bronze' end, 'season', se::text
-      from game.ratings r where r.season_id = se and r.games >= 5
+      from game.ratings r where r.season_id = se and r.games >= 5 and game.season_opponents(r.player_id, se) >= 5
     on conflict (player_id, source, ref) do nothing;
     get diagnostics g = row_count; f := f + g;
     -- dazu der Rahmen der erreichten Liga (Grenzen wie LEAGUES in js/app/matchmaking.js)
     perform game.give_item(r.player_id, 'frame:league-' || case when r.mmr >= 2000 then 'legend' when r.mmr >= 1700 then 'diamond' when r.mmr >= 1450 then 'platinum'
                                                               when r.mmr >= 1250 then 'gold' when r.mmr >= 1100 then 'silver' else 'bronze' end, 'season')
-      from game.ratings r where r.season_id = se and r.games >= 5;
+      from game.ratings r where r.season_id = se and r.games >= 5 and game.season_opponents(r.player_id, se) >= 5;
     update game.seasons set rewarded_at = now() where id = se;
   end loop;
   return jsonb_build_object('queue', a, 'oneSided', b, 'void', c, 'requests', d, 'guests', e, 'seasonChests', f);

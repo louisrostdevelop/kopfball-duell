@@ -21,7 +21,7 @@ $$;
 do $g$ begin execute format('grant execute on all functions in schema %I to public', pg_my_temp_schema()::regnamespace); end $g$;
 
 do $$
-declare u uuid; v uuid; s jsonb; r jsonb; r2 jsonb; c0 bigint;
+declare u uuid; v uuid; s jsonb; r jsonb; r2 jsonb; c0 bigint; s0 integer;
 begin
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into u;
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into v;
@@ -89,9 +89,13 @@ begin
   perform pg_temp.logout();
   update game.progress set cap_cpu_coins = 1500 where player_id = u;
   perform pg_temp.login(u);
+  perform pg_temp.logout();
+  s0 := (select (stats->>'goals')::int from game.progress where player_id = u);
+  perform pg_temp.login(u);
   r := api.report_cpu_match(pg_temp.cpu('cpu', true, 1, 0), 'match-key-0008');
   assert (r->>'coins')::int = 0 and (r->>'xp')::int = 0 and (r->>'headXp')::int = 0 and (r->>'capReached')::boolean, 'harte Grenze: ' || r::text;
   perform pg_temp.logout();
+  assert (select (stats->>'goals')::int from game.progress where player_id = u) = s0, 'unbelohnte Spiele zählen nicht für Erfolge';
   update game.progress set cap_cpu_coins = 612 where player_id = u;
   update game.heads set xp = 60 where player_id = u and head_id = 'head:kalle';
   perform pg_temp.login(u);

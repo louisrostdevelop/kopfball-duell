@@ -24,7 +24,7 @@ end $$;
 do $g$ begin execute format('grant execute on all functions in schema %I to public', pg_my_temp_schema()::regnamespace); end $g$;
 
 do $$
-declare u uuid; v uuid; r jsonb; c uuid; c5 uuid; n integer; i integer; s0 integer; it text;
+declare u uuid; v uuid; w uuid; r jsonb; c uuid; c5 uuid; n integer; i integer; s0 integer; it text;
 begin
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into u;
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into v;
@@ -192,7 +192,17 @@ begin
   -- Saisonende: Kiste nach Liga (mind. 5 Spiele), einmal; Pass-Stufe mit Kiste
   insert into game.seasons (id, starts_at, ends_at, pass) values (900, now() - interval '60 days', now() - interval '30 days', '[]');
   insert into game.ratings (player_id, season_id, mmr, games, wins) values (u, 900, 1300, 20, 12), (v, 900, 1800, 4, 4);
+  -- u hat gegen 5 verschiedene Gegner gespielt; w hat 20 Spiele, aber nur gegen 2 Gegner (hochgespielt): nichts
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into w;
+  insert into game.ratings (player_id, season_id, mmr, games, wins) values (w, 900, 2100, 20, 20);
+  for i in 1..5 loop
+    insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into c5;
+    insert into game.matches (mode, season_id, p1, p2, status) values ('ranked', 900, u, c5, 'settled');
+    if i <= 2 then insert into game.matches (mode, season_id, p1, p2, status) select 'ranked', 900, w, c5, 'settled' from generate_series(1, 10); end if;
+  end loop;
   r := game.maintenance();
+  assert not exists (select 1 from game.chests where player_id = w and source = 'season'), 'nur 2 verschiedene Gegner: keine Kiste';
+  assert not exists (select 1 from game.inventory where player_id = w and item_id like 'frame:league-%'), 'nur 2 verschiedene Gegner: kein Rahmen';
   assert (select tier from game.chests where player_id = u and source = 'season' and ref = '900') = 'gold', 'Gold-Liga: Gold-Kiste';
   assert not exists (select 1 from game.chests where player_id = v and source = 'season'), 'zu wenige Spiele: keine';
   assert exists (select 1 from game.inventory where player_id = u and item_id = 'frame:league-gold'), 'Gold-Liga: Liga-Rahmen';
