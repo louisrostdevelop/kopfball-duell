@@ -105,7 +105,8 @@ export function onGoal(e) {
   const st = App.st, demo = App.mode === "demo";
   const side = e.i === 0 ? 1 : 0;
   const gx = side ? W - GOAL_W / 2 : GOAL_W / 2;
-  fx.burst("goal", gx, Math.min(e.y, G - 60), { col: [COL.p1, COL.p2][e.i] });
+  const gfx = e.kind !== "own" && App.cfg && App.cfg.cos && App.cfg.cos[e.i] ? App.cfg.cos[e.i].goalfx : null;
+  fx.burst("goal", gx, Math.min(e.y, G - 60), { col: [COL.p1, COL.p2][e.i], fx: gfx });
   fx.net(side, e.y, 1.4);
   fx.shake(24); fx.flash([COL.p1, COL.p2][e.i], 0.45); fx.hype(1);
   App.replay = App.rec.slice(-160);

@@ -106,6 +106,16 @@ begin
   perform pg_temp.expect_error($q$select api.craft_item('goalfx:5', 'craft-0004')$q$, 'insufficient_funds');
   perform pg_temp.logout();
 
+  -- Kosmetik in der Gegnersuche: nur Besessenes der passenden Art
+  update game.players set level = 10 where id = u;
+  perform pg_temp.login(u);
+  perform api.queue_join('casual', 'head:kalle', '{"hat": "hat:1", "shoes": "hat:2", "goalfx": "goalfx:8", "emotes": ["GG", "emoji:1", "emoji:12", "x:y"]}');
+  perform pg_temp.logout();
+  r := (select cos from game.match_queue where player_id = u);
+  perform pg_temp.login(u); perform api.queue_leave(); perform pg_temp.logout();
+  assert r->>'hat' = 'hat:1' and r->'shoes' is null and r->'goalfx' is null, 'nur Besessenes: ' || r::text;
+  assert r->'emotes' = '["GG", "emoji:1"]'::jsonb, 'Emotes geprüft: ' || r::text;
+
   -- Ohne Anmeldung nichts
   perform pg_temp.expect_error(format('select api.open_chest(%L)', c), 'not_authenticated');
 end $$;

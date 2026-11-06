@@ -4,7 +4,9 @@ import { layoutsFor } from "../content/layouts.js";
 import { makeAI } from "../core/ai.js";
 import { emote, newMatch } from "../core/physics.js";
 import { S, save } from "./profile.js";
-import { fx, setBand } from "../ui/render/render.js";
+import { fx, setBand, setMatchCos, setMuted } from "../ui/render/render.js";
+import { cosById } from "../content/cosmetics.js";
+import { emoteSlots, myCos } from "./cosmetics.js";
 import { App, inGame, PLAY_MODES, vsCpu } from "./state.js";
 import { $, $$, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
@@ -40,6 +42,8 @@ export function beginMatch(cfg) {
   const orig = cfg; cfg = resolveObs(cfg);
   // Gegen den Computer zählt nur das eigene Level, zu zweit beide; online bringt der Host die Level mit
   if (!cfg.levels && cfg.mode !== "guest" && cfg.mode !== "host") cfg = { ...cfg, levels: [headLevel(cfg.chars[0]), cfg.mode === "local" ? headLevel(cfg.chars[1]) : 1] };
+  // Kosmetik: eigene aus der Ausrüstung, online bringt der Host beide mit, der Computer trägt nichts
+  if (!cfg.cos) cfg = { ...cfg, cos: [myCos(), {}] };
   App.cfg = cfg; App.lastCfg = orig;
   App.mode = cfg.mode;
   App.st = newMatch(cfg);
@@ -49,6 +53,10 @@ export function beginMatch(cfg) {
   App.acc = 0; App.paused = false; App.endShown = false; App.rec = []; App.replay = null; App.maxDef = 0; App.goT = -1; App.t0 = Date.now();
   App.snaps = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0]; App.gPend = { j: 0, d: 0 }; App.jug = { i: -1, n: 0 };
   fx.clear();
+  const me = cfg.mode === "guest" ? 1 : 0;
+  setMatchCos(cfg.cos, [0, 1].map(i => i !== me && cfg.mode !== "local" && !!S.muteOpp));
+  App.emoT = 0;
+  buildEmoteBar();
   showScreen(null);
   I.setLayout(cfg.mode === "local" ? "split" : "single");
   updateBand();
@@ -103,9 +111,30 @@ export function pause(on) {
   } else { $("scr-pause").hidden = true; App.screen = null; $("touch").hidden = false; A.crowd(0.3); }
 }
 
+// Emotes: höchstens eins alle 3 Sekunden
+export const EMOTE_GAP = 3;
 export function sendEmote(e) {
   if (!inGame()) return;
   $("emoteBar").hidden = true;
+  const now = performance.now() / 1000;
+  if (now - (App.emoT || 0) < EMOTE_GAP) return;
+  App.emoT = now;
   if (App.mode === "guest") { Net.send({ t: "emo", e }); return; }
   emote(App.st, 0, e);
+}
+/** Emote-Leiste aus den 4 ausgerüsteten Plätzen, dazu Gegner stummschalten */
+export function buildEmoteBar() {
+  const bar = $("emoteBar"); bar.innerHTML = "";
+  emoteSlots().forEach((e, n) => {
+    const b = document.createElement("button"), c = cosById(e);
+    b.textContent = c ? (c.kind === "emoji" ? c.glyph : "★" + c.n) : e; b.title = t("hud.emoteKey", { n: n + 1 }); b.onclick = () => sendEmote(e);
+    bar.append(b);
+  });
+  const m = document.createElement("button"); m.className = "mute"; m.textContent = S.muteOpp ? "🔇" : "🔈"; m.title = t("hud.muteOpp");
+  m.onclick = () => {
+    S.muteOpp = !S.muteOpp; save(); m.textContent = S.muteOpp ? "🔇" : "🔈";
+    const me = App.mode === "guest" ? 1 : 0; setMuted([0, 1].map(i => i !== me && !!S.muteOpp));
+    toast(t(S.muteOpp ? "hud.muted" : "hud.unmuted"), "i-chat");
+  };
+  bar.append(m);
 }

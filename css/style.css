@@ -1223,3 +1223,39 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   #navAch { display: none; }   /* Erfolge: über den Stern oben */
 }
 .shard-chip .ic { fill: #c8a2ff; }
+
+/* Ausrüstung */
+.lockerwrap { display: flex; gap: 16px; max-width: 1100px; margin: 0 auto; width: 100%; min-height: 0; flex: 1; }
+.lockerside { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: none; }
+.lockerprev { width: 140px; height: 140px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 22px; background: radial-gradient(circle, #fff, #cfe3ff); box-shadow: 0 5px 0 var(--ink); }
+.eslots { display: grid; grid-template-columns: repeat(2, 64px); gap: 8px; }
+.eslot { width: 64px; height: 64px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 16px; background: #fff; color: var(--ink); box-shadow: 0 4px 0 var(--ink); font: inherit; }
+.eslot.on { outline: 4px solid var(--yellow); outline-offset: 2px; }
+.stdemo { font-size: 26px; font-family: var(--display); }
+.lockermain { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.lockergrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; overflow-y: auto; padding: 4px 4px 12px; }
+.lcard { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border: 3px solid var(--ink); border-radius: 16px; background: #fff; color: var(--ink); box-shadow: 0 4px 0 var(--ink); font: inherit; text-align: center; }
+.lcard b { font-family: var(--display); font-size: 15px; }
+.lcard small { font-weight: 800; opacity: .6; font-size: 12px; }
+.lcard em { font-style: normal; font-weight: 800; font-size: 13px; color: var(--blue-d); }
+.lcard em.craft { color: var(--purple-d); }
+.lcard.locked .cosic { filter: grayscale(1) brightness(.75); opacity: .55; }
+.lcard.on { outline: 4px solid var(--yellow); outline-offset: 2px; }
+.lcard.on em { color: var(--green-d); }
+.lcard.r-episch { background: linear-gradient(#fff, #f0e6ff); }
+.lcard.r-legend { background: linear-gradient(#fff, #fff1c4); }
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .lockerwrap { gap: 10px; }
+  .lockerprev { width: 96px; height: 96px; }
+  .lockerprev canvas { width: 86px !important; height: 86px !important; }
+  .eslots { grid-template-columns: repeat(2, 48px); gap: 6px; }
+  .eslot { width: 48px; height: 48px; border-radius: 12px; }
+  .lockergrid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+  .lcard { padding: 5px 4px; }
+  .lcard .cosic { --s: 38px !important; }
+}
+
+@media (max-width: 700px) and (orientation: portrait) { .lockerwrap { flex-direction: column; } .lockerside { flex-direction: row; } }
+#scr-search.found .searchwrap { flex-direction: row; gap: 40px; }
+.sr-them small { font-weight: 800; opacity: .8; }

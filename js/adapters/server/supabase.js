@@ -44,7 +44,7 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     openChest: chest => client.rpc("open_chest", { chest }),
     craftItem: item => client.rpc("craft_item", { item, request_key: key() }),
     // Online mit Warteschlange (Casual / Ranked)
-    queueJoin: (mode, head) => client.rpc("queue_join", { queue_mode: mode, head }),
+    queueJoin: (mode, head, cos) => client.rpc("queue_join", { queue_mode: mode, head, cos: cos || null }),
     queuePoll: () => client.rpc("queue_poll"),
     queueLeave: () => client.rpc("queue_leave"),
     reportOnline: (match, r) => client.rpc("report_match", { match, r }),

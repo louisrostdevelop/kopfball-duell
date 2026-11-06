@@ -233,6 +233,7 @@ create table if not exists game.match_queue (
   seen_at timestamptz not null default now(),
   match_id uuid references game.matches (id) on delete set null
 );
+alter table game.match_queue add column if not exists cos jsonb not null default '{}';   -- geprüfte Kosmetik für die Spieler-Karte
 create index if not exists match_queue_find on game.match_queue (mode, mmr) where match_id is null;
 create index if not exists match_queue_wait on game.match_queue (mode, enqueued_at) where match_id is null;
 

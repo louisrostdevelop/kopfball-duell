@@ -1,5 +1,5 @@
 // Pause per Taste, Controller-Navigation in Menüs
-import { EMOTES } from "../content/config.js";
+import { emoteSlots } from "../app/cosmetics.js";
 import { REPLAY_START, skipCelebration } from "../core/physics.js";
 import { pause, sendEmote } from "../app/game.js";
 import { App, inGame } from "../app/state.js";
@@ -15,7 +15,7 @@ export function onKey(code) {
     if (!$("modal").hidden) { $("modal").hidden = true; return; }
     if (code === "Escape" && App.screen && !["home", "end"].includes(App.screen)) { goBack(); return; }
   }
-  if (inGame() && /^Digit[1-6]$/.test(code) && App.mode !== "local") sendEmote(EMOTES[+code.slice(5) - 1]);
+  if (inGame() && /^Digit[1-4]$/.test(code) && App.mode !== "local") sendEmote(emoteSlots()[+code.slice(5) - 1]);
   if (inGame() && App.st.ph === "goal" && (code === "Space" || code === "Enter") && App.mode !== "guest" && App.st.pt < REPLAY_START) skipCelebration(App.st);
 }
 

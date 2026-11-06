@@ -4,7 +4,8 @@ import { moveObstacles } from "../content/layouts.js";
 import { emote, matchLen, predictPlayer } from "../core/physics.js";
 import { owns, S } from "./profile.js";
 import { onEvent } from "./effects.js";
-import { beginMatch, headLevel, quitToMenu, resolveObs, startDemo, updateBand } from "./game.js";
+import { beginMatch, EMOTE_GAP, headLevel, quitToMenu, resolveObs, startDemo, updateBand } from "./game.js";
+import { cleanCos, myCos, validEmote } from "./cosmetics.js";
 import { App, inGame, VERSION } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
@@ -123,16 +124,21 @@ export function hostData(d) {
   switch (d.t) {
     case "hello":
       if (d.v !== VERSION) toast(t("net.oldVersionGuest"), "i-close");
-      App.opp = { name: (d.name || t("ui.guest")).slice(0, 12), ch: charById(d.ch).id, lv: d.lv }; App.inSeqSeen = -1;
-      Net.send({ t: "welcome", name: S.name || t("ui.host"), ch: S.char, cfg: App.netCfg, v: VERSION });
+      App.opp = { name: (d.name || t("ui.guest")).slice(0, 12), ch: charById(d.ch).id, lv: d.lv, cos: cleanCos(d.cos) }; App.inSeqSeen = -1;
+      Net.send({ t: "welcome", name: S.name || t("ui.host"), ch: S.char, cos: myCos(), cfg: App.netCfg, v: VERSION });
       lobbyUI("host"); A.sfx("coin"); toast(t("lobby.joined", { name: App.opp.name }), "i-users");
       break;
-    case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.lv) App.opp.lv = d.lv; lobbyUI("host"); } break;
+    case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.lv) App.opp.lv = d.lv; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("host"); } break;
     case "i":
       if (!Array.isArray(d.i)) break;
       if (typeof d.q === "number") { if (d.q <= App.inSeqSeen) break; App.inSeqSeen = d.q; }   // ungeordnet: ältere verwerfen
       App.guestIn = d.i.slice(0, 8); break;
-    case "emo": if (App.mode === "host" && App.st && EMOTES.includes(d.e)) emote(App.st, 1, d.e); break;
+    case "emo": {
+      // Gegner-Emote: gültig, aus seinen Plätzen, höchstens eins alle 3 Sekunden
+      const now = performance.now() / 1000, slots = (App.cfg && App.cfg.cos && App.cfg.cos[1] && App.cfg.cos[1].emotes) || EMOTES;
+      if (App.mode === "host" && App.st && validEmote(d.e) && (slots.includes(d.e) || EMOTES.includes(d.e)) && now - (App.oppEmoT || 0) >= EMOTE_GAP - 0.2) { App.oppEmoT = now; emote(App.st, 1, d.e); }
+      break;
+    }
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "rematch": toast(t("lobby.wantsRematch", { name: App.opp ? App.opp.name : t("ui.guest") }), "i-swap"); break;
   }
@@ -143,7 +149,9 @@ export function hostStart() {
   const c = App.netCfg;
   // Kopf-Level: Gegnersuche vom Server (zum Spielbeginn festgehalten), unter Freunden das, was jeder mitbringt
   const sv = App.mm && App.mm.heads, lv = sv && sv.p1 ? [sv.p1.level || 1, (sv.p2 && sv.p2.level) || 1] : [headLevel(S.char), Math.max(1, Math.min(HEAD_MAX_LEVEL, App.opp.lv | 0 || 1))];
-  const cfg = { mode: "host", levels: lv, chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, fair: !!(App.mm && App.mm.mode === "ranked"), golden: true, names: [S.name || t("ui.you"), App.opp.name], labels: [t("hud.you"), null], ball: S.ball };
+  // Kosmetik: bei der Gegnersuche vom Server geprüft, unter Freunden was jeder mitbringt
+  const cos = sv && sv.p1 ? [cleanCos(sv.p1.cos), cleanCos(sv.p2 && sv.p2.cos)] : [myCos(), App.opp.cos || {}];
+  const cfg = { mode: "host", levels: lv, cos, chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, fair: !!(App.mm && App.mm.mode === "ranked"), golden: true, names: [S.name || t("ui.you"), App.opp.name], labels: [t("hud.you"), null], ball: S.ball };
   App.mid++;
   const fixed = resolveObs(cfg);
   Net.send({ t: "start", mid: App.mid, cfg: { ...fixed, mode: "guest", labels: [null, t("hud.you")] } });
@@ -157,7 +165,7 @@ export function tryJoin(code) {
   saveName($("nameIn").value);
   netNote(t("net.connecting", { code: code.toUpperCase() }));
   Net.join(code, {
-    onConn: () => Net.send({ t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: headLevel(S.char), v: VERSION }),
+    onConn: () => Net.send({ t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: headLevel(S.char), cos: myCos(), v: VERSION }),
     onData: guestData,
     onClose: () => { if (App.mode === "guest" || App.screen === "lobby" || App.screen === "end") { toast(t("net.hostLeft")); quitToMenu(); } },
     onError: (type, wasOk) => {
@@ -174,11 +182,11 @@ export function guestData(d) {
   switch (d.t) {
     case "welcome":
       if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote(t("net.versionMismatch"), true); break; }
-      App.opp = { name: (d.name || t("ui.host")).slice(0, 12), ch: charById(d.ch).id }; App.netCfg = d.cfg; lobbyUI("guest");
+      App.opp = { name: (d.name || t("ui.host")).slice(0, 12), ch: charById(d.ch).id, cos: cleanCos(d.cos) }; App.netCfg = d.cfg; lobbyUI("guest");
       if (!App.mm) showScreen("lobby");   // Gegnersuche: keine Lobby, der Host pfeift gleich an
       A.sfx("coin"); break;
     case "cfg": App.netCfg = d.cfg; lobbyUI("guest"); break;
-    case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("guest"); } break;
+    case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("guest"); } break;
     case "full": Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
     case "start": App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock(); break;
     case "s": {

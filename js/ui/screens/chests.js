@@ -105,5 +105,6 @@ export function initChests() {
   registerScreen("chests", { show: render });
   onSync(() => { if (App.screen === "chests" && !busy) render(); });
   $("btnChestOdds").onclick = () => { A.sfx("click"); oddsModal(); };
+  $("btnLocker").onclick = () => { A.sfx("click"); showScreen("locker"); };
   $("coDone").onclick = () => { A.sfx("click"); $("chestOpen").hidden = true; if (App.screen === "chests") render(); };
 }

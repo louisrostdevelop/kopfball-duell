@@ -58,7 +58,10 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   await db("update auth.users set is_anonymous = false, email = id::text || '@test' where id in ($1, $2)", [ida, idb]);
   await db("update game.players set level = 6 where id in ($1, $2)", [ida, idb]);
   await db("insert into game.ratings (player_id, season_id, mmr, games, wins) select x, 1, 1000, 10, 5 from unnest(array[$1, $2]::uuid[]) x", [ida, idb]);   // schon eingestuft
+  // A besitzt (auf dem Server) Hut 4 und trägt ihn, dazu einen Hut, den A gar nicht hat: der Server lässt nur Echtes durch
+  await db("insert into game.inventory (player_id, item_id, source) values ($1, 'hat:4', 'test')", [ida]);
   for (const p of [A, B]) { await resync(p); await p.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await p.waitForTimeout(200); }
+  await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.equip.hat = "hat:4"; p.S.equip.goalfx = "goalfx:8"; p.S.cos.push("goalfx:8"); });
   assert.match(await A.textContent("#btnRanked em"), /Bronze · 1000/);
 
   await A.click("#btnRanked"); await A.waitForTimeout(300);
@@ -71,6 +74,9 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   assert.equal(m.mode, "ranked");
   const host = m.p1 === ida ? A : B, guest = host === A ? B : A;
   assert.equal(await host.evaluate(() => window.__kd.mode), "host");
+  // Kosmetik vom Server geprüft: Hut ja, Torexplosion (nicht besessen) nein; beide sehen dasselbe
+  const ia = m.p1 === ida ? 0 : 1;
+  for (const p of [A, B]) assert.deepEqual(await p.evaluate(i => [window.__kd.cfg.cos[i].hat, window.__kd.cfg.cos[i].goalfx], ia), ["hat:4", null]);
 
   // Host gewinnt 2:0, Abpfiff. Der Server wertet nur Spiele, die wirklich so lange liefen: Start zurückdatieren
   await db("update game.matches set created_at = now() - interval '2 minutes' where id = $1", [m.id]);

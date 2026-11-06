@@ -2,6 +2,7 @@
 // verbunden wird wie beim Freunde-Modus direkt per PeerJS: der Server bestimmt, wer Host ist, der Raumname
 // kommt aus der Spiel-ID. Am Ende melden beide das Ergebnis; zählt nur, wenn beide dasselbe melden.
 import { S } from "./profile.js";
+import { myCos } from "./cosmetics.js";
 import { applyState } from "./account.js";
 import { quitToMenu } from "./game.js";
 import { hostData, guestData, hostStart } from "./online.js";
@@ -30,7 +31,7 @@ const stop = () => { clearTimeout(timer); timer = null; gen++; };
 /** Suche starten. Wirft bei Fehlern (z. B. Ranked ohne Konto) eine Meldung für die Oberfläche. */
 export async function findMatch(mode) {
   stop(); Net.close();
-  await server.queueJoin(mode, "head:" + S.char);
+  await server.queueJoin(mode, "head:" + S.char, myCos());
   App.mm = { mode, state: "search", t0: Date.now() };
   searchUI(App.mm); showScreen("search");
   const my = gen;
@@ -43,7 +44,7 @@ export async function findMatch(mode) {
       searchUI(App.mm);
     } catch (e) {
       if (my !== gen) return;
-      if (e.code === "not_queued") { await server.queueJoin(mode, "head:" + S.char).catch(() => {}); }
+      if (e.code === "not_queued") { await server.queueJoin(mode, "head:" + S.char, myCos()).catch(() => {}); }
     }
     timer = setTimeout(tick, POLL_MS);
   };

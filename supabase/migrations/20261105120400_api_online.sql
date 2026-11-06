@@ -16,7 +16,21 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- ---------- In die Warteschlange ----------
-create or replace function api.queue_join(queue_mode text, head text) returns jsonb
+-- Kosmetik prüfen: nur Besessenes der passenden Art; Emotes: besessene oder kurze Standard-Emotes
+create or replace function game.clean_cos(p uuid, c jsonb) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select jsonb_strip_nulls(jsonb_build_object(
+    'hat', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'hat' and x.kind = 'hat'),
+    'shoes', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'shoes' and x.kind = 'shoes'),
+    'goalfx', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'goalfx' and x.kind = 'goalfx'),
+    'emotes', (select coalesce(jsonb_agg(e), '[]') from (select e from jsonb_array_elements_text(case when jsonb_typeof(c->'emotes') = 'array' then c->'emotes' else '[]' end) e
+                where (e not like '%:%' and char_length(e) <= 4)
+                   or exists (select 1 from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = e and x.kind in ('emote', 'emoji'))
+                limit 4) q)))
+$$;
+
+drop function if exists api.queue_join(text, text);
+create or replace function api.queue_join(queue_mode text, head text, cos jsonb default null) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare p uuid := game.me(); lvl integer; anon boolean; s integer := game.current_season(); disputes integer; last_dispute timestamptz;
 begin
@@ -40,9 +54,9 @@ begin
   elsif lvl < game.cfg_int('casual_min_level') then perform game.fail('level_required', game.cfg_int('casual_min_level')::text);
   end if;
   if not exists (select 1 from game.heads where player_id = p and head_id = head) then perform game.fail('head_not_owned'); end if;
-  insert into game.match_queue as q (player_id, mode, mmr, head_id)
-  values (p, queue_mode, case when queue_mode = 'ranked' then game.rating_of(p, s) else 0 end, head)
-  on conflict (player_id) do update set mode = excluded.mode, mmr = excluded.mmr, head_id = excluded.head_id,
+  insert into game.match_queue as q (player_id, mode, mmr, head_id, cos)
+  values (p, queue_mode, case when queue_mode = 'ranked' then game.rating_of(p, s) else 0 end, head, game.clean_cos(p, coalesce(cos, '{}')))
+  on conflict (player_id) do update set mode = excluded.mode, mmr = excluded.mmr, head_id = excluded.head_id, cos = excluded.cos,
     enqueued_at = now(), seen_at = now(), match_id = null;
   return jsonb_build_object('queued', true);
 end $$;
@@ -89,8 +103,8 @@ begin
   -- Wer länger wartet, hostet (hat meist die stabilere Verbindung schon offen)
   insert into game.matches (mode, season_id, p1, p2, heads)
   values (me.mode, s, other.player_id, p,
-          jsonb_build_object('p1', jsonb_build_object('head', h1.head_id, 'level', h1.level),
-                             'p2', jsonb_build_object('head', h2.head_id, 'level', h2.level)))
+          jsonb_build_object('p1', jsonb_build_object('head', h1.head_id, 'level', h1.level, 'cos', other.cos),
+                             'p2', jsonb_build_object('head', h2.head_id, 'level', h2.level, 'cos', me.cos)))
   returning id into m;
   update game.match_queue set match_id = m where player_id in (p, other.player_id);
   -- Der Wartende erfährt es sofort über seinen Kanal (sonst bei seiner nächsten Abfrage)
@@ -396,7 +410,7 @@ $$;
 -- Niemand außer ausdrücklich Berechtigten darf Funktionen ausführen
 revoke execute on all functions in schema api, game from public;
 
-grant execute on function api.queue_join(text, text), api.queue_poll(), api.queue_leave(), api.report_match(uuid, jsonb), api.match_status(uuid),
+grant execute on function api.queue_join(text, text, jsonb), api.queue_poll(), api.queue_leave(), api.report_match(uuid, jsonb), api.match_status(uuid),
   api.submit_score(text, integer), api.my_rank(text, text), api.leaderboard_around(text, text, integer), api.friend_request(text), api.friend_remove(text), api.friends() to authenticated;
 -- Bestenlisten darf jeder lesen, auch ohne Anmeldung (für die Website)
 grant execute on function api.leaderboard(text, text, integer, integer), api.ranked_board(integer, integer) to anon, authenticated;

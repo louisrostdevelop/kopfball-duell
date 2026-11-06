@@ -1,6 +1,7 @@
 // Darstellung: Kamera, Arenen, Spieler, Ball, Partikel, HUD, Wiederholung
 import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
-import { drawHead, drawShoe, drawBall, drawPuIcon, shade } from "./art.js";
+import { drawHead, drawHat, drawShoe, drawBall, drawPuIcon, shade, shoeColor } from "./art.js";
+import { cosById } from "../../content/cosmetics.js";
 import { barY, shoePos, pr, kickPreview } from "../../core/physics.js";
 import { t as trn } from "../../content/i18n.js";
 
@@ -72,6 +73,19 @@ export const fx = {
 
 function P(o) { if (parts.length > (quality === "high" ? 900 : 350)) parts.shift(); parts.push(Object.assign({ vx: 0, vy: 0, life: 1, max: 1, size: 4, col: "#fff", g: 0, rot: 0, vr: 0, add: false, drag: 0 }, o)); }
 
+// Torexplosion aus der Kosmetik (PLATZHALTER: vier Grundformen in der Farbe des Gegenstands, Legendär mit Goldregen)
+function goalFx(x, y, id, n) {
+  const c = cosById(id); if (!c) return;
+  const col = c.col, cols = [col, "#fff", shade(col, 0.3), shade(col, -0.25)];
+  switch (c.v % 4) {
+    case 0: for (let i = 0; i < n(160); i++) P({ type: "conf", x: x + rand(-40, 40), y: y + rand(-40, 40), vx: rand(-800, 800), vy: rand(-1200, -200), life: rand(1.4, 2.6), size: rand(6, 12), col: cols[i % 4], g: 1400, rot: rand(0, TAU), vr: rand(-14, 14), drag: 1.6 }); break;
+    case 1: for (let i = 0; i < n(40); i++) { const a = rand(0, TAU), sp = rand(300, 900); P({ type: "star", x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 200, life: rand(0.9, 1.6), size: rand(8, 16), col: cols[i % 4], vr: rand(-8, 8), g: 700, drag: 1.5 }); } break;
+    case 2: for (let k = 0; k < 4; k++) for (let i = 0; i < n(24); i++) { const a = i / 24 * TAU, cx = x + rand(-160, 160), cy = y - rand(60, 260); P({ type: "spark", x: cx, y: cy, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 0.7 + k * 0.1, size: 4, col: cols[k % 4], add: true, drag: 2, g: 300 }); } break;
+    default: for (let i = 0; i < n(60); i++) { const a = i * 0.5, sp = 120 + i * 14; P({ type: "spark", x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1.1, size: 5, col: cols[i % 4], add: true, drag: 1.2 }); }
+  }
+  for (let i = 0; i < 3; i++) P({ type: "ring", x, y, life: 0.6 + i * 0.15, max: 0.6 + i * 0.15, size: 20, grow: 900, col, add: true, w: 10 });
+  if (c.rarity === "legend") for (let i = 0; i < n(70); i++) P({ type: "spark", x: x + rand(-500, 500), y: y - rand(200, 500), vx: rand(-40, 40), vy: rand(200, 500), life: rand(1.2, 2), size: rand(3, 6), col: COL.gold, add: true, drag: 0.4 });
+}
 function burst(type, x, y, o) {
   const n = (k) => quality === "high" ? k : Math.ceil(k / 2);
   switch (type) {
@@ -96,6 +110,7 @@ function burst(type, x, y, o) {
       for (let i = 0; i < n(5); i++) { const a = rand(0, TAU); P({ type: "star", x, y, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200 - 60, life: 0.4, size: rand(4, 7), col: COL.gold, vr: rand(-8, 8), drag: 3 }); }
       break;
     case "goal": {
+      if (o.fx) { goalFx(x, y, o.fx, n); break; }
       const cols = [o.col || COL.gold, "#fff", COL.gold, "#ff4fd8", "#3ddc84"];
       for (let i = 0; i < n(150); i++) P({ type: "conf", x: x + rand(-40, 40), y: y + rand(-40, 40), vx: rand(-750, 750), vy: rand(-1150, -200), life: rand(1.4, 2.6), size: rand(6, 12), col: cols[i % cols.length], g: 1400, rot: rand(0, TAU), vr: rand(-14, 14), drag: 1.6 });
       for (let i = 0; i < 3; i++) P({ type: "ring", x, y, life: 0.6 + i * 0.15, max: 0.6 + i * 0.15, size: 20, grow: 900, col: o.col || "#fff", add: true, w: 10 });
@@ -542,6 +557,17 @@ function drawPlayerBase(p) {
     ctx.beginPath(); ctx.ellipse(p.x, G + 3, r * 1.05, 11, 0, Math.min(a0, a1), Math.max(a0, a1)); ctx.stroke();
   }
 }
+// Kosmetik der beiden Spieler ({ hat, shoes, goalfx }) und stummgeschaltete Emotes, gesetzt zum Anpfiff
+let matchCos = [{}, {}], muted = [false, false];
+export function setMatchCos(cos, mute = [false, false]) { matchCos = [cos?.[0] || {}, cos?.[1] || {}]; muted = mute; }
+export const setMuted = m => { muted = m; };
+// Figur-Emote (PLATZHALTER): Kopf hüpft, dreht, wackelt oder wächst
+function emoteAnim(p) {
+  if (!p.emo || !p.emo.startsWith("emote:") || p.emoT <= 0) return null;
+  const c = cosById(p.emo); if (!c) return null;
+  const k = 2.2 - p.emoT, w = Math.sin(k * 12);
+  return [{ dy: -Math.abs(w) * 22 }, { rot: k * 8 }, { rot: w * 0.3 }, { sc: 1 + Math.abs(w) * 0.18 }][c.v % 4];
+}
 function drawPlayer(st, p, t, label) {
   const c = charById(p.ch), r = pr(p), col = TEAM[p.i];
   const s = shoePos(p);
@@ -587,13 +613,17 @@ function drawPlayer(st, p, t, label) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, gr, 0, TAU); ctx.fill();
     ctx.globalCompositeOperation = "source-over";
   }
-  drawShoe(ctx, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, col, p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
+  const mc = matchCos[p.i] || {};
+  drawShoe(ctx, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, shoeColor(mc.shoes, col), p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
+  const ea = emoteAnim(p);
+  if (ea) { dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; }
   ctx.save();
   ctx.translate(p.x, p.y + r + dy); ctx.rotate(rot); ctx.scale(sqX, sqY); ctx.translate(-p.x, -p.y - r);
   const b = st.b;
   const look = Math.atan2(b.y - p.y, b.x - p.x);
   const blink = Math.sin(t * 1.3 + p.i * 2) > 0.985;
   drawHead(ctx, p.ch, p.x, p.y, r, { dir: p.dir, look, mood: p.stun > 0 ? "sad" : p.mood, blink, effort: (p.kHeld && p.charge > 0.2) || p.kick > 0.1, frozen: p.frz > 0, t: t + p.i * 3 });
+  if (mc.hat) drawHat(ctx, mc.hat, p.x, p.y, r, p.dir, t);
   ctx.restore();
   if (p.frz > 0) drawIce(p, r, s, t);
   if (p.confT > 0) {
@@ -614,7 +644,7 @@ function drawPlayer(st, p, t, label) {
     ctx.lineWidth = 5; ctx.strokeText(label.t, p.x, my + 2); ctx.fillText(label.t, p.x, my + 2);
     ctx.restore();
   }
-  if (p.emo && p.emoT > 0) {
+  if (p.emo && p.emoT > 0 && !muted[p.i]) {
     const a = Math.min(1, p.emoT * 3), pop = 1 + Math.max(0, p.emoT - 1.9) * 2;
     const ex = p.x + p.dir * r * 0.7, ey = p.y - r - 62;
     ctx.save(); ctx.globalAlpha = a; ctx.translate(ex, ey); ctx.scale(pop, pop);
@@ -623,7 +653,9 @@ function drawPlayer(st, p, t, label) {
     ctx.beginPath(); ctx.moveTo(-p.dir * 4, 21); ctx.lineTo(-p.dir * 16, 36); ctx.lineTo(p.dir * 8, 21); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#fff"; ctx.fillRect(-p.dir * 6 - 6, 17, 16, 6);
     ctx.font = p.emo.length > 2 ? "22px 'Lilita One', Impact" : "30px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillStyle = INK; ctx.fillText(p.emo, 0, 0);
+    const ec = cosById(p.emo);
+    if (ec && ec.kind === "emote") { ctx.fillStyle = ec.col; ctx.beginPath(); ctx.arc(0, -2, 15, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = INK; ctx.font = "18px 'Lilita One', Impact"; ctx.fillText(String(ec.n), 0, -1); }
+    else { ctx.fillStyle = INK; ctx.fillText(ec ? ec.glyph : p.emo, 0, 0); }
     ctx.restore();
   }
 }

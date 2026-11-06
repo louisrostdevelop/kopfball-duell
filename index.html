@@ -143,7 +143,7 @@
 
   <!-- Kopf-Auswahl -->
   <section class="screen" id="scr-select" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="selTitle"></h2><span class="grow"></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="selTitle"></h2><span class="grow"></span><button class="btn small purple" id="btnSelLocker"><svg><use href="#i-star"/></svg><span data-i18n="locker.title">Ausrüstung</span></button><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
     <div class="selgrid">
       <div class="cardgrid" id="charGrid"></div>
       <aside class="detail">
@@ -234,6 +234,7 @@
     <div class="searchwrap">
       <div class="sr-me"><div class="sr-av" id="srAv"></div><b id="srMe"></b></div>
       <div class="sr-mid"><div class="sr-ring"><span id="srTime">0:00</span></div><b id="srState"></b><small id="srOpp"></small></div>
+      <div class="sr-me sr-them" id="srThem" hidden><div class="sr-av" id="srOppAv"></div><b id="srOppName"></b><small id="srOppInfo"></small></div>
       <button class="btn ghost" id="srCancel" data-i18n="html.search.abbrechen">Abbrechen</button>
     </div>
   </section>
@@ -316,9 +317,18 @@
     <div class="passtrack" id="passTrack"></div>
   </section>
 
+  <!-- Ausrüstung -->
+  <section class="screen" id="scr-locker" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="locker.title">Ausrüstung</h2><span class="grow"></span><span class="chip static shard-chip" data-i18n-attr="title:chest.shardsTitle"><svg class="ic"><use href="#i-shard"/></svg><b id="lockerShards">0</b></span></header>
+    <div class="lockerwrap">
+      <div class="lockerside"><div class="lockerprev" id="lockerPreview"></div><div class="eslots" id="lockerSlots" hidden></div></div>
+      <div class="lockermain"><div class="tabs" id="lockerTabs"></div><div class="lockergrid" id="lockerGrid"></div></div>
+    </div>
+  </section>
+
   <!-- Kisten -->
   <section class="screen" id="scr-chests" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.chests.title">Kisten</h2><span class="grow"></span><button class="btn small ghost" id="btnChestOdds" data-i18n="chest.odds">Chancen</button><span class="chip static shard-chip" data-i18n-attr="title:chest.shardsTitle"><svg class="ic"><use href="#i-shard"/></svg><b id="chestShards">0</b></span></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.chests.title">Kisten</h2><span class="grow"></span><button class="btn small purple" id="btnLocker"><svg><use href="#i-star"/></svg><span data-i18n="locker.title">Ausrüstung</span></button><button class="btn small ghost" id="btnChestOdds" data-i18n="chest.odds">Chancen</button><span class="chip static shard-chip" data-i18n-attr="title:chest.shardsTitle"><svg class="ic"><use href="#i-shard"/></svg><b id="chestShards">0</b></span></header>
     <div class="chestwrap">
       <div class="chestgrid" id="chestGrid"></div>
       <p class="runnote" id="chestHint"></p>

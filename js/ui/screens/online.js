@@ -1,5 +1,6 @@
 // Online-Seite und Lobby
 import { ARENAS, charById, SUPERS } from "../../content/config.js";
+import { myCos } from "../../app/cosmetics.js";
 import { owns, S, save } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
 import { sendNetCfg, hostGame, tryJoin, hostStart } from "../../app/online.js";
@@ -45,11 +46,11 @@ export function lobbyUI(role) {
   $("btnLobbyStart").hidden = !host;
   $("btnLobbyStart").disabled = !App.opp;
   $("lobbyOpts").classList.toggle("locked", !host);
-  const me = { name: S.name || t("ui.you"), ch: S.char };
+  const me = { name: S.name || t("ui.you"), ch: S.char, cos: myCos() };
   const left = host ? me : App.opp, right = host ? App.opp : me;
   const put = (n, p, you) => {
     const av = $("vsAv" + n); av.innerHTML = "";
-    if (p) { av.append(avatarCanvas(p.ch, 110, { dir: n ? -1 : 1 })); $("vsName" + n).textContent = p.name + (you ? " " + t("lobby.youTag") : ""); $("vsCh" + n).textContent = charById(p.ch).name + " · " + SUPERS[charById(p.ch).super].name; }
+    if (p) { av.append(avatarCanvas(p.ch, 110, { dir: n ? -1 : 1, hat: p.cos && p.cos.hat })); $("vsName" + n).textContent = p.name + (you ? " " + t("lobby.youTag") : ""); $("vsCh" + n).textContent = charById(p.ch).name + " · " + SUPERS[charById(p.ch).super].name; }
     else { av.innerHTML = '<span class="wait">?</span>'; $("vsName" + n).textContent = t("lobby.waiting"); $("vsCh" + n).textContent = ""; }
   };
   put(0, left, host); put(1, right, !host);
@@ -83,7 +84,7 @@ export function initOnline() {
   $("btnLobbyLeave").onclick = goBack;
   $("btnLobbyStart").onclick = () => { A.sfx("click"); hostStart(); };
   $("btnLobbyRules").onclick = () => { A.sfx("click"); App.netCfg.rules = App.netCfg.rules || {}; rulesScreen(App.netCfg.rules, () => { S.rules = { ...App.netCfg.rules }; save(); Net.send({ t: "cfg", cfg: App.netCfg }); }); };
-  $("btnLobbyHead").onclick = () => { A.sfx("click"); selectScreen({ title: t("lobby.changeHead"), okText: t("ui.apply"), onDone: id => { S.char = id; save(); Net.send({ t: "pick", ch: id, lv: headLevel(id) }); goBack(); } }); };
+  $("btnLobbyHead").onclick = () => { A.sfx("click"); selectScreen({ title: t("lobby.changeHead"), okText: t("ui.apply"), onDone: id => { S.char = id; save(); Net.send({ t: "pick", ch: id, lv: headLevel(id), cos: myCos() }); goBack(); } }); };
   $("btnShare").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) shareOrCopy({ title: "Kopfball Duell", text: t("lobby.shareText", { link }) }); };   // i18n-ok: Marke
   $("btnCopyLink").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) copyText(link); };
 }

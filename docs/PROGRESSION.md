@@ -172,7 +172,7 @@ der Client lokal mit denselben Tabellen.
 ## Reihenfolge beim Bauen
 
 1. **Kisten und Level-Belohnungen.** Server, Öffnen-Bildschirm, Chancen-Anzeige, Splitter, Garantien. *(fertig; Herstellen-Oberfläche kommt mit 2)*
-2. **Kosmetik:** Hüte, Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten.
+2. **Kosmetik:** Hüte, Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig, Platzhalter-Grafik)*
 3. **Wochenaufgaben, Erfolgs-Stufen, Meisterschaft, Freundes-Herausforderungen.**
 4. **Shop-Umbau:** neue Kopf-Preise, Level-Sperren, wöchentliche Kosmetik.
 5. **Ranked-Saisonende-Kisten, Pass-Kisten.**
