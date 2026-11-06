@@ -8,7 +8,7 @@ const C = await import("../../js/content/config.js");
 const rng = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 const base = () => ({ owned: new Set(["head:kalle", "head:yuki", "head:bolt"]), heads: {}, pity: {} });
 
-test("Inhalte: 40 Platzhalter (keine Hüte), IDs eindeutig, Kisten-Chancen gültig", () => {
+test("Inhalte: 40 Platzhalter (keine Hüte), IDs eindeutig, Kisten-Chancen gültig", async () => {
   assert.equal(K.COSMETICS.length, 40);
   assert.equal(new Set(K.COSMETICS.map(c => c.id)).size, 40);
   assert.ok(!K.COSMETICS.some(c => c.kind === "hat"));
@@ -18,6 +18,11 @@ test("Inhalte: 40 Platzhalter (keine Hüte), IDs eindeutig, Kisten-Chancen gült
   assert.equal(new Set(ej.map(c => c.glyph)).size, ej.length);
   assert.ok(!ej.some(c => C.EMOTES.includes(c.glyph)), "Emoji nicht doppelt zu den freien");
   assert.ok(K.MASTERY_ITEMS.filter(c => c.kind === "emote").every(c => c.fx && c.label));
+  // Torexplosionen: jede hat eine Szene, Reaktionen gibt es
+  const { GFX, REACT } = await import("../../js/ui/render/goalfx.js");
+  const gx = K.COSMETICS.filter(c => c.kind === "goalfx");
+  assert.ok(gx.every(c => GFX[c.fx] && GFX[c.fx].dur > 0 && c.ic) && new Set(gx.map(c => c.fx)).size === gx.length);
+  for (const g of Object.values(GFX)) for (const k of Object.values(g.react || {})) assert.ok(REACT[k], k);
   for (const k of K.CHEST_TIERS) {
     const c = K.CHESTS[k], s = Object.values(c.cos.rar).reduce((a, b) => a + b, 0);
     assert.ok(Math.abs(s - 1) < 1e-9, k + ": Seltenheiten der Kosmetik = 100 %");

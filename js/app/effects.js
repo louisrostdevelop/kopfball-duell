@@ -1,6 +1,7 @@
 // Spielereignisse in Effekte, Sound und Vibration übersetzen
 import { clamp, COL, G, GOAL_W, POWERUPS, SUPERS, W } from "../content/config.js";
 import { emote } from "../core/physics.js";
+import { cosById } from "../content/cosmetics.js";
 import { fx } from "../ui/render/render.js";
 import { simT } from "./loop.js";
 import { App, isHuman, myIdx, vsCpu } from "./state.js";
@@ -106,7 +107,9 @@ export function onGoal(e) {
   const side = e.i === 0 ? 1 : 0;
   const gx = side ? W - GOAL_W / 2 : GOAL_W / 2;
   const gfx = e.kind !== "own" && App.cfg && App.cfg.cos && App.cfg.cos[e.i] ? App.cfg.cos[e.i].goalfx : null;
-  fx.burst("goal", gx, Math.min(e.y, G - 60), { col: [COL.p1, COL.p2][e.i], fx: gfx });
+  fx.burst("goal", gx, Math.min(e.y, G - 60), { col: [COL.p1, COL.p2][e.i], fx: gfx, i: e.i });
+  const gc = gfx && cosById(gfx);
+  if (gc?.fx && !demo) A.sfx("gfx-" + gc.fx);
   fx.net(side, e.y, 1.4);
   fx.shake(24); fx.flash([COL.p1, COL.p2][e.i], 0.45); fx.hype(1);
   App.replay = App.rec.slice(-160);

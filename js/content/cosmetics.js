@@ -12,18 +12,31 @@ export const OWN_KINDS = [...COS_KINDS, "title", "frame"];
 const PAL = ["#ff5a4f", "#ffd84a", "#4fd1ff", "#7fd17f", "#c8a2ff", "#ff9bd2", "#ff9f40", "#ffffff", "#3b3b58", "#2fd6b0", "#e8c170", "#9aa7ff"];
 // Emoji (die freien 😂 🔥 😤 😎 🤡 GG hat jeder schon): 6 selten, 4 episch, 2 legendär
 const EMOJI = ["😭", "💀", "👀", "🫠", "🤯", "🙃", "🧢", "💅", "🤫", "🫡", "🗿", "🐐"];
-// Figur-Emotes nach Meme-Trends 2026 (Animation: render.js EMOTE_FX). fx = Animation, label = Text in der Sprechblase,
+// Figur-Emotes nach internationalen Meme-Trends 2025/26 (Animation: render.js EMOTE_FX). fx = Animation, label = Text in der Sprechblase,
 // ic = Symbol in der Sammlung. Reihenfolge: 4 selten, 3 episch, 1 legendär
 export const EMOTE_DEFS = [
   { fx: "67", label: "6-7", ic: "6-7" },
   { fx: "crash", label: "CRASH OUT", ic: "💢" },
-  { fx: "nod", label: "👍", ic: "👍" },
+  { fx: "lockin", label: "LOCKED IN", ic: "🔒" },
   { fx: "peak", label: "PEAK", ic: "⛰️" },
   { fx: "bait", label: "RAGEBAIT", ic: "🎣" },
   { fx: "unbothered", label: "…", ic: "🕶️" },
   { fx: "mog", label: "MOG", ic: "📏" },
   { fx: "aura", label: "+1000 AURA", ic: "✨" },
 ];
+// Torexplosionen nach internationalen Meme-Trends 2025/26 (Animation: render.js GFX). 3 selten, 3 episch, 2 legendär
+export const GOALFX_DEFS = [
+  { fx: "67", ic: "6-7" },
+  { fx: "crash", ic: "💢" },
+  { fx: "peak", ic: "⛰️" },
+  { fx: "brainrot", ic: "🦈" },
+  { fx: "dank", ic: "🕶️" },
+  { fx: "ko", ic: "🥊" },
+  { fx: "aura", ic: "✨" },
+  { fx: "glitch", ic: "👾" },
+];
+/** Schriftzüge der Torexplosionen: Meme-Wörter, in allen Sprachen gleich */
+export const GOALFX_TEXT = { crash: "CRASH OUT", peak: "PEAK", ko: "K.O.", aura: "AURA", dank: ["wow", "such goal", "very dank"], glitch: ["GOAOOL", "GOOAL", "G0AL", "GOAAAOL", "GAOL", "GOAOOL"] };
 // Seltenheit je Art: so viele Selten / Episch / Legendär
 const MIX = { shoes: [5, 4, 3], goalfx: [3, 3, 2], emote: [4, 3, 1], emoji: [6, 4, 2] };
 // Preise im Shop (Münzen / Juwelen), Freischalt-Level im Shop
@@ -35,7 +48,8 @@ function make(kind) {
     const o = { id: `${kind}:${i + 1}`, kind, n: i + 1, rarity, col: PAL[i % PAL.length], v: i };
     if (kind === "emoji") o.glyph = EMOJI[i % EMOJI.length];
     if (kind === "emote") Object.assign(o, EMOTE_DEFS[i % EMOTE_DEFS.length]);
-    const name = () => (kind === "emote" ? t("emote." + o.fx) : kind === "emoji" ? t("cos.kind.emoji") + " " + o.glyph : t("cos.name", { kind: t("cos.kind." + kind), n: i + 1 }));
+    if (kind === "goalfx") Object.assign(o, GOALFX_DEFS[i % GOALFX_DEFS.length]);
+    const name = () => (kind === "emote" ? t("emote." + o.fx) : kind === "goalfx" ? t("goalfx." + o.fx) : kind === "emoji" ? t("cos.kind.emoji") + " " + o.glyph : t("cos.name", { kind: t("cos.kind." + kind), n: i + 1 }));
     Object.defineProperty(o, "name", { get: name, enumerable: true });
     return o;
   });

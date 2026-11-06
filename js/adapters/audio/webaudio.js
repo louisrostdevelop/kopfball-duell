@@ -84,6 +84,15 @@ export function sfx(kind, v = 1) {
     case "wallhit": osc("square", 400, 200, 0.12, 0.12); break;
     case "bumper": osc("triangle", 260, 780, 0.14, 0.3 * Math.min(1.3, 0.6 + v)); osc("sine", 520, 1400, 0.1, 0.12, 0.03); break;
     case "ohh": noise(1.1, 0.25, "bandpass", 500, 0.8, 0, 380); break;
+    // Torexplosionen (goalfx.js): je ein eigener Sound
+    case "gfx-67": [0, 0.22, 0.44, 0.66, 0.88].forEach((t, i) => { const f = i % 2 ? 659 : 523; osc("square", f, f, 0.12, 0.09, t); osc("sine", f / 2, f / 4, 0.12, 0.2, t); }); break;
+    case "gfx-crash": noise(0.6, 0.55, "highpass", 3500, 0.7, 0, 9000); osc("sine", 110, 35, 0.4, 0.7); [0.02, 0.06, 0.11, 0.17, 0.24].forEach(t => osc("triangle", 2400 + Math.random() * 2600, 1800, 0.12, 0.08, t)); noise(1.2, 0.2, "highpass", 2500, 0.5, 0.3); break;
+    case "gfx-peak": osc("sine", 50, 120, 0.7, 0.6); noise(0.7, 0.4, "lowpass", 300, 1, 0, 900); [392, 494, 587].forEach(f => osc("sawtooth", f, f, 0.8, 0.07, 0.5)); osc("sawtooth", 784, 784, 0.6, 0.05, 0.7); break;
+    case "gfx-brainrot": [0, 0.35, 0.6, 0.9, 1.15, 1.4].forEach((t, i) => osc("sine", 180 + i * 40, 700 + i * 90, 0.18, 0.22, t)); osc("sine", 1800, 300, 0.9, 0.1, 0.1); break;
+    case "gfx-dank": [[0, 0.12], [0.18, 0.12], [0.36, 0.5]].forEach(([t, d]) => [440, 554, 659, 446].forEach(f => osc("sawtooth", f, f * 0.97, d, 0.07, t))); [0.05, 0.16, 0.27, 0.38, 0.49].forEach(t => osc("square", 1900, 1900, 0.02, 0.06, t)); break;
+    case "gfx-ko": noise(0.12, 0.5, "lowpass", 1200, 1, 0.12, 200); osc("sine", 95, 38, 0.3, 0.8, 0.12); osc("triangle", 1250, 1250, 0.5, 0.12, 0.45); osc("triangle", 1250, 1250, 0.6, 0.12, 0.7); break;
+    case "gfx-aura": [523, 659, 784, 988, 1175, 1319, 1568].forEach((f, i) => osc("sine", f, f, 0.3, 0.07, i * 0.07)); [262, 330, 392].forEach(f => osc("triangle", f, f, 1.6, 0.06, 0.2)); noise(1.4, 0.12, "highpass", 6000, 0.5, 0.1); break;
+    case "gfx-glitch": for (let i = 0; i < 14; i++) { const t = i * 0.06 + Math.random() * 0.03, f = 100 + Math.random() * 1600; osc("square", f, f * (Math.random() < 0.5 ? 0.5 : 2), 0.05, 0.07, t); } noise(0.2, 0.3, "bandpass", 1200, 4, 0.1); noise(0.15, 0.3, "highpass", 4000, 1, 0.5); break;
   }
 }
 function whistleNote(t, d) {

@@ -2,6 +2,7 @@
 import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
 import { drawHead, drawShoe, drawBall, drawPuIcon, shade, shoeColor } from "./art.js";
 import { cosById } from "../../content/cosmetics.js";
+import { GFX, REACT, REACT_DUR } from "./goalfx.js";
 import { barY, shoePos, pr, kickPreview } from "../../core/physics.js";
 import { t as trn } from "../../content/i18n.js";
 
@@ -25,6 +26,8 @@ const swoosh = [];
 const ballSq = { t: 9, ang: 0, p: 0 };
 let crowdHype = 0;
 const flashes = [];
+const scenes = []; // laufende Torexplosionen (goalfx.js)
+const react = [null, null]; // Kopf-Reaktion je Spieler { kind, t }
 
 export function initRender(canvas) {
   cv = canvas; ctx = cv.getContext("2d", { alpha: false });
@@ -67,15 +70,24 @@ export const fx = {
   ballHit(ang, p) { ballSq.t = 0; ballSq.ang = ang; ballSq.p = clamp(p, 0.2, 1); },
   swoosh(x, y, dir, pow) { swoosh.push({ x, y, dir, pow, t: 0 }); },
   clearTrail() { trail.length = 0; },
-  clear() { parts.length = 0; callouts.length = 0; trail.length = 0; swoosh.length = 0; },
+  clear() { parts.length = 0; callouts.length = 0; trail.length = 0; swoosh.length = 0; scenes.length = 0; react[0] = react[1] = null; },
   burst(type, x, y, o = {}) { burst(type, x, y, o); },
 };
 
 function P(o) { if (parts.length > (quality === "high" ? 900 : 350)) parts.shift(); parts.push(Object.assign({ vx: 0, vy: 0, life: 1, max: 1, size: 4, col: "#fff", g: 0, rot: 0, vr: 0, add: false, drag: 0 }, o)); }
 
-// Torexplosion aus der Kosmetik (PLATZHALTER: vier Grundformen in der Farbe des Gegenstands, Legendär mit Goldregen)
-function goalFx(x, y, id, n) {
+// Torexplosion aus der Kosmetik: Szene aus goalfx.js; Meisterschafts-Explosionen noch PLATZHALTER (vier Grundformen in der
+// Farbe des Gegenstands, Legendär mit Goldregen)
+function goalFx(x, y, id, n, scorer = 0, team = "#fff") {
   const c = cosById(id); if (!c) return;
+  const def = c.fx && GFX[c.fx];
+  if (def) {
+    const s = { fx: c.fx, x, y, dir: x < W / 2 ? 1 : -1, i: scorer, col: team, t: 0, dur: def.dur };
+    def.start?.(s, sceneApi(n)); scenes.push(s); if (scenes.length > 3) scenes.shift();
+    if (def.react?.opp) react[1 - scorer] = { kind: def.react.opp, t: 0 };
+    if (def.react?.me) react[scorer] = { kind: def.react.me, t: 0 };
+    return;
+  }
   const col = c.col, cols = [col, "#fff", shade(col, 0.3), shade(col, -0.25)];
   switch (c.v % 4) {
     case 0: for (let i = 0; i < n(160); i++) P({ type: "conf", x: x + rand(-40, 40), y: y + rand(-40, 40), vx: rand(-800, 800), vy: rand(-1200, -200), life: rand(1.4, 2.6), size: rand(6, 12), col: cols[i % 4], g: 1400, rot: rand(0, TAU), vr: rand(-14, 14), drag: 1.6 }); break;
@@ -85,6 +97,10 @@ function goalFx(x, y, id, n) {
   }
   for (let i = 0; i < 3; i++) P({ type: "ring", x, y, life: 0.6 + i * 0.15, max: 0.6 + i * 0.15, size: 20, grow: 900, col, add: true, w: 10 });
   if (c.rarity === "legend") for (let i = 0; i < n(70); i++) P({ type: "spark", x: x + rand(-500, 500), y: y - rand(200, 500), vx: rand(-40, 40), vy: rand(200, 500), life: rand(1.2, 2), size: rand(3, 6), col: COL.gold, add: true, drag: 0.4 });
+}
+const sceneApi = n => ({ P, n, shake: fx.shake, flash: fx.flash });
+function drawScenes(layer, ...args) {
+  for (const s of scenes) { const f = GFX[s.fx][layer]; if (f) { ctx.save(); f(ctx, s, sceneApi(k => (quality === "high" ? k : Math.ceil(k / 2))), ...args); ctx.restore(); } }
 }
 function burst(type, x, y, o) {
   const n = (k) => quality === "high" ? k : Math.ceil(k / 2);
@@ -110,7 +126,7 @@ function burst(type, x, y, o) {
       for (let i = 0; i < n(5); i++) { const a = rand(0, TAU); P({ type: "star", x, y, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200 - 60, life: 0.4, size: rand(4, 7), col: COL.gold, vr: rand(-8, 8), drag: 3 }); }
       break;
     case "goal": {
-      if (o.fx) { goalFx(x, y, o.fx, n); break; }
+      if (o.fx) { goalFx(x, y, o.fx, n, o.i || 0, o.col); break; }
       const cols = [o.col || COL.gold, "#fff", COL.gold, "#ff4fd8", "#3ddc84"];
       for (let i = 0; i < n(150); i++) P({ type: "conf", x: x + rand(-40, 40), y: y + rand(-40, 40), vx: rand(-750, 750), vy: rand(-1150, -200), life: rand(1.4, 2.6), size: rand(6, 12), col: cols[i % cols.length], g: 1400, rot: rand(0, TAU), vr: rand(-14, 14), drag: 1.6 });
       for (let i = 0; i < 3; i++) P({ type: "ring", x, y, life: 0.6 + i * 0.15, max: 0.6 + i * 0.15, size: 20, grow: 900, col: o.col || "#fff", add: true, w: 10 });
@@ -158,7 +174,10 @@ function tickParts(dt) {
     p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
     if (p.type === "conf" && p.y > G - 4) { p.y = G - 4; p.vy *= -0.2; p.vx *= 0.6; p.vr *= 0.5; }
     if (p.type === "rock" && p.y > G) { p.y = G; p.vy *= -0.3; p.vx *= 0.6; }
+    if ((p.type === "emoji" || p.type === "glyph") && !p.float && p.y > G - p.size * 0.45 && p.vy > 0) { p.y = G - p.size * 0.45; p.vy *= -0.45; p.vx *= 0.7; p.vr *= 0.6; }
   }
+  for (let i = scenes.length - 1; i >= 0; i--) { scenes[i].t += dt; if (scenes[i].t > scenes[i].dur) scenes.splice(i, 1); }
+  for (let i = 0; i < 2; i++) if (react[i] && (react[i].t += dt) > REACT_DUR) react[i] = null;
   for (let i = swoosh.length - 1; i >= 0; i--) { swoosh[i].t += dt; if (swoosh[i].t > 0.16) swoosh.splice(i, 1); }
   for (let i = 0; i < 2; i++) { headSq[i] = Math.max(0, headSq[i] - dt); barWob[i] += dt; }
   ballSq.t += dt;
@@ -179,6 +198,9 @@ function drawParts(addPass) {
       case "shard": case "rock": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath(); ctx.moveTo(0, -p.size); ctx.lineTo(p.size * 0.6, p.size * 0.5); ctx.lineTo(-p.size * 0.6, p.size * 0.5); ctx.closePath(); ctx.fillStyle = p.col; ctx.fill(); if (p.type === "shard") { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke(); } ctx.restore(); break;
       case "flame": { const r = p.size * (0.4 + a * 0.8); const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r); g.addColorStop(0, "rgba(255,240,180,.95)"); g.addColorStop(0.4, p.col); g.addColorStop(1, "rgba(255,60,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill(); break; }
       case "bolt": ctx.strokeStyle = p.col; ctx.lineWidth = 5; ctx.beginPath(); p.pts.forEach(([x, y], n) => n ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke(); break;
+      case "glyph": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.font = `${Math.round(p.size)}px 'Lilita One', Impact, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = p.size * 0.16; ctx.strokeStyle = INK; ctx.strokeText(p.text, 0, 0); ctx.fillStyle = p.col; ctx.fillText(p.text, 0, 0); ctx.restore(); break;
+      case "emoji": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.font = `${Math.round(p.size)}px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#000"; ctx.fillText(p.text, 0, 0); ctx.restore(); break; // Farb-Emoji übernehmen die Deckkraft von fillStyle
+      case "pix": ctx.fillStyle = p.col; ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); break;
       case "text": ctx.font = `${p.size}px 'Lilita One', Impact, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.lineJoin = "round"; ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.col; ctx.fillText(p.text, p.x, p.y); break;
     }
   }
@@ -585,7 +607,20 @@ const EMOTE_FX = {
       ctx.globalAlpha = 1;
     },
   }),
-  nod: (p, r, k, e) => ({ rot: Math.abs(Math.sin(k * 3.5)) * 0.2 * p.dir * e, mood: "sad" }),
+  lockin: (p, r, k, e) => ({
+    sc: 1 + 0.08 * e, mood: "angry",
+    front: () => {
+      // Speedlines zur Seite, Schloss über dem Kopf schnappt zu
+      ctx.strokeStyle = "rgba(255,255,255,.8)"; ctx.lineWidth = 3; ctx.lineCap = "round";
+      for (let j = 0; j < 6; j++) { const a = j / 6 * TAU + k * 0.6, d0 = r * 1.35, d1 = d0 + 14 + 10 * Math.sin(k * 20 + j); ctx.globalAlpha = 0.7 * e; ctx.beginPath(); ctx.moveTo(p.x + Math.cos(a) * d0, p.y + Math.sin(a) * d0); ctx.lineTo(p.x + Math.cos(a) * d1, p.y + Math.sin(a) * d1); ctx.stroke(); }
+      ctx.globalAlpha = e;
+      const lx = p.x - p.dir * r * 1.2, ly = p.y - r * 1.1, shut = Math.min(1, Math.max(0, (k - 0.25) * 5)), up = (1 - shut) * 8;
+      ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(lx, ly - 6 - up, 8, Math.PI, 0); ctx.lineTo(lx + 8, ly - up + (shut ? 0 : -2)); ctx.moveTo(lx - 8, ly - 6 - up); ctx.lineTo(lx - 8, ly); ctx.stroke();
+      ctx.fillStyle = COL.gold; ctx.lineWidth = 3; roundRect(lx - 12, ly - 2, 24, 20, 5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(lx, ly + 7, 3, 0, TAU); ctx.fill();
+      ctx.globalAlpha = 1;
+    },
+  }),
   peak: (p, r, k, e) => {
     const h = 46 * (1 - (1 - e) ** 3), w = r * 1.8, gy = Math.max(G, p.y + r);
     return {
@@ -634,6 +669,16 @@ const EMOTE_FX = {
     },
   }),
 };
+// Kopf-Reaktion nach einer Torexplosion des Gegners (oder eigene, z. B. Sonnenbrille)
+function reactAnim(p, r) {
+  const rc = react[p.i]; if (!rc || !REACT[rc.kind]) return null;
+  return REACT[rc.kind](p, r, rc.t, clamp(Math.min(rc.t * 6, (REACT_DUR - rc.t) * 3), 0, 1));
+}
+function mergeFx(a, b) {
+  if (!a || !b) return a || b;
+  const both = k => (a[k] && b[k] ? c => { a[k](c); b[k](c); } : a[k] || b[k]);
+  return { dx: (a.dx || 0) + (b.dx || 0), dy: (a.dy || 0) + (b.dy || 0), rot: (a.rot || 0) + (b.rot || 0), sc: (a.sc || 1) * (b.sc || 1), dir: a.dir || b.dir, mood: a.mood || b.mood, back: both("back"), face: both("face"), front: both("front") };
+}
 function emoteAnim(p, r, t) {
   if (!p.emo || !p.emo.startsWith("emote:") || p.emoT <= 0 || muted[p.i]) return null;
   const c = cosById(p.emo), f = c && EMOTE_FX[c.fx]; if (!f) return null;
@@ -687,18 +732,18 @@ function drawPlayer(st, p, t, label) {
   }
   const mc = matchCos[p.i] || {};
   drawShoe(ctx, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, shoeColor(mc.shoes, col), p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
-  const ea = emoteAnim(p, r, t);
+  const ea = mergeFx(emoteAnim(p, r, t), reactAnim(p, r));
   let dx = 0;
-  if (ea) { dx = ea.dx || 0; dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; if (ea.back) { ctx.save(); ea.back(); ctx.restore(); } }
+  if (ea) { dx = ea.dx || 0; dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; if (ea.back) { ctx.save(); ea.back(ctx); ctx.restore(); } }
   ctx.save();
   ctx.translate(p.x + dx, p.y + r + dy); ctx.rotate(rot); ctx.scale(sqX, sqY); ctx.translate(-p.x, -p.y - r);
   const b = st.b;
   const look = Math.atan2(b.y - p.y, b.x - p.x);
   const blink = Math.sin(t * 1.3 + p.i * 2) > 0.985;
   drawHead(ctx, p.ch, p.x, p.y, r, { dir: ea?.dir || p.dir, look, mood: p.stun > 0 ? "sad" : ea?.mood || p.mood, blink, effort: (p.kHeld && p.charge > 0.2) || p.kick > 0.1, frozen: p.frz > 0, t: t + p.i * 3 });
-  if (ea?.face) { ctx.save(); ea.face(); ctx.restore(); }
+  if (ea?.face) { ctx.save(); ea.face(ctx); ctx.restore(); }
   ctx.restore();
-  if (ea?.front) { ctx.save(); ctx.translate(dx, dy); ea.front(); ctx.restore(); }
+  if (ea?.front) { ctx.save(); ctx.translate(dx, dy); ea.front(ctx); ctx.restore(); }
   if (p.frz > 0) drawIce(p, r, s, t);
   if (p.confT > 0) {
     ctx.save(); ctx.strokeStyle = "#b28cff"; ctx.lineWidth = 3;
@@ -1195,6 +1240,7 @@ export function render(st, t, opts) {
   goalBack(view, 0, t); goalBack(view, 1, t);
   drawObstacles(st, view, t);
   drawPowerups(view, t);
+  drawScenes("back");
   view.p.forEach(p => drawPlayerBase(p));
   drawBallShadow(view.b);
   const labels = opts.labels || [];
@@ -1205,6 +1251,7 @@ export function render(st, t, opts) {
   if (!rep) drawSwooshes();
   goalFront(view, 0, t); goalFront(view, 1, t);
   ctx.globalCompositeOperation = "lighter"; drawParts(true); ctx.globalCompositeOperation = "source-over";
+  drawScenes("front");
   // Aufladen: Funken am Fuß
   if (!rep) view.p.forEach(p => { if (p.kHeld && p.charge > 0.15 && Math.random() < p.charge) { const sp = shoePos(p); burst("charge", sp.x, sp.y, { col: p.charge >= 1 ? COL.gold : "#fff" }); } });
   // Overlays in Basiskoordinaten
@@ -1240,6 +1287,7 @@ export function render(st, t, opts) {
     vg.addColorStop(0, "rgba(0,0,20,0)"); vg.addColorStop(1, "rgba(0,0,20,.32)");
     ctx.fillStyle = vg; ctx.fillRect(0, 0, cw, ch);
   }
+  if (scenes.length) { ctx.setTransform(1, 0, 0, 1, 0, 0); drawScenes("screen"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
   if (cam.flash > 0) { ctx.globalAlpha = cam.flash; ctx.fillStyle = cam.flashCol; ctx.fillRect(0, 0, cw, ch); ctx.globalAlpha = 1; cam.flash = Math.max(0, cam.flash - dt * 2.5); }
 }
 

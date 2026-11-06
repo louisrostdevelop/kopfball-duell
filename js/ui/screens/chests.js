@@ -26,7 +26,7 @@ export function cosIcon(id, size = 56) {
   const c = cosById(id), d = document.createElement("span");
   d.className = "cosic k-" + (c ? c.kind : "x"); d.style.setProperty("--col", c ? c.col : "#ccc"); d.style.setProperty("--s", size + "px");
   if (c && c.kind === "emoji") d.textContent = c.glyph;
-  else if (c && c.kind === "emote") d.innerHTML = `<svg viewBox="0 0 48 48"><use href="#cos-emote"/></svg><b class="eic">${esc(c.ic)}</b>`;
+  else if (c && (c.kind === "emote" || (c.kind === "goalfx" && c.ic))) d.innerHTML = `<svg viewBox="0 0 48 48"><use href="#cos-${c.kind}"/></svg><b class="eic">${esc(c.ic)}</b>`;
   else d.innerHTML = `<svg viewBox="0 0 48 48"><use href="#cos-${c ? c.kind : "shoes"}"/></svg><b>${c ? c.n : ""}</b>`;
   return d;
 }
