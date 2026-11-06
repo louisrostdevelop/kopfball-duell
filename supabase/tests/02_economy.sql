@@ -21,7 +21,7 @@ $$;
 do $g$ begin execute format('grant execute on all functions in schema %I to public', pg_my_temp_schema()::regnamespace); end $g$;
 
 do $$
-declare u uuid; v uuid; s jsonb; r jsonb; r2 jsonb; c0 bigint; s0 integer;
+declare u uuid; v uuid; s jsonb; r jsonb; r2 jsonb; c0 bigint; s0 integer; cur integer; a record; ars jsonb;
 begin
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into u;
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into v;
@@ -124,9 +124,9 @@ begin
 
   -- Import des Browser-Spielstands: einmal, gedeckelt, nur Münz-Inhalte
   r := api.import_local('{"coins": 99999, "chars": ["kalle","tank","gibtsnicht"], "balls": ["gold"], "arenas": ["mond"]}');
-  -- Budget 2000, billigste zuerst: Gold 600 + Mond 600, Tank (3000) passt nicht mehr, Rest 800 als Münzen
-  assert (r->>'coins')::int = 150 + 800, 'Import gedeckelt (Gegenstände + Münzen zusammen): ' || (r->>'coins');
-  assert r->'items' ? 'ball:gold' and r->'items' ? 'arena:mond' and not r->'items' ? 'head:tank', 'Import Gegenstände';
+  -- Budget 2000, billigste zuerst: Gold 600; Mond ist ab Level frei (nicht käuflich), Tank (3000) passt nicht, Rest 1400 als Münzen
+  assert (r->>'coins')::int = 150 + 1400, 'Import gedeckelt (Gegenstände + Münzen zusammen): ' || (r->>'coins');
+  assert r->'items' ? 'ball:gold' and not r->'items' ? 'arena:mond' and not r->'items' ? 'head:tank', 'Import Gegenstände';
   perform pg_temp.expect_error('select api.import_local(''{}'')', 'already_imported');
 
   -- Saison-Pass: Punkte aus Spielen, Stufen abholen
@@ -143,6 +143,29 @@ begin
   perform api.set_prefs('{"sfx": false}');
   perform pg_temp.expect_error('select api.set_prefs(''[]'')', 'bad_prefs');
   perform pg_temp.expect_error($q$select api.set_prefs(jsonb_build_object('x', repeat('a', 9000)))$q$, 'prefs_too_large');
+  perform pg_temp.logout();
+
+  -- Arenen: alte sind ab Level frei (nicht käuflich), neue erst nach ihrer Saison im Shop (vorher im Pass)
+  perform pg_temp.login(u);
+  perform pg_temp.expect_error('select api.buy_item(''arena:neon'', ''coins'', ''arena-key-00'')', 'not_for_sale');
+  perform pg_temp.logout();
+  update game.seasons set starts_at = least(starts_at, now() - interval '2 minutes'), ends_at = now() - interval '1 minute';
+  cur := (select coalesce(max(id), 0) + 1 from game.seasons);
+  insert into game.seasons (id, starts_at, ends_at, pass) values (cur, now() - interval '1 minute', now() + interval '1 day', '[]');
+  update game.players set level = 10 where id = u;
+  perform game.book(u, 'coins', 20000, 'test');
+  assert game.current_season() = cur, 'Test-Saison läuft';
+  ars := (select jsonb_agg(jsonb_build_object('id', id, 'se', (meta->>'season')::integer)) from game.items where kind = 'arena' and meta ? 'season');
+  assert jsonb_array_length(ars) = 4, 'vier neue Arenen';
+  perform pg_temp.login(u);
+  for a in select x->>'id' id, (x->>'se')::integer se from jsonb_array_elements(ars) x order by 2 loop
+    if a.se < cur then
+      r := api.buy_item(a.id, 'coins', 'arena-key-' || a.se);
+      assert r->>'item' = a.id, 'Arena nach ihrer Saison im Shop: ' || a.id;
+    else
+      perform pg_temp.expect_error(format('select api.buy_item(%L, ''coins'', %L)', a.id, 'arena-key-' || a.se), 'not_yet');
+    end if;
+  end loop;
   perform pg_temp.logout();
 
   -- Buchungen ergeben exakt den Kontostand

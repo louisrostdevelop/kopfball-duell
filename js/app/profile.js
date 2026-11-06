@@ -1,7 +1,7 @@
 // Spielerprofil zur Laufzeit: Münzen, Level, Freischaltungen, Statistik, Erfolge, Einstellungen.
 // Wo gespeichert wird, entscheidet der eingesteckte ProfileStore (siehe ports/storage.js):
 // heute der Browser-Speicher, später zusätzlich ein Server. Die Regeln selbst liegen in core/economy.js.
-import { ACHIEVEMENTS, ARENAS, BALLS, CHARS, rarityOf, SHOP_LEVEL } from "../content/config.js";
+import { ACHIEVEMENTS, ARENAS, arenaById, arenaFree, BALLS, CHARS, rarityOf, SHOP_LEVEL } from "../content/config.js";
 import { COSMETICS, cosById, COS_PRICE, LEVEL_SURE_HEAD, levelChest, MASTERY, masteryReward, SHARDS } from "../content/cosmetics.js";
 import { rollChest } from "../core/chests.js";
 import { defaultProfile, migrateProfile, xpFor, today, yesterday, dailyBonus, dailyTaskList, taskText, challengeFor, dealFor, earnedAchievements, weekOf, weeklyList, weeklyText } from "../core/economy.js";
@@ -94,7 +94,10 @@ export function craftLocal(id) {
   return true;
 }
 export function addCoins(n) { S.coins += n; if (n > 0) S.earned += n; }
-export function owns(kind, id) { return kind === "cos" ? S.cos.includes(id) : S[kind].includes(id); }
+export function owns(kind, id) {
+  if (kind === "cos") return S.cos.includes(id);
+  return S[kind].includes(id) || (kind === "arenas" && arenaFree(arenaById(id), S.level));
+}
 /** Kosmetik aus dem Wochenangebot kaufen (lokal; mit Server: account.buyCos) */
 export function buyCosLocal(id) {
   const c = cosById(id); if (!c || S.cos.includes(id) || S.level < shopLevel("cos", id)) return false;
@@ -103,15 +106,24 @@ export function buyCosLocal(id) {
   return true;
 }
 // Mit Server (app/account.js) bestätigt der Server jeden Kauf, sonst wird er zurückgedreht
-const hooks = { buy: null, canBuy: null, serverDaily: false, serverChests: false };
+const hooks = { buy: null, canBuy: null, serverDaily: false, serverChests: false, season: null };
 export function setHooks(h) { Object.assign(hooks, h); }
 /** Ab welchem Level ist ein Gegenstand im Shop kaufbar (0 = sofort) */
 export function shopLevel(kind, id) {
   const it = (kind === "chars" ? CHARS : kind === "balls" ? BALLS : kind === "arenas" ? ARENAS : COSMETICS).find(x => x.id === id);
+  if (it && kind === "arenas" && it.level) return it.level;
   return it ? SHOP_LEVEL[rarityOf(it)] || 1 : 1;
+}
+/** Neue Arena: erst im Saison-Pass ihrer Saison, danach im Shop. Ohne Server (keine Saisons) gleich im Shop. */
+export const seasonNow = () => (hooks.season ? hooks.season() : null);
+export function arenaInShop(a) {
+  if (!a.season) return true;
+  const cur = seasonNow();
+  return cur == null || cur > a.season;
 }
 export function buy(kind, id, price) {
   if (owns(kind, id) || S.coins < price || S.level < shopLevel(kind, id)) return false;
+  if (kind === "arenas" && !arenaInShop(arenaById(id))) return false;
   if (hooks.canBuy && !hooks.canBuy()) return false;
   S.coins -= price; S[kind].push(id); save();
   if (hooks.buy) hooks.buy(kind, id, () => { S.coins += price; S[kind] = S[kind].filter(x => x !== id); save(); });

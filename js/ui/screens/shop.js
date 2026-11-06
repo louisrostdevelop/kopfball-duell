@@ -1,6 +1,6 @@
 // Shop: Köpfe, Bälle, Arenen, Angebot des Tages
 import { ARENAS, BALLS, charById, CHARS, gemPrice, gemsInEuro, RARITY, rarityOf, SUPERS } from "../../content/config.js";
-import { buy, buyDeal, checkAch, deal, owns, S, save, shopLevel } from "../../app/profile.js";
+import { arenaInShop, buy, buyDeal, checkAch, deal, owns, S, save, seasonNow, shopLevel } from "../../app/profile.js";
 import { cosById, COS_PRICE } from "../../content/cosmetics.js";
 import { cosIcon } from "./chests.js";
 import { avatarCanvas, drawBall } from "../render/art.js";
@@ -55,6 +55,7 @@ export function shopScreen() {
     const equip = () => { if (kind === "chars") S.char = it.id; else if (kind === "balls") S.ball = it.id; else S.arena = it.id; save(); };
     const need = shopLevel(kind, it.id);
     if (eq) { btn.className = "btn ghost small"; btn.innerHTML = svg("i-check") + t("shop.selected"); btn.disabled = true; }
+    else if (!own && kind === "arenas" && !arenaInShop(it)) { btn.className = "btn ghost small"; btn.innerHTML = svg("i-lock") + (seasonNow() === it.season ? t("shop.inPass") : t("shop.fromSeason", { n: it.season })); btn.disabled = true; }
     else if (!own && S.level < need) { btn.className = "btn ghost small"; btn.innerHTML = svg("i-lock") + t("shop.fromLevel", { n: need }); btn.disabled = true; }
     else if (own) { btn.className = "btn green small"; btn.textContent = t("ui.select"); btn.onclick = () => { A.sfx("click"); equip(); shopScreen(); }; }
     else if (kind === "chars" && serverOn() && gemPrice(it)) {

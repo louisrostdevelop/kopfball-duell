@@ -9,6 +9,7 @@ import { audio as A } from "../../app/services.js";
 import { endAgain, endMenu, shareResult } from "../../app/results.js";
 import { t } from "../../content/i18n.js";
 import { CAREER } from "../../content/career.js";
+import { ARENAS } from "../../content/config.js";
 
 export function showEnd(r) {
   const st = App.st, [a, b] = st.s, me = r.me;
@@ -30,6 +31,8 @@ export function showEnd(r) {
   }
   r.achs.forEach((ac, n) => setTimeout(() => { toast(t("ach.toast", { name: ac.name, n: ac.reward }), "i-star", true); A.sfx("levelup"); }, 900 + n * 1200));
   if (r.ups.length) setTimeout(() => levelModal(r.ups[r.ups.length - 1]), 1500);
+  // Arena ab diesem Level frei
+  ARENAS.filter(x => x.level && r.ups.includes(x.level)).forEach((ar, n) => setTimeout(() => toast(t("arena.unlocked", { name: ar.name }), "i-stadium", true), 2600 + n * 1200));
   if (r.runInfo === "record") setTimeout(() => toast(t("end.newRecord"), "i-inf", true), 700);
   if (r.career && r.career.gained) setTimeout(() => toast(t("career.newStars", { n: r.career.gained }), "i-star", true), 700);
   if (r.career && r.career.leagueDone) setTimeout(() => toast(r.career.unlocked >= 0 ? t("career.unlocked", { name: CAREER[r.career.unlocked].name }) : t("career.allDone"), "i-trophy", true), 1900);

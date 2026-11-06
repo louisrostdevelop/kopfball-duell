@@ -8,24 +8,24 @@
  },
  {
   "case": "1 stadion {\"obs\":0,\"field\":0.82}",
-  "score": "0:5",
+  "score": "4:3",
   "frames": 4200,
-  "events": "bounce=21 full=3 go=5 goal=5 head=36 jump=27 kick=21 ko=4 land=27 launch=1 obs=16 post=5 pu=1 puSpawn=4 save=2 stomp=1 super=3 swing=24 ten=1",
-  "trace": "478bd156"
+  "events": "bonk=2 bounce=30 full=2 go=7 goal=7 head=18 jump=15 kick=13 ko=7 land=15 launch=1 obs=10 post=6 puSpawn=3 save=3 super=2 swing=15",
+  "trace": "eaf016e4"
  },
  {
   "case": "2 stadion {\"obs\":1,\"field\":1}",
-  "score": "3:2",
+  "score": "2:2",
   "frames": 4200,
-  "events": "bounce=27 bump=1 burn=1 full=4 go=5 goal=5 head=36 jump=36 kick=22 ko=4 land=36 obs=18 post=7 pu=3 puSpawn=4 save=4 super=5 swing=30 ten=1 zap=11",
-  "trace": "384e80df"
+  "events": "bonk=2 bounce=22 full=2 go=5 goal=4 head=29 jump=23 kick=16 ko=4 land=23 obs=6 post=11 pu=3 puSpawn=5 save=2 super=2 swing=19 ten=1 zap=1",
+  "trace": "8645a67a"
  },
  {
   "case": "3 stadion {\"obs\":2,\"field\":1.18}",
-  "score": "2:2",
+  "score": "3:3",
   "frames": 4200,
-  "events": "bomb=1 bonk=5 bounce=20 full=3 go=5 goal=4 head=22 jump=62 kick=22 ko=4 land=73 launch=2 obs=28 poke=1 post=13 pu=2 puSpawn=5 quake=2 save=1 slide=1 smash=1 super=3 swing=23 ten=1",
-  "trace": "6c7918df"
+  "events": "bomb=2 bounce=29 bump=1 full=2 go=7 goal=6 head=20 jump=27 kick=17 ko=6 land=27 launch=2 obs=9 post=5 pound=1 pu=1 puSpawn=3 quake=2 smash=1 super=3 swing=21",
+  "trace": "f44122ff"
  },
  {
   "case": "4 strand {}",
@@ -36,24 +36,24 @@
  },
  {
   "case": "5 strand {\"obs\":0,\"field\":0.82}",
-  "score": "2:3",
+  "score": "5:3",
   "frames": 4200,
-  "events": "bonk=3 bounce=12 bump=2 full=3 go=6 goal=5 head=33 jump=26 kick=16 ko=5 land=22 launch=1 obs=17 post=16 pu=1 puSpawn=4 save=6 super=2 swing=24 ten=1",
-  "trace": "0ba2838a"
+  "events": "bonk=2 bounce=18 full=3 go=8 goal=8 head=24 jump=15 kick=17 ko=7 land=15 launch=2 obs=11 post=2 pu=1 puSpawn=2 save=4 super=3 swing=21",
+  "trace": "11d7d37d"
  },
  {
   "case": "6 strand {\"obs\":1,\"field\":1}",
   "score": "2:4",
   "frames": 4200,
-  "events": "bounce=17 bump=1 full=4 go=6 goal=6 head=23 jump=21 kick=28 ko=5 land=20 obs=3 poke=3 post=11 pu=1 puSpawn=4 save=2 slide=3 super=3 swing=31 ten=1 zap=5",
-  "trace": "07d6a2e8"
+  "events": "bounce=18 bump=2 full=2 go=7 goal=6 head=28 jump=18 kick=19 ko=6 land=18 obs=8 poke=1 post=5 pu=2 puSpawn=3 save=1 slide=2 super=2 swing=26 zap=1",
+  "trace": "3c8700c5"
  },
  {
   "case": "7 strand {\"obs\":2,\"field\":1.18}",
-  "score": "4:2",
+  "score": "2:5",
   "frames": 4200,
-  "events": "bounce=18 bump=2 full=2 go=7 goal=6 head=21 jump=13 kick=17 ko=6 land=13 launch=1 obs=8 poke=3 post=1 puSpawn=3 quake=1 slide=3 super=2 swing=22",
-  "trace": "9781e182"
+  "events": "bounce=19 full=3 go=8 goal=7 head=22 jump=13 kick=20 ko=7 land=12 launch=1 obs=3 poke=5 post=2 puSpawn=3 quake=1 slide=5 super=3 swing=22",
+  "trace": "401a93f7"
  },
  {
   "case": "8 neon {}",
@@ -64,24 +64,24 @@
  },
  {
   "case": "9 neon {\"obs\":0,\"field\":0.82}",
-  "score": "1:2",
-  "frames": 3909,
-  "events": "bounce=17 bump=1 end=1 full=2 go=4 goal=3 head=38 jump=30 kick=21 ko=3 land=30 launch=1 obs=25 post=7 pu=2 puSpawn=5 save=5 super=3 swing=23 ten=1",
-  "trace": "5ba98929"
+  "score": "3:3",
+  "frames": 4200,
+  "events": "bounce=31 full=3 go=7 goal=6 head=41 jump=19 kick=22 ko=6 land=19 launch=2 obs=24 post=4 pu=3 puSpawn=3 save=4 slide=1 stomp=1 super=3 swing=24",
+  "trace": "0f2ec208"
  },
  {
   "case": "10 neon {\"obs\":1,\"field\":1}",
-  "score": "1:4",
+  "score": "2:4",
   "frames": 4200,
-  "events": "bonk=3 bounce=30 full=3 go=6 goal=5 head=31 jump=31 kick=22 ko=5 land=30 obs=6 poke=2 post=13 pu=1 puSpawn=5 save=2 slide=2 super=2 swing=27 ten=1 zap=1",
-  "trace": "6746eecf"
+  "events": "bonk=1 bounce=32 full=4 go=6 goal=6 head=25 jump=26 kick=27 ko=5 land=26 obs=5 poke=3 post=23 pu=1 puSpawn=4 save=2 slide=3 super=3 swing=29 ten=1",
+  "trace": "21600f3e"
  },
  {
   "case": "11 neon {\"obs\":2,\"field\":1.18}",
-  "score": "3:3",
+  "score": "2:3",
   "frames": 4200,
-  "events": "bonk=6 bounce=27 bump=1 full=2 go=7 goal=6 head=23 jump=22 kick=13 ko=6 land=21 launch=1 obs=10 post=3 pu=1 puSpawn=3 quake=1 super=2 swing=15",
-  "trace": "32e8981e"
+  "events": "bonk=4 bounce=28 full=3 go=6 goal=5 head=33 jump=20 kick=15 ko=5 land=20 launch=1 obs=11 poke=1 post=4 pu=1 puSpawn=4 quake=1 slide=1 super=2 swing=19 ten=1",
+  "trace": "641bdd2d"
  },
  {
   "case": "12 eis {}",
@@ -92,24 +92,24 @@
  },
  {
   "case": "13 eis {\"obs\":0,\"field\":0.82}",
-  "score": "2:1",
-  "frames": 3908,
-  "events": "bounce=15 bump=1 end=1 full=3 go=4 goal=3 head=26 jump=66 kick=31 ko=3 land=67 launch=2 obs=27 post=9 pu=3 puSpawn=5 save=4 slide=1 stomp=4 super=3 swing=33 ten=1",
-  "trace": "d396df1b"
+  "score": "1:4",
+  "frames": 4200,
+  "events": "bonk=5 bounce=23 full=2 go=5 goal=5 head=22 jump=23 kick=2 ko=5 land=23 launch=1 obs=13 post=14 pu=2 puSpawn=4 stomp=2 super=1 swing=5 ten=1",
+  "trace": "5daee222"
  },
  {
   "case": "14 eis {\"obs\":1,\"field\":1}",
-  "score": "3:1",
+  "score": "3:3",
   "frames": 4200,
-  "events": "bounce=24 bump=2 burn=1 full=2 go=5 goal=4 head=37 jump=22 kick=17 ko=4 land=22 obs=12 post=7 pu=3 puSpawn=5 save=3 stomp=1 super=3 swing=23 ten=1 zap=1",
-  "trace": "8c3265af"
+  "events": "bomb=1 bonk=3 bounce=31 bump=2 full=2 go=7 goal=6 head=22 jump=16 kick=13 ko=6 land=16 obs=8 post=1 pu=2 puSpawn=4 save=1 smash=1 super=2 swing=16 wallhit=1 zap=5",
+  "trace": "7c09b2ed"
  },
  {
   "case": "15 eis {\"obs\":2,\"field\":1.18}",
-  "score": "1:3",
+  "score": "1:6",
   "frames": 4200,
-  "events": "bounce=25 full=2 go=5 goal=4 head=16 jump=45 kick=9 ko=4 land=48 launch=1 obs=16 post=22 pu=1 puSpawn=5 save=1 super=2 swing=10 ten=1",
-  "trace": "eca35a17"
+  "events": "bounce=28 full=2 go=8 goal=7 head=13 jump=31 kick=21 ko=7 land=33 launch=1 obs=10 post=7 pu=1 puSpawn=3 quake=1 save=1 stomp=1 super=2 swing=24",
+  "trace": "3c8bfde0"
  },
  {
   "case": "16 mond {}",
@@ -120,24 +120,24 @@
  },
  {
   "case": "17 mond {\"obs\":0,\"field\":0.82}",
-  "score": "1:0",
-  "frames": 3224,
-  "events": "bounce=10 end=1 full=2 go=2 goal=1 head=18 jump=16 kick=13 ko=1 land=8 launch=1 obs=16 post=6 pu=2 puSpawn=4 super=1 swing=16 ten=1",
-  "trace": "be768ed0"
+  "score": "2:3",
+  "frames": 4200,
+  "events": "bounce=23 full=1 go=5 goal=5 head=26 jump=18 kick=20 ko=4 land=10 launch=1 obs=9 post=6 pu=3 puSpawn=5 save=4 super=2 swing=23 ten=1",
+  "trace": "8b46821d"
  },
  {
   "case": "18 mond {\"obs\":1,\"field\":1}",
-  "score": "4:1",
+  "score": "2:2",
   "frames": 4200,
-  "events": "bounce=47 bump=1 full=3 go=6 goal=5 head=21 jump=37 kick=19 ko=5 land=32 obs=29 post=9 pu=2 puSpawn=4 save=2 super=3 swing=21 ten=1 zap=10",
-  "trace": "08ddda32"
+  "events": "bounce=17 full=2 go=5 goal=4 head=21 jump=60 kick=20 ko=4 land=53 obs=11 post=4 pu=4 puSpawn=5 save=1 super=3 swing=23 ten=1 zap=6",
+  "trace": "1b400df4"
  },
  {
   "case": "19 mond {\"obs\":2,\"field\":1.18}",
-  "score": "1:2",
-  "frames": 3887,
-  "events": "bounce=12 end=1 full=2 go=4 goal=3 head=23 jump=22 kick=22 ko=3 land=21 launch=1 obs=14 post=5 pu=3 puSpawn=5 save=1 super=2 swing=25 ten=1",
-  "trace": "49a79e89"
+  "score": "2:2",
+  "frames": 4200,
+  "events": "bounce=17 full=3 go=5 goal=4 head=28 jump=23 kick=22 ko=4 land=22 launch=2 obs=15 pu=3 puSpawn=5 save=2 super=4 swing=24 ten=1",
+  "trace": "a8659705"
  },
  {
   "case": "20 stadion {\"kick\":1.45,\"bounce\":1.4,\"pu\":\"many\"}",
@@ -183,10 +183,10 @@
  },
  {
   "case": "26 strand {\"obs\":1} Skript",
-  "score": "3:4",
+  "score": "0:7",
   "frames": 4200,
-  "events": "bomb=19 bounce=28 bump=1 charged=7 full=2 go=7 goal=7 head=25 jump=36 kick=8 ko=7 land=18 obs=3 poke=2 post=3 pound=18 puSpawn=3 slide=10 squash=1 stomp=1 super=1 swing=24",
-  "trace": "1f08ead0"
+  "events": "bomb=14 bonk=2 bounce=25 bump=5 charged=7 full=2 go=8 goal=7 head=21 jump=31 kick=13 ko=7 land=18 obs=1 poke=1 post=3 pound=13 puSpawn=3 slide=6 squash=1 stomp=2 super=1 swing=33",
+  "trace": "d4410a11"
  },
  {
   "case": "27 neon {} Skript",
@@ -197,10 +197,10 @@
  },
  {
   "case": "28 eis {\"obs\":0} Skript",
-  "score": "0:3",
-  "frames": 3869,
-  "events": "bomb=26 bounce=62 bump=1 charged=9 end=1 freeze=1 full=2 go=4 goal=3 head=25 jump=69 kick=15 ko=3 land=42 obs=72 post=6 pound=26 pu=2 puSpawn=5 save=1 slide=12 stomp=1 super=1 swing=36 ten=1",
-  "trace": "22c201a1"
+  "score": "0:5",
+  "frames": 4200,
+  "events": "bomb=24 bonk=2 bounce=28 bump=4 charged=9 freeze=1 full=2 go=6 goal=5 head=17 jump=44 kick=10 ko=5 land=22 obs=6 post=4 pound=21 puSpawn=4 save=1 slide=10 smash=2 stomp=2 super=1 swing=42 ten=1",
+  "trace": "50639c60"
  },
  {
   "case": "29 mond {} Skript",

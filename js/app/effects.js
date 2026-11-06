@@ -92,8 +92,16 @@ export function onEvent(e, remote) {
         snd("bumper", e.v / 1200); fx.burst("head", e.x, e.y); fx.shake(3);
         let best = null, bd = 1e9; for (const o of st.obs || []) if (o.t === "bump") { const d = Math.hypot(o.x - e.x, o.y - e.y); if (d < bd) { bd = d; best = o; } }
         if (best) best.hitT = simT;
-      } else { snd("wallhit"); if (e.v > 700) fx.burst("post", e.x, e.y); }
+      } else if (e.k === "geyser") fx.burst("dust", e.x, e.y, { n: 6, col: "rgba(255,200,160,.5)" });
+      else if (e.k === "ramp") { snd("grind", e.v / 900); fx.burst("dust", e.x, e.y, { n: 5 }); }
+      else { snd("wallhit"); if (e.v > 700) fx.burst("post", e.x, e.y); }
       break;
+    case "geyser": snd("geyser"); fx.burst("geyser", e.x, e.y); fx.shake(4); break;
+    case "noclip": {
+      snd("noclip"); fx.burst("noclip", e.x, e.y); fx.burst("noclip", e.x2, e.y);
+      for (const o of st.obs || []) if (o.t === "portal" && (Math.abs(o.x - e.x) < 2 || Math.abs(o.x - e.x2) < 2)) o.hitT = simT;
+      break;
+    }
     case "bonk": if (remote && e.i === myIdx()) break; snd("bump", 0.8); fx.burst("stomp", e.x, e.y); break;
     case "slide": if (remote && e.i === myIdx()) break; fx.burst("dust", e.x, e.y, { n: 8 }); snd("slide"); break;
     case "bomb": if (remote && e.i === myIdx()) break; snd("bomb"); break;

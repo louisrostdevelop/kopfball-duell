@@ -71,14 +71,22 @@ export const CHARS = [
 ];
 export const charById = id => CHARS.find(c => c.id === id) || CHARS[0];
 
-// Arenen: g = Schwerkraft-Faktor, bounce = Ballabprall am Boden, grip = Beschleunigung der Spieler
+// Arenen: g = Schwerkraft-Faktor, bounce = Ballabprall am Boden, grip = Beschleunigung der Spieler, vDrag = Bremsen des Balls
+// nach oben/unten (Wasser). Freischalten: level = kostenlos ab Spieler-Level; season = neue Arena, die in der n-ten Saison
+// im Pass steckt und danach im Shop zu kaufen ist (price, Level-Sperre nach rarity). Ohne beides: von Anfang an da.
 export const ARENAS = [
-  { id: "stadion", price: 0,   g: 1,    bounce: 0.7,  grip: 1,    roll: 0.97,  spd: 1,    maxB: 1,    ballDrag: 0.12 },
-  { id: "strand",  price: 0,   g: 1,    bounce: 0.5,  grip: 0.9,  roll: 0.93,  spd: 0.96, maxB: 1,    ballDrag: 0.14 },
-  { id: "neon",    price: 300, g: 1.05, bounce: 0.75, grip: 1.1, roll: 0.975, spd: 1.08, maxB: 1.12, ballDrag: 0.1 },
-  { id: "eis",     price: 400, g: 1,    bounce: 0.72, grip: 0.18, roll: 0.995, spd: 1.05, maxB: 1.05, ballDrag: 0.06 },
-  { id: "mond",    price: 600, g: 0.6,  bounce: 0.8,  grip: 0.8,  roll: 0.985, spd: 1,    maxB: 1,    ballDrag: 0.03 },
+  { id: "stadion",   price: 0, g: 1,    bounce: 0.7,  grip: 1,    roll: 0.97,  spd: 1,    maxB: 1,    ballDrag: 0.12 },
+  { id: "strand",    price: 0, g: 1,    bounce: 0.5,  grip: 0.9,  roll: 0.93,  spd: 0.96, maxB: 1,    ballDrag: 0.14 },
+  { id: "neon",      price: 0, rarity: "selten", level: 5,  g: 1.05, bounce: 0.75, grip: 1.1, roll: 0.975, spd: 1.08, maxB: 1.12, ballDrag: 0.1 },
+  { id: "eis",       price: 0, rarity: "selten", level: 10, g: 1,    bounce: 0.72, grip: 0.18, roll: 0.995, spd: 1.05, maxB: 1.05, ballDrag: 0.06 },
+  { id: "mond",      price: 0, rarity: "episch", level: 15, g: 0.6,  bounce: 0.8,  grip: 0.8,  roll: 0.985, spd: 1,    maxB: 1,    ballDrag: 0.03 },
+  { id: "vulkan",    price: 2500, rarity: "episch", season: 1, g: 1.05, bounce: 0.84, grip: 1,    roll: 0.97,  spd: 1,    maxB: 1.06, ballDrag: 0.12 },
+  { id: "skate",     price: 2500, rarity: "episch", season: 2, g: 1,    bounce: 0.72, grip: 1.08, roll: 0.99,  spd: 1.05, maxB: 1.05, ballDrag: 0.07 },
+  { id: "tiefsee",   price: 2500, rarity: "episch", season: 3, g: 0.72, bounce: 0.45, grip: 0.82, roll: 0.95,  spd: 0.9,  maxB: 0.92, ballDrag: 0.4, vDrag: 0.35 },
+  { id: "backrooms", price: 2500, rarity: "episch", season: 4, g: 1,    bounce: 0.6,  grip: 0.96, roll: 0.93,  spd: 1,    maxB: 1,    ballDrag: 0.13 },
 ];
+/** Arena ist frei: von Anfang an oder ab dem Spieler-Level */
+export const arenaFree = (a, level) => !a.season && (!a.level || level >= a.level);
 export const arenaById = id => ARENAS.find(a => a.id === id) || ARENAS[0];
 
 export const BALLS = [

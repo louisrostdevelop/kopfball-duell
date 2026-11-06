@@ -40,6 +40,7 @@ export function ballPhysics(st, dt, postGoal) {
   b.vy += BG() * gMul(st) * fxGrav * wgt(st).grav * dt;
   if (st.wind && st.wind.t > 0 && !b.fx) b.vx += st.wind.dir * 300 * dt;
   b.vx *= 1 - ar.ballDrag * wgt(st).drag * (st.rules.floor === "ice" && b.y + b.r > G - 2 ? 0.3 : 1) * dt;
+  if (ar.vDrag) b.vy *= 1 - ar.vDrag * wgt(st).drag * dt;   // Wasser bremst auch nach oben und unten
   b.x += b.vx * dt; b.y += b.vy * dt;
   b.av = b.vx / b.r; b.a += b.av * dt;
   if (b.held > 0) b.held -= dt;

@@ -156,6 +156,20 @@ function recipe(kind, v) {
       boing(0, 240 * sp, 700 * sp, 0.3, 0.32 * Math.min(1.3, 0.6 + v), { pan, send: 0.15 });
       fm(0, { f: 520 * sp, ratio: 2.01, index: 1.2, vol: 0.12, d: 0.15, cat: "body", pan });
       return true;
+    // ----- Arenen -----
+    case "geyser": // Vulkan: Grollen, dann zischende Fontäne
+      thump(0, 70, 32, 0.5, 0.7, { send: 0.3 });
+      hiss(0.02, { type: "bandpass", f0: 400, f1: 2600, q: 0.6, vol: 0.45, a: 0.05, d: 0.7, cat: "fx", send: 0.35 });
+      hiss(0.08, { type: "highpass", f0: 3500, vol: 0.18, a: 0.1, d: 0.6, flutter: 22, cat: "fx" });
+      return true;
+    case "noclip": // Backrooms: kurzes digitales Stottern, dann ein hohler Ton
+      for (let i = 0; i < 6; i++) tone(i * 0.035, { type: "square", f0: rnd(300, 1800), f1: rnd(200, 900), vol: 0.06, d: 0.03, lp: 3000, cat: "fx", pan: rnd(-0.4, 0.4) });
+      fm(0.2, { f: 220, ratio: 1.5, index: 2, idxD: 0.3, vol: 0.12, d: 0.5, cat: "fx", send: 0.4 });
+      return true;
+    case "grind": // Skatepark: Ball schrammt über die Stahlkante
+      hiss(0, { type: "bandpass", f0: 2400 * sp, f1: 1600, q: 3, vol: 0.22 * k, a: 0.01, d: 0.18, flutter: 60, cat: "body", pan });
+      tone(0, { type: "sawtooth", f0: 900 * sp, f1: 700, vol: 0.04, d: 0.12, lp: 2500, cat: "body", pan });
+      return true;
     case "swing":
       hiss(0, { type: "bandpass", f0: 500 * sp, f1: 2600, q: 1.2, vol: 0.3, a: 0.03, d: 0.14, cat: "body", pan });
       return true;

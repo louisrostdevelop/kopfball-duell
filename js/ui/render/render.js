@@ -3,6 +3,7 @@ import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clam
 import { drawHead, drawWornShoe, drawBall, drawPuIcon, shade } from "./art.js";
 import { cosById } from "../../content/cosmetics.js";
 import { GFX, REACT, REACT_DUR } from "./goalfx.js";
+import { makeArenaArt } from "./arena-art.js";
 import { barY, shoePos, pr, kickPreview, superTarget } from "../../core/physics.js";
 import { t as trn } from "../../content/i18n.js";
 
@@ -152,6 +153,14 @@ function burst(type, x, y, o) {
       P({ type: "ring", x, y, life: 0.5, max: 0.5, size: 20, grow: 900, col: "#ffb366", add: true, w: 16, flat: true });
       break;
     case "zap": bolt(x, y, o.col || COL.gold); break;
+    case "geyser": // Ausbruch: Lava-Spritzer und Dampf
+      for (let i = 0; i < n(18); i++) P({ type: "rock", x: x + rand(-20, 20), y: y - 6, vx: rand(-260, 260), vy: rand(-1100, -600), life: rand(0.6, 1), size: rand(4, 8), col: i % 2 ? "#ff8a2a" : "#ffd04a", g: 1800, rot: rand(0, TAU), vr: rand(-8, 8) });
+      for (let i = 0; i < n(10); i++) P({ type: "smoke", x: x + rand(-24, 24), y: y - 10, vx: rand(-60, 60), vy: rand(-260, -120), life: rand(0.6, 1), size: rand(10, 18), col: "rgba(255,230,210,.45)", drag: 1.5 });
+      break;
+    case "noclip": // Ball „fällt durch die Wand“: Pixel-Fetzen an der Tür
+      for (let i = 0; i < n(16); i++) P({ type: "spark", x: x + rand(-18, 18), y: y + rand(-50, 50), vx: rand(-160, 160), vy: rand(-160, 160), life: rand(0.2, 0.4), size: rand(3, 6), col: i % 3 ? "#5effe0" : "#fffbe0", add: true, drag: 5 });
+      P({ type: "flash", x, y, life: 0.1, max: 0.1, size: 70, col: "#5effe0", add: true });
+      break;
     case "post":
       for (let i = 0; i < n(12); i++) { const a = rand(0, TAU); P({ type: "spark", x, y, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, life: 0.25, size: 3, col: "#fff", add: true, drag: 4 }); }
       P({ type: "flash", x, y, life: 0.08, max: 0.08, size: 40, col: "#fff", add: true });
@@ -437,7 +446,8 @@ function bgMond(b, R) {
   b.fillStyle = "#ddd"; b.fillRect(W / 2 - 2, FT - 110, 4, 110); b.fillStyle = COL.p1; b.fillRect(W / 2 + 2, FT - 110, 50, 16); b.fillStyle = COL.p2; b.fillRect(W / 2 + 2, FT - 94, 50, 16);
   front(b, R, "#8a8c99", "#1d1e28", "rgba(255,255,255,.25)");
 }
-const ARENA_BG = { stadion: bgStadion, strand: bgStrand, neon: bgNeon, eis: bgEis, mond: bgMond };
+const ART = makeArenaArt({ srand, FT, front, pitch });   // Vulkan, Skatepark, Tiefsee, Backrooms
+const ARENA_BG = { stadion: bgStadion, strand: bgStrand, neon: bgNeon, eis: bgEis, mond: bgMond, ...ART.bg };
 
 function drawCrowd(t) {
   if (!crowdCanvas) return;
@@ -983,8 +993,9 @@ const OBS_STYLE = {
   stadion: { plat: "#22305f", edge: "#3ddc84", block: "#2a3d6e", bump: "#ff5a5a" },
   strand:  { plat: "#ff8a3d", edge: "#fff3c4", block: "#e2b36b", bump: "#ff5ca8" },
   neon:    { plat: "#1b0c3a", edge: "#ff4fd8", block: "#241047", bump: "#22d3ee" },
-  eis:     { plat: "#bfeaff", edge: "#ffffff", block: "#9fdcf5", bump: "#e9f7ff" },
+  eis:     { plat: "#3aa6dc", edge: "#ffffff", block: "#9fdcf5", bump: "#e9f7ff" },
   mond:    { plat: "#6c6e7e", edge: "#b8bac6", block: "#5d5f6e", bump: "#8d8f9e" },
+  ...ART.style,
 };
 function drawObstacles(st, view, t) {
   const obs = st.obs; if (!obs || !obs.length) return;
@@ -992,11 +1003,12 @@ function drawObstacles(st, view, t) {
   const pos = view.obsP || obs;
   // Schatten auf dem Boden
   ctx.fillStyle = "rgba(0,0,0,.16)";
-  obs.forEach((o, i) => { const q = pos[i] || o; if (o.block) return; const w = o.t === "plat" ? o.w * 0.5 : o.r; const a = clamp(1 - (G - q.y) / 600, 0.25, 0.9); ctx.globalAlpha = a; ctx.beginPath(); ctx.ellipse(q.x, G - 3, w, 6, 0, 0, TAU); ctx.fill(); });
+  obs.forEach((o, i) => { const q = pos[i] || o; if (o.block || (o.t !== "plat" && o.t !== "bump")) return; const w = o.t === "plat" ? o.w * 0.5 : o.r; const a = clamp(1 - (G - q.y) / 600, 0.25, 0.9); ctx.globalAlpha = a; ctx.beginPath(); ctx.ellipse(q.x, G - 3, w, 6, 0, 0, TAU); ctx.fill(); });
   ctx.globalAlpha = 1;
   obs.forEach((o, i) => {
     const q = pos[i] || o, x = q.x, y = q.y;
     ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round";
+    if (ART.draw(ctx, o, q, t, view.el ?? st.el, ar, quality === "high")) { ctx.restore(); return; }
     if (o.t === "plat" && o.block) {
       const x0 = x - o.w / 2, w = o.w, h = G - y;
       if (ar === "mond") { ctx.fillStyle = S.block; ctx.beginPath(); ctx.moveTo(x0 - 10, G); ctx.quadraticCurveTo(x0, y - 6, x, y - 4); ctx.quadraticCurveTo(x0 + w, y - 6, x0 + w + 10, G); ctx.closePath(); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.beginPath(); ctx.ellipse(x - w * 0.15, y + h * 0.35, w * 0.12, 5, 0, 0, TAU); ctx.fill(); }
@@ -1011,9 +1023,11 @@ function drawObstacles(st, view, t) {
       const x0 = x - o.w / 2, w = o.w, h = o.h;
       if (ar === "stadion") { // hängende Werbebande
         ctx.strokeStyle = "rgba(200,210,240,.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0 + 14, y); ctx.lineTo(x0 + 30, -300); ctx.moveTo(x0 + w - 14, y); ctx.lineTo(x0 + w - 30, -300); ctx.stroke();
-        ctx.fillStyle = S.plat; roundRect(x0, y, w, h, 5); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
-        ctx.fillStyle = S.edge; ctx.font = "13px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        const off = (t * 40) % w; ctx.save(); ctx.beginPath(); ctx.rect(x0 + 3, y, w - 6, h); ctx.clip(); /* i18n-ok: Marke */ ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off + w / 2, y + h / 2 + 1); ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off - w / 2, y + h / 2 + 1); ctx.restore();
+        // hell, damit sie vor der dunklen Tribüne nicht untergeht
+        const gb = ctx.createLinearGradient(0, y, 0, y + h); gb.addColorStop(0, "#ffe66a"); gb.addColorStop(1, "#ffb21a");
+        ctx.fillStyle = gb; roundRect(x0, y, w, h, 5); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3.5; ctx.stroke();
+        // Lauflichter statt Text (der wäre auf schmalen Banden doppelt)
+        for (let k = 0, n = Math.floor((w - 12) / 14); k < n; k++) { const on = (k + Math.floor(t * 6)) % 3 === 0; ctx.fillStyle = on ? "#fff" : "rgba(26,42,92,.55)"; ctx.beginPath(); ctx.arc(x0 + 6 + 7 + k * 14 + ((w - 12) - n * 14) / 2, y + h / 2, on ? 3.2 : 2.6, 0, TAU); ctx.fill(); }
       } else if (ar === "strand") { // Surfbrett
         ctx.fillStyle = S.plat; ctx.beginPath(); ctx.ellipse(x, y + h / 2, w / 2, h / 2 + 2, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
         ctx.fillStyle = S.edge; ctx.fillRect(x - w * 0.36, y + h / 2 - 2, w * 0.72, 4); ctx.fillStyle = "#2a7fc0"; ctx.fillRect(x - 4, y + 2, 8, h - 4);
@@ -1064,6 +1078,9 @@ export function layoutPreview(arena, obsList, w, h) {
   x.strokeStyle = "#fff"; x.lineWidth = 2; x.strokeRect(1, oy + 435 * k, GOAL_W * k, (G - 435) * k); x.strokeRect(w - 1 - GOAL_W * k, oy + 435 * k, GOAL_W * k, (G - 435) * k);
   x.beginPath(); x.moveTo(w / 2, oy + 520 * k); x.lineTo(w / 2, h); x.stroke();
   for (const o of obsList) {
+    if (o.t === "ramp") { x.fillStyle = "#d9b37a"; x.strokeStyle = INK; x.lineWidth = 1.5; x.beginPath(); x.moveTo((o.x - o.top / 2 - o.L) * k, oy + G * k); x.lineTo((o.x - o.top / 2) * k, oy + (G - o.h) * k); x.lineTo((o.x + o.top / 2) * k, oy + (G - o.h) * k); x.lineTo((o.x + o.top / 2 + o.R) * k, oy + G * k); x.closePath(); x.fill(); x.stroke(); continue; }
+    if (o.t === "geyser" || o.t === "bubbles") { x.fillStyle = o.t === "geyser" ? "rgba(255,120,40,.7)" : "rgba(170,235,255,.7)"; x.fillRect((o.x - o.w / 2) * k, oy + o.top * k, o.w * k, (G - o.top) * k); continue; }
+    if (o.t === "portal") { x.fillStyle = "#2a2410"; x.strokeStyle = "#e8d982"; x.lineWidth = 1.5; x.fillRect((o.x - o.w / 2) * k, oy + o.y * k, o.w * k, o.h * k); x.strokeRect((o.x - o.w / 2) * k, oy + o.y * k, o.w * k, o.h * k); continue; }
     x.fillStyle = o.t === "bump" ? S.bump : o.block ? S.block : S.edge;
     x.strokeStyle = INK; x.lineWidth = 1.5;
     if (o.t === "bump") { x.beginPath(); x.arc(o.x * k, oy + o.y * k, Math.max(3, o.r * k), 0, TAU); x.fill(); x.stroke(); if (o.mv) { x.setLineDash([3, 3]); x.strokeStyle = "rgba(255,255,255,.6)"; x.beginPath(); x.ellipse(o.cx * k, oy + o.cy * k, (o.mv.orbit || 0) * k, (o.mv.orbit || 0) * 0.45 * k, 0, 0, TAU); x.stroke(); x.setLineDash([]); } }
@@ -1220,6 +1237,7 @@ function vsIntro(st, names, e) {
 }
 function weather(st, t) {
   if (quality !== "high") return;
+  if (ART.weather(ctx, st.arena, t)) return;
   if (st.arena === "eis") {
     ctx.fillStyle = "rgba(255,255,255,.75)";
     for (let i = 0; i < 70; i++) {

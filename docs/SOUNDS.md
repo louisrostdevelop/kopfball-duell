@@ -160,6 +160,14 @@ Preis fürs Abwehren (werden geteilt):
 | `win` | Sieg | Jingle C-Dur, bis 2 s |
 | `lose` | Niederlage | Jingle c-Moll, nicht traurig-schwer, eher „ach Mist“ |
 
+### D2. Arenen (P2)
+
+| Name | Wann | Hinweis |
+|---|---|---|
+| `geyser` | Geysir bricht aus (Vulkan) | Grollen, dann zischende Fontäne, Stufe 3 |
+| `noclip` | Ball geht durch eine Tür (Backrooms) | kurzes digitales Stottern, hohler Nachhall |
+| `grind` | Ball schrammt über eine Rampe (Skatepark) | Metall-Schaben, kurz, Stufe 2 |
+
 ### E. Torexplosionen und Emotes (P3)
 
 | Name | Wann | Hinweis |
@@ -206,6 +214,7 @@ Im Spiel selbst läuft keine Musik, nur Publikum. Das bleibt so, damit die Spiel
 | Abwehr-Preise | 6 (geteilt) | 0 |
 | Power-ups | 2 | 12 optional |
 | Spielablauf, Publikum | 11 | 0 |
+| Arenen | 3 | 0 (besser als Aufnahme) |
 | Torexplosionen | 8 | 22 Meisterschaft |
 | Emotes | 1 | 8 + 22 Meisterschaft |
 | Menü, Fortschritt | 3 | 12 |

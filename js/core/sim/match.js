@@ -4,6 +4,7 @@ import { STEP } from "../../content/config.js";
 import { ballPhysics, unjam } from "./ball.js";
 import { addMeter, ev } from "./base.js";
 import { handleKick, kickPush } from "./kick.js";
+import { obsTick } from "./obstacles.js";
 import { movePlayer, playerVsPlayer, tickCosmetics } from "./player.js";
 import { powerups } from "./powerups.js";
 import { kickoff } from "./state.js";
@@ -30,7 +31,7 @@ export function advance(st, dt, inp, acc) {
 
 export function step(st, dt, inp) {
   st.el += dt;
-  if (st.obs && st.obs.length) moveObstacles(st.obs, st.el, dt);
+  if (st.obs && st.obs.length) { moveObstacles(st.obs, st.el, dt); obsTick(st); }
   if (st.ph === "end") { tickCosmetics(st, dt); return; }
   if (st.ph === "cd" || st.ph === "ko") {
     st.pt -= dt; tickCosmetics(st, dt);

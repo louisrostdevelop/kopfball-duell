@@ -364,18 +364,20 @@ const LY = await import("../../js/content/layouts.js");
   check("Startplätze und Anstoß frei", spawn === 0, spawn + " Konflikte");
 }
 { // Auf einen Block springen und darauf stehen; runterlaufen
-  const st = setup({ arena: "stadion", rules: { obs: 1 } }); // Brücke: Blöcke vor den Toren
+  const st = setup({ arena: "vulkan", rules: { obs: 1 } }); // Lavafelsen: Blöcke neben der Mitte
   const blk = st.obs.find(o => o.block && o.x < C.W / 2); const p = st.p[0]; p.x = blk.x + 120;
   let stood = false;
   run(st, 1.6, (t, s) => ({ l: s.p[0].x > blk.x + 5 && t < 1, j: t > 0.02 && t < 0.4 }), undefined, s => { keepBall(s); if (s.p[0].onG && Math.abs(s.p[0].y + (FOOT + SR) - blk.y) < 2) stood = true; });
   check("Auf einen Block springen und stehen", stood, "");
-  const st2 = setup({ arena: "stadion", rules: { obs: 1 } }); const b2 = st2.obs.find(o => o.block && o.x < C.W / 2); const q = st2.p[0];
+  const st2 = setup({ arena: "vulkan", rules: { obs: 1 } }); const b2 = st2.obs.find(o => o.block && o.x < C.W / 2); const q = st2.p[0];
   q.x = b2.x; q.y = b2.y - (FOOT + SR); q.onG = true;
   run(st2, 1, () => ({ r: true }), undefined, s => keepBall(s));
   check("Vom Block runterlaufen landet am Boden", st2.p[0].onG && Math.abs(st2.p[0].y - rest(st2.p[0])) < 1, "y " + st2.p[0].y.toFixed(0));
 }
 { // Von unten gegen hohe Plattform: Kopfstoß, nicht durch
-  const st = setup({ arena: "stadion", rules: { obs: 2 } }); // Treppe: obere Plattform y 420
+  // eigene Test-Plattform (die echten hohen Plattformen sind nur für den Ball, an y 420 kommt man mit dem Kopf)
+  LY.LAYOUTS.stadion.push({ items: [{ t: "plat", dx: 300, y: 420, w: 120 }] });
+  const st = setup({ arena: "stadion", rules: { obs: LY.LAYOUTS.stadion.length - 1 } }); LY.LAYOUTS.stadion.pop();
   const pl = st.obs.find(o => !o.block && o.x < C.W / 2); const p = st.p[0]; p.x = pl.x;
   let minTop = 1e9, bonk = 0;
   run(st, 0.8, t => ({ j: t < 0.5 }), undefined, s => { keepBall(s); minTop = Math.min(minTop, s.p[0].y - P.pr(s.p[0])); for (const e of s.ev.splice(0)) if (e.t === "bonk") bonk++; });
@@ -458,10 +460,10 @@ const LY = await import("../../js/content/layouts.js");
   check("Riesenkopf unter dem Aufzug: kein Ruck (Review)", mx <= 12, mx.toFixed(1) + " px pro Schritt");
 }
 { // Spezialschuss geht durch Hindernisse
-  const st = setup({ arena: "stadion", rules: { obs: 1 } }); const p = st.p[0]; p.x = C.W / 2 - 40; st.b.x = C.W / 2; st.b.y = 560; st.b.vx = 0; st.b.vy = 0;
+  const st = setup({ arena: "stadion", rules: { obs: 0 } }); const pl = st.obs.find(o => o.x < C.W / 2); const p = st.p[0]; p.x = pl.x - 40; st.b.x = pl.x; st.b.y = 560; st.b.vx = 0; st.b.vy = 0;
   P.fireSuper(st, p, "meteor"); let minY = 1e9, fxAlive = 0;
   run(st, 0.5, () => ({}), () => ({}), s => { minY = Math.min(minY, s.b.y); if (s.b.fx) fxAlive++; });
-  check("Spezialschuss fliegt durch die Brücke (Review)", minY < 150 && fxAlive > 20, "höchster Punkt " + minY.toFixed(0));
+  check("Spezialschuss fliegt durch die Bande (Review)", minY < 150 && fxAlive > 20, "höchster Punkt " + minY.toFixed(0));
 }
 { // Anstoß in der Umlaufbahn: Ball wird nicht von den Monden getroffen
   let hits = 0, n = 0;

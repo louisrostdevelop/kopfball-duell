@@ -321,6 +321,10 @@ begin
     perform game.fail('level_required', (game.cfg('shop_level')->>it.rarity));
   end if;
   if it.kind in ('shoes', 'goalfx', 'emote', 'emoji') and not (item = any(game.cos_offer())) then perform game.fail('not_in_offer'); end if;
+  -- Neue Arena: erst im Saison-Pass ihrer Saison, danach im Shop (wie arenaInShop in js/app/profile.js)
+  if it.kind = 'arena' and it.meta ? 'season' and game.current_season() is not null and game.current_season() <= (it.meta->>'season')::integer then
+    perform game.fail('not_yet', it.meta->>'season');
+  end if;
   if exists (select 1 from game.inventory where player_id = p and item_id = item) then perform game.fail('already_owned'); end if;
   if price > 0 then perform game.book(p, currency, -price, 'buy', item); end if;
   perform game.give_item(p, item, 'buy_' || currency);

@@ -549,6 +549,10 @@ kbd { display: inline-block; font-family: var(--body); font-weight: 900; font-si
   background: linear-gradient(#5a6fae, #2b3a78); box-shadow: inset 0 -5px 0 rgb(0 0 0 / 25%), inset 0 3px 0 rgb(255 255 255 / 30%), 0 4px 0 var(--ink); }
 .tbtn svg { width: 40%; height: 40%; filter: drop-shadow(0 2px 0 var(--ink)); }
 .tbtn span { font-family: var(--display); font-size: 12px; letter-spacing: .03em; text-shadow: var(--o-sm); margin-top: 1px; }
+
+/* im Spiel halb durchsichtig: Tor, Ball und Hindernisse dahinter bleiben sichtbar (Handy quer: Buttons ragen ins Feld) */
+.tbtns .tbtn { opacity: .72; }
+.tbtns .tbtn.on, .tbtns .sup.ready { opacity: 1; }
 .tbtn.on { transform: translateY(3px) scale(.96); box-shadow: inset 0 -2px 0 rgb(0 0 0 / 25%), 0 1px 0 var(--ink); filter: brightness(1.15); }
 .big .kck { width: 104px; height: 104px; }
 .big .kck span { font-size: 14px; }

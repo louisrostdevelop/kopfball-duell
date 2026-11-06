@@ -27,7 +27,8 @@ export function catalogSql() {
   const items = [
     ...CHARS.map(c => ({ id: "head:" + c.id, kind: "head", rarity: rarityOf(c), coins: c.price, gems: GEM_PRICE[rarityOf(c)], meta: { name: c.name, super: c.super } })),
     ...BALLS.map(b => ({ id: "ball:" + b.id, kind: "ball", rarity: rarityOf(b), coins: b.price, gems: null, meta: { name: b.name } })),
-    ...ARENAS.map(a => ({ id: "arena:" + a.id, kind: "arena", rarity: rarityOf(a), coins: a.price, gems: null, meta: { name: a.name } })),
+    // Arenen: ab Level frei (nicht käuflich), neue erst im Saison-Pass, danach im Shop (Server prüft meta.season)
+    ...ARENAS.map(a => ({ id: "arena:" + a.id, kind: "arena", rarity: rarityOf(a), coins: a.level ? null : a.price, gems: null, meta: { name: a.name, ...(a.level ? { level: a.level } : {}), ...(a.season ? { season: a.season } : {}) } })),
     // Kosmetik: (noch) nicht im Shop, nur aus Kisten und zum Herstellen
     // Kosmetik: aus Kisten, herstellbar, im Shop nur im Wochenangebot (game.cos_offer)
     ...COSMETICS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: COS_PRICE[c.rarity].coins, gems: COS_PRICE[c.rarity].gems, meta: { n: c.n, ...(c.fx ? { fx: c.fx } : {}), ...(c.glyph ? { glyph: c.glyph } : {}) } })),

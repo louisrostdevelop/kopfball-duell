@@ -1,14 +1,36 @@
-// Hindernisse: Plattformen, Blöcke und Bumper gegen Spieler und Ball
+// Hindernisse: Plattformen, Blöcke, Bumper, Rampen, Geysire, Blasensäulen und Noclip-Türen gegen Spieler und Ball
 import { W, G, SR, FOOT, clamp } from "../../content/config.js";
+import { geyserState, rampY } from "../../content/layouts.js";
 import { collideCircle, ev, pr } from "./base.js";
-import { maxBall } from "./rules.js";
+import { ballG, gMul, maxBall } from "./rules.js";
 import { bombLand, endSlide } from "./tricks.js";
+import { PG, bv, pv } from "./tuning.js";
 
 // Spieler gegen Plattformen (draufstehen, von unten anstoßen, seitlich abprallen) und Bumper
 export function obsPlayer(st, p, dt, rest) {
   const r = pr(p), foot = (FOOT + SR) * p.sc;
   p.bonkT = Math.max(0, p.bonkT - dt);
+  p.onRamp = Math.max(0, (p.onRamp || 0) - 1);
   for (const o of st.obs) {
+    if (o.t === "ramp") {
+      const ys = rampY(o, p.x);
+      // am Ende der Schräge: direkt auf den Boden (sonst fällt man die letzten Pixel)
+      if (ys === null) { if (p.onRamp > 0 && p.vy >= 0 && p.y < rest && rest - p.y < 18 && Math.abs(p.x - o.x) < o.w) { p.y = rest; p.vy = 0; p.onG = true; } continue; }
+      const bot = p.y + foot;
+      // draufstehen, hochlaufen, und bergab am Boden bleiben (sonst hüpft man die Schräge runter)
+      if (p.vy >= -1 && (bot >= ys - 0.5 || (p.onRamp > 0 && ys - bot < 18))) {
+        if (!p.onG && p.bomb) bombLand(st, p);
+        else if (!p.onG && p.vy > 500) { ev(st, { t: "land", i: p.i, x: p.x, y: ys, v: p.vy }); p.land = 0.15; }
+        p.y = ys - foot; p.vy = 0; p.onG = true; p.djUsed = false; p.jHeld = false; p.bombLock = false; p.slick = false; p.onRamp = 2;
+      }
+      continue;
+    }
+    if (o.t === "geyser" || o.t === "bubbles") {
+      if (Math.abs(p.x - o.x) > o.w / 2 + r * 0.4 || p.y < o.top) continue;
+      if (o.t === "geyser" && geyserState(o, st.el).active) { p.vy = Math.min(p.vy, -pv(980)); p.onG = false; p.coy = 0; p.bomb = 0; if (p.slide > 0) endSlide(p); }
+      else if (o.t === "bubbles" && !p.onG && geyserState(o, st.el).active) p.vy -= 0.45 * PG() * gMul(st) * dt;   // Auftrieb: fällt langsamer, springt höher
+      continue;
+    }
     if (o.t === "plat") {
       const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2, y0 = o.y, y1 = o.y + o.h;
       const L = p.x - r * 0.8, R = p.x + r * 0.8, top = p.y - r, bot = p.y + foot;
@@ -53,9 +75,28 @@ export function obsPlayer(st, p, dt, rest) {
 // Ball gegen Plattformen und Bumper
 export function obsBall(st, b, dt) {
   const e = clamp(0.62 * (st.rules.bounce || 1), 0.35, 0.92);
+  b.portT = Math.max(0, (b.portT || 0) - dt);
+  for (const o of st.obs) if (o.t === "ramp") rampBall(st, b, o, e);   // Rampen sind Boden: auch für Spezialschüsse
   if (b.fx && b.fx !== "bouncy" && b.fx !== "giant") return; // Spezialschüsse gehen durch Hindernisse
   for (const o of st.obs) {
-    if (o.t === "plat") {
+    if (o.t === "geyser") {
+      // Tempo so, dass der Ball knapp über der Fontäne umkehrt (bleibt im Bild, auch auf dem Handy)
+      if (Math.abs(b.x - o.x) < o.w / 2 + b.r * 0.3 && b.y > o.top + 10 && geyserState(o, st.el).active) {
+        const v = Math.sqrt(2 * ballG(st) * (b.y - (o.top - 30)));
+        if (b.vy > -v + 1) { if (b.vy > -v * 0.6) ev(st, { t: "obs", x: b.x, y: b.y, v, k: "geyser" }); b.vy = -v; }
+        b.vx *= 1 - 2 * dt;
+      }
+    } else if (o.t === "bubbles") {
+      // sprudelt im Takt: hebt den Ball, dann sinkt er wieder (so bleibt er nie oben hängen)
+      if (Math.abs(b.x - o.x) < o.w / 2 && b.y > o.top && geyserState(o, st.el).active) { b.vy -= ballG(st) * 1.5 * dt; if (b.vy < -bv(380)) b.vy = -bv(380); }
+    } else if (o.t === "portal") {
+      // nur in Richtung des eigenen Tors: rettet den Ball auf die andere Seite (Richtung Mitte geht man einfach durch)
+      if (b.portT > 0 || o.to < 0 || Math.abs(b.x - o.x) > o.w / 2 || b.y < o.y || b.y > o.y + o.h || Math.sign(b.vx) !== Math.sign(o.x - W / 2)) continue;
+      const q = st.obs[o.to], dy = b.y - o.y;
+      b.x = q.x + Math.sign(b.vx || 1) * (q.w / 2 + b.r + 2); b.y = q.y + dy; b.portT = 0.6;
+      ev(st, { t: "noclip", x: o.x, y: o.y + o.h / 2, x2: q.x });
+      break;
+    } else if (o.t === "plat") {
       const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2, y0 = o.y, y1 = o.y + o.h;
       const cx = clamp(b.x, x0, x1), cy = clamp(b.y, y0, y1), dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
       if (d >= b.r) continue;
@@ -83,5 +124,37 @@ export function obsBall(st, b, dt) {
       if (sp > 0) { b.vx *= want / sp; b.vy *= want / sp; }
       ev(st, { t: "obs", x: b.x - hit.nx * b.r, y: b.y - hit.ny * b.r, v: want, k: "bump" });
     }
+  }
+}
+
+// Ball gegen Rampe: Kreis gegen die Kanten (Schrägen und Oberseite); steckt er drin, nach oben raus
+function rampBall(st, b, o, e) {
+  const a = o.x - o.top / 2, c = o.x + o.top / 2, x0 = a - o.L, x1 = c + o.R, yt = G - o.h;
+  if (b.x + b.r < x0 || b.x - b.r > x1 || b.y + b.r < yt) return;
+  const ys = rampY(o, b.x);
+  if (ys !== null && b.y > ys) { b.y = ys - b.r; if (b.vy > 0) b.vy = -b.vy * e * 0.5; }
+  const segs = [[x0, G, a, yt], ...(o.top > 0 ? [[a, yt, c, yt]] : []), [c, yt, x1, G]];
+  for (const [ax, ay, bx, by] of segs) {
+    const sx = bx - ax, sy = by - ay, l2 = sx * sx + sy * sy, k = clamp(((b.x - ax) * sx + (b.y - ay) * sy) / l2, 0, 1);
+    const px = ax + sx * k, py = ay + sy * k, dx = b.x - px, dy = b.y - py, d = Math.hypot(dx, dy);
+    if (d >= b.r || d === 0 || dy > 0) continue;   // nur von oben/außen
+    const nx = dx / d, ny = dy / d;
+    b.x = px + nx * b.r; b.y = py + ny * b.r;
+    const dot = b.vx * nx + b.vy * ny;
+    if (dot < 0) {
+      const ee = -dot < 120 ? 0 : e * 0.8;   // rollt sanft, prallt bei Wucht ab
+      b.vx -= (1 + ee) * dot * nx; b.vy -= (1 + ee) * dot * ny;
+      if (-dot > 380) ev(st, { t: "obs", x: px, y: py, v: -dot, k: "ramp" });
+    }
+  }
+}
+
+// Einmal pro Schritt: Geysire melden ihren Ausbruch (Sound, Effekt); gleicher Takt für beide Seiten
+export function obsTick(st) {
+  for (const o of st.obs) {
+    if (o.t !== "geyser") continue;
+    const on = geyserState(o, st.el).active;
+    if (on && !o.was) ev(st, { t: "geyser", x: o.x, y: G });
+    o.was = on;
   }
 }

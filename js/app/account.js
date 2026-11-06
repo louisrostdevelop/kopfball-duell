@@ -59,7 +59,8 @@ export const serverState = () => last;
 /** Einstecken (main.js, nach provide): Käufe und Tagesbonus laufen dann über den Server */
 export function initAccount() {
   if (!online()) return;
-  setHooks({ buy: confirmBuy, canBuy, serverDaily: true, serverChests: true });
+  // Saison für neue Arenen (Pass zuerst, danach Shop): 0 = Stand noch nicht geladen, null = keine Saison
+  setHooks({ buy: confirmBuy, canBuy, serverDaily: true, serverChests: true, season: () => (last ? (last.season ? last.season.id : null) : 0) });
   globalThis.addEventListener?.("online", () => { netDown = false; syncPending(); });
   globalThis.document?.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncPending(); });
 }
