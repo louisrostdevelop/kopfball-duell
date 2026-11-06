@@ -5,6 +5,7 @@ import { S } from "../../app/profile.js";
 import { onSync, openChest } from "../../app/account.js";
 import { App } from "../../app/state.js";
 import { avatarCanvas, shoeCanvas } from "../render/art.js";
+import { chestSvg } from "../render/chest-art.js";
 import { refreshTop } from "./home.js";
 import { $, esc, modal, toast } from "../dom.js";
 import { registerScreen, showScreen } from "../nav.js";
@@ -13,13 +14,16 @@ import { num, t } from "../../content/i18n.js";
 
 const pct = p => num(p >= 0.1 ? Math.round(p * 100) : Math.round(p * 1000) / 10) + " %";
 
-/** Kiste als Bild (CSS), Farben nach Stufe */
+/** Kiste als Bild (SVG, chest-art.js) */
 export function chestEl(tier, size = 96) {
-  const c = CHESTS[tier], d = document.createElement("span");
-  d.className = "chest"; d.style.setProperty("--c1", c.c1); d.style.setProperty("--c2", c.c2); d.style.setProperty("--s", size + "px");
-  d.innerHTML = "<i class=\"lid\"></i><i class=\"box\"></i><i class=\"lock\"></i>";
+  const d = document.createElement("span");
+  d.className = "chest t-" + tier; d.style.setProperty("--s", size + "px");
+  d.innerHTML = chestSvg(tier);
   return d;
 }
+// Leuchtfarbe der Enthüllung nach bester Seltenheit
+const RC = { basis: "#fff1a0", selten: "#4fc3ff", episch: "#c084ff", legend: "#ffd23f" };
+const RANK = { basis: 0, selten: 1, episch: 2, legend: 3 };
 
 /** Platzhalter-Symbol für Kosmetik: einfache Form in der Farbe des Gegenstands */
 export function cosIcon(id, size = 56) {
@@ -62,35 +66,60 @@ export async function openChestOverlay(c) {
   const tier = c.tier;
   busy = true;
   const ov = $("chestOpen"), stage = $("coStage"), cards = $("coCards");
-  stage.innerHTML = ""; cards.innerHTML = ""; $("coNext").hidden = true; $("coDone").hidden = true;
-  const ch = chestEl(tier, 150); ch.classList.add("shake"); stage.append(ch);
+  stage.className = "co-stage"; stage.innerHTML = '<div class="co-rays"></div>'; cards.innerHTML = ""; $("coNext").hidden = true; $("coDone").hidden = true;
+  stage.style.removeProperty("--rc");
+  // 1. Kiste fällt herein, 2. wackelt, bis der Server geantwortet hat (mindestens 1 s)
+  const ch = chestEl(tier, 180); ch.classList.add("drop"); stage.append(ch);
   ov.hidden = false; A.sfx("click");
+  const wait = ms => new Promise(res => { setTimeout(res, ms); });
+  const shake = { on: true };
+  (async () => { await wait(420); if (!shake.on) return; ch.classList.remove("drop"); ch.classList.add("shake"); while (shake.on) { A.sfx("chest-shake"); await wait(260); } })();
   let r;
-  try { [r] = await Promise.all([openChest(c.id), new Promise(res => { setTimeout(res, 900); })]); }
-  catch (e) { ov.hidden = true; busy = false; toast(t(e && e.code === "offline" ? "sync.buyOffline" : "chest.failed"), "i-lock"); return; }
-  ch.classList.remove("shake"); ch.classList.add("open"); A.sfx("levelup");
+  try { [r] = await Promise.all([openChest(c.id), wait(1000)]); }
+  catch (e) { shake.on = false; ov.hidden = true; busy = false; toast(t(e && e.code === "offline" ? "sync.buyOffline" : "chest.failed"), "i-lock"); return; }
+  shake.on = false;
+  // Beste Seltenheit bestimmt Farbe und Größe der Enthüllung; der beste Gegenstand kommt zuletzt
+  const isHead = it => it.id.startsWith("head:");
+  const items = [...r.items].sort((p, q) => isHead(p) - isHead(q) || RANK[p.rarity] - RANK[q.rarity]);
+  const best = items.reduce((m, it) => (RANK[it.rarity] > RANK[m] ? it.rarity : m), "basis");
+  const newHead = items.some(it => isHead(it) && !it.dup), big = newHead || best === "legend";
+  stage.style.setProperty("--rc", RC[best]);
+  // 3. kurz aufladen (bei Legendär länger), 4. Deckel springt auf, Strahlen, Funken
+  ch.classList.remove("shake", "drop"); ch.classList.add("charge");
+  await wait(big ? 650 : 380);
+  ch.classList.remove("charge"); ch.classList.add("open"); stage.classList.add("open"); stage.classList.toggle("big", big);
+  A.sfx("chest-open");
+  setTimeout(() => A.sfx(newHead ? "chest-head" : "chest-" + (best === "basis" ? "selten" : best)), 120);
+  for (let i = 0; i < (big ? 26 : 16); i++) {
+    const s = document.createElement("i"), a = (i / (big ? 26 : 16)) * Math.PI * 2 + Math.random() * 0.3, d = 110 + Math.random() * (big ? 170 : 90);
+    s.className = "cospark"; s.style.setProperty("--dx", Math.cos(a) * d + "px"); s.style.setProperty("--dy", Math.sin(a) * d * 0.8 - 30 + "px");
+    s.style.animationDelay = Math.random() * 0.12 + "s"; stage.append(s);
+  }
+  if (big) { const f = document.createElement("div"); f.className = "co-flash"; ov.append(f); setTimeout(() => f.remove(), 700); }
+  // 5. Karten fliegen aus der Kiste
   const list = [];
-  if (r.coins) list.push({ html: `<span class="coin big"></span><b>+${num(r.coins)}</b>`, cls: "basis" });
-  if (r.gems) list.push({ html: `<span class="gem big"></span><b>+${num(r.gems)}</b>`, cls: "episch" });
-  for (const it of r.items) {
+  if (r.coins) list.push({ html: `<span class="coin big"></span><b>+${num(r.coins)}</b>`, cls: "basis", snd: "coin" });
+  if (r.gems) list.push({ html: `<span class="gem big"></span><b>+${num(r.gems)}</b>`, cls: "episch", snd: "coin" });
+  for (const it of items) {
     const [kind, id] = it.id.split(":"), el = document.createElement("div");
     el.append(kind === "head" ? avatarCanvas(id, 76, { mood: "happy" }) : cosIcon(it.id, 66));
     const sub = it.dup ? (it.headXp ? t("chest.headXp", { n: it.headXp }) : t("chest.dupShards", { n: it.shards })) : t("chest.new");
     el.insertAdjacentHTML("beforeend", `<b>${esc(itemName(it.id))}</b><small>${RARITY[it.rarity]}${kind === "head" ? " · " + t("chest.head") : ""}</small><em class="${it.dup ? "dup" : "new"}">${sub}</em>`);
-    list.push({ el, cls: it.rarity });
+    list.push({ el, cls: it.rarity + (kind === "head" && !it.dup ? " newhead" : ""), snd: it.dup && it.shards ? "shards" : "chest-item" });
   }
+  const t0 = 480;
   list.forEach((x, i) => setTimeout(() => {
     const d = document.createElement("div"); d.className = "cocard r-" + x.cls;
     if (x.el) d.append(...x.el.childNodes); else d.innerHTML = x.html;
-    cards.append(d); A.sfx(i ? "coin" : "goal");
-  }, 350 + i * 380));
+    cards.append(d); A.sfx(x.snd);
+  }, t0 + i * 360));
   setTimeout(() => {
     busy = false; refreshTop();
     const more = S.chests.some(x => x.tier === tier);
     $("coNext").hidden = !more; $("coDone").hidden = false;
     $("coNext").onclick = () => openNext(tier);
     if (App.screen === "chests") render();
-  }, 450 + list.length * 380);
+  }, t0 + 120 + list.length * 360);
 }
 
 function oddsModal() {

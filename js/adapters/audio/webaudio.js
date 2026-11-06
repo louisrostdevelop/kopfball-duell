@@ -84,6 +84,15 @@ export function sfx(kind, v = 1) {
     case "wallhit": osc("square", 400, 200, 0.12, 0.12); break;
     case "bumper": osc("triangle", 260, 780, 0.14, 0.3 * Math.min(1.3, 0.6 + v)); osc("sine", 520, 1400, 0.1, 0.12, 0.03); break;
     case "ohh": noise(1.1, 0.25, "bandpass", 500, 0.8, 0, 380); break;
+    // Kisten (Namen wie in docs/SOUNDS.md): wackeln, aufspringen, Enthüllung nach Seltenheit (alles in C), je Gegenstand ein Tick
+    case "chest-shake": noise(0.06, 0.12, "bandpass", 1800 + Math.random() * 900, 3); osc("triangle", 180, 140, 0.05, 0.08); break;
+    case "chest-open": osc("sine", 140, 60, 0.25, 0.5); noise(0.35, 0.3, "highpass", 1500, 0.7, 0, 7000); osc("triangle", 523, 1047, 0.18, 0.1, 0.03); break;
+    case "chest-selten": [523, 659, 784].forEach((f, i) => osc("triangle", f, f, 0.22, 0.1, i * 0.08)); break;
+    case "chest-episch": [523, 659, 784, 1047].forEach((f, i) => osc("triangle", f, f, 0.26, 0.11, i * 0.08)); osc("sine", 1568, 1568, 0.5, 0.05, 0.32); break;
+    case "chest-legend": [523, 659, 784, 1047, 1319].forEach((f, i) => { osc("square", f, f, 0.2, 0.06, i * 0.07); osc("triangle", f, f, 0.5, 0.07, i * 0.07); }); [262, 330, 392].forEach(f => osc("sawtooth", f, f, 1.1, 0.05, 0.35)); noise(1.2, 0.1, "highpass", 6000, 0.5, 0.3); break;
+    case "chest-head": [392, 523, 659, 784, 1047, 1319, 1568].forEach((f, i) => { osc("square", f, f, 0.18, 0.07, i * 0.06); osc("triangle", f, f, 0.6, 0.07, i * 0.06); }); [262, 330, 392, 523].forEach(f => osc("sawtooth", f, f, 1.4, 0.05, 0.42)); break;
+    case "chest-item": osc("triangle", 1047, 1047, 0.08, 0.1); osc("sine", 2093, 2093, 0.12, 0.04, 0.02); break;
+    case "shards": [2637, 3136, 3951].forEach((f, i) => osc("sine", f, f * 0.98, 0.25, 0.05, i * 0.04)); noise(0.15, 0.08, "highpass", 7000); break;
     // Torexplosionen (goalfx.js): je ein eigener Sound
     case "gfx-67": [0, 0.22, 0.44, 0.66, 0.88].forEach((t, i) => { const f = i % 2 ? 659 : 523; osc("square", f, f, 0.12, 0.09, t); osc("sine", f / 2, f / 4, 0.12, 0.2, t); }); break;
     case "gfx-crash": noise(0.6, 0.55, "highpass", 3500, 0.7, 0, 9000); osc("sine", 110, 35, 0.4, 0.7); [0.02, 0.06, 0.11, 0.17, 0.24].forEach(t => osc("triangle", 2400 + Math.random() * 2600, 1800, 0.12, 0.08, t)); noise(1.2, 0.2, "highpass", 2500, 0.5, 0.3); break;

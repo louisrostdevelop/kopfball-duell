@@ -11,7 +11,7 @@ const S = page => page.evaluate(async () => JSON.parse(JSON.stringify((await imp
 for (const [name, view] of [["Desktop", VIEW.desktop], ["Handy quer", VIEW.phone]]) test(`Ausrüstung (${name})`, async () => {
   const { page, errors } = await openPage(env, view, { save: { shards: 60, cos: ["shoes:1", "shoes:3", "goalfx:7", "emoji:3"] } });
   await click(page, "#navChests", 300); await click(page, "#btnLocker", 400);
-  assert.equal(await page.locator("#lockerGrid .lcard").count(), 12, "12 Paar Schuhe");
+  assert.equal(await page.locator("#lockerGrid .lcard").count(), 10, "10 Paar Schuhe");
   assert.equal(await page.locator('#lockerTabs [data-tab="hat"]').count(), 0, "keine Hüte");
   await click(page, '#lockerGrid [data-id="shoes:3"]');
   assert.equal((await S(page)).equip.shoes, "shoes:3");

@@ -175,7 +175,7 @@ der Client lokal mit denselben Tabellen.
 
 ## Reihenfolge beim Bauen
 
-1. **Kisten und Level-Belohnungen.** Server, Öffnen-Bildschirm, Chancen-Anzeige, Splitter, Garantien. *(fertig; Herstellen-Oberfläche kommt mit 2)*
+1. **Kisten und Level-Belohnungen.** Server, Öffnen-Bildschirm, Chancen-Anzeige, Splitter, Garantien. *(fertig; Kisten als SVG in 4 Stufen, `js/ui/render/chest-art.js`; Öffnen: hereinfallen, wackeln, aufladen in der Farbe der besten Seltenheit, Deckel springt auf, Strahlen und Funken, Karten fliegen heraus, der beste Gegenstand zuletzt; bei Legendär oder neuem Kopf größer mit Blitz. Sounds siehe docs/SOUNDS.md)*
 2. **Kosmetik:** Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig; Schuhe sind echte Skins, Torexplosionen und Emotes nach Meme-Trends, Rahmen und Meisterschafts-Inhalte Platzhalter)*
 3. **Wochenaufgaben, Erfolgs-Stufen, Meisterschaft, Freundes-Herausforderungen.** *(Wochenaufgaben, Erfolgs-Stufen, Meisterschaft und die Kisten für Tagesaufgaben, Tages-Challenge und Karriere fertig; Freundes-Herausforderungen brauchen erst vom Server gewertete Freundesspiele, Spiele unter Freunden laufen bisher ohne Server)*
 4. **Shop-Umbau:** neue Kopf-Preise, Level-Sperren, wöchentliche Kosmetik. *(fertig)*
