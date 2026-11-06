@@ -16,9 +16,10 @@ async function grant(s: Stripe.Checkout.Session) {
   const pi = typeof s.payment_intent === "string" ? s.payment_intent : s.payment_intent?.id;
   const player = s.metadata?.player_id, product = s.metadata?.product_id;
   if (!pi || !player || !product) return "no_metadata";
+  // Tatsächlich bezahlter Betrag (nach Rabatten); Währung muss passen, sonst bucht grant_purchase nicht
   const { error } = await db.rpc("grant_purchase", {
     player, provider: "stripe", provider_ref: pi, product,
-    amount_cents: s.amount_subtotal ?? s.amount_total ?? 0, currency: (s.currency ?? "eur").toUpperCase(),
+    amount_cents: s.amount_total ?? 0, currency: (s.currency ?? "").toUpperCase(),
   });
   if (!error) return "granted";
   // Kauf, der nicht gutgeschrieben werden kann (z. B. Starterpaket zweimal in zwei Tabs): Geld sofort zurück
@@ -49,6 +50,8 @@ Deno.serve(async (req) => {
       case "charge.refunded":
       case "charge.dispute.created": {   // Erstattung oder Rückbuchung: Juwelen zurück, soweit noch da
         const o = event.data.object as Stripe.Charge | Stripe.Dispute;
+        // Teil-Erstattung (Kulanz) holt nichts zurück; nur volle Erstattung oder Rückbuchung
+        if (event.type === "charge.refunded" && !(o as Stripe.Charge).refunded) { result = "partial_refund_ignored"; break; }
         const pi = typeof o.payment_intent === "string" ? o.payment_intent : o.payment_intent?.id;
         if (pi) {
           const { error } = await db.rpc("refund_purchase", { provider: "stripe", provider_ref: pi });

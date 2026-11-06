@@ -8,6 +8,8 @@ cd "$(dirname "$0")/../.."
 command -v supabase >/dev/null || { echo "Supabase CLI fehlt: npm i -g supabase  (oder brew install supabase/tap/supabase)"; exit 1; }
 echo "1/5 Projekt verknüpfen"; supabase link --project-ref "$REF" ${SUPABASE_DB_PASSWORD:+-p "$SUPABASE_DB_PASSWORD"}
 echo "2/5 Migrationen";      supabase db push --include-all
+                           # Projekt-Einstellungen aus config.toml (freigegebenes Schema "api", Gast-Anmeldung, Passwortregeln, ...)
+                           supabase config push --project-ref "$REF" || echo "   config push nicht möglich: Einstellungen von Hand setzen (docs/BACKEND.md)"
 echo "3/5 Katalog";          psql "${SUPABASE_DB_URL:?SUPABASE_DB_URL fehlt (Dashboard -> Connect -> Session pooler)}" -q -v ON_ERROR_STOP=1 -f supabase/catalog.sql
                            [ "$(psql "$SUPABASE_DB_URL" -qtAX -c 'select count(*) from game.seasons')" = 0 ] && psql "$SUPABASE_DB_URL" -q -v ON_ERROR_STOP=1 -f supabase/ops/new-season.sql && echo "   erste Saison angelegt"
 echo "4/5 Edge Functions";   for f in supabase/functions/*/; do n=$(basename "$f"); [ "$n" = "_shared" ] || supabase functions deploy "$n" --project-ref "$REF"; done

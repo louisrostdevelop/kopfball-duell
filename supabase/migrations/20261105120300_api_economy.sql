@@ -50,11 +50,11 @@ language plpgsql security definer set search_path = '' as $$
 declare p uuid := game.me(); pr game.progress; streak integer; amount integer;
 begin
   select * into pr from game.progress where player_id = p for update;
-  if pr.daily_last = current_date then perform game.fail('already_claimed'); end if;
-  streak := case when pr.daily_last = current_date - 1 then least(7, pr.daily_streak + 1) else 1 end;
+  if pr.daily_last = game.today() then perform game.fail('already_claimed'); end if;
+  streak := case when pr.daily_last = game.today() - 1 then least(7, pr.daily_streak + 1) else 1 end;
   amount := 40 + streak * 30;
-  update game.progress set daily_last = current_date, daily_streak = streak where player_id = p;
-  perform game.book(p, 'coins', amount, 'daily', current_date::text);
+  update game.progress set daily_last = game.today(), daily_streak = streak where player_id = p;
+  perform game.book(p, 'coins', amount, 'daily', game.today()::text);
   return jsonb_build_object('amount', amount, 'streak', streak, 'state', game.state_brief(p));
 end $$;
 
@@ -63,13 +63,13 @@ create or replace function game.ensure_tasks(p uuid) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare t jsonb;
 begin
-  select tasks into t from game.progress where player_id = p and tasks_day = current_date;
+  select tasks into t from game.progress where player_id = p and tasks_day = game.today();
   if t is not null then return t; end if;
-  select coalesce(jsonb_agg(jsonb_build_object('id', d.id, 'n', d.goals[1 + ((hashtext(d.id || current_date::text)::bigint % array_length(d.goals, 1)) + array_length(d.goals, 1)) % array_length(d.goals, 1)],
-                                               'prog', 0, 'done', false, 'reward', d.reward) order by md5(current_date::text || d.id)), '[]')
+  select coalesce(jsonb_agg(jsonb_build_object('id', d.id, 'n', d.goals[1 + ((hashtext(d.id || game.today()::text)::bigint % array_length(d.goals, 1)) + array_length(d.goals, 1)) % array_length(d.goals, 1)],
+                                               'prog', 0, 'done', false, 'reward', d.reward) order by md5(game.today()::text || d.id)), '[]')
     into t
-    from (select * from game.task_defs where active order by md5(current_date::text || id) limit 3) d;
-  update game.progress set tasks = t, tasks_day = current_date where player_id = p;
+    from (select * from game.task_defs where active order by md5(game.today()::text || id) limit 3) d;
+  update game.progress set tasks = t, tasks_day = game.today() where player_id = p;
   return t;
 end $$;
 
@@ -90,7 +90,7 @@ begin
     end if;
     out := out || e;
   end loop;
-  update game.progress set tasks = out where player_id = p;
+  if out is distinct from t then update game.progress set tasks = out where player_id = p; end if;
   return done;
 end $$;
 
@@ -112,14 +112,17 @@ begin
       got := got || to_jsonb(a.id);
     end if;
   end loop;
-  update game.progress set achievements = ach where player_id = p;
+  if jsonb_array_length(got) > 0 then update game.progress set achievements = ach where player_id = p; end if;
   return got;
 end $$;
 
 -- ---------- Spiel gegen den Computer melden ----------
--- r: {"mode":"cpu|career|endless|daily|local|train","won":bool,"goals":n,"conceded":n,"duration":s,"head":"kalle","diff":0-3,
---     "stats":{"headGoals":n,"pus":n,"stomps":n,"supers":n}, "facts":["hattrick","cleansheet",...]}
--- Belohnung rechnet der Server. Tagesdeckel gegen Farmen.
+-- r: {"mode":"cpu|career|endless|daily|local|train","won":bool,"goals":n,"conceded":n,"duration":s,"head":"head:kalle","diff":0-3,
+--     "cup":bool, "stats":{"headGoals":n,"pus":n,"stomps":n,"supers":n}, "facts":["supergoal","lastsec",...]}
+-- Belohnung rechnet der Server. Gegen Farmen:
+--  - Zeitkonto: gemeldete Spielzeit kann nicht schneller vergehen als echte Zeit (Vorrat cpu_time_bank für Nachgereichtes)
+--  - Tagesdeckel für Münzen (weich, dann hart) und für belohnte Spiele (cpu_daily_matches), danach gibt es nichts mehr
+--  - Statistik und Erfolge müssen zum Ergebnis passen; Training gibt keine Belohnung
 create or replace function api.report_cpu_match(r jsonb, request_key text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -127,8 +130,10 @@ declare
   goals integer := coalesce((r->>'goals')::integer, 0); conceded integer := coalesce((r->>'conceded')::integer, 0);
   dur integer := coalesce((r->>'duration')::integer, 0); diff integer := coalesce((r->>'diff')::integer, 1);
   head text := r->>'head'; base integer; coins integer; capped integer; cap integer; used integer; pr game.progress;
-  gained_xp integer; ups jsonb; tasks_done jsonb; achs jsonb; facts text[]; st jsonb; s jsonb := coalesce(r->'stats', '{}');
-  res jsonb; hx integer; farmed boolean := false; bonus integer := 0;
+  gained_xp integer; ups jsonb; tasks_done jsonb; achs jsonb; facts text[]; s jsonb := coalesce(r->'stats', '{}');
+  res jsonb; hx integer; farmed boolean := false; bonus integer := 0; today date := game.today();
+  hg integer; sup integer; pus integer; stomps integer; credit numeric; matches integer; challenge boolean := false;
+  streak integer; best integer; ended integer := null;
 begin
   prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
   perform game.limit_rate(p, 'cpu_match', 6, interval '1 minute');
@@ -138,48 +143,64 @@ begin
   if goals < 0 or goals > 30 or conceded < 0 or conceded > 30 then perform game.fail('implausible', 'score'); end if;
   if diff < 0 or diff > 3 then perform game.fail('implausible', 'diff'); end if;
   if goals > dur / 3 + 1 then perform game.fail('implausible', 'goal_rate'); end if;
-  if won and goals <= conceded and mode <> 'endless' then perform game.fail('implausible', 'won'); end if;
+  if won and goals <= conceded then perform game.fail('implausible', 'won'); end if;
   if head is null or not exists (select 1 from game.heads where player_id = p and head_id = head) then perform game.fail('head_not_owned'); end if;
   if exists (select 1 from jsonb_each_text(s) x where x.value !~ '^\d{1,3}$') then perform game.fail('implausible', 'stats'); end if;
+  hg := coalesce((s->>'headGoals')::integer, 0); sup := coalesce((s->>'supers')::integer, 0);
+  pus := coalesce((s->>'pus')::integer, 0); stomps := coalesce((s->>'stomps')::integer, 0);
+  if hg > goals or pus > dur / 3 + 2 or stomps > dur / 2 + 2 or sup > dur / 8 + 3 then perform game.fail('implausible', 'stats'); end if;
+
+  select * into pr from game.progress where player_id = p for update;
+  -- Zeitkonto (Sekunden): wächst mit der echten Zeit bis zum Vorrat, jedes Spiel kostet seine Dauer
+  credit := least(game.cfg_int('cpu_time_bank'), coalesce(pr.cpu_credit, game.cfg_int('cpu_time_bank')) + extract(epoch from now() - coalesce(pr.last_cpu_at, now())));
+  if credit < dur * 0.8 then perform game.fail('implausible', 'too_fast'); end if;
 
   -- Münzen wie im Client, Faktor je Schwierigkeit
   base := case mode
     when 'local' then 20
-    when 'train' then 5
+    when 'train' then 0
     when 'endless' then case when won then 35 else 10 end
     else case when won then 40 else 12 end end;
   if mode in ('cpu', 'career', 'endless') then base := round(base * (game.cfg(('diff_mult'))->>diff)::numeric); end if;
-  coins := base + goals * 8 + case when won and conceded = 0 then 20 else 0 end;
+  coins := case when mode = 'train' then 0 else base + goals * 8 + case when won and conceded = 0 then 20 else 0 end end;
 
-  -- Tagesdeckel
-  select * into pr from game.progress where player_id = p for update;
-  used := case when pr.cap_day = current_date then pr.cap_cpu_coins else 0 end;
+  -- Tagesdeckel: bis zum Deckel voll, danach nur noch ein Anteil; ab der harten Grenze oder zu vielen Spielen nichts mehr
+  used := case when pr.cap_day = today then pr.cap_cpu_coins else 0 end;
+  matches := case when pr.cap_day = today then pr.cap_matches else 0 end;
   cap := game.cfg_int('cpu_daily_cap');
-  -- bis zum Deckel voll, danach nur noch ein Anteil (used zählt alle heute erhaltenen Münzen)
   capped := least(coins, greatest(0, cap - used));
   capped := capped + round((coins - capped) * game.cfg_num('cpu_after_cap'));
-  -- Harte Grenze gegen Bots: darüber gibt es heute gar nichts mehr (auch keine XP, Kopf-XP, Pass-Punkte)
-  farmed := used >= game.cfg_int('cpu_hard_cap');
+  farmed := used >= game.cfg_int('cpu_hard_cap') or matches >= game.cfg_int('cpu_daily_matches') or mode = 'train';
   if farmed then capped := 0; end if;
 
   -- Tages-Challenge: einmal am Tag die volle Belohnung, nicht gedeckelt
-  if mode = 'daily' and won and (pr.challenge_day is null or pr.challenge_day < current_date) then
-    update game.progress set challenge_day = current_date where player_id = p;
-    perform game.book(p, 'gems', 15, 'challenge', current_date::text);
-    bonus := 150;
+  if mode = 'daily' and won and (pr.challenge_day is null or pr.challenge_day < today) then
+    challenge := true; bonus := 150;
+    perform game.book(p, 'gems', 15, 'challenge', today::text);
   end if;
 
-  update game.progress set cap_day = current_date, cap_cpu_coins = used + capped,
+  -- Endlos: Serie zählt der Server mit; endet sie, kommt sie in die Bestenliste
+  streak := coalesce(pr.endless_streak, 0); best := coalesce(pr.endless_best, 0);
+  if mode = 'endless' then
+    if won then streak := streak + 1; else ended := streak; best := greatest(best, streak); streak := 0; end if;
+  end if;
+
+  -- Ein Schreibvorgang für den Fortschritt
+  update game.progress set cap_day = today, cap_cpu_coins = used + capped, cap_matches = matches + 1,
+         cpu_credit = credit - dur, last_cpu_at = now(),
+         challenge_day = case when challenge then today else challenge_day end,
+         endless_streak = streak, endless_best = best,
          stats = jsonb_build_object(
            'games', coalesce((stats->>'games')::integer, 0) + 1,
            'wins', coalesce((stats->>'wins')::integer, 0) + case when won then 1 else 0 end,
            'goals', coalesce((stats->>'goals')::integer, 0) + goals,
-           'headGoals', coalesce((stats->>'headGoals')::integer, 0) + coalesce((s->>'headGoals')::integer, 0),
-           'pus', coalesce((stats->>'pus')::integer, 0) + coalesce((s->>'pus')::integer, 0),
-           'stomps', coalesce((stats->>'stomps')::integer, 0) + coalesce((s->>'stomps')::integer, 0),
-           'supers', coalesce((stats->>'supers')::integer, 0) + coalesce((s->>'supers')::integer, 0),
+           'headGoals', coalesce((stats->>'headGoals')::integer, 0) + hg,
+           'pus', coalesce((stats->>'pus')::integer, 0) + pus,
+           'stomps', coalesce((stats->>'stomps')::integer, 0) + stomps,
+           'supers', coalesce((stats->>'supers')::integer, 0) + sup,
            'endlessWins', coalesce((stats->>'endlessWins')::integer, 0) + case when won and mode = 'endless' then 1 else 0 end)
    where player_id = p;
+  if ended is not null and ended > 0 then perform game.put_score(p, 'endless', ended); end if;
 
   if capped + bonus > 0 then perform game.book(p, 'coins', capped + bonus, 'match_' || mode, request_key); end if;
   gained_xp := case when farmed then 0 else round((capped + bonus) * 1.2) + 15 end;
@@ -188,17 +209,21 @@ begin
   update game.heads set xp = xp + hx, games = games + 1 where player_id = p and head_id = head;
   if not farmed then perform game.add_pass_points(p, case when won then 10 else 5 end); end if;
 
-  tasks_done := game.progress_tasks(p, jsonb_build_object('wins', case when won then 1 else 0 end, 'goals', goals,
-                 'headGoals', coalesce((s->>'headGoals')::integer, 0), 'supers', coalesce((s->>'supers')::integer, 0),
-                 'pus', coalesce((s->>'pus')::integer, 0), 'stomps', coalesce((s->>'stomps')::integer, 0),
-                 'hard', case when won and diff >= 2 and mode in ('cpu', 'career') then 1 else 0 end));
+  tasks_done := '[]';
+  if not farmed then
+    tasks_done := game.progress_tasks(p, jsonb_build_object('wins', case when won then 1 else 0 end, 'goals', goals,
+                   'headGoals', hg, 'supers', sup, 'pus', pus, 'stomps', stomps,
+                   'hard', case when won and diff >= 2 and mode in ('cpu', 'career') then 1 else 0 end,
+                   'cupRound', case when won and mode = 'cpu' and coalesce((r->>'cup')::boolean, false) then 1 else 0 end));
+  end if;
+  -- Erfolge: nur was zum Ergebnis passt
   facts := array(select jsonb_array_elements_text(coalesce(r->'facts', '[]')));
-  facts := array(select f from unnest(facts) f where f in ('hattrick', 'cleansheet', 'supergoal', 'lastsec', 'longshot', 'comeback'));
+  facts := array(select f from unnest(facts) f where (f in ('supergoal', 'lastsec', 'longshot') and goals >= 1) or (f = 'comeback' and won and conceded >= 2));
   if won then facts := array_append(facts, 'firstwin'); end if;
-  if won and conceded = 0 then facts := array_append(facts, 'cleansheet'); else facts := array_remove(facts, 'cleansheet'); end if;
-  facts := array_remove(facts, 'hattrick'); if goals >= 3 then facts := array_append(facts, 'hattrick'); end if;
+  if won and conceded = 0 then facts := array_append(facts, 'cleansheet'); end if;
+  if goals >= 3 then facts := array_append(facts, 'hattrick'); end if;
   if won and diff = 3 and mode = 'cpu' then facts := array_append(facts, 'legend'); end if;
-  achs := game.grant_achievements(p, facts);
+  achs := case when farmed then '[]'::jsonb else game.grant_achievements(p, facts) end;
 
   res := jsonb_build_object('coins', capped + bonus, 'coinsBeforeCap', coins + bonus, 'capReached', farmed, 'xp', gained_xp, 'levelUps', ups, 'headXp', hx,
                             'tasksDone', tasks_done, 'achievements', achs, 'state', game.state_brief(p));
@@ -237,7 +262,7 @@ begin
   need := game.cfg_int('head_xp_per_level') * h.level;
   missing := greatest(0, need - h.xp);
   if missing > 0 then
-    if not fill_with_gems then perform game.fail('not_enough_head_xp', missing::text); end if;
+    if not coalesce(fill_with_gems, false) then perform game.fail('not_enough_head_xp', missing::text); end if;
     gems := ceil(missing / 10.0) * game.cfg_int('head_gems_per_10xp');
     perform game.book(p, 'gems', -gems, 'head_xp', head);
   end if;
@@ -299,30 +324,40 @@ declare p uuid := game.me(); prev jsonb; s integer := game.current_season(); res
 begin
   prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
   if s is null then perform game.fail('no_season'); end if;
-  if exists (select 1 from game.pass_progress where player_id = p and season_id = s and premium) then perform game.fail('already_owned'); end if;
+  -- Zeile anlegen und sperren, dann prüfen: so kann der Kauf auch gleichzeitig nur einmal abbuchen
+  insert into game.pass_progress (player_id, season_id) values (p, s) on conflict do nothing;
+  if (select premium from game.pass_progress where player_id = p and season_id = s for update) then perform game.fail('already_owned'); end if;
   perform game.book(p, 'gems', -500, 'pass', s::text);
-  insert into game.pass_progress as pp (player_id, season_id, premium) values (p, s, true)
-  on conflict (player_id, season_id) do update set premium = true;
+  update game.pass_progress set premium = true where player_id = p and season_id = s;
   res := game.state(p);
   return game.idem_end(p, request_key, res);
 end $$;
 
 -- ---------- Alten Browser-Spielstand einmalig übernehmen (gedeckelt) ----------
+-- Einmalig den Spielstand aus der Zeit ohne Server übernehmen. Weil der lokale Stand frei änderbar ist:
+--  - nur in den ersten 24 h eines Kontos
+--  - Gegenstände (nur Münz-Inhalte) und Münzen zusammen höchstens import_coin_cap wert, billigste zuerst
 create or replace function api.import_local(local jsonb) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare p uuid := game.me(); it text; c integer; done boolean;
+declare p uuid := game.me(); it record; budget integer := game.cfg_int('import_coin_cap'); c integer; done boolean; born timestamptz;
 begin
-  select imported into done from game.progress where player_id = p for update;
+  select pr.imported, pl.created_at into done, born from game.progress pr join game.players pl on pl.id = pr.player_id where pr.player_id = p for update of pr;
   if done then perform game.fail('already_imported'); end if;
+  if born < now() - interval '24 hours' then perform game.fail('import_too_late'); end if;
   if octet_length(local::text) > 65536 then perform game.fail('too_large'); end if;
-  -- Nur Dinge, die man auch mit Münzen kaufen kann (keine Juwelen-Inhalte erschleichen)
-  for it in select 'head:' || x from jsonb_array_elements_text(coalesce(local->'chars', '[]')) x
-            union all select 'ball:' || x from jsonb_array_elements_text(coalesce(local->'balls', '[]')) x
-            union all select 'arena:' || x from jsonb_array_elements_text(coalesce(local->'arenas', '[]')) x loop
-    if exists (select 1 from game.items where id = it and price_coins is not null and active) then perform game.give_item(p, it, 'import'); end if;
+  for it in select i.id, i.price_coins from game.items i
+             where i.active and i.price_coins is not null and i.price_coins > 0
+               and i.id in (select 'head:' || x from jsonb_array_elements_text(coalesce(local->'chars', '[]')) x
+                            union select 'ball:' || x from jsonb_array_elements_text(coalesce(local->'balls', '[]')) x
+                            union select 'arena:' || x from jsonb_array_elements_text(coalesce(local->'arenas', '[]')) x)
+               and not exists (select 1 from game.inventory v where v.player_id = p and v.item_id = i.id)
+             order by i.price_coins loop
+    exit when it.price_coins > budget;
+    perform game.give_item(p, it.id, 'import');
+    budget := budget - it.price_coins;
   end loop;
-  -- Startguthaben hat das Server-Konto schon: nur was darüber hinaus lokal erspielt wurde
-  c := least(greatest(coalesce((local->>'coins')::integer, 0) - game.cfg_int('start_coins'), 0), game.cfg_int('import_coin_cap'));
+  -- Startguthaben hat das Server-Konto schon: nur was darüber hinaus lokal erspielt wurde, im Rest des Budgets
+  c := least(greatest(coalesce((local->>'coins')::integer, 0) - game.cfg_int('start_coins'), 0), budget);
   perform game.book(p, 'coins', c, 'import');
   update game.progress set imported = true where player_id = p;
   if local ? 'name' and local->>'name' <> '' then
@@ -331,10 +366,22 @@ begin
   return game.state(p);
 end $$;
 
+-- ---------- Konto löschen (DSGVO): alle Spielerdaten weg, Käufe bleiben ohne Personenbezug ----------
+create or replace function api.delete_account(confirm text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare p uuid := game.me();
+begin
+  if confirm is distinct from 'DELETE' then perform game.fail('confirm_required'); end if;
+  insert into game.erasures (user_id) values (p) on conflict do nothing;
+  delete from game.match_queue where player_id = p;
+  delete from auth.users where id = p;   -- löscht über Fremdschlüssel alle game-Daten mit
+  return jsonb_build_object('deleted', true);
+end $$;
+
 -- ---------- Rechte: nur angemeldete Spieler (auch anonyme Gäste) ----------
 -- Niemand außer ausdrücklich Berechtigten darf Funktionen ausführen
 revoke execute on all functions in schema api, game from public;
 
 grant execute on function api.me(), api.set_name(text), api.set_prefs(jsonb), api.claim_daily(),
   api.report_cpu_match(jsonb, text), api.buy_item(text, text, text), api.upgrade_head(text, boolean, text),
-  api.claim_pass(integer, boolean), api.buy_pass_with_gems(text), api.import_local(jsonb) to authenticated;
+  api.claim_pass(integer, boolean), api.buy_pass_with_gems(text), api.import_local(jsonb), api.delete_account(text) to authenticated;

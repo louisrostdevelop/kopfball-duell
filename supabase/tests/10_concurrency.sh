@@ -39,6 +39,13 @@ wait
 D=$(q "select count(*) from game.ledger where player_id = '$V' and reason = 'daily'")
 [ "$D" = "1" ] || fail "Tagesbonus $D-mal statt 1"
 
+# 3b) Premium-Pass mit Juwelen 10-mal gleichzeitig (verschiedene Schlüssel): nur einmal abgebucht
+q "select game.book('$V', 'gems', 2000, 'test')" >/dev/null
+for i in $(seq 1 10); do as_user "$V" "select api.buy_pass_with_gems('pass-key-000$i')" > /dev/null & done
+wait
+D=$(q "select count(*) from game.ledger where player_id = '$V' and reason = 'pass'")
+[ "$D" = "1" ] || fail "Pass $D-mal abgebucht statt 1"
+
 # 4) 40 Spieler suchen gleichzeitig Casual: jeder höchstens in einem Spiel, nie gegen sich selbst
 IDS=$(q "insert into auth.users (id, email, is_anonymous) select gen_random_uuid(), '$TAG-q' || g, true from generate_series(1, 40) g returning id")
 q "update game.players set level = 5 where id in (select id from auth.users where email like '$TAG-q%')" >/dev/null

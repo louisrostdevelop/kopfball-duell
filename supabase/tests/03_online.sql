@@ -51,6 +51,11 @@ begin
   assert ma->'opponent'->>'name' = 'Ben' and mb->'opponent'->>'name' = 'Anna', 'Gegnername';
   assert ma->'heads'->'p1'->>'head' = 'head:kalle' and (ma->'heads'->'p1'->>'level')::int = 1, 'Kopfwerte vom Server';
   m := (ma->>'match')::uuid;
+  -- Gleich melden geht nicht: ein Spiel dauert mindestens online_min_secs
+  perform pg_temp.login(a);
+  perform pg_temp.expect_error(format('select api.report_match(%L, ''{"score":[3,1],"duration":90}'')', m), 'implausible');
+  perform pg_temp.logout();
+  update game.matches set created_at = now() - interval '10 minutes' where id = m;
 
   -- Fremde dürfen nicht melden
   perform pg_temp.login(g);
@@ -78,10 +83,18 @@ begin
   assert (select sum(delta) from game.ledger where player_id = a and reason = 'match_ranked') = 70, 'Münzen Sieger';
   assert (select sum(delta) from game.ledger where player_id = b and reason = 'match_ranked') = 25, 'Münzen Verlierer';
   assert exists (select 1 from game.ledger where player_id = a and reason = 'achievement' and ref = 'online'), 'Erfolg Online-König';
+  -- Eigener Ranked-Platz und Stand des Spiels
+  perform pg_temp.login(a);
+  assert (api.my_ranked_rank()->>'rank')::int = 1 and (api.my_ranked_rank()->>'mmr')::int = 1016, 'Platz 1';
+  assert api.match_status(m)->>'status' = 'settled', 'Stand des Spiels';
+  perform pg_temp.logout();
+  perform pg_temp.login(b);
+  assert (api.my_ranked_rank()->>'rank')::int = 2, 'Platz 2';
+  perform pg_temp.logout();
 
   -- Widersprüchliche Meldungen -> strittig, Prüfdienst entscheidet
   delete from game.rate_limits;
-  insert into game.matches (mode, season_id, p1, p2, heads) values ('casual', null, a, b, '{"p1":{"head":"head:kalle","level":1},"p2":{"head":"head:yuki","level":1}}') returning id into m;
+  insert into game.matches (mode, season_id, p1, p2, heads, created_at) values ('casual', null, a, b, '{"p1":{"head":"head:kalle","level":1},"p2":{"head":"head:yuki","level":1}}', now() - interval '10 minutes') returning id into m;
   perform pg_temp.login(a); perform api.report_match(m, '{"score":[2,0],"duration":90,"inputs":"aa"}'); perform pg_temp.logout();
   perform pg_temp.login(b); r := api.report_match(m, '{"score":[0,2],"duration":90,"inputs":"bb"}'); perform pg_temp.logout();
   assert r->>'status' = 'disputed', 'strittig';
@@ -91,18 +104,26 @@ begin
   assert r->>'status' = 'settled' and (r->'result'->>'winner')::int = 2, 'Prüfdienst entscheidet';
 
   -- Bestenliste
+  update game.progress set endless_best = 12 where player_id = a;
+  update game.progress set endless_best = 15 where player_id = b;
   perform pg_temp.login(a);
-  perform pg_temp.expect_error('select api.submit_score(''endless'', 5)', 'implausible');
-  perform api.submit_score('daily', 120);
-  perform api.submit_score('daily', 80);   -- schlechter: zählt nicht
+  perform pg_temp.expect_error('select api.submit_score(''endless'', 13)', 'implausible');   -- mehr als der Server gezählt hat
+  perform pg_temp.expect_error('select api.submit_score(''daily'', 5)', 'bad_score');        -- Tagesliste nur vom Server
+  perform api.submit_score('endless', 12);
+  perform api.submit_score('endless', 8);   -- schlechter: zählt nicht
   perform pg_temp.logout();
-  perform pg_temp.login(b); perform api.submit_score('daily', 150); perform pg_temp.logout();
+  perform pg_temp.login(b); perform api.submit_score('endless', 15); perform pg_temp.logout();
   set local role anon;
-  r := api.leaderboard('daily', 'all', 10, 0);
+  r := api.leaderboard('endless', 'all', 10, 0);
   reset role;
-  assert r->0->>'name' = 'Ben' and (r->1->>'score')::int = 120, 'Rangliste: ' || r::text;
+  assert r->0->>'name' = 'Ben' and (r->1->>'score')::int = 12, 'Rangliste: ' || r::text;
+  assert (r->0->>'rank')::int = 1 and (r->1->>'rank')::int = 2, 'Plätze';
+  set local role anon;
+  r := api.leaderboard('endless', 'all', 1, 1);
+  reset role;
+  assert (r->0->>'rank')::int = 2, 'Platz auf Seite 2 richtig: ' || r::text;
   perform pg_temp.login(a);
-  assert (api.my_rank('daily')->>'rank')::int = 2, 'eigener Rang';
+  assert (api.my_rank('endless')->>'rank')::int = 2, 'eigener Rang';
   -- Freunde: Anfrage, Gegenanfrage = Freundschaft
   assert api.friend_request('ben')->>'status' = 'pending', 'Anfrage';
   perform pg_temp.expect_error('select api.friend_request(''niemand'')', 'unknown_player');
@@ -111,6 +132,7 @@ begin
   assert api.friends()->'incoming' ? 'Anna', 'Anfrage sichtbar';
   assert api.friend_request('Anna')->>'status' = 'accepted', 'angenommen';
   assert jsonb_array_length(api.friends()->'friends') = 1, 'Freundesliste';
+  assert api.match_status(gen_random_uuid()) is null, 'fremdes/unbekanntes Spiel: nichts';
   perform pg_temp.logout();
 end $$;
 rollback;

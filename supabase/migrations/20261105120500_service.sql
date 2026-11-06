@@ -10,7 +10,7 @@ declare pr game.products; pid uuid; it text; s integer;
 begin
   select * into pr from game.products where id = product;
   if pr.id is null then perform game.fail('unknown_product'); end if;
-  if amount_cents < pr.price_cents then perform game.fail('amount_mismatch'); end if;
+  if amount_cents < pr.price_cents or upper(currency) <> upper(pr.currency) then perform game.fail('amount_mismatch'); end if;
   if pr.once_per_player and exists (select 1 from game.purchases where player_id = player and product_id = product and status = 'paid') then
     perform game.fail('already_owned');
   end if;
@@ -47,32 +47,54 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- ---------- Erstattung: Juwelen zurückbuchen (soweit noch vorhanden), Kauf markieren ----------
+-- Erstattung oder Rückbuchung: alles zurück, was der Kauf gebracht hat.
+--  - Juwelen: so viele wie noch da sind, der Rest wird Schuld (neue Juwelen tilgen sie zuerst)
+--  - Gegenstände aus dem Produkt und der Premium-Pass werden entzogen
+--  - das Konto wird markiert (chargebacks), zum Prüfen bei Wiederholung
 create or replace function api.refund_purchase(provider text, provider_ref text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare pu game.purchases; pr game.products; have bigint;
+declare pu game.purchases; pr game.products; have bigint; back bigint; debt bigint := 0; it text; s integer;
 begin
   select * into pu from game.purchases where purchases.provider = refund_purchase.provider and purchases.provider_ref = refund_purchase.provider_ref for update;
   if pu.id is null or pu.status = 'refunded' then return jsonb_build_object('ok', false); end if;
   select * into pr from game.products where id = pu.product_id;
   select gems into have from game.wallets where player_id = pu.player_id for update;
-  if pr.gems > 0 and least(have, pr.gems) > 0 then perform game.book(pu.player_id, 'gems', -least(have, pr.gems)::integer, 'refund', pu.id::text); end if;
+  back := least(have, pr.gems);
+  if back > 0 then perform game.book(pu.player_id, 'gems', -back::integer, 'refund', pu.id::text); end if;
+  debt := pr.gems - back;
+  if debt > 0 then update game.wallets set gem_debt = gem_debt + debt where player_id = pu.player_id; end if;
+  foreach it in array pr.items loop
+    if it = 'premium_pass' then
+      s := (select g.season_id from game.pass_progress g where g.player_id = pu.player_id and g.premium order by g.season_id desc limit 1);
+      update game.pass_progress set premium = false where player_id = pu.player_id and season_id = s;
+    else
+      delete from game.inventory where player_id = pu.player_id and item_id = it and source = 'purchase';
+    end if;
+  end loop;
+  update game.players set chargebacks = chargebacks + 1 where id = pu.player_id;
   update game.purchases set status = 'refunded' where id = pu.id;
-  return jsonb_build_object('ok', true, 'clawedBack', least(have, pr.gems));
+  return jsonb_build_object('ok', true, 'clawedBack', back, 'debt', debt);
 end $$;
 
 -- ---------- Wartung (alle 10 Minuten) ----------
 create or replace function game.maintenance() returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare a integer; b integer; c integer; d integer; e integer;
+declare a integer; b integer := 0; c integer; d integer; e integer; m record; rep jsonb; side integer;
 begin
   -- Warteschlange: wer seit 30 s nicht mehr fragt, ist weg
   delete from game.match_queue where seen_at < now() - interval '30 seconds' and match_id is null;
   get diagnostics a = row_count;
   delete from game.match_queue where enqueued_at < now() - interval '15 minutes';
-  -- Spiele, bei denen nach 5 Minuten nur eine Seite gemeldet hat: zur Prüfung
-  update game.matches set status = 'review'
-   where status = 'open' and created_at < now() - interval '5 minutes' and (report1 is not null or report2 is not null);
-  get diagnostics b = row_count;
+  -- Nur eine Seite hat gemeldet (die andere ist weg, Absturz oder Aufgeben): deren Meldung gilt.
+  -- Hat sie "Gegner weg" gemeldet, gewinnt sie. So bringt Abhauen vor der Niederlage nichts.
+  for m in select id, report1, report2 from game.matches
+            where status = 'open' and (report1 is null) <> (report2 is null)
+              and coalesce(report1->>'at', report2->>'at')::timestamptz < now() - make_interval(secs => game.cfg_int('forfeit_after_secs'))
+            order by created_at limit 200 for update skip locked loop
+    side := case when m.report1 is not null then 1 else 2 end; rep := coalesce(m.report1, m.report2);
+    perform game.settle(m.id, rep->'score', case when (rep->>'forfeit')::boolean then side end);
+    b := b + 1;
+  end loop;
   -- Strittige oder einseitige Spiele, die der Prüfdienst nach 24 h nicht entschieden hat: verfallen (keine Wertung)
   update game.matches set status = 'void', settled_at = now()
    where status in ('disputed', 'review') and created_at < now() - interval '24 hours';
@@ -81,12 +103,12 @@ begin
    where status = 'open' and created_at < now() - interval '30 minutes' and report1 is null and report2 is null;
   get diagnostics c = row_count;
   -- Doppelt-Schutz-Einträge nach 2 Tagen löschen, Zeitfenster nach 1 Tag
-  delete from game.requests where created_at < now() - interval '2 days';
+  delete from game.requests where ctid in (select ctid from game.requests where created_at < now() - interval '2 days' limit 5000);
   get diagnostics d = row_count;
   delete from game.rate_limits where window_start < now() - interval '1 day';
   -- Tages-Bestenlisten älter als 30 Tage (in Häppchen, damit nichts lange sperrt)
-  delete from game.scores where ctid in (select ctid from game.scores where period <> 'all' and period < (current_date - 30)::text limit 5000);
-  delete from game.score_counts where period <> 'all' and period < (current_date - 30)::text;
+  delete from game.scores where ctid in (select ctid from game.scores where period <> 'all' and period < (game.today() - 30)::text limit 5000);
+  delete from game.score_counts where period <> 'all' and period < (game.today() - 30)::text;
   -- Gäste ohne Konto, ohne Kauf, 90 Tage nicht da: löschen (hält die Datenbank klein).
   -- Höchstens 500 pro Lauf: alle 10 Minuten = 72.000 am Tag, ohne lange Sperren.
   delete from auth.users u where u.id in (
@@ -95,7 +117,7 @@ begin
        and not exists (select 1 from game.purchases pu where pu.player_id = pl.id)
      limit 500);
   get diagnostics e = row_count;
-  return jsonb_build_object('queue', a, 'review', b, 'void', c, 'requests', d, 'guests', e);
+  return jsonb_build_object('queue', a, 'oneSided', b, 'void', c, 'requests', d, 'guests', e);
 end $$;
 
 -- Niemand außer ausdrücklich Berechtigten darf Funktionen ausführen

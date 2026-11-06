@@ -5,6 +5,12 @@ import { cors, json, stripe } from "../_shared/stripe.ts";
 
 const SITE = Deno.env.get("SITE_URL") ?? "https://louisrostdevelop.github.io/kopfball-duell/";
 
+const TERMS = `${SITE}legal/terms.html`;
+const WAIVER: Record<string, string> = {
+  de: `Mit dem Kauf stimmst du den Nutzungsbedingungen (${TERMS}) zu und verlangst, dass die Juwelen sofort, vor Ablauf der Widerrufsfrist, gutgeschrieben werden. Dir ist bekannt, dass du damit dein Widerrufsrecht verlierst.`,
+  en: `By paying you accept the Terms of Use (${TERMS}) and request that the gems be credited immediately, before the withdrawal period ends. You acknowledge that you thereby lose your right of withdrawal.`,
+};
+
 Deno.serve(async (req) => {
   const h = cors(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: h });
@@ -20,8 +26,8 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: "not_authenticated" }, 401, h);
   if (user.is_anonymous) return json({ error: "account_required" }, 403, h);
 
-  let product = "";
-  try { product = String((await req.json()).product ?? ""); } catch { /* leer */ }
+  let product = "", lang = "de";
+  try { const b = await req.json(); product = String(b.product ?? ""); lang = b.lang === "en" ? "en" : "de"; } catch { /* leer */ }
   const { data: shop, error } = await db.rpc("shop");
   if (error) return json({ error: "shop" }, 500, h);
   const p = (shop as Array<{ id: string; gems: number; priceCents: number; currency: string; buyable: boolean }>).find((x) => x.id === product);
@@ -35,7 +41,7 @@ Deno.serve(async (req) => {
       price_data: {
         currency: p.currency.toLowerCase(),
         unit_amount: p.priceCents,
-        product_data: { name: p.gems ? `${p.gems} Juwelen` : product },
+        product_data: { name: p.gems ? `${p.gems} ${lang === "en" ? "Gems" : "Juwelen"}` : product },
       },
     }],
     client_reference_id: user.id,
@@ -45,7 +51,10 @@ Deno.serve(async (req) => {
     success_url: `${SITE}?kauf=ok`,
     cancel_url: `${SITE}?kauf=abgebrochen`,
     expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-  }, { idempotencyKey: `${user.id}:${p.id}:${req.headers.get("x-request-key") ?? crypto.randomUUID()}` });
+    locale: lang,
+    // Digitale Inhalte: Zustimmung zur sofortigen Lieferung und Verlust des Widerrufsrechts (§ 356 Abs. 5 BGB) vor dem Bezahlen
+    custom_text: { submit: { message: WAIVER[lang] } },
+  }, req.headers.get("x-request-key") ? { idempotencyKey: `${user.id}:${p.id}:${req.headers.get("x-request-key")}` } : undefined);
 
   return json({ url: session.url }, 200, h);
 });

@@ -16,6 +16,7 @@ else dec() { gunzip -c "$F"; }; fi
   echo "delete from game.seasons; delete from game.config;"   # gesicherte Werte (auch spätere Anpassungen) gelten
   dec
   echo "set session_replication_role = origin;"
+  echo "delete from auth.users where id in (select user_id from game.erasures);"   # seit der Sicherung gelöschte Konten bleiben gelöscht
   echo "select game.rebuild_score_counts();"
 } | psql "$URL" -q -v ON_ERROR_STOP=1 --single-transaction >/dev/null
 psql "$URL" -qtAX -c "select 'Zurückgespielt: ' || (select count(*) from game.players) || ' Spieler, ' || (select count(*) from game.ledger) || ' Buchungen'"

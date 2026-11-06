@@ -97,6 +97,17 @@ create table if not exists game.progress (
   imported boolean not null default false
 );
 
+-- Später ergänzte Spalten (Tabellen bleiben wiederholbar anlegbar)
+alter table game.wallets add column if not exists gem_debt bigint not null default 0 check (gem_debt >= 0);  -- nach Rückbuchung
+alter table game.players add column if not exists chargebacks integer not null default 0;
+alter table game.progress add column if not exists cap_matches integer not null default 0;     -- belohnte CPU-Spiele heute
+alter table game.progress add column if not exists cpu_credit real;                            -- Zeitkonto in Sekunden
+alter table game.progress add column if not exists last_cpu_at timestamptz;
+alter table game.progress add column if not exists endless_streak integer not null default 0;
+alter table game.progress add column if not exists endless_best integer not null default 0;
+alter table game.progress add column if not exists online_day date;
+alter table game.progress add column if not exists online_rewarded integer not null default 0; -- belohnte Online-Spiele heute
+
 -- Gleiche Anfrage zweimal (Netz-Wiederholung) = nur einmal ausführen
 create table if not exists game.requests (
   player_id uuid not null references game.players (id) on delete cascade,
@@ -213,7 +224,7 @@ create index if not exists friends_reverse on game.friends (friend_id);
 -- ---------- Käufe mit echtem Geld ----------
 create table if not exists game.purchases (
   id uuid primary key default gen_random_uuid(),
-  player_id uuid not null references game.players (id) on delete restrict,
+  player_id uuid references game.players (id) on delete set null,   -- Konto gelöscht: Kauf bleibt (Buchhaltung)
   provider text not null,
   provider_ref text not null,
   product_id text not null references game.products (id),
@@ -224,6 +235,21 @@ create table if not exists game.purchases (
   unique (provider, provider_ref)
 );
 create index if not exists purchases_player on game.purchases (player_id, created_at desc);
+
+-- Käufe bleiben für die Buchhaltung, auch wenn das Konto gelöscht wird (dann ohne Spieler-Bezug)
+do $$ begin
+  alter table game.purchases alter column player_id drop not null;
+  if exists (select 1 from pg_constraint where conname = 'purchases_player_id_fkey' and confdeltype = 'r') then
+    alter table game.purchases drop constraint purchases_player_id_fkey;
+    alter table game.purchases add constraint purchases_player_id_fkey foreign key (player_id) references game.players (id) on delete set null;
+  end if;
+end $$;
+
+-- Gelöschte Konten (DSGVO): nach dem Einspielen einer Sicherung werden diese wieder entfernt (supabase/ops/restore.sh)
+create table if not exists game.erasures (
+  user_id uuid primary key,
+  erased_at timestamptz not null default now()
+);
 
 -- ---------- Tagesaufgaben und Erfolge (Definitionen) ----------
 create table if not exists game.task_defs (

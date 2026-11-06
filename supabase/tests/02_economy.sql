@@ -76,7 +76,7 @@ begin
 
   -- Tagesdeckel: nach 600 Münzen nur noch 20 %
   perform pg_temp.logout();
-  update game.progress set cap_day = current_date, cap_cpu_coins = 590 where player_id = u;
+  update game.progress set cap_day = game.today(), cap_cpu_coins = 590 where player_id = u;
   delete from game.rate_limits where player_id = u;
   perform pg_temp.login(u);
   r := api.report_cpu_match(pg_temp.cpu('cpu', true, 1, 0, 'head:kalle', 0), 'match-key-0007');
@@ -117,7 +117,8 @@ begin
 
   -- Import des Browser-Spielstands: einmal, gedeckelt, nur Münz-Inhalte
   r := api.import_local('{"coins": 99999, "chars": ["kalle","tank","gibtsnicht"], "balls": ["gold"], "arenas": ["mond"]}');
-  assert (r->>'coins')::int = 150 + 2000, 'Import gedeckelt: ' || (r->>'coins');
+  -- Budget 2000: Tank 400 + Gold 600 + Mond 600 = 1600, Rest 400 als Münzen
+  assert (r->>'coins')::int = 150 + 400, 'Import gedeckelt (Gegenstände + Münzen zusammen): ' || (r->>'coins');
   assert r->'items' ? 'head:tank' and r->'items' ? 'ball:gold' and r->'items' ? 'arena:mond', 'Import Gegenstände';
   perform pg_temp.expect_error('select api.import_local(''{}'')', 'already_imported');
 

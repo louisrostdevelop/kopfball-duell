@@ -7,7 +7,7 @@
 -- ---------- Münzen und Juwelen buchen (atomar, nie unter null) ----------
 create or replace function game.book(p uuid, cur text, amount integer, why text, ref text default null)
 returns bigint language plpgsql security definer set search_path = '' as $$
-declare bal bigint;
+declare bal bigint; debt bigint; pay bigint;
 begin
   if amount = 0 then
     select case cur when 'coins' then coins else gems end into bal from game.wallets where player_id = p;
@@ -17,6 +17,17 @@ begin
     update game.wallets set coins = coins + amount, updated_at = now()
      where player_id = p and coins + amount >= 0 returning coins into bal;
   elsif cur = 'gems' then
+    -- Offene Juwelen-Schuld (Rückbuchung, nachdem schon ausgegeben) wird mit neuen Juwelen zuerst getilgt.
+    -- Ins Buchungsjournal kommt nur, was wirklich im Wallet landet (Journal = Kontostand bleibt wahr).
+    if amount > 0 then
+      select gem_debt into debt from game.wallets where player_id = p for update;
+      if debt > 0 then
+        pay := least(debt, amount);
+        update game.wallets set gem_debt = gem_debt - pay where player_id = p;
+        amount := amount - pay;
+        if amount = 0 then select gems into bal from game.wallets where player_id = p; return bal; end if;
+      end if;
+    end if;
     update game.wallets set gems = gems + amount, updated_at = now()
      where player_id = p and gems + amount >= 0 returning gems into bal;
   else
@@ -143,10 +154,10 @@ language sql stable security definer set search_path = '' as $$
     'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
                          from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
     'daily', jsonb_build_object('last', pr.daily_last, 'streak', pr.daily_streak),
-    'challengeDone', pr.challenge_day = current_date,
-    'tasks', case when pr.tasks_day = current_date then pr.tasks else '[]'::jsonb end,
+    'challengeDone', pr.challenge_day = game.today(),
+    'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
     'career', pr.career, 'achievements', pr.achievements, 'stats', pr.stats,
-    'cpuCoinsToday', case when pr.cap_day = current_date then pr.cap_cpu_coins else 0 end,
+    'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,
     'imported', pr.imported,
     'season', (select jsonb_build_object('id', s.id, 'endsAt', s.ends_at, 'tiers', s.pass,
                  'pass', (select jsonb_build_object('points', pp.points, 'premium', pp.premium, 'free', pp.claimed_free, 'premiumClaimed', pp.claimed_premium)
@@ -172,8 +183,8 @@ language sql stable security definer set search_path = '' as $$
     'coins', w.coins, 'gems', w.gems,
     'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
                          from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
-    'tasks', case when pr.tasks_day = current_date then pr.tasks else '[]'::jsonb end,
-    'cpuCoinsToday', case when pr.cap_day = current_date then pr.cap_cpu_coins else 0 end,
+    'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
+    'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,
     'passPoints', (select pp.points from game.pass_progress pp where pp.player_id = pl.id and pp.season_id = game.current_season()))
   from game.players pl
   join game.wallets w on w.player_id = pl.id

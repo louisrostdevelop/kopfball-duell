@@ -33,6 +33,11 @@ insert into game.config (key, value) values
   ('cpu_daily_cap', '600'),            -- volle Münzen aus Computer-Spielen pro Tag
   ('cpu_after_cap', '0.2'),            -- Anteil danach
   ('cpu_hard_cap', '1500'),            -- ab hier (gezählte Münzen) gibt es heute nichts mehr: Schutz vor Bots
+  ('cpu_daily_matches', '80'),         -- höchstens so viele belohnte CPU-Spiele am Tag
+  ('cpu_time_bank', '1800'),           -- Zeitkonto: so viele Sekunden Spielzeit dürfen auf einmal nachgemeldet werden
+  ('online_daily_rewarded', '40'),     -- höchstens so viele belohnte Online-Spiele am Tag
+  ('online_min_secs', '30'),           -- ein Online-Spiel dauert mindestens so lange (Meldung früher = ungültig)
+  ('forfeit_after_secs', '180'),       -- meldet nur eine Seite, gilt ihr Ergebnis nach dieser Zeit
   ('ranked_pair_limit', '5'),          -- gleiches Paar öfter als so oft in 24 h: keine Wertungsänderung (Absprachen)
   ('diff_mult', '[1, 1.3, 1.7, 2.4]'), -- Münz-Faktor je Schwierigkeit
   ('head_max_level', '10'),
@@ -69,6 +74,12 @@ language plpgsql set search_path = '' as $$
 begin
   raise exception using errcode = 'P0001', message = code, detail = coalesce(detail, '');
 end $$;
+
+-- ---------- Heute (UTC) ----------
+-- Nie current_date benutzen: das hängt an der Zeitzone der Sitzung, und die kann ein Client über PostgREST
+-- (Header "Prefer: timezone=...") selbst setzen. Damit ließen sich Tageslimits beliebig oft zurücksetzen.
+create or replace function game.today() returns date
+language sql stable set search_path = '' as $$ select (now() at time zone 'UTC')::date $$;
 
 -- ---------- Wer ruft? ----------
 create or replace function game.me() returns uuid

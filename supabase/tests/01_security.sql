@@ -50,6 +50,17 @@ begin
   assert not has_function_privilege('anon', 'api.me()', 'execute'), 'anon kann api.me';
   assert has_function_privilege('anon', 'api.leaderboard(text, text, integer, integer)', 'execute'), 'Bestenliste öffentlich';
 
+  -- Genau diese Funktionen sind ohne Anmeldung aufrufbar (jede neue muss hier bewusst eingetragen werden)
+  assert (select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname in ('api', 'game') and has_function_privilege('anon', p.oid, 'execute')) = 'leaderboard,ranked_board,shop',
+    'anon darf mehr als erwartet: ' || (select string_agg(p.proname, ',' order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname in ('api', 'game') and has_function_privilege('anon', p.oid, 'execute'));
+  -- Spieler dürfen nichts aus game direkt und nichts, was nur Dienste dürfen
+  assert not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'game' and has_function_privilege('authenticated', p.oid, 'execute')), 'game-Funktionen für Spieler';
+  assert not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'api' and p.proname in ('grant_purchase', 'refund_purchase', 'settle_match') and has_function_privilege('authenticated', p.oid, 'execute')), 'Dienst-Funktionen für Spieler';
+
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into u;
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id into v;
   -- Als Spieler: direkter Tabellenzugriff scheitert
