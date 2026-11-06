@@ -11,6 +11,8 @@ begin
   select * into pr from game.products where id = product;
   if pr.id is null then perform game.fail('unknown_product'); end if;
   if amount_cents < pr.price_cents or upper(currency) <> upper(pr.currency) then perform game.fail('amount_mismatch'); end if;
+  -- Käufe eines Spielers nacheinander: sonst kommen zwei Webhooks für ein Einmal-Paket gleichzeitig durch die Prüfung
+  perform 1 from game.wallets where player_id = player for update;
   if pr.once_per_player and exists (select 1 from game.purchases where player_id = player and product_id = product and status = 'paid') then
     perform game.fail('already_owned');
   end if;

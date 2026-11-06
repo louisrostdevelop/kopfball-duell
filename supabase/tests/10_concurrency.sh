@@ -46,6 +46,14 @@ wait
 D=$(q "select count(*) from game.ledger where player_id = '$V' and reason = 'pass'")
 [ "$D" = "1" ] || fail "Pass $D-mal abgebucht statt 1"
 
+# 3c) Starterpaket (nur einmal pro Spieler) aus zwei Tabs bezahlt, Webhooks gleichzeitig: einmal gutgeschrieben
+for i in $(seq 1 10); do
+  psql "$DB_URL" -qtAX -c "begin; set local role service_role; select api.grant_purchase('$V', 'stripe', 'pi_conc_$TAG$i', 'starter', 299, 'EUR'); commit;" > /dev/null 2>&1 &
+done
+wait
+D=$(q "select count(*) from game.purchases where player_id = '$V' and product_id = 'starter'")
+[ "$D" = "1" ] || fail "Starterpaket $D-mal gebucht statt 1"
+
 # 4) 40 Spieler suchen gleichzeitig Casual: jeder höchstens in einem Spiel, nie gegen sich selbst
 IDS=$(q "insert into auth.users (id, email, is_anonymous) select gen_random_uuid(), '$TAG-q' || g, true from generate_series(1, 40) g returning id")
 q "update game.players set level = 5 where id in (select id from auth.users where email like '$TAG-q%')" >/dev/null

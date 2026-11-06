@@ -20,7 +20,7 @@ export const LEAGUES = [[2000, "legend"], [1700, "diamond"], [1450, "platinum"],
 export const league = mmr => t("league." + LEAGUES.find(([m]) => mmr >= m)[1]);
 
 const ERR = {
-  account_required: 1, level_required: 1, no_season: 1, head_not_owned: 1, rate_limited: 1, offline: 1,
+  account_required: 1, level_required: 1, no_season: 1, head_not_owned: 1, rate_limited: 1, offline: 1, cooldown: 1,
 };
 export const errText = e => t(e && ERR[e.code] ? "err.mm." + e.code : "err.tryAgain");
 

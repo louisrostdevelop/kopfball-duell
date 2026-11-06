@@ -85,8 +85,9 @@ export function matchEnd() {
       if (App.mm !== mm || App.screen !== "end") { if (res && res.status === "settled") refreshTop(); return; }
       const note = $("endNote"), r = res && res.result;
       if (res && res.status === "settled" && r) {
-        const d = mm.role === "host" ? r.mmrDelta : -r.mmrDelta;
-        note.textContent = mm.mode === "ranked" ? t("mm.rating", { d: (d >= 0 ? "+" : "") + d }) + (d === 0 ? " " + t("mm.pairLimit") : "") : t("mm.booked");
+        const side = mm.role === "host" ? "p1" : "p2", d = r.mmr ? r.mmr[side] : side === "p1" ? r.mmrDelta : -r.mmrDelta;
+        const why = r.mmrDelta === 0 ? " " + t("mm.pairLimit") : d >= 0 && d < Math.abs(r.mmrDelta) ? " " + t("mm.provisional") : "";
+        note.textContent = mm.mode === "ranked" ? t("mm.rating", { d: (d >= 0 ? "+" : "") + d }) + why : t("mm.booked");
         if (mm.mode === "ranked" && d) toast(t("mm.rating", { d: (d > 0 ? "+" : "") + d }), "i-crown", d > 0);
       } else if (res && res.status === "disputed") note.textContent = t("mm.disputed");
       else if (res && res.status === "waiting") note.textContent = t("mm.waiting");

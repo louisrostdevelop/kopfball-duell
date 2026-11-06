@@ -39,6 +39,9 @@ insert into game.config (key, value) values
   ('online_min_secs', '30'),           -- ein Online-Spiel dauert mindestens so lange (Meldung früher = ungültig)
   ('forfeit_after_secs', '180'),       -- meldet nur eine Seite, gilt ihr Ergebnis nach dieser Zeit
   ('ranked_pair_limit', '5'),          -- gleiches Paar öfter als so oft in 24 h: keine Wertungsänderung (Absprachen)
+  ('ranked_provisional', '10'),        -- Sieg gegen ein Konto mit weniger Ranked-Spielen bringt nur anteilig Wertung (Zweitkonten)
+  ('dispute_limit', '3'),              -- so viele strittige Spiele in 24 h: Ranked-Pause
+  ('dispute_cooldown_hours', '12'),
   ('diff_mult', '[1, 1.3, 1.7, 2.4]'), -- Münz-Faktor je Schwierigkeit
   ('head_max_level', '10'),
   ('head_xp_per_level', '100'),        -- benötigte Kopf-XP: 100 * Level

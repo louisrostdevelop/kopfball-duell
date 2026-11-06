@@ -28,6 +28,8 @@ begin
   perform pg_temp.expect_error('select api.queue_join(''casual'', ''head:kalle'')', 'level_required');
   perform pg_temp.logout();
   update game.players set level = 5 where id in (a, b, g);
+  -- beide schon eingestuft (sonst zählt ein Sieg nur anteilig, siehe 05_review)
+  insert into game.ratings (player_id, season_id, mmr, games, wins) select x, game.current_season(), 1000, 10, 5 from unnest(array[a, b]) x;
   perform pg_temp.login(g);
   perform pg_temp.expect_error('select api.queue_join(''ranked'', ''head:kalle'')', 'account_required');
   perform api.queue_join('casual', 'head:kalle');

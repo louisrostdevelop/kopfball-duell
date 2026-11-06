@@ -57,6 +57,7 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   // Beide: Konto (verknüpft) und Level 6
   await db("update auth.users set is_anonymous = false, email = id::text || '@test' where id in ($1, $2)", [ida, idb]);
   await db("update game.players set level = 6 where id in ($1, $2)", [ida, idb]);
+  await db("insert into game.ratings (player_id, season_id, mmr, games, wins) select x, 1, 1000, 10, 5 from unnest(array[$1, $2]::uuid[]) x", [ida, idb]);   // schon eingestuft
   for (const p of [A, B]) { await resync(p); await p.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await p.waitForTimeout(200); }
   assert.match(await A.textContent("#btnRanked em"), /Bronze · 1000/);
 

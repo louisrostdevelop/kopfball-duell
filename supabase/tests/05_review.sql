@@ -20,7 +20,7 @@ create function pg_temp.sudo(q text) returns void language plpgsql security defi
 do $g$ begin execute format('grant execute on all functions in schema %I to public', pg_my_temp_schema()::regnamespace); end $g$;
 
 do $$
-declare u uuid; v uuid; w uuid; r jsonb; c0 bigint; m uuid; i integer; n integer;
+declare u uuid; v uuid; w uuid; x uuid; y uuid; r jsonb; c0 bigint; m uuid; i integer; n integer;
 begin
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into u;
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into v;
@@ -87,6 +87,31 @@ begin
   perform game.maintenance();
   assert (select status from game.matches where id = m) = 'settled', 'einseitig gemeldet: gewertet';
   assert (select (result->>'winner')::int from game.matches where id = m) = 2, 'wer geblieben ist, gewinnt (auch bei 1:0 für den anderen)';
+
+  -- M6: Zweitkonten. Sieg gegen ein neues Konto bringt nur anteilig Wertung, der Verlierer verliert voll
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into x;
+  insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into y;
+  insert into game.ratings (player_id, season_id, mmr, games, wins) values (x, game.current_season(), 1000, 20, 10), (y, game.current_season(), 1000, 2, 0);
+  insert into game.matches (mode, p1, p2, heads, season_id, created_at) values ('ranked', x, y, '{"p1":{"head":"head:kalle"},"p2":{"head":"head:kalle"}}', game.current_season(), now() - interval '5 minutes') returning id into m;
+  r := game.settle(m, '[3,0]');
+  assert (r->'result'->'mmr'->>'p1')::int = 3 and (r->'result'->'mmr'->>'p2')::int = -16, 'Sieg gegen Neuling: 2/10 von 16: ' || r::text;
+  insert into game.matches (mode, p1, p2, heads, season_id, created_at) values ('ranked', y, x, '{"p1":{"head":"head:kalle"},"p2":{"head":"head:kalle"}}', game.current_season(), now() - interval '5 minutes') returning id into m;
+  r := game.settle(m, '[0,1]');
+  assert (r->'result'->'mmr'->>'p2')::int between 4 and 6 and (r->'result'->'mmr'->>'p1')::int < -10, 'Neuling hat jetzt 3 Spiele: ' || r::text;
+  r := game.settle((select id from game.matches where p1 = y and p2 = x), '[0,1]');
+  assert r->>'status' = 'settled', 'schon abgerechnet: bleibt';
+
+  -- Viele strittige Spiele: Ranked-Pause, Casual geht weiter
+  update game.players set level = 10 where id = u;
+  for i in 1..3 loop
+    insert into game.matches (mode, p1, p2, heads, status, report1, report2) values ('ranked', u, v, '{}', 'disputed', '{"score":[1,0]}', '{"score":[0,1]}');
+  end loop;
+  perform pg_temp.login(u); perform pg_temp.sudo('delete from game.rate_limits');
+  perform pg_temp.expect_error($q$select api.queue_join('ranked', 'head:kalle')$q$, 'cooldown');
+  perform api.queue_join('casual', 'head:kalle'); perform api.queue_leave();
+  perform pg_temp.logout();
+  update game.matches set created_at = now() - interval '13 hours' where status = 'disputed' and p1 = u;
+  perform pg_temp.login(u); perform api.queue_join('ranked', 'head:kalle'); perform api.queue_leave(); perform pg_temp.logout();
 
   -- H5: Rückbuchung holt alles zurück, was der Kauf gebracht hat (Juwelen-Schuld, Pass, Gegenstände)
   set local role service_role;

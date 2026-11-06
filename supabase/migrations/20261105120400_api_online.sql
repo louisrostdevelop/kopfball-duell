@@ -18,7 +18,7 @@ $$;
 -- ---------- In die Warteschlange ----------
 create or replace function api.queue_join(queue_mode text, head text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare p uuid := game.me(); lvl integer; anon boolean; s integer := game.current_season();
+declare p uuid := game.me(); lvl integer; anon boolean; s integer := game.current_season(); disputes integer; last_dispute timestamptz;
 begin
   perform game.limit_rate(p, 'queue_join', 20, interval '1 minute');
   if queue_mode not in ('ranked', 'casual') then perform game.fail('bad_mode'); end if;
@@ -28,6 +28,15 @@ begin
     if coalesce(anon, true) then perform game.fail('account_required'); end if;
     if lvl < game.cfg_int('ranked_min_level') then perform game.fail('level_required', game.cfg_int('ranked_min_level')::text); end if;
     if s is null then perform game.fail('no_season'); end if;
+    -- Viele strittige Spiele (beide haben gemeldet, Ergebnisse passen nicht zusammen): Ranked-Pause
+    select count(*), max(created_at) into disputes, last_dispute from (
+      select created_at, status, report1, report2 from game.matches where p1 = p and created_at > now() - interval '24 hours'
+      union all
+      select created_at, status, report1, report2 from game.matches where p2 = p and created_at > now() - interval '24 hours') x
+     where status = 'disputed' or (status = 'void' and report1 is not null and report2 is not null);
+    if disputes >= game.cfg_int('dispute_limit') and last_dispute > now() - make_interval(hours => game.cfg_int('dispute_cooldown_hours')) then
+      perform game.fail('cooldown');
+    end if;
   elsif lvl < game.cfg_int('casual_min_level') then perform game.fail('level_required', game.cfg_int('casual_min_level')::text);
   end if;
   if not exists (select 1 from game.heads where player_id = p and head_id = head) then perform game.fail('head_not_owned'); end if;
@@ -163,6 +172,7 @@ create or replace function game.settle(match uuid, score jsonb, forced_winner in
 language plpgsql security definer set search_path = '' as $$
 declare mt game.matches; a integer := (score->>0)::integer; b integer := (score->>1)::integer;
   r1 integer; r2 integer; e1 numeric; k integer := game.cfg_int('elo_k'); s1 numeric; d1 integer; oc jsonb := game.cfg('online_coins');
+  g1 integer; g2 integer; prov integer := game.cfg_int('ranked_provisional'); up1 integer; up2 integer;
   res jsonb; w integer; pair integer; pl uuid; idx integer; won boolean; ok boolean; today date := game.today(); reward jsonb := '{}';
 begin
   select * into mt from game.matches where id = match for update;
@@ -177,10 +187,15 @@ begin
     s1 := case w when 1 then 1 when 2 then 0 else 0.5 end;
     d1 := round(k * (s1 - e1));
     if pair >= game.cfg_int('ranked_pair_limit') then d1 := 0; end if;
-    insert into game.ratings as rt (player_id, season_id, mmr, games, wins) values (mt.p1, mt.season_id, r1 + d1, 1, (w = 1)::integer)
-      on conflict (player_id, season_id) do update set mmr = rt.mmr + d1, games = rt.games + 1, wins = rt.wins + (w = 1)::integer, updated_at = now();
-    insert into game.ratings as rt (player_id, season_id, mmr, games, wins) values (mt.p2, mt.season_id, r2 - d1, 1, (w = 2)::integer)
-      on conflict (player_id, season_id) do update set mmr = rt.mmr - d1, games = rt.games + 1, wins = rt.wins + (w = 2)::integer, updated_at = now();
+    -- Zweitkonten: wer gegen ein neues Konto gewinnt, bekommt nur anteilig Punkte (der Verlierer verliert voll)
+    select coalesce((select games from game.ratings where player_id = mt.p1 and season_id = mt.season_id), 0),
+           coalesce((select games from game.ratings where player_id = mt.p2 and season_id = mt.season_id), 0) into g1, g2;
+    up1 := case when d1 > 0 then round(d1 * least(1, g2::numeric / prov)) else d1 end;    -- Änderung für p1
+    up2 := case when d1 < 0 then round(-d1 * least(1, g1::numeric / prov)) else -d1 end;  -- Änderung für p2
+    insert into game.ratings as rt (player_id, season_id, mmr, games, wins) values (mt.p1, mt.season_id, r1 + up1, 1, (w = 1)::integer)
+      on conflict (player_id, season_id) do update set mmr = rt.mmr + up1, games = rt.games + 1, wins = rt.wins + (w = 1)::integer, updated_at = now();
+    insert into game.ratings as rt (player_id, season_id, mmr, games, wins) values (mt.p2, mt.season_id, r2 + up2, 1, (w = 2)::integer)
+      on conflict (player_id, season_id) do update set mmr = rt.mmr + up2, games = rt.games + 1, wins = rt.wins + (w = 2)::integer, updated_at = now();
   end if;
   foreach pl in array array[mt.p1, mt.p2] loop
     idx := case when pl = mt.p1 then 1 else 2 end; won := w = idx;
@@ -197,7 +212,8 @@ begin
     perform game.progress_tasks(pl, jsonb_build_object('online', 1, 'wins', won::integer, 'goals', case when idx = 1 then a else b end));
     if won then perform game.grant_achievements(pl, '{online,firstwin}'); end if;
   end loop;
-  res := jsonb_build_object('score', score, 'winner', w, 'mmrDelta', d1, 'rewarded', reward, 'forfeit', forced_winner is not null);
+  res := jsonb_build_object('score', score, 'winner', w, 'mmrDelta', d1, 'mmr', jsonb_build_object('p1', coalesce(up1, 0), 'p2', coalesce(up2, 0)),
+    'rewarded', reward, 'forfeit', forced_winner is not null);
   update game.matches set status = 'settled', result = res, settled_at = now() where id = match;
   return jsonb_build_object('status', 'settled', 'result', res);
 end $$;

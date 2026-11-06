@@ -29,7 +29,7 @@ zeigt nur `api`.
 | Negativer Kontostand | atomare Buchung mit Bedingung, Prüfung in der Tabelle, Buchungsjournal (`ledger`) |
 | Spam | Grenzen pro Spieler und Aktion (`rate_limits`) |
 | Bot-Farmen gegen den Computer | Zeitkonto (gemeldete Spielzeit kann nicht schneller vergehen als echte, Vorrat 30 min), 80 belohnte Spiele pro Tag, Münz-Tageslimit weich 600 / hart 1500 |
-| Sieg-Absprachen online | mehr als 5 Spiele desselben Paars in 24 h bringen weder Wertung noch Münzen; 40 belohnte Online-Spiele pro Tag |
+| Sieg-Absprachen online | mehr als 5 Spiele desselben Paars in 24 h bringen weder Wertung noch Münzen; 40 belohnte Online-Spiele pro Tag; Siege gegen neue Konten zählen anteilig; viele Streitfälle = Ranked-Pause |
 | Erfundene Ergebnisse | Statistik muss zum Ergebnis passen, Training bringt nichts; Online zählt nur, wenn beide Seiten dasselbe melden und das Spiel lange genug lief |
 | Abhauen bei Rückstand | meldet nur eine Seite "Gegner weg", gewinnt sie nach 3 min (Wartung) |
 | Bestenlisten | Endlos-Rekord entsteht auf dem Server aus den gemeldeten Siegen in Folge, der Client kann nichts eintragen |
@@ -133,14 +133,15 @@ Ein Review mit Lasttest hat folgende Lücken gefunden. Jede behobene hat einen T
 | M1–M3 Ränge falsch auf späteren Seiten, bei Gleichstand und nach Löschungen | behoben |
 | M4 Bestenlisten frei vom Client beschreibbar | behoben (Endlos nur aus Server-Daten) |
 | M5 Doppelter Pass-Kauf in zwei Tabs | behoben (Zeilensperre) |
+| Einmal-Paket (Starter) über zwei gleichzeitige Webhooks doppelt | behoben (Käufe pro Spieler nacheinander) |
 | M8 Projekt-Einstellungen nur von Hand | behoben (`config push` in `deploy.sh`) |
 | M9 Kein Konto-Löschen (DSGVO) | behoben |
 | Stripe: Betrag/Währung, Teil-Erstattungen, Idempotenz, CORS | behoben |
-| M6 Siege mit Zweitkonten verschieben | teilweise: nur die Paar-Grenze. Besser wäre eine Wertungsbremse für neue Konten |
+| M6 Siege mit Zweitkonten verschieben | behoben: Sieg gegen ein Konto mit weniger als 10 Ranked-Spielen bringt nur anteilig Punkte (der Verlierer verliert voll), dazu die Paar-Grenze |
 | M7 `ledger` und Anfrage-Tabellen wachsen unbegrenzt | offen: ab ~10 Mio. Zeilen nach Monat partitionieren |
-| Strafe für häufige Streitfälle | offen |
+| Strafe für häufige Streitfälle | behoben: 3 strittige Spiele in 24 h = 12 h keine Ranked-Suche (Casual geht) |
 | Erfolge, deren Fakten der Client meldet | teilweise: nur Plausibilität |
-| Sicherung enthält alle Spalten von `auth.users` | offen: auf die nötigen Spalten beschränken |
+| Sicherung enthält alle Spalten von `auth.users` (auch Einmal-Token) | offen, bewusst: eine Spaltenauswahl lässt sich ohne echtes Projekt nicht gegen das Supabase-Schema testen. Sicherung ist verschlüsselt |
 
 ## Saisons
 
