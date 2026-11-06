@@ -24,6 +24,10 @@ test("Inhalte: 38 Gegenstände (10 Schuh-Skins, keine Hüte), IDs eindeutig, Kis
   const gx = K.COSMETICS.filter(c => c.kind === "goalfx");
   assert.ok(gx.every(c => GFX[c.fx] && GFX[c.fx].dur > 0 && c.ic) && new Set(gx.map(c => c.fx)).size === gx.length);
   for (const g of Object.values(GFX)) for (const k of Object.values(g.react || {})) assert.ok(REACT[k], k);
+  // Meisterschaft: jeder Kopf hat eine eigene Torexplosion
+  const { HEAD_FX } = await import("../../js/ui/render/goalfx.js");
+  assert.deepEqual(C.CHARS.filter(c => !HEAD_FX[c.id]).map(c => c.id), [], "jeder Kopf hat ein Motiv");
+  assert.ok(K.MASTERY_ITEMS.filter(c => c.kind === "goalfx").every(c => c.fx === "mastery" && GFX.mastery));
   for (const k of K.CHEST_TIERS) {
     const c = K.CHESTS[k], s = Object.values(c.cos.rar).reduce((a, b) => a + b, 0);
     assert.ok(Math.abs(s - 1) < 1e-9, k + ": Seltenheiten der Kosmetik = 100 %");

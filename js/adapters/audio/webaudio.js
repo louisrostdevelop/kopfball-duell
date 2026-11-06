@@ -1,5 +1,6 @@
-// Alle Sounds werden live erzeugt (keine Dateien nötig)
-let ac = null, master, sfxBus, musBus, crowdGain, crowdFilter, noiseBuf;
+// Sounds: werden live erzeugt (keine Dateien nötig). Liegen echte Dateien in audio/sfx (Liste: audio/sfx/manifest.json,
+// node tools/sound-manifest.mjs), spielt das Spiel stattdessen diese. Namen wie in docs/SOUNDS.md.
+let ac = null, master, sfxBus, musBus, crowdGain, crowdFilter, noiseBuf, crowdNoise = null, musSrc = null;
 let sfxOn = true, musOn = true, musicPlaying = false, musTimer = null, nextNote = 0, stepIdx = 0, musicMode = "menu";
 
 export function unlock() {
@@ -12,11 +13,40 @@ export function unlock() {
   noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
   const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   // Publikums-Rauschen (Dauerschleife)
-  const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true;
+  const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true; crowdNoise = n;
   crowdFilter = ac.createBiquadFilter(); crowdFilter.type = "bandpass"; crowdFilter.frequency.value = 700; crowdFilter.Q.value = 0.6;
   crowdGain = ac.createGain(); crowdGain.gain.value = 0;
   n.connect(crowdFilter); crowdFilter.connect(crowdGain); crowdGain.connect(sfxBus); n.start();
   if (musicPlaying) startLoop();
+  loadFiles();
+}
+
+// ---------- Echte Sound-Dateien ----------
+// manifest.json: { "kick": ["kick_1", "kick_2"], "goal": ["goal"] }. Je Name eine oder mehrere Varianten; das Spiel nimmt
+// .ogg oder (Safari ohne Ogg) .m4a. Fehlt eine Datei oder lässt sie sich nicht lesen, bleibt der erzeugte Sound.
+const files = {};
+const decode = b => new Promise(res => { ac.decodeAudioData(b, res, () => res(null)); });
+async function loadFiles() {
+  try {
+    const m = await (await fetch("audio/sfx/manifest.json")).json();
+    const a = document.createElement("audio"), ext = a.canPlayType('audio/ogg; codecs="opus"') || a.canPlayType('audio/ogg; codecs="vorbis"') ? ".ogg" : ".m4a";
+    await Promise.all(Object.entries(m).map(async ([name, list]) => {
+      const bufs = await Promise.all(list.map(f => fetch(`audio/sfx/${f}${ext}`).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => b && decode(b)).catch(() => null)));
+      if (bufs.some(Boolean)) files[name] = bufs.filter(Boolean);
+    }));
+    if (files.crowd && crowdNoise) { crowdNoise.stop(); crowdNoise = null; playFile("crowd", 1, true, crowdGain); }
+    if (files["music-menu"] && musicPlaying) { clearInterval(musTimer); musTimer = null; startLoop(); }
+  } catch (_) { /* keine Liste: alles bleibt erzeugt */ }
+}
+/** Spielt eine Datei (zufällige Variante, Tonhöhe leicht gestreut, v = Stärke wie beim erzeugten Sound) */
+function playFile(name, v = 1, loop = false, bus = sfxBus) {
+  const list = files[name]; if (!list) return null;
+  const src = ac.createBufferSource(), g = ac.createGain(), k = Math.min(1.5, Math.max(0.2, v ?? 1));
+  src.buffer = list[Math.floor(Math.random() * list.length)]; src.loop = loop;
+  if (!loop) src.playbackRate.value = 0.95 + Math.random() * 0.1 + (k - 1) * 0.06;
+  g.gain.value = loop ? 1 : Math.min(1.4, 0.55 + 0.45 * k);
+  src.connect(g); g.connect(bus); src.start();
+  return src;
 }
 export function setSfx(on) { sfxOn = on; if (sfxBus) sfxBus.gain.value = on ? 1 : 0; }
 export function setMusic(on) { musOn = on; if (musBus) musBus.gain.setTargetAtTime(on ? 0.32 : 0, ac.currentTime, 0.1); }
@@ -36,6 +66,7 @@ function noise(dur, vol, type, freq, q, t, f1, bus) {
 
 export function sfx(kind, v = 1) {
   if (!ac) return;
+  if (files[kind]) { playFile(kind, v); if (kind === "goal") roar(1.2); return; }
   switch (kind) {
     case "kick": osc("sine", 140 * Math.min(1.3, v), 42, 0.18, 0.75 * Math.min(1.4, v)); noise(0.07, 0.45, "lowpass", 900, 1, 0, 200); noise(0.04, 0.3, "highpass", 2500); if (v > 1.4) { noise(0.3, 0.32, "bandpass", 400, 1, 0, 3000); osc("square", 90, 40, 0.12, 0.12); } break;
     case "head": osc("triangle", 340 * Math.min(1.2, v), 160, 0.12, 0.35); noise(0.03, 0.18, "bandpass", 1500, 2); if (v > 1.3) osc("sine", 120, 50, 0.15, 0.4); break;
@@ -84,6 +115,14 @@ export function sfx(kind, v = 1) {
     case "wallhit": osc("square", 400, 200, 0.12, 0.12); break;
     case "bumper": osc("triangle", 260, 780, 0.14, 0.3 * Math.min(1.3, 0.6 + v)); osc("sine", 520, 1400, 0.1, 0.12, 0.03); break;
     case "ohh": noise(1.1, 0.25, "bandpass", 500, 0.8, 0, 380); break;
+    default:
+      // Meisterschafts-Torexplosion (gfx-m-<kopf>): Fanfare in C, je Kopf etwas anders gestimmt, bis echte Sounds kommen
+      if (kind.startsWith("gfx-m-")) {
+        const h = [...kind].reduce((x, ch) => x + ch.charCodeAt(0), 0) % 4, root = [523, 587, 659, 784][h];
+        [1, 1.25, 1.5, 2].forEach((m, i) => { osc("triangle", root * m, root * m, 0.3, 0.09, i * 0.08); osc("square", root * m, root * m, 0.12, 0.04, i * 0.08); });
+        noise(0.8, 0.18, "highpass", 3000, 0.6, 0, 8000); osc("sine", 110, 55, 0.4, 0.4);
+      }
+      break;
     // Kisten (Namen wie in docs/SOUNDS.md): wackeln, aufspringen, Enthüllung nach Seltenheit (alles in C), je Gegenstand ein Tick
     case "chest-shake": noise(0.06, 0.12, "bandpass", 1800 + Math.random() * 900, 3); osc("triangle", 180, 140, 0.05, 0.08); break;
     case "chest-open": osc("sine", 140, 60, 0.25, 0.5); noise(0.35, 0.3, "highpass", 1500, 0.7, 0, 7000); osc("triangle", 523, 1047, 0.18, 0.1, 0.03); break;
@@ -125,9 +164,10 @@ const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 export function music(on, mode = "menu") {
   musicPlaying = on; musicMode = mode;
   if (!ac) return;
-  if (on) startLoop(); else { clearInterval(musTimer); musTimer = null; }
+  if (on) startLoop(); else { clearInterval(musTimer); musTimer = null; if (musSrc) { musSrc.stop(); musSrc = null; } }
 }
 function startLoop() {
+  if (files["music-menu"]) { if (!musSrc) musSrc = playFile("music-menu", 1, true, musBus); return; }
   if (musTimer) return;
   nextNote = ac.currentTime + 0.1; stepIdx = 0;
   musTimer = setInterval(sched, 25);

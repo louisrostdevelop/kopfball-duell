@@ -10,7 +10,8 @@ import { t } from "../content/i18n.js";
 
 export const PHRASES = [0, 1, 2, 3, 4, 5, 6, 7].map(i => "fx.phrase." + i);   // Schlüssel, übersetzt beim Anzeigen
 
-export const CELEB = { kalle: "🔥", yuki: "❄️", bolt: "⚡", rocco: "🚀", nala: "🍌", flummi: "🎈", phantom: "👻", tank: "💪", tina: "🌪️", magnus: "🧲", max: "☄️", kaiser: "👑" };
+export const CELEB = { kalle: "🔥", yuki: "❄️", bolt: "⚡", rocco: "🚀", nala: "🍌", flummi: "🎈", phantom: "👻", tank: "💪", tina: "🌪️", magnus: "🧲", max: "☄️", kaiser: "👑",
+  emo: "🖤", rapper: "💸", raver: "🎶", gamer: "🎮", npc: "💬", moai: "🗿", crypto: "📈", sigma: "🕶️", chad: "💎", brezel: "🥨" };
 
 export function onEvent(e, remote) {
   const demo = App.mode === "demo", st = App.st;
@@ -116,7 +117,7 @@ export function onGoal(e) {
   const gfx = e.kind !== "own" && App.cfg && App.cfg.cos && App.cfg.cos[e.i] ? App.cfg.cos[e.i].goalfx : null;
   fx.burst("goal", gx, Math.min(e.y, G - 60), { col: [COL.p1, COL.p2][e.i], fx: gfx, i: e.i });
   const gc = gfx && cosById(gfx);
-  if (gc?.fx && !demo) A.sfx("gfx-" + gc.fx);
+  if (gc?.fx && !demo) A.sfx(gc.mastery ? "gfx-m-" + gc.head : "gfx-" + gc.fx);
   fx.net(side, e.y, 1.4);
   fx.shake(24); fx.flash([COL.p1, COL.p2][e.i], 0.45); fx.hype(1);
   App.replay = App.rec.slice(-160);

@@ -1,8 +1,9 @@
 # Sounds: Liste und Klangkonzept
 
 Stand 06.11.2026. Heute erzeugt das Spiel alle Sounds live im Browser (`js/adapters/audio/webaudio.js`, Funktion
-`sfx(name, v)`). Jeder Sound hat schon einen festen Namen (Spalte **Name**). Echte Dateien ersetzen später genau diese
-Namen; fehlt eine Datei, spielt weiter der erzeugte Sound. So kann man Stück für Stück austauschen.
+`sfx(name, v)`). Jeder Sound hat schon einen festen Namen (Spalte **Name**). Echte Dateien in `audio/sfx` ersetzen genau
+diese Namen (das Laden ist eingebaut, siehe Technik); fehlt eine Datei, spielt weiter der erzeugte Sound. So kann man
+Stück für Stück austauschen.
 
 Priorität: **P1** = macht das Spielgefühl aus, zuerst. **P2** = Fortschritt und Belohnung. **P3** = pro Kosmetik-Gegenstand.
 
@@ -42,7 +43,9 @@ Tonhöhe um ±5 % streuen.
 harte Version, das Spiel blendet dazwischen. Sonst reicht eine Aufnahme, die das Spiel lauter und höher macht.
 
 **Technik:** Mono, 48 kHz (Musik Stereo). Stille am Anfang abschneiden, kurz ausblenden. Dateien als `.ogg` und `.m4a`
-(für ältere iPhones). Ablage `audio/sfx/<Name>-<Variante>.ogg`, z. B. `audio/sfx/kick-1.ogg`.
+(für ältere iPhones). Ablage `audio/sfx/<Name>.ogg`, Varianten mit Unterstrich: `audio/sfx/kick_1.ogg`, `kick_2.ogg`.
+Danach `node tools/sound-manifest.mjs` ausführen (schreibt `audio/sfx/manifest.json`, meldet fehlende Formate). Das Spiel
+nimmt dann die Dateien; was fehlt, erzeugt es weiter selbst. Für `crowd` und `music-menu` als Loop schneiden.
 
 **Lizenzen:** Nur CC0 oder lizenzfrei mit kommerzieller Nutzung. Für jede Datei Quelle und Lizenz in
 `audio/CREDITS.md` eintragen. Mögliche Quellen: Freesound (Filter CC0), Kenney (CC0), Sonniss GDC-Pakete. Lizenz bei
@@ -147,7 +150,7 @@ Preis fürs Abwehren (werden geteilt):
 | Name | Wann | Hinweis |
 |---|---|---|
 | `gfx-67`, `gfx-crash`, `gfx-peak`, `gfx-brainrot`, `gfx-dank`, `gfx-ko`, `gfx-aura`, `gfx-glitch` | Torexplosion aus Kisten | gibt es schon erzeugt, bis 2,5 s |
-| `gfx-m-<kopf>` | Meisterschafts-Explosion, 22 Stück | **neu**, Motiv des Kopfes |
+| `gfx-m-<kopf>` | Meisterschafts-Explosion, 22 Stück | **neu**, Motiv des Kopfes (heute erzeugt: eine Fanfare für alle) |
 | `emote` | jedes Emote erscheint | gemeinsames „Plopp“ |
 | `emote-<name>` | Figur-Emote, 8 Stück | **neu**: `67`, `crash`, `lockin`, `peak`, `bait`, `unbothered`, `mog`, `aura` |
 | `emote-m-<kopf>` | Meisterschafts-Emote, 22 Stück | **neu**, Motiv des Kopfes |

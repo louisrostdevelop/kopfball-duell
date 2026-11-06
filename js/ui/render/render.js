@@ -82,7 +82,7 @@ function goalFx(x, y, id, n, scorer = 0, team = "#fff") {
   const c = cosById(id); if (!c) return;
   const def = c.fx && GFX[c.fx];
   if (def) {
-    const s = { fx: c.fx, x, y, dir: x < W / 2 ? 1 : -1, i: scorer, col: team, t: 0, dur: def.dur };
+    const s = { fx: c.fx, head: c.head, x, y, dir: x < W / 2 ? 1 : -1, i: scorer, col: team, t: 0, dur: def.dur };
     def.start?.(s, sceneApi(n)); scenes.push(s); if (scenes.length > 3) scenes.shift();
     if (def.react?.opp) react[1 - scorer] = { kind: def.react.opp, t: 0 };
     if (def.react?.me) react[scorer] = { kind: def.react.me, t: 0 };

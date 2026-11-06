@@ -96,6 +96,7 @@ export const MASTERY_ITEMS = CHARS.flatMap((c, hi) => MASTERY.map((m, si) => {
   const id = masteryId(m.item, c.id), kind = id.split(":")[0];
   const o = { id, kind, head: c.id, stage: si + 1, rarity: "legend", col: c.acc, v: hi, n: "M", mastery: true };
   if (kind === "emote") Object.assign(o, EMOTE_DEFS[hi % EMOTE_DEFS.length], { label: c.name.toUpperCase(), ic: "★" });
+  if (kind === "goalfx") Object.assign(o, { fx: "mastery", ic: "★" }); // Szene pro Kopf: goalfx.js HEAD_FX
   Object.defineProperty(o, "name", { get: () => (kind === "title" ? t(m.item === "title:fan" ? "mastery.titleFan" : "mastery.titleMaster", { name: c.name }) : t("mastery.item." + kind, { name: c.name })), enumerable: true });
   return o;
 }));
