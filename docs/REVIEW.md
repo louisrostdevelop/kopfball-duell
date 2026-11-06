@@ -21,31 +21,28 @@ am Code.
 
 ## Offen, braucht eine Entscheidung
 
-**A. Super-Balance.** Gegen den Computer werden die Supers sehr unterschiedlich zu Toren:
+**A. Super-Balance (entschieden: angleichen, umgesetzt).** Gemessen gegen den Computer:
 
-| Super (Kopf) | Tore pro Super |
-|---|---|
-| Bass-Drop (Raver) | 82 % |
-| Meteor (Max) | 79 % |
-| Banane (Nala) | 64 % |
-| Flex (Rapper) | 63 % |
-| Tornado (Tina) | 48 % |
-| Steinschlag (Steinkopf) | 45 % |
-| … | |
-| Feuer (Kalle), Eis (Yuki) | 17–22 % |
-| Riesenball (Tank) | 3 % |
-| Flummi (Flummi) | 2 % |
+| | vorher | nachher |
+|---|---|---|
+| Tore pro Super | 0–82 % | 4–39 % |
+| Siegquote der Köpfe (alle gegen alle) | 38–72 % | 36–67 % |
+| Köpfe über 60 % | Rapper 72, Raver 65, Max 61, Nala 60 | Steinkopf 67, Raver 60 |
 
-- **Folge:** Raver, Rapper und Nala gewinnen 60–72 % ihrer Spiele, ohne Supers liegen alle Köpfe bei etwa 50 %.
-- **Vorbehalt:** Der Computer wehrt Bälle von oben schlecht ab, bei Menschen ist der Abstand vermutlich kleiner.
-- **Vorschlag:**
-  - Anflug-Supers (Bass-Drop, Meteor, Banane, Flex) 10–15 % langsamer.
-  - Riesenball und Flummi deutlich stärker, zum Beispiel schneller und schwerer abzuwehren.
-  - Danach mit echten Spieldaten nachjustieren.
-- **Doppelt:** Flex und Banane fliegen identisch (gleicher Start, gleiche Kurve). Nur der Preis fürs Abwehren und die
-  Optik unterscheiden sich. Flex sollte eine eigene Flugbahn bekommen.
+- **Bass-Drop:** schwebt tiefer (mit einem Sprung erreichbar), stürzt langsamer, schwächerer Zickzack.
+- **Meteor:** langsamer, bleibt auf gerader Bahn.
+- **Banane:** langsamer.
+- **Flex:** hat eine eigene Bahn: flach heran, dann ein berechneter Hüpfer über den Verteidiger und unter die Latte. Vorher
+  flog er identisch wie die Banane.
+- **Riesenball:** schleudert den ersten Blocker hoch und rollt unten durch, der zweite Block stoppt ihn.
+- **Flummi:** schneller, Sprünge abwechselnd flach und hoch, prallt einmal vom Blocker ab und springt weiter.
+- **Feuer, Eis, Geist, Sad:** etwas schneller.
+- **Fehler in der Torwertung:** Prallte ein weiterlaufender Super (Riesenball) vom Blocker ab und ging ins Tor, zählte das
+  als **Eigentor des Blockers**. Jetzt gehört der Ball weiter dem Schützen.
+- **Vorbehalt:** Die Zahlen kommen vom Computer, die Start-Köpfe (Kalle, Yuki) und Emo liegen mit 36–39 % noch etwas
+  unten. Mit echten Spieldaten nachjustieren.
 
-**B. Online: kein Wiederverbinden.** Ein kurzer Netzaussetzer beendet ein Freundesspiel, in Ranked zählt er als
+**B. Online: kein Wiederverbinden (entschieden: bauen).** Ein kurzer Netzaussetzer beendet ein Freundesspiel, in Ranked zählt er als
 Aufgabe. Vorschlag: 10 s Pause mit „Verbindung wird wiederhergestellt“, der Gast tritt demselben Raum automatisch wieder bei,
 der Host nimmt ihn mit derselben Spieler-ID an und schickt den vollen Stand.
 

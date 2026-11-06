@@ -23,8 +23,17 @@ export function touch(st, b, p, kind) {
     if (b.fx === "fire") { p.vx = -p.dir * 420; p.vy = Math.min(p.vy, -260); p.onG = false; p.stun = Math.max(p.stun, 0.3); ev(st, { t: "burn", i: p.i, x: p.x, y: p.y }); }
     if (b.fx === "ice") { p.frz = Math.max(p.frz, 1.1); ev(st, { t: "freeze", i: p.i, x: p.x, y: p.y }); }
     blockFx(st, b, p);
-    if (b.fx === "giant") { /* bleibt groß */ }
+    if (b.fx === "giant") {
+      // Riesenball ist schwer: der erste Blocker wird weggeschoben, der Ball rollt weiter aufs Tor; der zweite stoppt ihn
+      if (!b.fxK) { b.fxK = 1; b.fxTY = b.fxT + 0.35; const away = Math.sign(p.x - b.x) || -p.dir; p.vx = away * 300; p.vy = Math.min(p.vy, -pv(700)); p.onG = false; p.knock = Math.max(p.knock, 0.4); p.stun = Math.max(p.stun, 0.45); b.fxP = 1; }   // hochgeschleudert: der Ball rollt unten durch
+      else if (b.fxT > b.fxTY) endFx(st);   // derselbe Zusammenstoß zählt nicht doppelt
+    }
+    else if (b.fx === "bouncy" && !b.fxDY) { b.fxDY = 1; b.fxTY = b.fxT + 0.3; p.stun = Math.max(p.stun, 0.3); }   // Flummi prallt einmal ab und springt weiter aufs Tor
+    else if (b.fx === "bouncy" && b.fxT < b.fxTY) { /* derselbe Zusammenstoß */ }
     else endFx(st);
+    // Riesenball und Flummi laufen weiter: bleibt der Super aktiv, gehört der Ball weiter dem Schützen (sonst zählte
+    // ein Tor danach als Eigentor des Blockers, Review 06.11.2026)
+    if (b.fx) return true;
     ev(st, { t: "save", i: p.i, x: b.x, y: b.y });
   }
   b.lt = p.i; b.ltk = kind; b.ltx = p.x;
@@ -76,7 +85,8 @@ export function fxGravity(b) {
   switch (b.fx) {
     case "fire": case "thunder": case "rocket": case "ghost": case "tornado": case "magnet": case "clone": return 0;
     case "meteor": return 0;
-    case "flex": case "bassdrop": case "aimbot": case "copypaste": case "crypto": case "ghosting": case "rizz": case "brezel": return 0;
+    case "flex": return b.fxP === 1 ? 2.2 : 0;   // Flex: flach heran, dann ein Hüpfer über den Verteidiger
+    case "bassdrop": case "aimbot": case "copypaste": case "crypto": case "ghosting": case "rizz": case "brezel": return 0;
     case "stone": return b.fxP === 3 ? 1 : 0;
     case "ice": case "sad": return 0.25;
     case "banana": return 0;
@@ -86,26 +96,26 @@ export function fxGravity(b) {
 
 export function fireSuper(st, p, kind) {
   const b = st.b, t = target(st, p.i, false, b);
-  b.fx = kind; b.fxT = 0; b.fxO = p.i; b.fxP = 0; b.alpha = 1; b.lt = p.i; b.ltk = "super"; b.ltx = p.x;
+  b.fx = kind; b.fxT = 0; b.fxO = p.i; b.fxP = 0; b.fxK = 0; b.fxDY = 0;   // Merker vom letzten Super nicht mitschleppen b.alpha = 1; b.lt = p.i; b.ltk = "super"; b.ltx = p.x;
   // Ball vor den Fuß holen, damit er nicht im Kopf steckt
   if (Math.hypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 4) { b.x = p.x + p.dir * (pr(p) + b.r + 6); }
   st.stats[p.i].supers++;
   switch (kind) {
-    case "fire": aim(b, t.x, t.y, 1350); break;
-    case "ice": aim(b, t.x, t.y - 40, 1150); break;
+    case "fire": aim(b, t.x, t.y, 1550); break;
+    case "ice": aim(b, t.x, t.y - 40, 1300); break;
     case "thunder": aim(b, t.x, t.y, 1050); break;
     case "rocket": { b.vx = 0; b.vy = -80; const t2 = target(st, p.i, true); b.fxTX = t2.x; b.fxTY = t2.y; break; }
     case "banana": b.vx = p.dir * 700; b.vy = -900; break;
-    case "ghost": aim(b, t.x, t.y, 1150); break;
-    case "giant": b.grow = 2.0; aim(b, t.x, t.y - 120, 1000); break;
+    case "ghost": aim(b, t.x, t.y, 1300); break;
+    case "giant": b.grow = 2.0; aim(b, t.x, t.y - 60, 1150); break;
     case "tornado": b.fxBX = b.x; b.vx = 0; b.vy = -650; break;
     case "magnet": b.vx = p.dir * 900; b.vy = -650; break;
     case "meteor": b.vx = 0; b.vy = -2300; b.fxTX = t.x; b.fxTY = G; break;
-    case "bouncy": b.vx = (p.i ? -1 : 1) * 1050; b.vy = 500; break;
+    case "bouncy": b.vx = (p.i ? -1 : 1) * 1450; b.vy = 500; break;
     case "clone": case "copypaste": aim(b, t.x, t.y, 1150); b.fxBX = b.x; b.fxBY = b.y; b.fxDX = b.vx; b.fxDY = b.vy; b.fxK = [-1, 0, 1][Math.floor(Math.random() * 3)]; break;
-    case "sad": aim(b, t.x, t.y - 40, 1100); break;
-    case "flex": b.vx = p.dir * 700; b.vy = -900; break;
-    case "bassdrop": aim(b, b.x + p.dir * 260, 170, 950); break;
+    case "sad": aim(b, t.x, t.y - 40, 1250); break;
+    case "flex": aim(b, t.x, t.y - 20, 1150); break;
+    case "bassdrop": aim(b, b.x + p.dir * 260, 250, 950); break;   // schwebt tiefer: mit einem Sprung erreichbar
     case "aimbot": aim(b, t.x, t.y - 90, 950); break;
     case "stone": b.vx = 0; b.vy = -2300; b.fxTX = t.x; b.fxTY = G; break;
     case "crypto": b.vx = p.dir * 380; b.vy = -760; break;
@@ -135,9 +145,11 @@ export function superStep(st, b, dt) {
       if (b.fxP === 0 && b.fxT > 0.5) { b.fxP = 1; aim(b, b.fxTX, b.fxTY, 1400); ev(st, { t: "launch", x: b.x, y: b.y }); }
       if (b.fxT > 2) endFx(st); break;
     // aus der Nähe enger einlenken, sonst fliegt die Kurve übers Tor (Review 06.11.2026)
-    case "banana": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1150, dt); if (b.fxT > 2.2) endFx(st); break;
+    case "banana": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1000, dt); if (b.fxT > 2.2) endFx(st); break;
     case "ghost": b.alpha = b.fxT < 0.2 ? 1 : Math.abs(b.x - t.x) < 320 ? 0.95 : 0.2; if (b.fxT > 1.6) endFx(st); break;
-    case "giant": if (b.fxT > 3) { b.fx = ""; b.fxO = -1; } break;
+    case "giant":
+      if (b.fxP === 1) { aim(b, t.x, t.y - 40, 900); if (b.fxT > b.fxTY) b.fxP = 2; }   // nach dem Durchbrechen wieder aufs Tor
+      if (b.fxT > 3) { b.fx = ""; b.fxO = -1; } break;
     case "tornado":
       if (b.fxP === 0) {
         b.vx = (b.fxO ? -1 : 1) * Math.cos(b.fxT * 16) * 520 + (b.fxBX - b.x) * 3; b.vy = -620;
@@ -149,26 +161,39 @@ export function superStep(st, b, dt) {
       if (b.fxP === 0 && b.y < -230) {
         // Bahn so legen, dass der Meteor knapp unter der Latte durch ins Tor fällt (vorher traf er immer die Lattenecke)
         b.fxP = 2; const side = b.fxO ? -1 : 1, gl = side > 0 ? W - GOAL_W : GOAL_W, yc = barY(st, b.fxO ? 0 : 1) + BAR_T / 2 + b.r + 16;
-        b.x = gl - side * (yc + 240) / 2; b.y = -240; aim(b, gl + side * (G - yc) / 2, G, 1500); ev(st, { t: "launch", x: b.x, y: 0 });
+        b.x = gl - side * (yc + 240) / 2; b.y = -240; b.fxTX = gl + side * (G - yc) / 2; b.fxTY = G; aim(b, b.fxTX, b.fxTY, 950); ev(st, { t: "launch", x: b.x, y: 0 });
       }
+      if (b.fxP === 2) aim(b, b.fxTX, b.fxTY, 950);   // gerade Bahn halten (Luftwiderstand würde sie sonst verbiegen)
       if (b.fxP === 0 && b.fxT > 1.2) endFx(st);
       if (b.fxT > 2.5) endFx(st); break;
     case "bouncy": { // flache, gleich hohe Sprünge Richtung Tor (vorher sprang er über die Latte und oft ins eigene Tor)
       const side = b.fxO ? -1 : 1;
-      if (b.y + b.r > G - 4 && b.vy < 0) b.vy = -Math.sqrt(2 * ballG(st) * 130);
-      b.vx = side * Math.max(900, Math.abs(b.vx));
+      if (b.y + b.r > G - 4 && b.vy < 0) { b.fxK = (b.fxK || 0) + 1; b.vy = -Math.sqrt(2 * ballG(st) * (b.fxK % 2 ? 60 : 165)); }   // flach, hoch, flach …: schwer zu timen
+      b.vx = side * Math.max(1300, Math.abs(b.vx));
       if (b.fxT > 3.2) endFx(st); break;
     }
     case "sad": if (b.fxT > 1.7) endFx(st); break;
-    case "flex": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1150, dt); if (b.fxT > 2.2) endFx(st); break;
+    case "flex": {
+      const side = b.fxO ? -1 : 1;
+      const gl = side > 0 ? W - GOAL_W : GOAL_W;
+      if (b.fxP === 0) {
+        aim(b, t.x, t.y - 20, 1150);
+        // Hüpfer so berechnet, dass der Ball an der Torlinie wieder unten ist (über den Verteidiger, unter die Latte)
+        if (Math.abs(gl - b.x) < 600) {
+          const T = Math.abs(gl - b.x) / 1000, g = ballG(st) * 2.2, yl = Math.min(G - b.r - 8, t.y + 10);
+          b.fxP = 1; b.vy = -Math.max(0, (0.5 * g * T * T - (yl - b.y)) / Math.max(0.05, T)); ev(st, { t: "launch", x: b.x, y: b.y });
+        }
+      } else b.vx = side * 1000;
+      if (b.fxT > 2.2) endFx(st); break;
+    }
     case "bassdrop":
       if (b.fxP === 0 && b.fxT > 0.3) { b.fxP = 1; b.vx = 0; b.vy = 0; ev(st, { t: "drop", x: b.x, y: b.y }); }
       if (b.fxP === 1) { b.vx = 0; b.vy = 0; if (b.fxT > 0.75) { b.fxP = 2; ev(st, { t: "launch", x: b.x, y: b.y }); } }
       if (b.fxP === 2) {
         const ph = Math.floor(b.fxT / 0.13);
         if (ph !== b.fxK) { b.fxK = ph; ev(st, { t: "zap", x: b.x, y: b.y }); }
-        aim(b, t.x, t.y, 1100);
-        const ax = b.vx / 1100, ay = b.vy / 1100, s = (ph % 2 ? 1 : -1) * (b.fxO ? -1 : 1) * 520 * clamp(Math.hypot(t.x - b.x, t.y - b.y) / 450, 0.25, 1);   // kurz vor dem Tor ruhiger
+        aim(b, t.x, t.y, 700);
+        const ax = b.vx / 700, ay = b.vy / 700, s = (ph % 2 ? 1 : -1) * (b.fxO ? -1 : 1) * 300 * clamp(Math.hypot(t.x - b.x, t.y - b.y) / 450, 0.25, 1);   // kurz vor dem Tor ruhiger
         b.vx += -ay * s; b.vy += ax * s;
       }
       if (b.fxT > 2.4) endFx(st); break;
