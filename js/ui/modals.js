@@ -1,8 +1,10 @@
 // Dialoge: Tagesbonus, Level, neuer Kopf, Pokal
-import { CHARS, RARITY, rarityOf, SUPERS } from "../content/config.js";
-import { addCoins, owns, save } from "../app/profile.js";
+import { RARITY, rarityOf, SUPERS } from "../content/config.js";
+import { addCoins, S, save } from "../app/profile.js";
+import { LEVEL_SURE_HEAD, levelChest, levelCoins } from "../content/cosmetics.js";
+import { chestEl, openChestOverlay } from "./screens/chests.js";
 import { avatarCanvas } from "./render/art.js";
-import { modal } from "./dom.js";
+import { modal, toast } from "./dom.js";
 import { refreshTop } from "./screens/home.js";
 import { audio as A } from "../app/services.js";
 import { t } from "../content/i18n.js";
@@ -14,9 +16,21 @@ export function dailyModal(d) {
 
 export function levelModal(lvl) {
   A.sfx("levelup");
-  const bonus = 50 + lvl * 10; addCoins(bonus); save(); refreshTop();
-  const next = CHARS.find(c => !owns("chars", c.id));
-  modal({ title: t("level.title", { n: lvl }), icon: "i-star", body: `<p>${t("level.bonus", { coins: bonus })}</p>` + (next ? `<p style="font-size:15px;opacity:.75">${t("level.nextHead", { name: next.name, price: next.price })}</p>` : "") });
+  const bonus = levelCoins(lvl); addCoins(bonus); save(); refreshTop();
+  const tier = levelChest(lvl), sure = LEVEL_SURE_HEAD[lvl];
+  modal({ title: t("level.title", { n: lvl }), icon: "i-star", body: `<p>${t("level.bonus", { coins: bonus })}</p><div class="lvchest"></div><p><b>${t("level.chest", { tier: t("chest." + tier) })}</b>${sure ? `<br><small>${t("level.sureHead", { rarity: RARITY[sure] })}</small>` : ""}</p>`,
+    btn: t("level.openChest"), cancel: t("level.later"), onOk: () => openLevelChest(lvl) });
+  const box = document.querySelector(".lvchest"); if (box) box.append(chestEl(tier, 110));
+}
+
+// Kiste des Level-Ups öffnen. Mit Server kommt sie mit der Spielmeldung, also kurz warten
+async function openLevelChest(lvl) {
+  for (let i = 0; i < 20; i++) {
+    const c = S.chests.find(x => x.source === "level" && x.ref === String(lvl)) || S.chests.find(x => x.source === "level");
+    if (c) { openChestOverlay(c); return; }
+    await new Promise(r => { setTimeout(r, 200); });
+  }
+  toast(t("level.chestLater"), "i-chest");
 }
 
 export function unlockModal(c) {

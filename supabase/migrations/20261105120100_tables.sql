@@ -124,6 +124,38 @@ alter table game.progress add column if not exists online_day date;
 alter table game.progress add column if not exists online_rewarded integer not null default 0; -- belohnte Online-Spiele heute
 alter table game.progress add column if not exists career_paid text[] not null default '{}';    -- Ligen, deren Bonus bezahlt ist
 
+-- ---------- Kisten (docs/PROGRESSION.md) ----------
+-- Kosmetik-Arten im Katalog
+alter table game.items drop constraint if exists items_kind_check;
+alter table game.items add constraint items_kind_check
+  check (kind in ('head', 'ball', 'arena', 'hat', 'shoes', 'goalfx', 'emote', 'emoji', 'skin', 'celebration', 'frame', 'title'));
+
+create table if not exists game.chest_defs (
+  tier text primary key,
+  ord integer not null unique,
+  coins_min integer not null, coins_max integer not null, gems integer not null default 0,
+  cos_p real not null, cos_rar jsonb not null,      -- Chance auf Kosmetik, Verteilung der Seltenheit
+  head jsonb not null,                              -- Chance je Seltenheit auf einen Kopf
+  sure boolean not null default false               -- sicher ein Kopf
+);
+
+create table if not exists game.chests (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references game.players (id) on delete cascade,
+  tier text not null references game.chest_defs (tier),
+  source text not null, ref text not null,          -- woher (level, task, ...) und wofür (Level 7, Tag ...): jede Kiste nur einmal
+  sure_head text,                                   -- sicher ein neuer Kopf dieser Seltenheit (Level 2 / 5)
+  created_at timestamptz not null default now(),
+  opened_at timestamptz,
+  result jsonb,
+  unique (player_id, source, ref)
+);
+create index if not exists chests_closed on game.chests (player_id, created_at) where opened_at is null;
+
+alter table game.wallets add column if not exists shards integer not null default 0 check (shards >= 0);
+alter table game.progress add column if not exists pity jsonb not null default '{}';
+
+
 -- Gleiche Anfrage zweimal (Netz-Wiederholung) = nur einmal ausführen
 create table if not exists game.requests (
   player_id uuid not null references game.players (id) on delete cascade,

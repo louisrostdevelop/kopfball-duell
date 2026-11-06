@@ -22,6 +22,7 @@ import { initSetup } from "./ui/screens/setup.js";
 import { initRules } from "./ui/screens/rules.js";
 import { initRun } from "./ui/screens/run.js";
 import { initCareer } from "./ui/screens/career.js";
+import { initChests } from "./ui/screens/chests.js";
 import { initOnline, openOnline } from "./ui/screens/online.js";
 import { initShop } from "./ui/screens/shop.js";
 import { initTasks } from "./ui/screens/tasks.js";
@@ -70,7 +71,7 @@ async function boot() {
   setQuality(S.quality);
   webAudio.setSfx(S.sfx); webAudio.setMusic(S.music); domInput.setVibration(S.vib);
   domInput.initInput({ inGame: () => inGame(), onKey, onPadButton: onPad, onTouch: () => { webAudio.unlock(); updateBand(); } });
-  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initCareer, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initSearch, initPass, initBoard, initFriends, initHud].forEach(f => f());
+  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initCareer, initChests, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initSearch, initPass, initBoard, initFriends, initHud].forEach(f => f());
 
   // 3. Los geht's
   startDemo();

@@ -26,7 +26,55 @@ insert into game.items (id, kind, rarity, price_coins, price_gems, meta) values
   ('arena:strand', 'arena', 'basis', 0, null, '{"name":"Strand"}'::jsonb),
   ('arena:neon', 'arena', 'selten', 300, null, '{"name":"Neon City"}'::jsonb),
   ('arena:eis', 'arena', 'episch', 400, null, '{"name":"Eishalle"}'::jsonb),
-  ('arena:mond', 'arena', 'legend', 600, null, '{"name":"Mond"}'::jsonb)
+  ('arena:mond', 'arena', 'legend', 600, null, '{"name":"Mond"}'::jsonb),
+  ('hat:1', 'hat', 'selten', null, null, '{"n":1}'::jsonb),
+  ('hat:2', 'hat', 'selten', null, null, '{"n":2}'::jsonb),
+  ('hat:3', 'hat', 'selten', null, null, '{"n":3}'::jsonb),
+  ('hat:4', 'hat', 'selten', null, null, '{"n":4}'::jsonb),
+  ('hat:5', 'hat', 'selten', null, null, '{"n":5}'::jsonb),
+  ('hat:6', 'hat', 'episch', null, null, '{"n":6}'::jsonb),
+  ('hat:7', 'hat', 'episch', null, null, '{"n":7}'::jsonb),
+  ('hat:8', 'hat', 'episch', null, null, '{"n":8}'::jsonb),
+  ('hat:9', 'hat', 'episch', null, null, '{"n":9}'::jsonb),
+  ('hat:10', 'hat', 'legend', null, null, '{"n":10}'::jsonb),
+  ('hat:11', 'hat', 'legend', null, null, '{"n":11}'::jsonb),
+  ('hat:12', 'hat', 'legend', null, null, '{"n":12}'::jsonb),
+  ('shoes:1', 'shoes', 'selten', null, null, '{"n":1}'::jsonb),
+  ('shoes:2', 'shoes', 'selten', null, null, '{"n":2}'::jsonb),
+  ('shoes:3', 'shoes', 'selten', null, null, '{"n":3}'::jsonb),
+  ('shoes:4', 'shoes', 'selten', null, null, '{"n":4}'::jsonb),
+  ('shoes:5', 'shoes', 'episch', null, null, '{"n":5}'::jsonb),
+  ('shoes:6', 'shoes', 'episch', null, null, '{"n":6}'::jsonb),
+  ('shoes:7', 'shoes', 'episch', null, null, '{"n":7}'::jsonb),
+  ('shoes:8', 'shoes', 'legend', null, null, '{"n":8}'::jsonb),
+  ('goalfx:1', 'goalfx', 'selten', null, null, '{"n":1}'::jsonb),
+  ('goalfx:2', 'goalfx', 'selten', null, null, '{"n":2}'::jsonb),
+  ('goalfx:3', 'goalfx', 'selten', null, null, '{"n":3}'::jsonb),
+  ('goalfx:4', 'goalfx', 'episch', null, null, '{"n":4}'::jsonb),
+  ('goalfx:5', 'goalfx', 'episch', null, null, '{"n":5}'::jsonb),
+  ('goalfx:6', 'goalfx', 'episch', null, null, '{"n":6}'::jsonb),
+  ('goalfx:7', 'goalfx', 'legend', null, null, '{"n":7}'::jsonb),
+  ('goalfx:8', 'goalfx', 'legend', null, null, '{"n":8}'::jsonb),
+  ('emote:1', 'emote', 'selten', null, null, '{"n":1}'::jsonb),
+  ('emote:2', 'emote', 'selten', null, null, '{"n":2}'::jsonb),
+  ('emote:3', 'emote', 'selten', null, null, '{"n":3}'::jsonb),
+  ('emote:4', 'emote', 'selten', null, null, '{"n":4}'::jsonb),
+  ('emote:5', 'emote', 'episch', null, null, '{"n":5}'::jsonb),
+  ('emote:6', 'emote', 'episch', null, null, '{"n":6}'::jsonb),
+  ('emote:7', 'emote', 'episch', null, null, '{"n":7}'::jsonb),
+  ('emote:8', 'emote', 'legend', null, null, '{"n":8}'::jsonb),
+  ('emoji:1', 'emoji', 'selten', null, null, '{"n":1}'::jsonb),
+  ('emoji:2', 'emoji', 'selten', null, null, '{"n":2}'::jsonb),
+  ('emoji:3', 'emoji', 'selten', null, null, '{"n":3}'::jsonb),
+  ('emoji:4', 'emoji', 'selten', null, null, '{"n":4}'::jsonb),
+  ('emoji:5', 'emoji', 'selten', null, null, '{"n":5}'::jsonb),
+  ('emoji:6', 'emoji', 'selten', null, null, '{"n":6}'::jsonb),
+  ('emoji:7', 'emoji', 'episch', null, null, '{"n":7}'::jsonb),
+  ('emoji:8', 'emoji', 'episch', null, null, '{"n":8}'::jsonb),
+  ('emoji:9', 'emoji', 'episch', null, null, '{"n":9}'::jsonb),
+  ('emoji:10', 'emoji', 'episch', null, null, '{"n":10}'::jsonb),
+  ('emoji:11', 'emoji', 'legend', null, null, '{"n":11}'::jsonb),
+  ('emoji:12', 'emoji', 'legend', null, null, '{"n":12}'::jsonb)
 on conflict (id) do update set kind = excluded.kind, rarity = excluded.rarity, price_coins = excluded.price_coins, price_gems = excluded.price_gems, meta = excluded.meta, active = true;
 insert into game.products (id, gems, items, price_cents, once_per_player) values
   ('gems_100', 100, array[]::text[], 99, false),
@@ -65,6 +113,17 @@ insert into game.achievement_defs (id, reward, stat, goal) values
   ('stomp', 80, 'stomps', 10),
   ('wins25', 300, 'wins', 25)
 on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal;
+insert into game.chest_defs (tier, ord, coins_min, coins_max, gems, cos_p, cos_rar, head, sure) values
+  ('bronze', 0, 40, 80, 0, 0.35, '{"selten":1}'::jsonb, '{"selten":0.05,"episch":0.01,"legend":0.002}'::jsonb, false),
+  ('silver', 1, 100, 160, 0, 0.7, '{"selten":0.7,"episch":0.3}'::jsonb, '{"selten":0.12,"episch":0.05,"legend":0.01}'::jsonb, false),
+  ('gold', 2, 250, 250, 0, 1, '{"episch":0.8,"legend":0.2}'::jsonb, '{"selten":0.25,"episch":0.18,"legend":0.06}'::jsonb, false),
+  ('legend', 3, 0, 0, 30, 1, '{"legend":1}'::jsonb, '{"episch":0.5,"legend":0.5}'::jsonb, true)
+on conflict (tier) do update set ord = excluded.ord, coins_min = excluded.coins_min, coins_max = excluded.coins_max, gems = excluded.gems, cos_p = excluded.cos_p, cos_rar = excluded.cos_rar, head = excluded.head, sure = excluded.sure;
+insert into game.config (key, value) values
+  ('chest_pity', '{"epic":10,"legend":40,"head":50,"legendHead":90}'::jsonb),
+  ('chest_shards', '{"dup":{"selten":10,"episch":30,"legend":80},"craft":{"selten":50,"episch":150,"legend":400}}'::jsonb),
+  ('head_dup_xp', '{"selten":40,"episch":100,"legend":250}'::jsonb)
+on conflict (key) do update set value = excluded.value;
 insert into game.career_leagues (id, ord, coins, gems) values
   ('district', 0, 200, 0),
   ('regional', 1, 350, 0),

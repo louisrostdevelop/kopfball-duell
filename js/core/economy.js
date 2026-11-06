@@ -15,13 +15,15 @@ export const defaultProfile = () => ({
   sfx: true, music: true, vib: true, quality: "high",
   stats: { games: 0, wins: 0, goals: 0, headGoals: 0, pus: 0, stomps: 0, supers: 0 },
   ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, myPresets: [], chDone: "", endlessBest: 0, dealBought: "", career: {},
+  // Kisten und Kosmetik (docs/PROGRESSION.md): Besitz als volle IDs ("hat:3"), ausgerüstet, ungeöffnete Kisten, Splitter, Garantie-Zähler
+  cos: [], equip: { hat: null, shoes: null, goalfx: null, emotes: [null, null, null, null] }, chests: [], shards: 0, pity: {},
 });
 
 // Gespeicherte Daten (evtl. aus alter Version) auf das aktuelle Format bringen
 export function migrateProfile(d) {
   const b = defaultProfile();
   if (!d) return b;
-  const p = { ...b, ...d, stats: { ...b.stats, ...(d.stats || {}) }, daily: { ...b.daily, ...(d.daily || {}) } };
+  const p = { ...b, ...d, stats: { ...b.stats, ...(d.stats || {}) }, daily: { ...b.daily, ...(d.daily || {}) }, equip: { ...b.equip, ...(d.equip || {}) } };
   p.rules = cleanRules(p.rules, p.dur);
   p.myPresets = (p.myPresets || []).map(x => ({ ...x, rules: cleanRules(x.rules) }));
   return p;
@@ -34,7 +36,7 @@ export function cleanRules(r, dur) {
   return o;
 }
 
-export const xpFor = lvl => 120 + (lvl - 1) * 60;
+export { xpForLevel as xpFor } from "../content/cosmetics.js";   // wächst bis Level 50, dann gleich
 export const today = () => new Date().toISOString().slice(0, 10);
 export const yesterday = () => new Date(Date.now() - 864e5).toISOString().slice(0, 10);
 export const dailyBonus = streak => 40 + streak * 30;

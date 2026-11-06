@@ -41,6 +41,8 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     deleteAccount: () => client.rpc("delete_account", { confirm: "DELETE" }),
     claimPass: (tier, premium) => client.rpc("claim_pass", { tier, premium }),
     buyPassWithGems: () => client.rpc("buy_pass_with_gems", { request_key: key() }),
+    openChest: chest => client.rpc("open_chest", { chest }),
+    craftItem: item => client.rpc("craft_item", { item, request_key: key() }),
     // Online mit Warteschlange (Casual / Ranked)
     queueJoin: (mode, head) => client.rpc("queue_join", { queue_mode: mode, head }),
     queuePoll: () => client.rpc("queue_poll"),

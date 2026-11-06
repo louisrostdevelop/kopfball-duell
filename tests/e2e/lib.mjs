@@ -43,6 +43,8 @@ export async function openPage(env, view, { save = {}, init = [], query = "" } =
 // Klickt, schließt vorher einen offenen Dialog
 export async function click(page, sel, wait = 250) {
   if (sel !== "#modalOk" && await page.locator("#modal").isVisible()) { await page.click("#modalOk"); await page.waitForTimeout(150); }
+  // Kiste vom Level-Up geht über allem auf: abwarten und schließen
+  if (!sel.startsWith("#co") && await page.locator("#chestOpen").isVisible()) { await page.locator("#coDone").waitFor({ state: "visible", timeout: 8000 }); await page.click("#coDone"); await page.waitForTimeout(150); }
   await page.click(sel, { timeout: 4000 });
   await page.waitForTimeout(wait);
 }

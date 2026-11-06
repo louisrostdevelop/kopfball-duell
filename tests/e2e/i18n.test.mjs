@@ -19,7 +19,7 @@ test("Englisch vom Gerät, Wechsel auf Deutsch", async () => {
   const modes = await page.evaluate(() => document.getElementById("scr-modes").innerText);
   assert.match(modes, /Quick Match/); assert.doesNotMatch(modes, GERMAN);
   await click(page, "#scr-modes [data-back]");
-  for (const [sel, scr] of [["#navShop", "scr-shop"], ["#navTasks", "scr-tasks"], ["#navAch", "scr-ach"], ["#btnSettings", "scr-settings"]]) {
+  for (const [sel, scr] of [["#navShop", "scr-shop"], ["#navTasks", "scr-tasks"], ["#homeStars", "scr-ach"], ["#navChests", "scr-chests"], ["#btnSettings", "scr-settings"]]) {
     await click(page, sel, 300);
     const txt = await page.evaluate(id => document.getElementById(id).innerText, scr);
     assert.doesNotMatch(txt, GERMAN, scr + ": " + txt.match(GERMAN));

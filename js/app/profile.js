@@ -2,6 +2,8 @@
 // Wo gespeichert wird, entscheidet der eingesteckte ProfileStore (siehe ports/storage.js):
 // heute der Browser-Speicher, später zusätzlich ein Server. Die Regeln selbst liegen in core/economy.js.
 import { ACHIEVEMENTS } from "../content/config.js";
+import { cosById, LEVEL_SURE_HEAD, levelChest, SHARDS } from "../content/cosmetics.js";
+import { rollChest } from "../core/chests.js";
 import { defaultProfile, migrateProfile, xpFor, today, yesterday, dailyBonus, dailyTaskList, taskText, challengeFor, dealFor, earnedAchievements } from "../core/economy.js";
 
 /** @type {import("../ports/storage.js").ProfileStore | null} */
@@ -30,12 +32,50 @@ export { xpFor };
 export function addXP(n) {
   S.xp += n; const ups = [];
   while (S.xp >= xpFor(S.level)) { S.xp -= xpFor(S.level); S.level++; ups.push(S.level); }
+  // Kiste je Level-Up; mit Server vergibt der Server (kommt mit dem nächsten Zustand)
+  if (!hooks.serverChests) for (const l of ups) grantChest(levelChest(l), "level", String(l), LEVEL_SURE_HEAD[l]);
   return ups;
+}
+
+// ---------- Kisten (ohne Server: lokal; mit Server: app/account.js) ----------
+export function grantChest(tier, source, ref, sure = null) {
+  if (S.chests.some(c => c.source === source && c.ref === ref)) return null;
+  const c = { id: `${source}:${ref}`, tier, source, ref, sure };
+  S.chests.push(c); save();
+  return c;
+}
+/** Kiste lokal öffnen: würfeln, gutschreiben. Gibt das Ergebnis wie der Server zurück. */
+export function openChestLocal(id) {
+  const c = S.chests.find(x => x.id === id); if (!c) return null;
+  const owned = new Set([...S.chars.map(x => "head:" + x), ...S.cos]);
+  const heads = Object.fromEntries(Object.entries(S.heads || {}).map(([k, v]) => [k, v.level]));
+  const r = rollChest(c.tier, { owned, heads, pity: S.pity }, Math.random, c.sure);
+  S.pity = r.pity; addCoins(r.coins); S.gems = (S.gems || 0) + r.gems; S.shards += r.shards;
+  applyChestItems(r.items);
+  S.chests = S.chests.filter(x => x.id !== id); save();
+  return { tier: c.tier, coins: r.coins, gems: r.gems, shards: r.shards, items: r.items };
+}
+/** Neue Gegenstände aus einer Kiste ins Profil (auch nach Server-Antwort) */
+export function applyChestItems(items) {
+  for (const it of items) {
+    const [kind, id] = it.id.split(":");
+    if (kind === "head") {
+      if (!it.dup && !S.chars.includes(id)) S.chars.push(id);
+      if (it.headXp) { S.heads = S.heads || {}; const h = S.heads[id] || (S.heads[id] = { level: 1, xp: 0 }); h.xp += it.headXp; }
+    } else if (!it.dup && !S.cos.includes(it.id)) S.cos.push(it.id);
+  }
+}
+/** Mit Splittern herstellen (lokal) */
+export function craftLocal(id) {
+  const c = cosById(id); if (!c || S.cos.includes(id)) return false;
+  const cost = SHARDS.craft[c.rarity]; if (S.shards < cost) return false;
+  S.shards -= cost; S.cos.push(id); save();
+  return true;
 }
 export function addCoins(n) { S.coins += n; if (n > 0) S.earned += n; }
 export function owns(kind, id) { return S[kind].includes(id); }
 // Mit Server (app/account.js) bestätigt der Server jeden Kauf, sonst wird er zurückgedreht
-const hooks = { buy: null, canBuy: null, serverDaily: false };
+const hooks = { buy: null, canBuy: null, serverDaily: false, serverChests: false };
 export function setHooks(h) { Object.assign(hooks, h); }
 export function buy(kind, id, price) {
   if (owns(kind, id) || S.coins < price) return false;

@@ -73,6 +73,7 @@ export function refreshTop() {
   $("starNum").textContent = Object.keys(S.ach).length;
   const tl = tasks(), open = tl.filter(x => !x.done).length, ch = challenge();
   const tb = $("taskBadge"); const pv = serverOn() && passView(); const n = open + (ch.done ? 0 : 1) + (pv ? pv.claimable : 0); tb.hidden = !n; tb.textContent = n;
+  const cb = $("chestBadge"); cb.hidden = !S.chests.length; cb.textContent = S.chests.length;
   const dl = deal(); $("shopBadge").hidden = !(dl && S.coins >= dl.price) && !CHARS.some(c => !owns("chars", c.id) && c.price <= S.coins);
 }
 
@@ -138,6 +139,7 @@ export function initHome() {
   $("navShop").onclick = () => { A.sfx("click"); showScreen("shop"); };
   $("navTasks").onclick = () => { A.sfx("click"); showScreen("tasks"); };
   $("navAch").onclick = () => { A.sfx("click"); showScreen("ach"); };
+  $("navChests").onclick = () => { A.sfx("click"); showScreen("chests"); };
   $("homeStars").onclick = () => { A.sfx("click"); showScreen("ach"); };
   $("btnProfile").onclick = () => { A.sfx("click"); showScreen("ach"); };
   $("btnSettings").onclick = () => { A.sfx("click"); showScreen("settings"); };

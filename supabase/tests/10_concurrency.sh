@@ -54,6 +54,13 @@ wait
 D=$(q "select count(*) from game.purchases where player_id = '$V' and product_id = 'starter'")
 [ "$D" = "1" ] || fail "Starterpaket $D-mal gebucht statt 1"
 
+# 3d) Dieselbe Kiste 10-mal gleichzeitig öffnen: einmal gewürfelt, einmal gebucht
+CH=$(q "select game.grant_chest('$V', 'gold', 'test', 'conc-$TAG')")
+for i in $(seq 1 10); do as_user "$V" "select api.open_chest('$CH')" > /dev/null & done
+wait
+D=$(q "select count(*) from game.ledger where player_id = '$V' and reason = 'chest' and ref = '$CH'")
+[ "$D" = "1" ] || fail "Kiste $D-mal gebucht statt 1"
+
 # 4) 40 Spieler suchen gleichzeitig Casual: jeder höchstens in einem Spiel, nie gegen sich selbst
 IDS=$(q "insert into auth.users (id, email, is_anonymous) select gen_random_uuid(), '$TAG-q' || g, true from generate_series(1, 40) g returning id")
 q "update game.players set level = 5 where id in (select id from auth.users where email like '$TAG-q%')" >/dev/null

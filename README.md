@@ -15,6 +15,7 @@ Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy,
 - **Schuss:** halten lädt auf, loslassen schießt. Voll geladen fliegt der Ball härter und höher. Sauber mit dem Fuß getroffen gibt am meisten Wumms, ein geladener Kopfball etwas weniger.
 - Golden Goal bei Gleichstand, Zeitlupe und Wiederholung nach jedem Tor, Emotes.
 - **Fortschritt:** Münzen, Level, Tagesbonus, tägliche Aufgaben, Angebot des Tages, Shop für Köpfe, Bälle und Arenen, 16 Erfolge. Wird im Browser gespeichert.
+- **Kisten:** eine bei jedem Level-Up (Bronze bis Legendär), mit Köpfen und Kosmetik (vorerst Platzhalter), Chancen offen, Garantien, doppelte werden zu Splittern oder Kopf-XP. Nur erspielbar.
 - **Mit Server (optional):** Konto, Juwelen-Shop, Saison-Pass, Kopf-Level (bis +25 %), Bestenlisten, Freunde. Siehe [docs/BACKEND.md](docs/BACKEND.md).
 - **Deutsch und Englisch**, umschaltbar in den Einstellungen.
 - Als App installierbar (Zum Home-Bildschirm hinzufügen), dann im Vollbild und offline spielbar.

@@ -16,7 +16,8 @@ async function tour(view) {
   await c("#navHeads"); await c("#charGrid .ccard:nth-child(5)"); await c("#scr-select [data-back]");
   await c("#navShop"); await c("[data-tab=balls]"); await c("#scr-shop [data-back]");
   await c("#navTasks"); await c("#scr-tasks [data-back]");
-  await c("#navAch"); await c("#scr-ach [data-back]");
+  await c("#homeStars"); await c("#scr-ach [data-back]");
+  await c("#navChests"); await c("#btnChestOdds"); await c("#modalOk"); await c("#scr-chests [data-back]");
   await c("#btnSettings"); await c("#tglMusic"); await c("#scr-settings [data-back]");
   // Schnelles Spiel bis zum Ende, Revanche, Abbruch
   await c("#btnPlay"); await c("#btnKickoff", 3500);

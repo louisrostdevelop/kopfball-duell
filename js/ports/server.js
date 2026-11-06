@@ -20,6 +20,8 @@
  * @property {(item: string) => Promise<object>} [upgradeHead]
  * @property {(tier: number, premium: boolean) => Promise<object>} claimPass   Pass-Stufe abholen, gibt vollen Zustand
  * @property {() => Promise<object>} buyPassWithGems
+ * @property {(chest: string) => Promise<{ result: object, state: object }>} openChest   Kiste öffnen (Server würfelt)
+ * @property {(item: string) => Promise<{ state: object }>} craftItem                    Kosmetik mit Splittern herstellen
  * @property {(mode: "casual"|"ranked", head: string) => Promise<object>} queueJoin   in die Warteschlange
  * @property {() => Promise<{ matched: boolean, waited?: number, match?: string, role?: "host"|"guest", opponent?: object }>} queuePoll
  * @property {() => Promise<object>} queueLeave

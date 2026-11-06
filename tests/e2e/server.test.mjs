@@ -179,3 +179,26 @@ test("Offline spielen: Meldung wartet, Kaufen gesperrt, beim Wiederverbinden gew
   assert.ok(await until(async () => /Kreisliga geschafft: \+200/.test(await page.textContent("#toasts")) || null, 4000), "Bonus angezeigt");
   assert.deepEqual(errors.filter(e => !/status of 400|Failed to load resource|ERR_INTERNET_DISCONNECTED|Failed to fetch/.test(e)), []);
 });
+
+test("Kisten mit Server: Level-Up vergibt, Server würfelt, Inhalt kommt ins Profil", { skip: !hasPg && "kein Postgres" }, async () => {
+  const q = `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev`;
+  const { page, errors } = await openPage(env, VIEW.desktop, { query: q });
+  const id = (await until(() => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null"))))?.user?.id;
+  await until(async () => (await db("select 1 from game.ledger where player_id = $1 and reason = 'daily'", [id])).length);
+  await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
+  // Level 1 -> 2 auf dem Server: Bronze-Kiste mit sicher einem seltenen Kopf
+  await db("select game.add_xp($1, 130)", [id]);
+  await page.evaluate(async () => { const a = await import("/js/app/account.js"); const s = await import("/js/app/services.js"); a.applyState(await s.server.state()); });
+  assert.equal(await page.textContent("#chestBadge"), "1");
+  await click(page, "#navChests", 400);
+  await click(page, '.chesttile[data-tier="bronze"]', 100);
+  await page.locator("#coDone").waitFor({ state: "visible", timeout: 6000 });
+  const res = (await db("select result from game.chests where player_id = $1 and ref = '2'", [id]))[0].result;
+  const head = res.items.find(x => x.id.startsWith("head:"));
+  assert.ok(head && !head.dup, "Server hat einen Kopf gewürfelt");
+  const s = await S(page);
+  assert.ok(s.chars.includes(head.id.slice(5)), "Kopf im Profil");
+  assert.equal(s.chests.length, 0);
+  assert.ok((await db("select 1 from game.inventory where player_id = $1 and item_id = $2", [id, head.id])).length, "auf dem Server");
+  assert.deepEqual(errors.filter(e => !/status of 400/.test(e)), []);
+});

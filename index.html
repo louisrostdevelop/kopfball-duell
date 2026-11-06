@@ -47,6 +47,13 @@
   <symbol id="i-pause" viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></symbol>
   <symbol id="i-smile" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20ZM8.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7 13.5a5 5 0 0 0 10 0H7Z"/></symbol>
   <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 1 4 13.5h6.5L9 23l11-13h-7l.5-9Z"/></symbol>
+  <!-- Platzhalter-Formen für Kosmetik (echte Inhalte kommen später) -->
+  <symbol id="cos-hat" viewBox="0 0 48 48"><path d="M10 30c0-9 6-18 14-18s14 9 14 18Z" fill="var(--col)" stroke="#1c1838" stroke-width="3"/><rect x="4" y="29" width="40" height="7" rx="3.5" fill="var(--col)" stroke="#1c1838" stroke-width="3"/></symbol>
+  <symbol id="cos-shoes" viewBox="0 0 48 48"><path d="M6 32V16h12l4 8c8 1 18 3 20 8v4H6Z" fill="var(--col)" stroke="#1c1838" stroke-width="3" stroke-linejoin="round"/><path d="M6 36h36" stroke="#1c1838" stroke-width="3"/></symbol>
+  <symbol id="cos-goalfx" viewBox="0 0 48 48"><path d="m24 4 5 13 14-3-9 11 9 11-14-3-5 13-5-13-14 3 9-11-9-11 14 3Z" fill="var(--col)" stroke="#1c1838" stroke-width="3" stroke-linejoin="round"/></symbol>
+  <symbol id="cos-emote" viewBox="0 0 48 48"><circle cx="24" cy="26" r="16" fill="var(--col)" stroke="#1c1838" stroke-width="3"/><path d="M16 30c4 5 12 5 16 0M18 20v3m12-3v3M10 8l4 4m24-4-4 4" stroke="#1c1838" stroke-width="3" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-shard" viewBox="0 0 24 24"><path d="m12 2 6 7-6 13-6-13Zm0 3.4L8.6 9.3 12 17l3.4-7.7Z"/></symbol>
+  <symbol id="i-chest" viewBox="0 0 24 24"><path d="M3 10a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v1H3Zm0 3h18v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm7 0h4v3a2 2 0 0 1-4 0Z"/></symbol>
   <symbol id="i-gift" viewBox="0 0 24 24"><path d="M8.5 2a3 3 0 0 1 3.5 2.4A3 3 0 1 1 15.5 8H21v4h-1v9a1 1 0 0 1-1 1h-6V12h-2v10H5a1 1 0 0 1-1-1v-9H3V8h5.5a3 3 0 0 1 0-6Zm0 2a1 1 0 0 0 0 2H11a2.5 2.5 0 0 0-2.5-2Zm7 0A2.5 2.5 0 0 0 13 6h2.5a1 1 0 0 0 0-2Z"/></symbol>
   <symbol id="i-swap" viewBox="0 0 24 24"><path d="M16 3l5 5-5 5V9.5H8v-3h8V3ZM8 11v3.5h8v3H8V21l-5-5 5-5Z"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m9.5 15.6-4.3-4.3-2.4 2.4 6.7 6.7L21.2 8.7l-2.4-2.4-9.3 9.3Z"/></symbol>
@@ -92,6 +99,7 @@
       <button class="navbtn blue" id="navHeads"><svg><use href="#i-swap"/></svg><span data-i18n="html.home.koepfe">Köpfe</span></button>
       <button class="navbtn pink" id="navShop"><svg><use href="#i-bag"/></svg><span data-i18n="html.home.shop">Shop</span><i class="badge" id="shopBadge" hidden>!</i></button>
       <button class="navbtn green" id="navTasks"><svg><use href="#i-tasks"/></svg><span data-i18n="html.home.aufgaben">Aufgaben</span><i class="badge" id="taskBadge" hidden></i></button>
+      <button class="navbtn purple" id="navChests"><svg><use href="#i-chest"/></svg><span data-i18n="html.home.kisten">Kisten</span><i class="badge" id="chestBadge" hidden></i></button>
       <button class="navbtn gold" id="navAch"><svg><use href="#i-trophy"/></svg><span data-i18n="html.home.erfolge">Erfolge</span></button>
     </nav>
 
@@ -308,6 +316,16 @@
     <div class="passtrack" id="passTrack"></div>
   </section>
 
+  <!-- Kisten -->
+  <section class="screen" id="scr-chests" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.chests.title">Kisten</h2><span class="grow"></span><button class="btn small ghost" id="btnChestOdds" data-i18n="chest.odds">Chancen</button><span class="chip static shard-chip" data-i18n-attr="title:chest.shardsTitle"><svg class="ic"><use href="#i-shard"/></svg><b id="chestShards">0</b></span></header>
+    <div class="chestwrap">
+      <div class="chestgrid" id="chestGrid"></div>
+      <p class="runnote" id="chestHint"></p>
+      <p class="hint center" id="chestPity"></p>
+    </div>
+  </section>
+
   <!-- Erfolge -->
   <section class="screen" id="scr-ach" hidden>
     <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.ach.erfolge">Erfolge</h2><span class="grow"></span><button class="btn small purple" id="btnBoard" hidden><svg><use href="#i-trophy"/></svg><span data-i18n="html.ach.bestenliste">Bestenliste</span></button><span class="chip static"><svg class="ic"><use href="#i-star"/></svg><b id="achSum">0</b></span></header>
@@ -381,6 +399,11 @@
 </main>
 
 <div id="toasts"></div>
+<div id="chestOpen" hidden>
+  <div class="co-stage" id="coStage"></div>
+  <div class="co-cards" id="coCards"></div>
+  <div class="co-btns"><button class="btn yellow big" id="coNext" hidden data-i18n="chest.openNext">Nächste öffnen</button><button class="btn ghost" id="coDone" hidden data-i18n="ui.next">Weiter</button></div>
+</div>
 <div id="modal" hidden><div class="modalcard" id="modalCard"></div></div>
 <div id="rotate" hidden><div class="phone"></div><b data-i18n="html.pause.handyDrehen">Handy drehen</b><span data-i18n="html.pause.querSpieltEsSich">Quer spielt es sich viel besser.</span></div>
 <div id="loading"><b class="ld-logo"><span>Kopfball</span><br><span>Duell</span></b><div class="ball"></div></div>

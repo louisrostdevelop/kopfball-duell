@@ -51,17 +51,50 @@ begin
   return true;
 end $$;
 
--- ---------- Konto-XP: Level-Aufstiege geben Münzen, alle 5 Level Juwelen ----------
+-- ---------- Kisten vergeben, Zustand ----------
+create or replace function game.grant_chest(p uuid, t text, src text, r text, sure text default null) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare cid uuid;
+begin
+  insert into game.chests (player_id, tier, source, ref, sure_head) values (p, t, src, r, sure)
+  on conflict (player_id, source, ref) do nothing returning id into cid;
+  return cid;
+end $$;
+
+-- Seltenheit aus {"selten":0.7,"episch":0.3}
+create or replace function game.roll_rar(dist jsonb) returns text
+language plpgsql volatile security definer set search_path = '' as $$
+declare x double precision := random(); k text; v double precision; last text;
+begin
+  for k, v in select key, value::double precision from jsonb_each_text(dist) order by case key when 'selten' then 1 when 'episch' then 2 else 3 end loop
+    if x < v then return k; end if;
+    x := x - v; last := k;
+  end loop;
+  return last;
+end $$;
+
+-- Ungeöffnete Kisten für den Zustand
+create or replace function game.closed_chests(p uuid) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'tier', c.tier, 'source', c.source, 'ref', c.ref, 'sure', c.sure_head) order by c.created_at), '[]')
+    from game.chests c where c.player_id = p and c.opened_at is null
+$$;
+
+-- ---------- Konto-XP: Level-Aufstiege geben Münzen, alle 5 Level Juwelen und eine Kiste ----------
+-- XP pro Level wächst bis Level 50, danach gleich (kein Maximal-Level). Kiste: Bronze, jedes 5. Silber, jedes 10. Gold,
+-- jedes 25. Legendär; Level 2 und 5 sicher ein neuer seltener / epischer Kopf (js/content/cosmetics.js).
 create or replace function game.add_xp(p uuid, amount integer) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare lvl integer; cur integer; ups integer[] := '{}';
 begin
   if amount <= 0 then return '[]'::jsonb; end if;
   update game.players set xp = xp + amount where id = p returning level, xp into lvl, cur;
-  while cur >= 120 + (lvl - 1) * 60 loop
-    cur := cur - (120 + (lvl - 1) * 60); lvl := lvl + 1; ups := ups || lvl;
-    perform game.book(p, 'coins', 50 + lvl * 10, 'level', lvl::text);
+  while cur >= 120 + (least(lvl, 50) - 1) * 60 loop
+    cur := cur - (120 + (least(lvl, 50) - 1) * 60); lvl := lvl + 1; ups := ups || lvl;
+    perform game.book(p, 'coins', 50 + least(lvl, 50) * 10, 'level', lvl::text);
     if lvl % 5 = 0 then perform game.book(p, 'gems', 20, 'level', lvl::text); end if;
+    perform game.grant_chest(p, case when lvl % 25 = 0 then 'legend' when lvl % 10 = 0 then 'gold' when lvl % 5 = 0 then 'silver' else 'bronze' end,
+                             'level', lvl::text, case lvl when 2 then 'selten' when 5 then 'episch' end);
   end loop;
   if array_length(ups, 1) > 0 then update game.players set level = lvl, xp = cur where id = p; end if;
   return to_jsonb(ups);
@@ -157,6 +190,7 @@ language sql stable security definer set search_path = '' as $$
     'challengeDone', pr.challenge_day = game.today(),
     'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
     'career', pr.career, 'achievements', pr.achievements, 'stats', pr.stats,
+    'chests', game.closed_chests(pl.id), 'shards', w.shards, 'pity', pr.pity,
     'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,
     'imported', pr.imported,
     'season', (select jsonb_build_object('id', s.id, 'endsAt', s.ends_at, 'tiers', s.pass,
@@ -185,6 +219,7 @@ language sql stable security definer set search_path = '' as $$
                          from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
     'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
     'career', pr.career,
+    'chests', game.closed_chests(pl.id), 'shards', w.shards, 'pity', pr.pity,
     'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,
     'passPoints', (select pp.points from game.pass_progress pp where pp.player_id = pl.id and pp.season_id = game.current_season()))
   from game.players pl

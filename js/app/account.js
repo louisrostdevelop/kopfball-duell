@@ -1,7 +1,8 @@
 // Server-Konto: Wenn ein Spiel-Server eingesteckt ist, gilt sein Stand für alles, was zählt (Münzen, Juwelen,
 // Level, Besitz). Das Spiel rechnet weiter lokal vor (sofortige Anzeige) und übernimmt danach die Zahlen vom Server.
 // Ohne Server passiert hier nichts, das Spiel läuft lokal wie bisher.
-import { S, save, setHooks } from "./profile.js";
+import { applyChestItems, craftLocal, openChestLocal, S, save, setHooks } from "./profile.js";
+import { COS_KINDS } from "../content/cosmetics.js";
 import { has, server } from "./services.js";
 import { t, lang } from "../content/i18n.js";
 import { CAREER } from "../content/career.js";
@@ -13,7 +14,7 @@ export const online = () => has("server");
 let last = null;
 let netDown = false;   // letzter Server-Aufruf kam nicht durch (offline)
 const listeners = [];
-/** Wird nach jedem Abgleich mit dem Server aufgerufen (Anzeige oben auffrischen) */
+/** Wird nach jedem neuen Server-Stand aufgerufen (Anzeige auffrischen) */
 export const onSync = fn => { listeners.push(fn); };
 /** Server gerade erreichbar? (Käufe gehen nur dann) */
 export const reachable = () => online() && !netDown && globalThis.navigator?.onLine !== false;
@@ -32,6 +33,15 @@ export function applyState(st) {
     const sel = { chars: "char", balls: "ball", arenas: "arena" }[kind];
     if (mine.length && !mine.includes(S[sel])) S[sel] = mine[0];
   }
+  if (Array.isArray(st.items)) {
+    S.cos = st.items.filter(i => COS_KINDS.includes(i.split(":")[0]));
+    // Ausgerüstetes, das man nicht (mehr) hat, ablegen
+    for (const k of ["hat", "shoes", "goalfx"]) if (S.equip[k] && !S.cos.includes(S.equip[k])) S.equip[k] = null;
+    S.equip.emotes = S.equip.emotes.map(e => (e && S.cos.includes(e) ? e : null));
+  }
+  if (Array.isArray(st.chests)) S.chests = st.chests.map(c => ({ id: c.id, tier: c.tier, source: c.source, ref: c.ref, sure: c.sure || null }));
+  if (typeof st.shards === "number") S.shards = st.shards;
+  if (st.pity && typeof st.pity === "object") S.pity = st.pity;
   if (st.heads) S.heads = Object.fromEntries(Object.entries(st.heads).map(([k, v]) => [k.replace(/^head:/, ""), v]));
   if (st.name) S.name = st.name;
   if (typeof st.passPoints === "number" && last.season && last.season.pass) last.season.pass.points = st.passPoints;
@@ -40,13 +50,14 @@ export function applyState(st) {
   if (st.career && typeof st.career === "object") S.career = server.pending && server.pending() ? maxMerge(st.career, S.career) : { ...st.career };
   S.serverSynced = true;   // ab jetzt gilt der Server, lokaler Stand wird nie wieder übernommen
   save();
+  listeners.forEach(fn => { try { fn(); } catch (_) { /* Anzeige */ } });
 }
 export const serverState = () => last;
 
 /** Einstecken (main.js, nach provide): Käufe und Tagesbonus laufen dann über den Server */
 export function initAccount() {
   if (!online()) return;
-  setHooks({ buy: confirmBuy, canBuy, serverDaily: true });
+  setHooks({ buy: confirmBuy, canBuy, serverDaily: true, serverChests: true });
   globalThis.addEventListener?.("online", () => { netDown = false; syncPending(); });
   globalThis.document?.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncPending(); });
 }
@@ -77,7 +88,6 @@ export function syncPending() {
     else if (out.sent > 1) toast(t("sync.sent", { n: out.sent }), "i-check", true);
     clearTimeout(retryT);
     if (out.left) retryT = setTimeout(syncPending, 30000);   // Netz weg oder zu schnell: gleich nochmal
-    listeners.forEach(fn => fn());
     return out;
   }).catch(() => null).finally(() => { flushing = null; });
   return flushing;
@@ -193,3 +203,25 @@ export async function addFriend(name) {
 export const removeFriend = name => server.friendRemove(name);
 /** Konto mit allen Spielerdaten löschen (Käufe bleiben ohne Personenbezug für die Buchhaltung) */
 export const deleteAccount = () => server.deleteAccount();
+
+// ---------- Kisten ----------
+/** Kiste öffnen: mit Server würfelt der Server, sonst lokal. Ergebnis: { tier, coins, gems, shards, items } */
+export async function openChest(id) {
+  if (!online()) return openChestLocal(id);
+  if (!reachable()) throw Object.assign(new Error("offline"), { code: "offline" });
+  const r = await server.openChest(id);
+  applyChestItems(r.result.items || []);
+  applyState(r.state);
+  S.chests = S.chests.filter(c => c.id !== id);
+  save();
+  return r.result;
+}
+/** Kosmetik mit Splittern herstellen */
+export async function craft(id) {
+  if (!online()) return craftLocal(id);
+  if (!reachable()) throw Object.assign(new Error("offline"), { code: "offline" });
+  const r = await server.craftItem(id);
+  if (!S.cos.includes(id)) S.cos.push(id);
+  applyState(r.state); save();
+  return true;
+}
