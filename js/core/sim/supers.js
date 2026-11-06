@@ -1,6 +1,7 @@
 // Spezialschüsse und was passiert, wenn jemand den Ball berührt (abwehren, auslösen)
-import { W, G, GOAL_W, charById, clamp } from "../../content/config.js";
+import { W, G, GOAL_W, BAR_T, charById, clamp } from "../../content/config.js";
 import { barY, ev, pr } from "./base.js";
+import { ballG } from "./rules.js";
 import { pv } from "./tuning.js";
 
 export function handleSuper(st, p, c) {
@@ -48,11 +49,17 @@ function blockFx(st, b, p) {
 }
 
 // ---------- Spezialschüsse ----------
-export function target(st, i, hi) {
+export function target(st, i, hi, b = null) {
   const side = i ? 0 : 1;
   const x = side ? W - GOAL_W * 0.45 : GOAL_W * 0.45;
   const by = barY(st, side);
-  const y = hi ? by + 50 : by + (G - by) * 0.55;
+  let y = hi ? by + 50 : by + (G - by) * 0.55;
+  // Kommt der Ball von schräg oben, den Zielpunkt so weit senken, dass die Bahn unter der Latte durchgeht
+  // (sonst prallen Supers aus der Nähe an der Lattenecke ab und rollen zurück, Review 06.11.2026)
+  if (b && !hi) {
+    const gl = side ? W - GOAL_W : GOAL_W, yc = by + BAR_T / 2 + b.r + 6, ahead = (gl - b.x) * (x - b.x) > 0 && Math.abs(gl - b.x) > 1;
+    if (ahead && b.y < yc && b.y + (y - b.y) * (gl - b.x) / (x - b.x) < yc) y = Math.min(G - b.r - 2, b.y + (yc - b.y) * (x - b.x) / (gl - b.x));
+  }
   return { x, y };
 }
 
@@ -78,7 +85,7 @@ export function fxGravity(b) {
 }
 
 export function fireSuper(st, p, kind) {
-  const b = st.b, t = target(st, p.i, false);
+  const b = st.b, t = target(st, p.i, false, b);
   b.fx = kind; b.fxT = 0; b.fxO = p.i; b.fxP = 0; b.alpha = 1; b.lt = p.i; b.ltk = "super"; b.ltx = p.x;
   // Ball vor den Fuß holen, damit er nicht im Kopf steckt
   if (Math.hypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 4) { b.x = p.x + p.dir * (pr(p) + b.r + 6); }
@@ -94,7 +101,7 @@ export function fireSuper(st, p, kind) {
     case "tornado": b.fxBX = b.x; b.vx = 0; b.vy = -650; break;
     case "magnet": b.vx = p.dir * 900; b.vy = -650; break;
     case "meteor": b.vx = 0; b.vy = -2300; b.fxTX = t.x; b.fxTY = G; break;
-    case "bouncy": b.vx = p.dir * 1100; b.vy = 700; break;
+    case "bouncy": b.vx = (p.i ? -1 : 1) * 1050; b.vy = 500; break;
     case "clone": case "copypaste": aim(b, t.x, t.y, 1150); b.fxBX = b.x; b.fxBY = b.y; b.fxDX = b.vx; b.fxDY = b.vy; b.fxK = [-1, 0, 1][Math.floor(Math.random() * 3)]; break;
     case "sad": aim(b, t.x, t.y - 40, 1100); break;
     case "flex": b.vx = p.dir * 700; b.vy = -900; break;
@@ -112,7 +119,7 @@ export function fireSuper(st, p, kind) {
 
 export function superStep(st, b, dt) {
   b.fxT += dt;
-  const t = target(st, b.fxO, false);
+  const t = target(st, b.fxO, false, b);
   switch (b.fx) {
     case "fire": if (b.fxT > 1.6) endFx(st); break;
     case "ice": if (b.fxT > 1.6) endFx(st); break;
@@ -120,33 +127,40 @@ export function superStep(st, b, dt) {
       const ph = Math.floor(b.fxT / 0.11);
       if (ph !== b.fxP) { b.fxP = ph; ev(st, { t: "zap", x: b.x, y: b.y }); }
       aim(b, t.x, t.y, 1050);
-      const ax = b.vx / 1050, ay = b.vy / 1050, s = (ph % 2 ? 1 : -1) * 420;
+      const ax = b.vx / 1050, ay = b.vy / 1050, s = (ph % 2 ? 1 : -1) * (b.fxO ? -1 : 1) * 420;   // Zickzack für beide Seiten gespiegelt
       b.vx += -ay * s; b.vy += ax * s;
       if (b.fxT > 1.8) endFx(st); break;
     }
     case "rocket":
       if (b.fxP === 0 && b.fxT > 0.5) { b.fxP = 1; aim(b, b.fxTX, b.fxTY, 1400); ev(st, { t: "launch", x: b.x, y: b.y }); }
       if (b.fxT > 2) endFx(st); break;
-    case "banana": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2, 1150, dt); if (b.fxT > 2.2) endFx(st); break;
+    // aus der Nähe enger einlenken, sonst fliegt die Kurve übers Tor (Review 06.11.2026)
+    case "banana": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1150, dt); if (b.fxT > 2.2) endFx(st); break;
     case "ghost": b.alpha = b.fxT < 0.2 ? 1 : Math.abs(b.x - t.x) < 320 ? 0.95 : 0.2; if (b.fxT > 1.6) endFx(st); break;
     case "giant": if (b.fxT > 3) { b.fx = ""; b.fxO = -1; } break;
     case "tornado":
       if (b.fxP === 0) {
-        b.vx = Math.cos(b.fxT * 16) * 520 + (b.fxBX - b.x) * 3; b.vy = -620;
+        b.vx = (b.fxO ? -1 : 1) * Math.cos(b.fxT * 16) * 520 + (b.fxBX - b.x) * 3; b.vy = -620;
         if (b.fxT > 0.55 || b.y < 120) { b.fxP = 1; aim(b, t.x, t.y, 1300); ev(st, { t: "launch", x: b.x, y: b.y }); }
       } else steer(b, t.x, t.y, 4, 1250, dt);
       if (b.fxT > 2.4) endFx(st); break;
-    case "magnet": steer(b, t.x, t.y, 2.6, 1100, dt); if (b.fxT > 2.4) endFx(st); break;
+    case "magnet": steer(b, t.x, t.y, 2.6 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1100, dt); if (b.fxT > 2.4) endFx(st); break;
     case "meteor":
       if (b.fxP === 0 && b.y < -230) {
-        b.fxP = 2; const side = b.fxO ? -1 : 1;
-        b.x = t.x - side * 430; b.y = -240; aim(b, t.x, t.y + 30, 1500); ev(st, { t: "launch", x: b.x, y: 0 });
+        // Bahn so legen, dass der Meteor knapp unter der Latte durch ins Tor fällt (vorher traf er immer die Lattenecke)
+        b.fxP = 2; const side = b.fxO ? -1 : 1, gl = side > 0 ? W - GOAL_W : GOAL_W, yc = barY(st, b.fxO ? 0 : 1) + BAR_T / 2 + b.r + 16;
+        b.x = gl - side * (yc + 240) / 2; b.y = -240; aim(b, gl + side * (G - yc) / 2, G, 1500); ev(st, { t: "launch", x: b.x, y: 0 });
       }
       if (b.fxP === 0 && b.fxT > 1.2) endFx(st);
       if (b.fxT > 2.5) endFx(st); break;
-    case "bouncy": if (b.fxT > 3.2) endFx(st); break;
+    case "bouncy": { // flache, gleich hohe Sprünge Richtung Tor (vorher sprang er über die Latte und oft ins eigene Tor)
+      const side = b.fxO ? -1 : 1;
+      if (b.y + b.r > G - 4 && b.vy < 0) b.vy = -Math.sqrt(2 * ballG(st) * 130);
+      b.vx = side * Math.max(900, Math.abs(b.vx));
+      if (b.fxT > 3.2) endFx(st); break;
+    }
     case "sad": if (b.fxT > 1.7) endFx(st); break;
-    case "flex": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2, 1150, dt); if (b.fxT > 2.2) endFx(st); break;
+    case "flex": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1150, dt); if (b.fxT > 2.2) endFx(st); break;
     case "bassdrop":
       if (b.fxP === 0 && b.fxT > 0.3) { b.fxP = 1; b.vx = 0; b.vy = 0; ev(st, { t: "drop", x: b.x, y: b.y }); }
       if (b.fxP === 1) { b.vx = 0; b.vy = 0; if (b.fxT > 0.75) { b.fxP = 2; ev(st, { t: "launch", x: b.x, y: b.y }); } }
@@ -154,7 +168,7 @@ export function superStep(st, b, dt) {
         const ph = Math.floor(b.fxT / 0.13);
         if (ph !== b.fxK) { b.fxK = ph; ev(st, { t: "zap", x: b.x, y: b.y }); }
         aim(b, t.x, t.y, 1100);
-        const ax = b.vx / 1100, ay = b.vy / 1100, s = (ph % 2 ? 1 : -1) * 520;
+        const ax = b.vx / 1100, ay = b.vy / 1100, s = (ph % 2 ? 1 : -1) * (b.fxO ? -1 : 1) * 520 * clamp(Math.hypot(t.x - b.x, t.y - b.y) / 450, 0.25, 1);   // kurz vor dem Tor ruhiger
         b.vx += -ay * s; b.vy += ax * s;
       }
       if (b.fxT > 2.4) endFx(st); break;
@@ -171,13 +185,14 @@ export function superStep(st, b, dt) {
       if (b.fxP === 0) {
         const side = b.fxO ? -1 : 1, ph = Math.floor(b.fxT / 0.16);
         b.vx = side * 380; b.vy = ph % 2 ? -60 : -760;
-        if (b.fxT > 0.95 || b.y < 90) { b.fxP = 1; aim(b, t.x, t.y + 30, 1600); ev(st, { t: "launch", x: b.x, y: b.y }); }
+        if (b.fxT > 0.95 || b.y < 90 || Math.abs(t.x - b.x) < 360) { b.fxP = 1; aim(b, t.x, t.y + 30, 1600); ev(st, { t: "launch", x: b.x, y: b.y }); }   // nah am Tor früher los (sonst Lattenecke)
       }
       if (b.fxT > 2.4) endFx(st); break;
     case "ghosting": b.alpha = b.fxT < 0.15 ? 1 : Math.abs(b.x - t.x) < 240 ? 0.95 : 0.1; if (b.fxT > 1.7) endFx(st); break;
     case "rizz": {
-      steer(b, t.x, t.y, 2.4, 1050, dt);
-      const w = Math.cos(b.fxT * 11) * 0.9 * dt * 11, c = Math.cos(w), s = Math.sin(w), vx = b.vx;
+      steer(b, t.x, t.y, 2.4 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1050, dt);
+      // Schlangenlinie, für beide Seiten gespiegelt (vorher drehte sie für links nach unten, für rechts nach oben)
+      const w = (b.fxO ? 1 : -1) * Math.cos(b.fxT * 11) * 0.9 * dt * 11, c = Math.cos(w), s = Math.sin(w), vx = b.vx;
       b.vx = vx * c - b.vy * s; b.vy = vx * s + b.vy * c;
       if (b.fxT > 2.6) endFx(st); break;
     }

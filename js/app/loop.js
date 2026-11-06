@@ -6,7 +6,7 @@ import { S, save } from "./profile.js";
 import { render, setQuality } from "../ui/render/render.js";
 import { onEvent } from "./effects.js";
 import { startDemo } from "./game.js";
-import { guestFrame, hostSend } from "./online.js";
+import { guestFrame, hostSend, watchNet } from "./online.js";
 import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
@@ -17,7 +17,14 @@ import { t } from "../content/i18n.js";
 export let lastT = performance.now(), simT = 0;
 export const perf = { t: 0, n: 0, slow: 0 };
 
+// Ein Fehler in einem Frame (z. B. beim Zeichnen) darf das Spiel nicht einfrieren: nächsten Frame immer anmelden,
+// den Fehler einmal pro Meldung in die Konsole schreiben (Review 06.11.2026)
+const seenErr = new Set();
 export function loop(now) {
+  requestAnimationFrame(loop);
+  try { frame(now); } catch (e) { const k = String(e && e.message); if (!seenErr.has(k)) { seenErr.add(k); console.error("frame error", e); } }   // i18n-ok: Konsole
+}
+function frame(now) {
   const raw = (now - lastT) / 1000;
   const dt = Math.min(0.05, raw); lastT = now; simT += dt;
   if (S.quality === "high" && inGame() && raw < 0.5) {
@@ -28,6 +35,7 @@ export function loop(now) {
   const st = App.st;
   const rotated = I.isTouch && window.innerHeight > window.innerWidth && inGame();
   $("rotate").hidden = !rotated;
+  watchNet(now);
   if (App.mode === "guest") guestFrame(dt, now);
   else if (!App.paused && !(rotated && App.mode !== "host")) {
     App.acc = advance(st, dt, gatherInputs(dt), App.acc);
@@ -46,7 +54,6 @@ export function loop(now) {
   if (st.ph === "end" && !App.endShown) { App.endShown = true; if (App.mode === "demo") setTimeout(startDemo, 1500); else setTimeout(matchEnd, 900); }
   if (App.mode === "demo" && st.ph === "goal" && st.pt < 3.0) st.pt = Math.min(st.pt, 0.5);
   if (App.screen === "home") drawShowcase(dt);
-  requestAnimationFrame(loop);
 }
 
 export function gatherInputs(dt) {
@@ -59,7 +66,9 @@ export function gatherInputs(dt) {
     // Druck-Zähler gestiegen, die Taste ist aber schon wieder los: Druck trotzdem kurz geben (kurzer Sprung = halb hoch)
     if (g[6] !== pd.sj) { if (!g[2] && pd.sj !== undefined) pd.j = 0.07; pd.sj = g[6]; }
     if (g[7] !== pd.sd) { if (!g[5] && pd.sd !== undefined) pd.d = 0.03; pd.sd = g[7]; }
-    const out = { l: !!g[0], r: !!g[1], j: !!g[2] || pd.j > 0, k: !!g[3], s: !!g[4], d: !!g[5] || pd.d > 0 };
+    // Kommt länger keine Eingabe (Gast im Hintergrund, Paketverlust), nichts mehr festhalten: sonst läuft er ewig weiter
+    const fresh = performance.now() - (App.guestInAt || 0) < 350;
+    const out = { l: fresh && !!g[0], r: fresh && !!g[1], j: (fresh && !!g[2]) || pd.j > 0, k: fresh && !!g[3], s: fresh && !!g[4], d: (fresh && !!g[5]) || pd.d > 0 };
     pd.j = Math.max(0, pd.j - dt); pd.d = Math.max(0, pd.d - dt);
     return [I.getInput(0, "single"), out];
   }

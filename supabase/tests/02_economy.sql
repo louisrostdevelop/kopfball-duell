@@ -145,6 +145,15 @@ begin
   perform pg_temp.expect_error($q$select api.set_prefs(jsonb_build_object('x', repeat('a', 9000)))$q$, 'prefs_too_large');
   perform pg_temp.logout();
 
+  -- Pokalsieg (letzte Runde): Erfolg „cup“ kommt auch mit Server (vorher nur ohne Server)
+  perform pg_temp.logout();
+  update game.progress set cpu_credit = 99999, last_cpu_at = now() where player_id = u;
+  delete from game.rate_limits where player_id = u;
+  perform pg_temp.login(u);
+  r := api.report_cpu_match(pg_temp.cpu('cpu', true, 2, 1) || '{"cup": true, "facts": ["cup"]}', 'match-key-cup1');
+  assert r->'achievements' ? 'cup', 'Pokal-Erfolg: ' || (r->'achievements')::text;
+  perform pg_temp.logout();
+
   -- Arenen: alte sind ab Level frei (nicht käuflich), neue erst nach ihrer Saison im Shop (vorher im Pass)
   perform pg_temp.login(u);
   perform pg_temp.expect_error('select api.buy_item(''arena:neon'', ''coins'', ''arena-key-00'')', 'not_for_sale');

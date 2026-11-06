@@ -902,7 +902,9 @@ function drawBallFx(st, b, t, skin, replay) {
   const col = b.fx ? SUPERS[b.fx].col : "#fff";
   // Spurpunkte mit fester Rate (60/s), damit die Spur bei 120 Hz gleich aussieht
   if (!replay) {
-    const last = trail[trail.length - 1];
+    let last = trail[trail.length - 1];
+    // Ball springt (Noclip-Tür, Meteor, Anstoß): Spur neu anfangen statt einen Strich quer übers Feld zu ziehen
+    if (last && Math.hypot(b.x - last.x, b.y - last.y) > 160) { trail.length = 0; last = null; }
     if (!last || t - last.t0 >= 1 / 61 || t < last.t0) trail.push({ x: b.x, y: b.y, r: b.r, fx: b.fx, sp, id: trailId++, t0: t });
     while (trail.length > 32) trail.shift();
   }
@@ -1073,9 +1075,11 @@ function drawObstacles(st, view, t) {
         ctx.fillStyle = S.plat; ctx.beginPath(); ctx.ellipse(x, y + h / 2, w / 2, h / 2 + 2, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
         ctx.fillStyle = S.edge; ctx.fillRect(x - w * 0.36, y + h / 2 - 2, w * 0.72, 4); ctx.fillStyle = "#2a7fc0"; ctx.fillRect(x - 4, y + 2, 8, h - 4);
       } else if (ar === "neon") { // Laserbalken
-        ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = S.edge; ctx.shadowBlur = quality === "high" ? 18 : 0;
+        // Leuchten als Verlauf statt shadowBlur (shadowBlur kostete auf dem Handy pro Frame ein Vielfaches, Review 06.11.2026)
+        ctx.globalCompositeOperation = "lighter";
+        if (quality === "high") { const gl = ctx.createLinearGradient(0, y - 14, 0, y + h + 14); gl.addColorStop(0, "rgba(255,79,216,0)"); gl.addColorStop(0.5, "rgba(255,79,216,.45)"); gl.addColorStop(1, "rgba(255,79,216,0)"); ctx.fillStyle = gl; ctx.fillRect(x0 - 12, y - 14, w + 24, h + 28); }
         ctx.fillStyle = S.edge; roundRect(x0, y + h * 0.25, w, h * 0.5, h * 0.25); ctx.fill();
-        ctx.shadowBlur = 0; ctx.fillStyle = "#fff"; roundRect(x0 + 6, y + h * 0.42, w - 12, h * 0.16, 2); ctx.fill();
+        ctx.fillStyle = "#fff"; roundRect(x0 + 6, y + h * 0.42, w - 12, h * 0.16, 2); ctx.fill();
         ctx.globalCompositeOperation = "source-over"; ctx.fillStyle = INK; ctx.fillRect(x0 - 4, y, 10, h); ctx.fillRect(x0 + w - 6, y, 10, h);
       } else if (ar === "eis") { // Eisplatte mit Zapfen
         ctx.fillStyle = S.plat; roundRect(x0, y, w, h, 6); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
@@ -1087,9 +1091,10 @@ function drawObstacles(st, view, t) {
     } else { // Bumper
       const r = o.r, flash = clamp(1 - (t - (o.hitT || -9)) / 0.25, 0, 1), rr = r * (1 + 0.12 * flash);
       if (ar === "neon") {
-        ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = S.bump; ctx.shadowBlur = quality === "high" ? 20 + 20 * flash : 0;
+        ctx.globalCompositeOperation = "lighter";
+        if (quality === "high") { const gr = ctx.createRadialGradient(x, y, rr * 0.6, x, y, rr + 18 + 14 * flash); gr.addColorStop(0, "rgba(34,211,238,.55)"); gr.addColorStop(1, "rgba(34,211,238,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, rr + 18 + 14 * flash, 0, TAU); ctx.fill(); }
         ctx.strokeStyle = S.bump; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x, y, rr - 3, 0, TAU); ctx.stroke();
-        ctx.shadowBlur = 0; ctx.fillStyle = flash > 0 ? "#fff" : "#ff4fd8"; ctx.beginPath(); ctx.arc(x, y, rr * 0.35, 0, TAU); ctx.fill();
+        ctx.fillStyle = flash > 0 ? "#fff" : "#ff4fd8"; ctx.beginPath(); ctx.arc(x, y, rr * 0.35, 0, TAU); ctx.fill();
         ctx.globalCompositeOperation = "source-over";
       } else if (ar === "strand") { // Wasserball
         const cols = ["#ff5ca8", "#ffd02b", "#2ad3f5", "#3ed46f", "#ffffff", "#ff8a3d"];

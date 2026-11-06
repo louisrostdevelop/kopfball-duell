@@ -96,3 +96,29 @@ test("Online: traurig und verliebt kommen beim Gast an", () => {
   assert.equal(back.p[1].charmT, 0.4);
   assert.equal(back.p[0].sadT, 0);
 });
+
+// Alle 22 Supers (auch die klassischen): treffen ein leeres Tor von überall, von beiden Seiten, ohne Eigentor,
+// und fliegen für links und rechts spiegelbildlich (Review 06.11.2026: Meteor traf nie, Flummi sprang über die Latte
+// und oft ins eigene Tor, Rizz, Donnerkeil, Bass-Drop und Tornado waren je nach Seite verschieden)
+function freeShot(kind, side, x, y) {
+  seedRandom(3);
+  const st = P.newMatch({ chars: ["kalle", "yuki"], arena: "stadion", dur: 90, pus: false }); st.ph = "play";
+  const p = st.p[side], o = st.p[1 - side], d = side ? -1 : 1;
+  p.x = side ? C.W - x : x; p.dir = d; st.b.x = p.x + d * 40; st.b.y = y; st.b.vx = 0; st.b.vy = 0;
+  o.x = side ? -300 : C.W + 300; o.y = -600;
+  P.fireSuper(st, p, kind);
+  const path = [];
+  for (let f = 0; f < 120 * 4 && st.ph === "play"; f++) {
+    P.step(st, DT, [{}, {}]); st.ev.length = 0; o.x = side ? -300 : C.W + 300; o.y = -600;
+    if (f < 180) path.push([side ? C.W - st.b.x : st.b.x, st.b.y]);
+  }
+  return { goal: st.s[side], own: st.s[1 - side], path };
+}
+for (const kind of [...new Set(C.CHARS.map(c => c.super))]) test(`Super ${kind}: trifft das leere Tor von beiden Seiten, spiegelbildlich`, () => {
+  for (const x of [250, 450, 650, 900]) for (const y of [560, 420]) {
+    const a = freeShot(kind, 0, x, y), b = freeShot(kind, 1, x, y);
+    assert.equal(a.goal + b.goal, 2, `${kind} von x ${x}, y ${y}`);
+    assert.equal(a.own + b.own, 0, "kein Eigentor");
+    for (let i = 0; i < Math.min(a.path.length, b.path.length); i++) assert.ok(Math.hypot(a.path[i][0] - b.path[i][0], a.path[i][1] - b.path[i][1]) < 2, `${kind}: links und rechts gleich (Schritt ${i})`);
+  }
+});

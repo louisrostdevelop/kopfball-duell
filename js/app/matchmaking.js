@@ -69,6 +69,7 @@ function matched(r) {
   timer = setTimeout(() => { if (my === gen && App.mm && App.mm.state === "connect") fail(t("mm.noConnect")); }, CONNECT_MS);
   const onClose = () => {
     if (!App.mm || App.mm.match !== mm.match) return;
+    App.netLost = null;
     if (inGame() || App.screen === "pause") {
       // Gegner mitten im Spiel weg: als Aufgabe melden. Meldet er nichts, gewinnt man nach ein paar Minuten.
       const st = App.st; reportResult([st.s[0], st.s[1]], (Date.now() - (App.t0 || Date.now())) / 1000, true);
@@ -76,6 +77,7 @@ function matched(r) {
     }
     else if (App.screen !== "end") fail(t("mm.oppGone"));
   };
+  App.netLost = onClose;   // Wächter in online.js: Gegenseite friert ein, ohne dass die Verbindung schließt
   if (r.role === "host") {
     Net.host({
       onData: d => { hostData(d); if (d.t === "hello" && App.opp && App.mm && App.mm.state === "connect") { App.mm.state = "play"; clearTimeout(timer); setTimeout(hostStart, 600); } },

@@ -104,7 +104,7 @@ export function challengeFor(d) {
   const opp = pick(CHARS).id, arena = pick(ARENAS).id;
   const diff = r() < 0.5 ? 2 : r() < 0.7 ? 1 : 3;
   const len = r() < 0.5 ? "w3" : 60, nl = layoutsFor(arena).length, obsI = r() < 0.45 && nl ? Math.floor(r() * nl) : null;
-  return { date: d, opp, arena, diff, preset: pre.id, presetName: pre.name + (obsI !== null ? " + " + layoutsFor(arena)[obsI].name : ""), rules: { ...pre.rules, len, ...(obsI !== null ? { obs: obsI } : {}) }, dur: 60, reward: 150 + (diff === 3 ? 100 : 0) };
+  return { date: d, opp, arena, diff, preset: pre.id, presetName: pre.name + (obsI !== null ? " + " + layoutsFor(arena)[obsI].name : ""), rules: { ...pre.rules, len, ...(obsI !== null ? { obs: obsI } : {}) }, dur: 60, reward: 150 };   // wie api.report_cpu_match (bonus 150)
 }
 
 // ---------- Angebot des Tages: 30 % auf etwas, das man noch nicht hat ----------

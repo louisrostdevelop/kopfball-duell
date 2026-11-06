@@ -790,6 +790,7 @@ export default {
   "net.failed": "Verbindung fehlgeschlagen ({type}).",
   "net.full": "Der Raum ist schon voll.",
   "net.hint": "Wenn dein Kumpel dir einen Link geschickt hat, öffne einfach den Link.",
+  "net.lagging": "Verbindung hakt …",
   "net.hostLeft": "Gastgeber hat das Spiel verlassen",
   "net.loading": "Online-Modus lädt noch. Versuch es gleich nochmal.",
   "net.noRoom": "Kein Raum mit Code {code} gefunden.",

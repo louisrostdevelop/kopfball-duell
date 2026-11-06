@@ -160,6 +160,7 @@ test("Offline spielen: Meldung wartet, Kaufen gesperrt, beim Wiederverbinden gew
   await click(page, "#btnEndAgain", 500);
   assert.equal(await page.locator("#careerGrid .cstage:nth-child(1) .stars svg.on").count(), 3, "lokal 3 Sterne");
   // Kaufen ohne Verbindung: gesperrt, nichts abgebucht
+  await page.evaluate(async () => { (await import("/js/app/profile.js")).S.coins = 5000; });   // genug Geld: gesperrt nur wegen der Verbindung
   const coins = (await S(page)).coins;
   const bought = await page.evaluate(async () => (await import("/js/app/profile.js")).buy("balls", "beach", 500));
   assert.equal(bought, false); assert.equal((await S(page)).coins, coins);

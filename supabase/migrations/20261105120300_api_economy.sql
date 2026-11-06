@@ -293,7 +293,8 @@ begin
   end if;
   -- Erfolge: nur was zum Ergebnis passt
   facts := array(select jsonb_array_elements_text(coalesce(r->'facts', '[]')));
-  facts := array(select f from unnest(facts) f where (f in ('supergoal', 'lastsec', 'longshot') and goals >= 1) or (f = 'comeback' and won and conceded >= 2));
+  facts := array(select f from unnest(facts) f where (f in ('supergoal', 'lastsec', 'longshot') and goals >= 1) or (f = 'comeback' and won and conceded >= 2)
+                                                 or (f = 'cup' and won and mode = 'cpu' and coalesce((r->>'cup')::boolean, false)));   -- Pokal gewonnen (letzte Runde)
   if won then facts := array_append(facts, 'firstwin'); end if;
   if won and conceded = 0 then facts := array_append(facts, 'cleansheet'); end if;
   if goals >= 3 then facts := array_append(facts, 'hattrick'); end if;

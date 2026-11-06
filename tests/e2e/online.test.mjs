@@ -106,3 +106,27 @@ test("Online bei schlechtem Netz", async () => {
   assert.ok(g.delay > 90, "Puffer an schlechtes Netz angepasst: " + g.delay.toFixed(0) + " ms");
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
 });
+
+// Gast friert ein (Tab im Hintergrund, Absturz), ohne dass die Verbindung schließt: festgehaltene Taste wirkt nicht
+// weiter, nach 4 s ein Hinweis, nach 15 s zurück in die Lobby (Review 06.11.2026)
+test("Online: Gast friert ein", async () => {
+  const a = await openPage(env, VIEW, { init: [MOCK] });
+  const A = a.page;
+  await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
+  await A.click("#btnHost"); await A.waitForTimeout(500);
+  const code = (await A.textContent("#lobbyCode")).trim();
+  const B = await a.ctx.newPage();
+  await B.goto(env.url + "/index.html?join=" + code); await B.waitForTimeout(2500);
+  if (await B.locator("#modalOk").isVisible()) await B.click("#modalOk");
+  await A.click("#btnLobbyStart"); await A.waitForTimeout(3600);
+  await B.bringToFront(); await B.keyboard.down("ArrowRight"); await B.waitForTimeout(300);
+  await B.evaluate(() => { window.requestAnimationFrame = () => 0; });   // Gast-Schleife steht, Verbindung bleibt offen
+  await A.bringToFront(); await A.waitForTimeout(900);
+  const vx = await A.evaluate(() => window.__kd.st.p[1].vx);
+  assert.ok(Math.abs(vx) < 5, "Gast läuft nicht mit festgehaltener Taste weiter: vx " + vx);
+  await A.waitForTimeout(4000);
+  assert.match(await A.textContent("#toasts"), /hakt/);
+  await A.waitForTimeout(11000);
+  assert.deepEqual(await A.evaluate(() => [window.__kd.screen, window.__kd.mode]), ["lobby", "demo"]);
+  assert.deepEqual(a.errors.filter(e => !e.includes("TUNNEL")), []);
+});

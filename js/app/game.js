@@ -89,6 +89,7 @@ export function updateBand() {
 
 export function quitToMenu() {
   if (App.mode === "host" || App.mode === "guest") Net.close();
+  App.netLost = null; App.lastRx = 0;
   App.run = null; App.mm = null;
   document.body.classList.remove("ingame");
   $("gameBtns").hidden = true;

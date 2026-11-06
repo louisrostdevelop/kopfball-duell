@@ -111,16 +111,34 @@ export function hostGame() {
     },
     onConn: () => { $("lobbyNote").textContent = t("lobby.connected"); },
     onData: hostData,
-    onClose: () => {
-      App.opp = null;
-      if (inGame() || App.screen === "end" || App.screen === "pause") { toast(t("net.oppLost")); backToLobby(); }
-      lobbyUI("host"); $("lobbyNote").textContent = t("lobby.oppGone");
-    },
+    onClose: hostLost,
     onError: type => { $("lobbyNote").textContent = t("net.roomFailed", { type }) + " " + t("ui.tryAgain"); },
   });
 }
 
+function hostLost() {
+  App.opp = null;
+  if (inGame() || App.screen === "end" || App.screen === "pause") { toast(t("net.oppLost")); backToLobby(); }
+  lobbyUI("host"); $("lobbyNote").textContent = t("lobby.oppGone");
+}
+function guestLost() { if (App.mode === "guest" || App.screen === "lobby" || App.screen === "end") { toast(t("net.hostLeft")); quitToMenu(); } }
+
+/**
+ * Wächter für laufende Online-Spiele (jeden Frame): kommt von der anderen Seite nichts mehr an (Tab im Hintergrund,
+ * Netz weg, ohne dass die Verbindung sauber schließt), erst ein Hinweis, nach NET_LOST ms wie ein Abbruch.
+ * App.netLost setzt, wer die Verbindung aufbaut (Freunde: hostLost/guestLost, Gegnersuche: matchmaking.js).
+ */
+export const NET_WARN = 4000, NET_LOST = 15000;
+export function watchNet(now) {
+  if ((App.mode !== "host" && App.mode !== "guest") || !App.st || App.st.ph === "end" || !App.lastRx) return;
+  const gap = now - App.lastRx;
+  if (gap > NET_WARN && !App.lagWarn) { App.lagWarn = true; toast(t("net.lagging"), "i-close"); }
+  else if (gap < 1000) App.lagWarn = false;
+  if (gap > NET_LOST && App.netLost) { const f = App.netLost; App.netLost = null; App.lastRx = 0; Net.close(); f(); }
+}
+
 export function hostData(d) {
+  App.lastRx = performance.now();
   switch (d.t) {
     case "hello":
       if (d.v !== VERSION) toast(t("net.oldVersionGuest"), "i-close");
@@ -132,7 +150,7 @@ export function hostData(d) {
     case "i":
       if (!Array.isArray(d.i)) break;
       if (typeof d.q === "number") { if (d.q <= App.inSeqSeen) break; App.inSeqSeen = d.q; }   // ungeordnet: ältere verwerfen
-      App.guestIn = d.i.slice(0, 8); break;
+      App.guestIn = d.i.slice(0, 8); App.guestInAt = performance.now(); break;
     case "emo": {
       // Gegner-Emote: gültig, aus seinen Plätzen, höchstens eins alle 3 Sekunden
       const now = performance.now() / 1000, slots = (App.cfg && App.cfg.cos && App.cfg.cos[1] && App.cfg.cos[1].emotes) || EMOTES;
@@ -156,6 +174,8 @@ export function hostStart() {
   const fixed = resolveObs(cfg);
   Net.send({ t: "start", mid: App.mid, cfg: { ...fixed, mode: "guest", labels: [null, t("hud.you")] } });
   beginMatch(fixed);
+  App.lastRx = performance.now(); App.guestInAt = App.lastRx; App.lagWarn = false;
+  if (!App.mm) App.netLost = hostLost;
 }
 
 export function tryJoin(code) {
@@ -167,7 +187,7 @@ export function tryJoin(code) {
   Net.join(code, {
     onConn: () => Net.send({ t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: headLevel(S.char), cos: myCos(), v: VERSION }),
     onData: guestData,
-    onClose: () => { if (App.mode === "guest" || App.screen === "lobby" || App.screen === "end") { toast(t("net.hostLeft")); quitToMenu(); } },
+    onClose: guestLost,
     onError: (type, wasOk) => {
       if (wasOk) return;
       Net.close();
@@ -179,6 +199,7 @@ export function tryJoin(code) {
 }
 
 export function guestData(d) {
+  App.lastRx = performance.now();
   switch (d.t) {
     case "welcome":
       if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote(t("net.versionMismatch"), true); break; }
@@ -188,7 +209,10 @@ export function guestData(d) {
     case "cfg": App.netCfg = d.cfg; lobbyUI("guest"); break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("guest"); } break;
     case "full": Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
-    case "start": App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock(); break;
+    case "start":
+      App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock();
+      App.lastRx = performance.now(); App.lagWarn = false; if (!App.mm) App.netLost = guestLost;
+      break;
     case "s": {
       if (App.mode !== "guest" || d.mid !== App.mid) break; // alte Pakete vom letzten Spiel ignorieren
       if (d.q <= App.lastSeq) break;                        // ungeordneter Kanal: ältere als das neueste verwerfen

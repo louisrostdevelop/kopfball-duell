@@ -52,24 +52,25 @@ export function matchEnd() {
   const m = DIFFS[(App.cfg && App.cfg.diff) ?? 1].coins;
   switch (App.mode) {
     case "cpu": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(24 * m) : 7); break;
-    case "cup": add(t(win ? "rw.cupWin" : "rw.out"), win ? Math.round(30 * m) : 9); break;
+    case "cup": add(t(win ? "rw.cupWin" : "rw.out"), win ? Math.round(24 * m) : 7); break;
     case "career": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(24 * m) : 7); break;
     case "endless": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(21 * m) : 6); break;
-    case "daily": { const c = challenge(); if (win && !c.done) { add(t("rw.daily"), c.reward); challengeDone(); } else add(t(win ? "rw.win" : "rw.played"), win ? 18 : 6); break; }
+    case "daily": { const c = challenge(); add(t(win ? "rw.win" : "rw.played"), win ? 24 : 7); if (win && !c.done) { add(t("rw.daily"), c.reward); challengeDone(); } break; }
     case "host": case "guest": add(t(win ? "rw.onlineWin" : "rw.online"), win ? 42 : 15); break;
     case "local": add(t("rw.local"), 12); break;
   }
-  if (myS && myS.goals) add(t("rw.goals", { n: myS.goals }), myS.goals * (vsCpu() ? 5 : 3));
-  if (win && st.s[op] === 0) add(t("rw.cleanSheet"), 12);
+  // Wie api.report_cpu_match: Tore zählen gegen den Computer und zu zweit, online gibt es nur Sieg/Niederlage (game.settle)
+  if (myS && myS.goals && !["host", "guest"].includes(App.mode)) add(t("rw.goals", { n: myS.goals }), myS.goals * 5);
+  if (win && st.s[op] === 0 && !["host", "guest"].includes(App.mode)) add(t("rw.cleanSheet"), 12);
   // Läufe
   let runInfo = null;
   if (App.run && App.run.kind === "cup" && App.mode === "cup") {
     const r = App.run; r.res[r.round] = { s: [a, b], win };
-    if (win) { r.round++; if (r.round >= r.ops.length) { r.done = true; add(t("rw.trophy"), 180); runInfo = "cup"; S.cupBest = 3; } } else r.done = true;
+    if (win) { r.round++; if (r.round >= r.ops.length) { r.done = true; runInfo = "cup"; S.cupBest = 3; } } else r.done = true;   // Pokal: Erfolg und Ehre, Münzen gibt es pro Spiel (wie auf dem Server)
   }
   if (App.run && App.run.kind === "endless" && App.mode === "endless") {
     const r = App.run;
-    if (win) { r.streak++; r.next = endlessOpp(r.streak); } else { r.done = true; add(t("rw.endlessRun"), r.streak * 25); if (r.streak > S.endlessBest) { S.endlessBest = r.streak; runInfo = "record"; } }
+    if (win) { r.streak++; r.next = endlessOpp(r.streak); } else { r.done = true; if (r.streak > S.endlessBest) { S.endlessBest = r.streak; runInfo = "record"; } }
   }
   // Karriere: Sterne eintragen (nie weniger als vorher)
   let career = null;
@@ -112,7 +113,7 @@ export function matchEnd() {
   }
   const endlessFinal = App.run && App.run.kind === "endless" && App.mode === "endless" && App.run.done ? App.run.streak : 0;
   if (serverOn() && serverMode(App.mode)) {
-    const facts = myS ? [myS.goals >= 3 && "hattrick", myS.superGoals > 0 && "supergoal", myS.lastSecGoals > 0 && "lastsec", myS.longGoals > 0 && "longshot", win && App.maxDef >= 2 && "comeback"].filter(Boolean) : [];
+    const facts = myS ? [myS.goals >= 3 && "hattrick", myS.superGoals > 0 && "supergoal", myS.lastSecGoals > 0 && "lastsec", myS.longGoals > 0 && "longshot", win && App.maxDef >= 2 && "comeback", runInfo === "cup" && "cup"].filter(Boolean) : [];
     reportMatch({
       mode: serverMode(App.mode), won: win, ...(App.mode === "career" && App.career ? { stage: careerKey(App.career.li, App.career.gi) } : {}), goals: myS ? myS.goals : 0, conceded: me >= 0 ? st.s[op] : 0,
       duration: Math.round(Math.min(900, (Date.now() - (App.t0 || Date.now())) / 1000)), head: "head:" + (me >= 0 ? st.p[me].ch : S.char), diff: App.cfg.diff ?? 1,
