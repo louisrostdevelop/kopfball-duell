@@ -97,6 +97,7 @@ begin
 
   -- Herstellen
   update game.wallets set shards = 160 where player_id = u;
+  delete from game.inventory where player_id = u and item_id = 'goalfx:5';
   it := (select id from game.items where kind = 'shoes' and rarity = 'episch' and id not in (select item_id from game.inventory where player_id = u) limit 1);
   perform pg_temp.login(u);
   perform pg_temp.expect_error($q$select api.craft_item('head:max', 'craft-0001')$q$, 'not_craftable');
@@ -108,6 +109,8 @@ begin
 
   -- Kosmetik in der Gegnersuche: nur Besessenes der passenden Art
   update game.players set level = 10 where id = u;
+  delete from game.inventory where player_id = u and item_id in ('emoji:12', 'goalfx:8');   -- sicher nicht besessen (Kisten oben sind Zufall)
+  insert into game.inventory (player_id, item_id, source) values (u, 'emoji:1', 'test'), (u, 'hat:1', 'test') on conflict do nothing;
   perform pg_temp.login(u);
   perform api.queue_join('casual', 'head:kalle', '{"hat": "hat:1", "shoes": "hat:2", "goalfx": "goalfx:8", "emotes": ["GG", "emoji:1", "emoji:12", "x:y"]}');
   perform pg_temp.logout();
@@ -115,6 +118,36 @@ begin
   perform pg_temp.login(u); perform api.queue_leave(); perform pg_temp.logout();
   assert r->>'hat' = 'hat:1' and r->'shoes' is null and r->'goalfx' is null, 'nur Besessenes: ' || r::text;
   assert r->'emotes' = '["GG", "emoji:1"]'::jsonb, 'Emotes geprüft: ' || r::text;
+
+  -- Weitere Quellen: alle Tagesaufgaben geschafft = Bronze (einmal am Tag)
+  perform game.progress_tasks(v, '{"wins": 99, "goals": 99, "headGoals": 99, "supers": 99, "pus": 99, "stomps": 99, "online": 99, "hard": 99, "cupRound": 99}');
+  perform game.progress_tasks(v, '{"wins": 99}');
+  assert (select count(*) from game.chests where player_id = v and source = 'tasks' and tier = 'bronze') = 1, 'Tagesaufgaben-Kiste';
+
+  -- Tages-Challenge gewonnen = Bronze (und 15 Juwelen), einmal am Tag
+  update game.progress set cpu_credit = 1800 where player_id = v;
+  perform pg_temp.login(v);
+  r := api.report_cpu_match('{"mode":"daily","won":true,"goals":2,"conceded":0,"duration":60,"head":"head:kalle","diff":2}', 'daily-chest-1');
+  perform pg_temp.logout();
+  assert exists (select 1 from game.chests where player_id = v and source = 'challenge' and tier = 'bronze'), 'Challenge-Kiste';
+  assert jsonb_array_length(r->'state'->'chests') >= 1, 'im Zustand';
+
+  -- Wochenaufgaben: 5 Stück, "verschiedene Köpfe" zählt Köpfe, alle 5 = Silber-Kiste
+  perform pg_temp.login(v); r := api.me(); perform pg_temp.logout();
+  assert jsonb_array_length(r->'weekly'->'list') = 5 and r->'weekly'->>'week' = game.week(), 'Wochenaufgaben im Zustand: ' || (r->'weekly')::text;
+  perform game.progress_weekly(v, '{"wins": 1}', 'head:kalle');
+  perform game.progress_weekly(v, '{}', 'head:kalle');
+  assert ((select weekly from game.progress where player_id = v)->'heads') = '["head:kalle"]'::jsonb, 'Köpfe einmal gezählt';
+  perform game.progress_weekly(v, '{"wins": 99, "goals": 99, "career": 99, "supers": 99, "online": 99, "clean": 99, "headGoals": 99}', 'head:yuki');
+  perform game.progress_weekly(v, '{}', 'head:bolt');
+  assert not exists (select 1 from jsonb_array_elements((select weekly from game.progress where player_id = v)->'list') x where not (x->>'done')::boolean), 'alle 5 geschafft';
+  assert (select count(*) from game.chests where player_id = v and source = 'weekly' and tier = 'silver') = 1, 'Wochen-Kiste';
+  assert (select count(*) from game.ledger where player_id = v and reason = 'weekly') = 5, '5 Belohnungen';
+
+  -- Erfolgs-Stufen: 600 Tore = Stufe 1 (Bronze) und 2 (Silber)
+  update game.progress set stats = stats || '{"goals": 600}' where player_id = v;
+  perform game.grant_achievements(v, '{}');
+  assert (select string_agg(tier, ',' order by tier) from game.chests where player_id = v and source = 'ach' and ref like 'goals%') = 'bronze,silver', 'Erfolgs-Kisten';
 
   -- Ohne Anmeldung nichts
   perform pg_temp.expect_error(format('select api.open_chest(%L)', c), 'not_authenticated');

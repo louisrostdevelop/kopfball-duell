@@ -173,7 +173,7 @@ der Client lokal mit denselben Tabellen.
 
 1. **Kisten und Level-Belohnungen.** Server, Öffnen-Bildschirm, Chancen-Anzeige, Splitter, Garantien. *(fertig; Herstellen-Oberfläche kommt mit 2)*
 2. **Kosmetik:** Hüte, Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig, Platzhalter-Grafik)*
-3. **Wochenaufgaben, Erfolgs-Stufen, Meisterschaft, Freundes-Herausforderungen.**
+3. **Wochenaufgaben, Erfolgs-Stufen, Meisterschaft, Freundes-Herausforderungen.** *(Wochenaufgaben, Erfolgs-Stufen und die Kisten für Tagesaufgaben, Tages-Challenge und Karriere fertig; Meisterschaft folgt; Freundes-Herausforderungen brauchen erst vom Server gewertete Freundesspiele, Spiele unter Freunden laufen bisher ohne Server)*
 4. **Shop-Umbau:** neue Kopf-Preise, Level-Sperren, wöchentliche Kosmetik.
 5. **Ranked-Saisonende-Kisten, Pass-Kisten.**
 6. **Später:** Events, Sammel-Herausforderungen.

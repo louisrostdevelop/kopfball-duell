@@ -6,7 +6,7 @@
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE } from "../js/content/config.js";
-import { TASKS } from "../js/core/economy.js";
+import { TASKS, WEEKLY } from "../js/core/economy.js";
 import { CAREER } from "../js/content/career.js";
 import { CHESTS, CHEST_TIERS, COSMETICS, HEAD_DUP_XP, PITY, SHARDS } from "../js/content/cosmetics.js";
 
@@ -44,18 +44,18 @@ export function catalogSql() {
   L.push("insert into game.task_defs (id, goals, reward) values");
   L.push(TASKS.map(t => `  (${q(t.id)}, array[${t.n.join(", ")}], ${t.reward})`).join(",\n"));
   L.push("on conflict (id) do update set goals = excluded.goals, reward = excluded.reward, active = true;");
-  L.push("insert into game.achievement_defs (id, reward, stat, goal) values");
-  L.push(ACHIEVEMENTS.map(a => `  (${q(a.id)}, ${a.reward}, ${q(a.stat || null)}, ${q(a.goal || null)})`).join(",\n"));
-  L.push("on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal;");
+  L.push("insert into game.achievement_defs (id, reward, stat, goal, chest) values");
+  L.push(ACHIEVEMENTS.map(a => `  (${q(a.id)}, ${a.reward}, ${q(a.stat || null)}, ${q(a.goal || null)}, ${q(a.chest || null)})`).join(",\n"));
+  L.push("on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal, chest = excluded.chest;");
   L.push("insert into game.chest_defs (tier, ord, coins_min, coins_max, gems, cos_p, cos_rar, head, sure) values");
   L.push(CHEST_TIERS.map((k, i) => { const c = CHESTS[k]; return `  (${q(k)}, ${i}, ${c.coins[0]}, ${c.coins[1]}, ${c.gems || 0}, ${c.cos.p}, ${q(JSON.stringify(c.cos.rar))}::jsonb, ${q(JSON.stringify(c.head))}::jsonb, ${c.sure ? "true" : "false"})`; }).join(",\n"));
   L.push("on conflict (tier) do update set ord = excluded.ord, coins_min = excluded.coins_min, coins_max = excluded.coins_max, gems = excluded.gems, cos_p = excluded.cos_p, cos_rar = excluded.cos_rar, head = excluded.head, sure = excluded.sure;");
   L.push("insert into game.config (key, value) values");
-  L.push([["chest_pity", PITY], ["chest_shards", SHARDS], ["head_dup_xp", HEAD_DUP_XP]].map(([k, v]) => `  (${q(k)}, ${q(JSON.stringify(v))}::jsonb)`).join(",\n"));
+  L.push([["chest_pity", PITY], ["chest_shards", SHARDS], ["head_dup_xp", HEAD_DUP_XP], ["weekly_defs", WEEKLY]].map(([k, v]) => `  (${q(k)}, ${q(JSON.stringify(v))}::jsonb)`).join(",\n"));
   L.push("on conflict (key) do update set value = excluded.value;");
-  L.push("insert into game.career_leagues (id, ord, coins, gems) values");
-  L.push(CAREER.map((l, i) => `  (${q(l.id)}, ${i}, ${l.bonus.coins}, ${l.bonus.gems})`).join(",\n"));
-  L.push("on conflict (id) do update set ord = excluded.ord, coins = excluded.coins, gems = excluded.gems;");
+  L.push("insert into game.career_leagues (id, ord, coins, gems, chest) values");
+  L.push(CAREER.map((l, i) => `  (${q(l.id)}, ${i}, ${l.bonus.coins}, ${l.bonus.gems}, ${q(l.chest)})`).join(",\n"));
+  L.push("on conflict (id) do update set ord = excluded.ord, coins = excluded.coins, gems = excluded.gems, chest = excluded.chest;");
   L.push("insert into game.career_stages (id, league, idx, diff) values");
   L.push(CAREER.flatMap(l => l.games.map((g, i) => `  (${q(l.id + "." + i)}, ${q(l.id)}, ${i}, ${g.diff})`)).join(",\n"));
   L.push("on conflict (id) do update set league = excluded.league, idx = excluded.idx, diff = excluded.diff;");

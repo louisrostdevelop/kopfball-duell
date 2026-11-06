@@ -123,6 +123,8 @@ alter table game.progress add column if not exists endless_best integer not null
 alter table game.progress add column if not exists online_day date;
 alter table game.progress add column if not exists online_rewarded integer not null default 0; -- belohnte Online-Spiele heute
 alter table game.progress add column if not exists career_paid text[] not null default '{}';    -- Ligen, deren Bonus bezahlt ist
+alter table game.career_leagues add column if not exists chest text;                           -- Kiste für die komplette Liga
+alter table game.progress add column if not exists weekly jsonb not null default '{}';           -- Wochenaufgaben {week, list, heads}
 
 -- ---------- Kisten (docs/PROGRESSION.md) ----------
 -- Kosmetik-Arten im Katalog
@@ -313,6 +315,7 @@ create table if not exists game.achievement_defs (
   stat text,
   goal integer
 );
+alter table game.achievement_defs add column if not exists chest text;   -- Kiste für die Erfolgs-Stufe
 
 -- Wörter, die in Namen nicht vorkommen dürfen
 create table if not exists game.banned_words (word text primary key);

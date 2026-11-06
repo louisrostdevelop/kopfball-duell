@@ -173,6 +173,11 @@ end $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function game.on_new_user();
 
+-- Woche als "2026-W45" (ISO, UTC), für Wochenaufgaben
+create or replace function game.week() returns text language sql stable security definer set search_path = '' as $$
+  select to_char(game.today(), 'IYYY-"W"IW')
+$$;
+
 -- ---------- Gesamter Zustand des Spielers in EINER Antwort ----------
 create or replace function game.state(p uuid) returns jsonb
 language sql stable security definer set search_path = '' as $$
@@ -189,6 +194,7 @@ language sql stable security definer set search_path = '' as $$
     'daily', jsonb_build_object('last', pr.daily_last, 'streak', pr.daily_streak),
     'challengeDone', pr.challenge_day = game.today(),
     'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
+    'weekly', case when pr.weekly->>'week' = game.week() then pr.weekly else '{}'::jsonb end,
     'career', pr.career, 'achievements', pr.achievements, 'stats', pr.stats,
     'chests', game.closed_chests(pl.id), 'shards', w.shards, 'pity', pr.pity,
     'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,
@@ -218,6 +224,7 @@ language sql stable security definer set search_path = '' as $$
     'heads', coalesce((select jsonb_object_agg(h.head_id, jsonb_build_object('level', h.level, 'xp', h.xp, 'xpNext', hx.v * h.level))
                          from game.heads h, (select game.cfg_int('head_xp_per_level') v) hx where h.player_id = pl.id), '{}'),
     'tasks', case when pr.tasks_day = game.today() then pr.tasks else '[]'::jsonb end,
+    'weekly', case when pr.weekly->>'week' = game.week() then pr.weekly else '{}'::jsonb end,
     'career', pr.career,
     'chests', game.closed_chests(pl.id), 'shards', w.shards, 'pity', pr.pity,
     'cpuCoinsToday', case when pr.cap_day = game.today() then pr.cap_cpu_coins else 0 end,

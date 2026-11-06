@@ -1,6 +1,6 @@
 // Spielende: Belohnungen, Serien, Revanche, Teilen
 import { COL, DIFFS, W } from "../content/config.js";
-import { addCoins, addXP, challenge, challengeDone, checkAch, S, save, taskProgress } from "./profile.js";
+import { addCoins, addXP, challenge, challengeDone, checkAch, grantChest, S, save, taskProgress, weeklyProgress } from "./profile.js";
 import { fx } from "../ui/render/render.js";
 import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
@@ -69,7 +69,7 @@ export function matchEnd() {
     career = recordResult(S.career, App.career.li, App.career.gi, st.s[me], st.s[op]);
     S.career = career.prog;
     // Liga-Bonus: mit Server bucht ihn der Server (Meldung kommt mit der Antwort), sonst gleich hier
-    if (career.leagueDone && !serverOn()) add(t("career.bonusLine", { name: CAREER[App.career.li].name }), CAREER[App.career.li].bonus.coins);
+    if (career.leagueDone && !serverOn()) { add(t("career.bonusLine", { name: CAREER[App.career.li].name }), CAREER[App.career.li].bonus.coins); grantChest(CAREER[App.career.li].chest, "career", CAREER[App.career.li].id); }
   }
   addCoins(coins);
   const ups = addXP(Math.round(coins * 1.2) + 15);
@@ -78,6 +78,8 @@ export function matchEnd() {
   if (myS) ["goals", "headGoals", "pus", "stomps", "supers"].forEach(f => S.stats[f] += myS[f]);
   const online = App.mode === "guest" || App.mode === "host";
   const inc = myS ? { wins: win ? 1 : 0, goals: myS.goals, headGoals: myS.headGoals, supers: myS.supers, pus: myS.pus, stomps: myS.stomps, online: online ? 1 : 0, hard: win && vsCpu() && (App.cfg.diff ?? 1) >= 2 ? 1 : 0, cupRound: win && App.mode === "cup" ? 1 : 0 } : { pus: st.stats[0].pus + st.stats[1].pus, stomps: st.stats[0].stomps + st.stats[1].stomps };
+  if (myS) weeklyProgress({ wins: win ? 1 : 0, goals: myS.goals, supers: myS.supers, headGoals: myS.headGoals, career: App.mode === "career" ? 1 : 0, clean: win && st.s[op] === 0 ? 1 : 0, online: online ? 1 : 0 }, "head:" + st.p[me].ch)
+    .forEach((w, n) => setTimeout(() => { toast(t("week.done", { text: w.text, n: w.reward }), "i-cal", true); A.sfx("coin"); }, 900 + n * 1300));
   taskProgress(inc).forEach((task, n) => setTimeout(() => { toast(t("task.done", { text: task.text, n: task.reward }), "i-tasks", true); A.sfx("coin"); }, 600 + n * 1300));
   const achs = me >= 0 ? checkAch({ win, myGoals: myS.goals, conceded: st.s[op], superGoals: myS.superGoals, lastSec: myS.lastSecGoals, longGoals: myS.longGoals, maxDeficit: App.maxDef, cupWon: runInfo === "cup", diff: App.cfg.diff, mode: online ? "online" : ["cup", "career", "endless", "daily"].includes(App.mode) ? "cpu" : App.mode }) : checkAch({});
   save();

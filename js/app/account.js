@@ -41,6 +41,7 @@ export function applyState(st) {
   }
   if (Array.isArray(st.chests)) S.chests = st.chests.map(c => ({ id: c.id, tier: c.tier, source: c.source, ref: c.ref, sure: c.sure || null }));
   if (typeof st.shards === "number") S.shards = st.shards;
+  if (st.weekly && st.weekly.week && Array.isArray(st.weekly.list)) S.weekly = { week: st.weekly.week, list: st.weekly.list, heads: st.weekly.heads || [] };
   if (st.pity && typeof st.pity === "object") S.pity = st.pity;
   if (st.heads) S.heads = Object.fromEntries(Object.entries(st.heads).map(([k, v]) => [k.replace(/^head:/, ""), v]));
   if (st.name) S.name = st.name;

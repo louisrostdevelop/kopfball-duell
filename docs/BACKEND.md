@@ -122,7 +122,7 @@ schon komplette Ligen bringen dann keinen Bonus.
 ## Kisten
 
 Kisten vergibt nur der Server (`game.grant_chest`, jede Quelle mit eigener Kennung, doppelt vergeben = nichts), zurzeit
-bei jedem Level-Up (`game.add_xp`). Geöffnet wird mit `api.open_chest`: der Server würfelt (`game.roll_chest`, Chancen
+bei jedem Level-Up (`game.add_xp`), für alle Tagesaufgaben (`game.progress_tasks`), die gewonnene Tages-Challenge, alle 5 Wochenaufgaben (`game.progress_weekly`), jede Erfolgs-Stufe (`game.grant_achievements`) und jede Karriere-Liga. Geöffnet wird mit `api.open_chest`: der Server würfelt (`game.roll_chest`, Chancen
 aus `game.chest_defs`, Garantie-Zähler in `progress.pity`), bucht Münzen und Juwelen, gibt Gegenstände, macht aus
 doppelter Kosmetik Splitter (`wallets.shards`) und aus doppelten Köpfen Kopf-XP. Zweimal öffnen gibt das gespeicherte
 Ergebnis. `api.craft_item` stellt Kosmetik aus Splittern her. Kisten gibt es nie gegen Geld oder Juwelen

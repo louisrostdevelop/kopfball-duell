@@ -1259,3 +1259,8 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 @media (max-width: 700px) and (orientation: portrait) { .lockerwrap { flex-direction: column; } .lockerside { flex-direction: row; } }
 #scr-search.found .searchwrap { flex-direction: row; gap: 40px; }
 .sr-them small { font-weight: 800; opacity: .8; }
+.weekchest { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-weight: 800; }
+.weekchest em { margin-left: auto; font-style: normal; opacity: .6; font-size: 13px; }
+.tk-main small { font-size: 12px; font-weight: 800; opacity: .55; }
+.ach .tier { color: var(--yellow-d); font-size: 13px; }
+.ach .achchest { font-weight: 800; color: var(--purple-d); }

@@ -1,7 +1,11 @@
 // Tagesaufgaben und Tages-Challenge
 import { arenaById, charById, DIFFS } from "../../content/config.js";
 import { matchLen } from "../../core/physics.js";
-import { S, save, tasks } from "../../app/profile.js";
+import { S, save, tasks, weekly } from "../../app/profile.js";
+import { chestEl } from "./chests.js";
+
+// Ende der Woche (Montag 00:00 UTC)
+const weekEnd = () => { const d = new Date(), day = d.getUTCDay() || 7; return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 8 - day); };
 import { avatarCanvas } from "../render/art.js";
 import { dailyChallenge } from "../../app/modes.js";
 import { $, esc, svg } from "../dom.js";
@@ -23,6 +27,11 @@ export function tasksScreen() {
   b.onclick = () => { S.mode = "daily"; save(); dailyBriefing(); };
   card.append(b);
   const icons = { wins: "i-trophy", goals: "i-ball", headGoals: "i-ball", supers: "i-bolt", pus: "i-gift", stomps: "i-users", online: "i-globe", hard: "i-crown", cupRound: "i-trophy" };
+  const wk = weekly(), left = Math.max(1, Math.ceil((weekEnd() - Date.now()) / 864e5)), wicons = { ...icons, heads: "i-swap", career: "i-star", clean: "i-check" };
+  $("weekList").innerHTML = wk.list.map(w => `<div class="task${w.done ? " done" : ""}"><span class="tk-ic">${svg(w.done ? "i-check" : wicons[w.id] || "i-star")}</span><div class="tk-main"><b>${esc(w.text)}</b><div class="prog"><i style="width:${Math.round(w.prog / w.n * 100)}%"></i></div><small>${w.prog}/${w.n}</small></div><span class="tk-rw">${w.done ? "✓" : `<span class="coin"></span>${w.reward}`}</span></div>`).join("");
+  const all = wk.list.every(w => w.done), wc = $("weekChest"); wc.innerHTML = "";
+  wc.append(chestEl("silver", 44));
+  wc.insertAdjacentHTML("beforeend", `<span>${all ? t("week.chestGot") : t("week.chest", { n: wk.list.filter(w => w.done).length })}</span><em>${t("week.left", { n: left })}</em>`);
   $("taskList").innerHTML = tasks().map(tk => `<div class="task${tk.done ? " done" : ""}"><span class="tk-ic">${svg(tk.done ? "i-check" : icons[tk.id] || "i-star")}</span><div class="tk-main"><b>${esc(tk.text)}</b><div class="prog"><i style="width:${Math.round(tk.prog / tk.n * 100)}%"></i></div></div><span class="tk-rw">${tk.done ? "✓" : `<span class="coin"></span>${tk.reward}`}</span></div>`).join("");
 }
 

@@ -60,3 +60,19 @@ test("Doppelt: Kosmetik -> Splitter, Kopf -> Kopf-XP, Kopf auf Level 10 -> Split
   const maxed = Object.fromEntries(C.CHARS.map(c => [c.id, 10]));
   for (let s = 0; s < 100; s++) { const o = rollChest("gold", { owned: all, heads: maxed, pity: {} }, rng(s)); assert.ok(o.items.every(x => !x.headXp)); }
 });
+
+test("Wochenaufgaben: ISO-Woche, 5 feste Aufgaben pro Woche, Erfolgs-Stufen haben Kisten", async () => {
+  const E = await import("../../js/core/economy.js");
+  assert.equal(E.weekOf(new Date("2026-11-06T12:00:00Z")), "2026-W45");
+  assert.equal(E.weekOf(new Date("2027-01-01T12:00:00Z")), "2026-W53");
+  assert.equal(E.weekOf(new Date("2026-11-09T00:30:00Z")), "2026-W46", "Montag beginnt die neue Woche");
+  const a = E.weeklyList("2026-W45"), b = E.weeklyList("2026-W45");
+  assert.equal(a.length, 5); assert.deepEqual(a, b); assert.equal(new Set(a.map(x => x.id)).size, 5);
+  const series = {};
+  for (const x of C.ACHIEVEMENTS.filter(y => y.series)) (series[x.series] = series[x.series] || []).push(x);
+  for (const [k, l] of Object.entries(series)) {
+    assert.deepEqual(l.map(x => x.tier).sort(), [1, 2, 3], k);
+    assert.deepEqual(l.sort((p, q) => p.tier - q.tier).map(x => x.chest), ["bronze", "silver", "gold"], k);
+    assert.ok(l[0].goal < l[1].goal && l[1].goal < l[2].goal, k + ": Ziele steigen");
+  }
+});

@@ -4,7 +4,7 @@
 import { ACHIEVEMENTS } from "../content/config.js";
 import { cosById, LEVEL_SURE_HEAD, levelChest, SHARDS } from "../content/cosmetics.js";
 import { rollChest } from "../core/chests.js";
-import { defaultProfile, migrateProfile, xpFor, today, yesterday, dailyBonus, dailyTaskList, taskText, challengeFor, dealFor, earnedAchievements } from "../core/economy.js";
+import { defaultProfile, migrateProfile, xpFor, today, yesterday, dailyBonus, dailyTaskList, taskText, challengeFor, dealFor, earnedAchievements, weekOf, weeklyList, weeklyText } from "../core/economy.js";
 
 /** @type {import("../ports/storage.js").ProfileStore | null} */
 let store = null;
@@ -39,6 +39,7 @@ export function addXP(n) {
 
 // ---------- Kisten (ohne Server: lokal; mit Server: app/account.js) ----------
 export function grantChest(tier, source, ref, sure = null) {
+  if (hooks.serverChests) return null;   // mit Server vergibt der Server
   if (S.chests.some(c => c.source === source && c.ref === ref)) return null;
   const c = { id: `${source}:${ref}`, tier, source, ref, sure };
   S.chests.push(c); save();
@@ -102,7 +103,7 @@ export function checkAch(ctx) {
   const got = [];
   for (const id of earnedAchievements(ctx, S, ACHIEVEMENTS)) {
     if (S.ach[id]) continue;
-    S.ach[id] = Date.now(); const a = ACHIEVEMENTS.find(x => x.id === id); addCoins(a.reward); got.push(a);
+    S.ach[id] = Date.now(); const a = ACHIEVEMENTS.find(x => x.id === id); addCoins(a.reward); if (a.chest) grantChest(a.chest, "ach", a.id); got.push(a);
   }
   save();
   return got;
@@ -124,13 +125,35 @@ export function taskProgress(inc) {
     t.prog = Math.min(t.n, t.prog + inc[t.id]);
     if (t.prog >= t.n) { t.done = true; addCoins(t.reward); done.push({ ...t, text: taskText(t) }); }
   });
+  if (done.length && S.tasks.list.every(t => t.done)) grantChest("bronze", "tasks", S.tasks.date);
+  save();
+  return done;
+}
+
+// Wochenaufgaben (mit Server zählt der Server, Stand kommt mit dem Zustand)
+export function weekly() {
+  const wk = weekOf();
+  if (!S.weekly || S.weekly.week !== wk || !Array.isArray(S.weekly.list)) { S.weekly = { week: wk, list: weeklyList(wk), heads: [] }; save(); }
+  return { ...S.weekly, list: S.weekly.list.map(w => ({ ...w, text: weeklyText(w) })) };
+}
+export function weeklyProgress(inc, head) {
+  if (hooks.serverChests) return [];
+  weekly();
+  const w = S.weekly, done = [];
+  if (head && !w.heads.includes(head)) w.heads.push(head);
+  for (const x of w.list) {
+    if (x.done) continue;
+    x.prog = Math.min(x.n, x.id === "heads" ? w.heads.length : x.prog + (inc[x.id] || 0));
+    if (x.prog >= x.n) { x.done = true; addCoins(x.reward); done.push({ ...x, text: weeklyText(x) }); }
+  }
+  if (done.length && w.list.every(x => x.done)) grantChest("silver", "weekly", w.week);
   save();
   return done;
 }
 
 // Tages-Challenge
 export function challenge() { const d = today(); return { ...challengeFor(d), done: S.chDone === d }; }
-export function challengeDone() { S.chDone = today(); save(); }
+export function challengeDone() { S.chDone = today(); grantChest("bronze", "challenge", S.chDone); save(); }
 
 // Angebot des Tages
 export function deal() {

@@ -57,6 +57,7 @@ begin
   assert r->'career'->'bonus' is null, 'Bonus nur einmal';
   perform pg_temp.logout();
   assert (select count(*) from game.ledger where player_id = u and reason = 'career_league') = 1, 'eine Bonus-Buchung';
+  assert (select tier from game.chests where player_id = u and source = 'career' and ref = 'district') = 'silver', 'Kiste für die Liga';
   assert (select coins from game.wallets where player_id = u) > c0 + 200, 'Münzen gebucht';
 
   -- Nächste Liga ist jetzt offen

@@ -14,7 +14,10 @@ export function achScreen() {
   ACHIEVEMENTS.forEach(a => {
     const done = !!S.ach[a.id], p = achProgress(a);
     const d = document.createElement("div"); d.className = "ach" + (done ? " done" : "");
-    d.innerHTML = `<span class="medal">${svg(done ? "i-star" : "i-lock")}</span><div style="flex:1;min-width:0"><b>${a.name}</b><p>${a.desc}</p>${a.stat && !done ? `<div class="prog"><i style="width:${Math.round(p * 100)}%"></i></div>` : ""}</div><span class="rw">${done ? svg("i-check").replace("<svg>", '<svg style="width:22px;height:22px">') : `<span class="coin"></span>${a.reward}`}</span>`;
+    // Stufen: nur die nächste offene Stufe zeigen (erledigte bleiben sichtbar)
+    if (a.tier > 1 && !done && !S.ach[ACHIEVEMENTS.find(x => x.series === a.series && x.tier === a.tier - 1).id]) return;
+    const tier = a.tier ? ` <small class="tier">${"★".repeat(a.tier)}</small>` : "", chest = a.chest && !done ? ` <small class="achchest">+ ${t("chest." + a.chest)}</small>` : "";
+    d.innerHTML = `<span class="medal">${svg(done ? "i-star" : "i-lock")}</span><div style="flex:1;min-width:0"><b>${a.name}${tier}</b><p>${a.desc}${chest}</p>${a.stat && !done ? `<div class="prog"><i style="width:${Math.round(p * 100)}%"></i></div>` : ""}</div><span class="rw">${done ? svg("i-check").replace("<svg>", '<svg style="width:22px;height:22px">') : `<span class="coin"></span>${a.reward}`}</span>`;
     l.append(d);
   });
   $("achSum").textContent = Object.keys(S.ach).length + " / " + ACHIEVEMENTS.length;

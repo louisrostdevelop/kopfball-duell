@@ -85,34 +85,44 @@ insert into game.products (id, gems, items, price_cents, once_per_player) values
   ('starter', 300, array[]::text[], 299, true)
 on conflict (id) do update set gems = excluded.gems, items = excluded.items, price_cents = excluded.price_cents, once_per_player = excluded.once_per_player, active = true;
 insert into game.task_defs (id, goals, reward) values
-  ('wins', array[2, 3], 80),
-  ('goals', array[5, 8], 60),
-  ('headGoals', array[2, 3], 80),
-  ('supers', array[3, 5], 60),
-  ('pus', array[3, 5], 60),
-  ('stomps', array[2, 3], 70),
-  ('online', array[1], 90),
-  ('hard', array[1], 100),
-  ('cupRound', array[2], 80)
+  ('wins', array[2, 3], 65),
+  ('goals', array[5, 8], 50),
+  ('headGoals', array[2, 3], 65),
+  ('supers', array[3, 5], 50),
+  ('pus', array[3, 5], 50),
+  ('stomps', array[2, 3], 55),
+  ('online', array[1], 70),
+  ('hard', array[1], 80),
+  ('cupRound', array[2], 65)
 on conflict (id) do update set goals = excluded.goals, reward = excluded.reward, active = true;
-insert into game.achievement_defs (id, reward, stat, goal) values
-  ('firstwin', 50, null, null),
-  ('hattrick', 80, null, null),
-  ('cleansheet', 80, null, null),
-  ('header10', 120, 'headGoals', 10),
-  ('supergoal', 60, null, null),
-  ('lastsec', 100, null, null),
-  ('longshot', 80, null, null),
-  ('comeback', 150, null, null),
-  ('cup', 200, null, null),
-  ('legend', 250, null, null),
-  ('online', 100, null, null),
-  ('collector', 150, null, null),
-  ('powerups', 100, 'pus', 25),
-  ('goals50', 200, 'goals', 50),
-  ('stomp', 80, 'stomps', 10),
-  ('wins25', 300, 'wins', 25)
-on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal;
+insert into game.achievement_defs (id, reward, stat, goal, chest) values
+  ('firstwin', 50, null, null, null),
+  ('hattrick', 80, null, null, null),
+  ('cleansheet', 80, null, null, null),
+  ('header10', 120, 'headGoals', 10, 'bronze'),
+  ('supergoal', 60, null, null, null),
+  ('lastsec', 100, null, null, null),
+  ('longshot', 80, null, null, null),
+  ('comeback', 150, null, null, null),
+  ('cup', 200, null, null, null),
+  ('legend', 250, null, null, null),
+  ('online', 100, null, null, null),
+  ('collector', 150, null, null, null),
+  ('powerups', 100, 'pus', 25, 'bronze'),
+  ('goals50', 200, 'goals', 50, 'bronze'),
+  ('stomp', 80, 'stomps', 10, 'bronze'),
+  ('wins25', 300, 'wins', 25, 'bronze'),
+  ('header100', 250, 'headGoals', 100, 'silver'),
+  ('header500', 500, 'headGoals', 500, 'gold'),
+  ('pus150', 200, 'pus', 150, 'silver'),
+  ('pus500', 400, 'pus', 500, 'gold'),
+  ('goals500', 400, 'goals', 500, 'silver'),
+  ('goals2000', 800, 'goals', 2000, 'gold'),
+  ('stomp50', 200, 'stomps', 50, 'silver'),
+  ('stomp200', 400, 'stomps', 200, 'gold'),
+  ('wins250', 600, 'wins', 250, 'silver'),
+  ('wins1000', 1000, 'wins', 1000, 'gold')
+on conflict (id) do update set reward = excluded.reward, stat = excluded.stat, goal = excluded.goal, chest = excluded.chest;
 insert into game.chest_defs (tier, ord, coins_min, coins_max, gems, cos_p, cos_rar, head, sure) values
   ('bronze', 0, 40, 80, 0, 0.35, '{"selten":1}'::jsonb, '{"selten":0.05,"episch":0.01,"legend":0.002}'::jsonb, false),
   ('silver', 1, 100, 160, 0, 0.7, '{"selten":0.7,"episch":0.3}'::jsonb, '{"selten":0.12,"episch":0.05,"legend":0.01}'::jsonb, false),
@@ -122,14 +132,15 @@ on conflict (tier) do update set ord = excluded.ord, coins_min = excluded.coins_
 insert into game.config (key, value) values
   ('chest_pity', '{"epic":10,"legend":40,"head":50,"legendHead":90}'::jsonb),
   ('chest_shards', '{"dup":{"selten":10,"episch":30,"legend":80},"craft":{"selten":50,"episch":150,"legend":400}}'::jsonb),
-  ('head_dup_xp', '{"selten":40,"episch":100,"legend":250}'::jsonb)
+  ('head_dup_xp', '{"selten":40,"episch":100,"legend":250}'::jsonb),
+  ('weekly_defs', '[{"id":"wins","n":10,"reward":100},{"id":"goals","n":25,"reward":80},{"id":"heads","n":3,"reward":100},{"id":"career","n":3,"reward":100},{"id":"supers","n":8,"reward":80},{"id":"online","n":3,"reward":120},{"id":"clean","n":3,"reward":100},{"id":"headGoals","n":8,"reward":80}]'::jsonb)
 on conflict (key) do update set value = excluded.value;
-insert into game.career_leagues (id, ord, coins, gems) values
-  ('district', 0, 200, 0),
-  ('regional', 1, 350, 0),
-  ('national', 2, 500, 10),
-  ('world', 3, 800, 30)
-on conflict (id) do update set ord = excluded.ord, coins = excluded.coins, gems = excluded.gems;
+insert into game.career_leagues (id, ord, coins, gems, chest) values
+  ('district', 0, 200, 0, 'silver'),
+  ('regional', 1, 350, 0, 'gold'),
+  ('national', 2, 500, 10, 'gold'),
+  ('world', 3, 800, 30, 'legend')
+on conflict (id) do update set ord = excluded.ord, coins = excluded.coins, gems = excluded.gems, chest = excluded.chest;
 insert into game.career_stages (id, league, idx, diff) values
   ('district.0', 'district', 0, 0),
   ('district.1', 'district', 1, 0),

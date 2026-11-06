@@ -12,6 +12,7 @@ begin
   -- Fehlt der Spieler (z. B. Auth-Konto vor dieser Migration angelegt), jetzt anlegen
   perform game.setup_player(p);
   update game.players set last_seen_at = now() where id = p and last_seen_at < now() - interval '10 minutes';
+  perform game.ensure_weekly(p);   -- Wochenaufgaben gleich sichtbar (schreibt nur einmal pro Woche)
   return game.state(p);
 end $$;
 
@@ -73,6 +74,44 @@ begin
   return t;
 end $$;
 
+-- ---------- Wochenaufgaben: 5 pro Woche (für alle gleich), alle 5 = Silber-Kiste ----------
+create or replace function game.ensure_weekly(p uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare w jsonb; wk text := game.week();
+begin
+  select weekly into w from game.progress where player_id = p;
+  if w->>'week' = wk then return w; end if;
+  select jsonb_build_object('week', wk, 'heads', '[]'::jsonb, 'list', coalesce(jsonb_agg(jsonb_build_object('id', d->>'id', 'n', (d->>'n')::integer, 'prog', 0, 'done', false,
+           'reward', (d->>'reward')::integer) order by md5(wk || (d->>'id'))), '[]'))
+    into w from (select d from jsonb_array_elements(game.cfg('weekly_defs')) d order by md5(wk || (d->>'id')) limit 5) x;
+  update game.progress set weekly = w where player_id = p;
+  return w;
+end $$;
+-- inc: {"wins":1,"goals":3,"career":1,"online":1,"clean":1,...}; head: gespielter Kopf (für "verschiedene Köpfe")
+create or replace function game.progress_weekly(p uuid, inc jsonb, head text) returns void
+language plpgsql security definer set search_path = '' as $$
+declare w jsonb := game.ensure_weekly(p); heads jsonb := coalesce(w->'heads', '[]'); out jsonb := '[]'; e jsonb; prog integer; fresh boolean := false;
+begin
+  if head is not null and not heads ? head then heads := heads || to_jsonb(head); end if;
+  for e in select * from jsonb_array_elements(w->'list') loop
+    if not (e->>'done')::boolean then
+      prog := least((e->>'n')::integer, case when e->>'id' = 'heads' then jsonb_array_length(heads) else (e->>'prog')::integer + coalesce((inc->>(e->>'id'))::integer, 0) end);
+      if prog <> (e->>'prog')::integer then e := jsonb_set(e, '{prog}', to_jsonb(prog)); end if;
+      if prog >= (e->>'n')::integer then
+        e := jsonb_set(e, '{done}', 'true'); fresh := true;
+        perform game.book(p, 'coins', (e->>'reward')::integer, 'weekly', (w->>'week') || ':' || (e->>'id'));
+      end if;
+    end if;
+    out := out || e;
+  end loop;
+  if out is distinct from w->'list' or heads is distinct from w->'heads' then
+    update game.progress set weekly = jsonb_build_object('week', w->>'week', 'heads', heads, 'list', out) where player_id = p;
+  end if;
+  if fresh and not exists (select 1 from jsonb_array_elements(out) x where not (x->>'done')::boolean) then
+    perform game.grant_chest(p, 'silver', 'weekly', w->>'week');
+  end if;
+end $$;
+
 -- inc: {"wins":1,"goals":3,...} -> erledigte Aufgaben werden ausgezahlt
 create or replace function game.progress_tasks(p uuid, inc jsonb) returns jsonb
 language plpgsql security definer set search_path = '' as $$
@@ -91,6 +130,10 @@ begin
     out := out || e;
   end loop;
   if out is distinct from t then update game.progress set tasks = out where player_id = p; end if;
+  -- Alle Tagesaufgaben geschafft: Bronze-Kiste (einmal am Tag)
+  if jsonb_array_length(done) > 0 and not exists (select 1 from jsonb_array_elements(out) x where not (x->>'done')::boolean) then
+    perform game.grant_chest(p, 'bronze', 'tasks', game.today()::text);
+  end if;
   return done;
 end $$;
 
@@ -109,6 +152,7 @@ begin
     if not ach ? a.id then
       ach := ach || jsonb_build_object(a.id, now());
       perform game.book(p, 'coins', a.reward, 'achievement', a.id);
+      if a.chest is not null then perform game.grant_chest(p, a.chest, 'ach', a.id); end if;
       got := got || to_jsonb(a.id);
     end if;
   end loop;
@@ -178,6 +222,7 @@ begin
   if mode = 'daily' and won and (pr.challenge_day is null or pr.challenge_day < today) then
     challenge := true; bonus := 150;
     perform game.book(p, 'gems', 15, 'challenge', today::text);
+    perform game.grant_chest(p, 'bronze', 'challenge', today::text);
   end if;
 
   -- Endlos: Serie zählt der Server mit; endet sie, kommt sie in die Bestenliste
@@ -204,7 +249,8 @@ begin
       paid := array_append(paid, cs.league);
       if lg.coins > 0 then perform game.book(p, 'coins', lg.coins, 'career_league', cs.league); end if;
       if lg.gems > 0 then perform game.book(p, 'gems', lg.gems, 'career_league', cs.league); end if;
-      cres := cres || jsonb_build_object('bonus', jsonb_build_object('league', cs.league, 'coins', lg.coins, 'gems', lg.gems));
+      if lg.chest is not null then perform game.grant_chest(p, lg.chest, 'career', cs.league); end if;
+      cres := cres || jsonb_build_object('bonus', jsonb_build_object('league', cs.league, 'coins', lg.coins, 'gems', lg.gems, 'chest', lg.chest));
     end if;
   end if;
 
@@ -238,6 +284,8 @@ begin
                    'headGoals', hg, 'supers', sup, 'pus', pus, 'stomps', stomps,
                    'hard', case when won and diff >= 2 and mode in ('cpu', 'career') then 1 else 0 end,
                    'cupRound', case when won and mode = 'cpu' and coalesce((r->>'cup')::boolean, false) then 1 else 0 end));
+    perform game.progress_weekly(p, jsonb_build_object('wins', case when won then 1 else 0 end, 'goals', goals, 'supers', sup, 'headGoals', hg,
+                   'career', case when mode = 'career' then 1 else 0 end, 'clean', case when won and conceded = 0 then 1 else 0 end), head);
   end if;
   -- Erfolge: nur was zum Ergebnis passt
   facts := array(select jsonb_array_elements_text(coalesce(r->'facts', '[]')));

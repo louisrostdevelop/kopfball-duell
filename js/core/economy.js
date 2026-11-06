@@ -44,17 +44,17 @@ export const dailyBonus = streak => 40 + streak * 30;
 // Zufall aus einem Text: alle Spieler bekommen am selben Tag dieselben Aufgaben und dieselbe Challenge
 export function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; }; }
 
-// ---------- Tagesaufgaben ----------
+// ---------- Tagesaufgaben (alle 3 geschafft = Bronze-Kiste) ----------
 export const TASKS = [
-  { id: "wins", text: n => tr("task.wins", { n }), n: [2, 3], reward: 80 },
-  { id: "goals", text: n => tr("task.goals", { n }), n: [5, 8], reward: 60 },
-  { id: "headGoals", text: n => tr("task.headGoals", { n }), n: [2, 3], reward: 80 },
-  { id: "supers", text: n => tr("task.supers", { n }), n: [3, 5], reward: 60 },
-  { id: "pus", text: n => tr("task.pus", { n }), n: [3, 5], reward: 60 },
-  { id: "stomps", text: n => tr("task.stomps", { n }), n: [2, 3], reward: 70 },
-  { id: "online", text: n => tr("task.online", { n }), n: [1], reward: 90 },
-  { id: "hard", text: n => tr("task.hard", { n }), n: [1], reward: 100 },
-  { id: "cupRound", text: n => tr("task.cupRound", { n }), n: [2], reward: 80 },
+  { id: "wins", text: n => tr("task.wins", { n }), n: [2, 3], reward: 65 },
+  { id: "goals", text: n => tr("task.goals", { n }), n: [5, 8], reward: 50 },
+  { id: "headGoals", text: n => tr("task.headGoals", { n }), n: [2, 3], reward: 65 },
+  { id: "supers", text: n => tr("task.supers", { n }), n: [3, 5], reward: 50 },
+  { id: "pus", text: n => tr("task.pus", { n }), n: [3, 5], reward: 50 },
+  { id: "stomps", text: n => tr("task.stomps", { n }), n: [2, 3], reward: 55 },
+  { id: "online", text: n => tr("task.online", { n }), n: [1], reward: 70 },
+  { id: "hard", text: n => tr("task.hard", { n }), n: [1], reward: 80 },
+  { id: "cupRound", text: n => tr("task.cupRound", { n }), n: [2], reward: 65 },
 ];
 export function dailyTaskList(date) {
   const r = seeded(date), pool = [...TASKS], list = [];
@@ -62,6 +62,31 @@ export function dailyTaskList(date) {
   return list;
 }
 export const taskText = t => TASKS.find(x => x.id === t.id).text(t.n);
+
+// ---------- Wochenaufgaben: 5 pro Woche (gleiche für alle), alle 5 = Silber-Kiste ----------
+export const WEEKLY = [
+  { id: "wins", n: 10, reward: 100 },
+  { id: "goals", n: 25, reward: 80 },
+  { id: "heads", n: 3, reward: 100 },        // mit so vielen verschiedenen Köpfen spielen
+  { id: "career", n: 3, reward: 100 },       // Karriere-Spiele
+  { id: "supers", n: 8, reward: 80 },
+  { id: "online", n: 3, reward: 120 },       // Online-Spiele mit Gegnersuche
+  { id: "clean", n: 3, reward: 100 },        // Siege zu null
+  { id: "headGoals", n: 8, reward: 80 },
+];
+/** Woche als "2026-W45" (ISO, UTC) */
+export function weekOf(d = new Date()) {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())), day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y = t.getUTCFullYear(), w = Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7);
+  return `${y}-W${String(w).padStart(2, "0")}`;
+}
+export function weeklyList(week) {
+  const r = seeded("wk" + week), pool = [...WEEKLY], list = [];
+  while (list.length < 5) { const x = pool.splice(Math.floor(r() * pool.length), 1)[0]; list.push({ id: x.id, n: x.n, prog: 0, done: false, reward: x.reward }); }
+  return list;
+}
+export const weeklyText = w => tr("week." + w.id, { n: w.n });
 
 // ---------- Tages-Challenge ----------
 export function challengeFor(d) {
