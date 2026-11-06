@@ -5,6 +5,7 @@ import { buyPassWithGems, claimPass, online as serverOn, passView, PASS_GEMS, sh
 import { avatarCanvas } from "../render/art.js";
 import { arenaThumb } from "../render/render.js";
 import { ballCanvas } from "./shop.js";
+import { chestEl } from "./chests.js";
 import { refreshTop } from "./home.js";
 import { $, $$, svg, toast } from "../dom.js";
 import { registerScreen, showScreen } from "../nav.js";
@@ -17,7 +18,8 @@ const daysLeft = iso => Math.max(0, Math.ceil((new Date(iso) - Date.now()) / 864
 function rewardEl(rw) {
   const d = document.createElement("div"); d.className = "rw-ic";
   if (!rw) return d;
-  if (rw.coins) d.innerHTML = `<span class="coin"></span><b>${rw.coins}</b>`;
+  if (rw.chest) { d.append(chestEl(rw.chest, 48)); d.insertAdjacentHTML("beforeend", `<b>${t("chest." + rw.chest)}</b>`); }
+  else if (rw.coins) d.innerHTML = `<span class="coin"></span><b>${rw.coins}</b>`;
   else if (rw.gems) d.innerHTML = `<span class="gem"></span><b>${rw.gems}</b>`;
   else if (rw.item) {
     const [kind, id] = rw.item.split(":");

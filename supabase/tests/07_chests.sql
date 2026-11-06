@@ -183,6 +183,18 @@ begin
     assert exists (select 1 from game.inventory where player_id = v and item_id = it), 'Angebot gekauft';
   end if;
 
+  -- Saisonende: Kiste nach Liga (mind. 5 Spiele), einmal; Pass-Stufe mit Kiste
+  insert into game.seasons (id, starts_at, ends_at, pass) values (900, now() - interval '60 days', now() - interval '30 days', '[]');
+  insert into game.ratings (player_id, season_id, mmr, games, wins) values (u, 900, 1300, 20, 12), (v, 900, 1800, 4, 4);
+  r := game.maintenance();
+  assert (select tier from game.chests where player_id = u and source = 'season' and ref = '900') = 'gold', 'Gold-Liga: Gold-Kiste';
+  assert not exists (select 1 from game.chests where player_id = v and source = 'season'), 'zu wenige Spiele: keine';
+  perform game.maintenance();
+  assert (select count(*) from game.chests where player_id = u and source = 'season') = 1, 'nur einmal';
+  perform game.give_reward(v, '{"chest": "bronze"}', 'pass_free', '1:2');
+  perform game.give_reward(v, '{"chest": "bronze"}', 'pass_free', '1:2');
+  assert (select count(*) from game.chests where player_id = v and source = 'pass_free') = 1, 'Pass-Kiste einmal';
+
   -- Ohne Anmeldung nichts
   perform pg_temp.expect_error(format('select api.open_chest(%L)', c), 'not_authenticated');
 end $$;

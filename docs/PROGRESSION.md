@@ -175,5 +175,5 @@ der Client lokal mit denselben Tabellen.
 2. **Kosmetik:** Hüte, Schuhe, Torexplosionen, Emotes. Zeichnen, Ausrüsten, Online übertragen, Spieler-Karte, Stummschalten. *(fertig, Platzhalter-Grafik)*
 3. **Wochenaufgaben, Erfolgs-Stufen, Meisterschaft, Freundes-Herausforderungen.** *(Wochenaufgaben, Erfolgs-Stufen, Meisterschaft und die Kisten für Tagesaufgaben, Tages-Challenge und Karriere fertig; Freundes-Herausforderungen brauchen erst vom Server gewertete Freundesspiele, Spiele unter Freunden laufen bisher ohne Server)*
 4. **Shop-Umbau:** neue Kopf-Preise, Level-Sperren, wöchentliche Kosmetik. *(fertig)*
-5. **Ranked-Saisonende-Kisten, Pass-Kisten.**
+5. **Ranked-Saisonende-Kisten, Pass-Kisten.** *(fertig: Wartung vergibt nach Saisonende die Liga-Kiste, Pass-Stufen können Kisten sein)*
 6. **Später:** Events, Sammel-Herausforderungen.

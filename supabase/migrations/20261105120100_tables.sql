@@ -190,6 +190,7 @@ create table if not exists game.seasons (
   pass jsonb not null default '[]'   -- [{ "points": 100, "free": {...}, "premium": {...} }, ...]
 );
 create index if not exists seasons_time on game.seasons (starts_at, ends_at);
+alter table game.seasons add column if not exists rewarded_at timestamptz;   -- Saisonende-Kisten vergeben
 
 create table if not exists game.pass_progress (
   player_id uuid not null references game.players (id) on delete cascade,

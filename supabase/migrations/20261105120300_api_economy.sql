@@ -361,9 +361,10 @@ begin
 end $$;
 
 -- Belohnung einer Stufe: {"coins":n} | {"gems":n} | {"item":"id"}
-create or replace function game.give_reward(p uuid, rw jsonb, why text) returns void
+create or replace function game.give_reward(p uuid, rw jsonb, why text, ref text default null) returns void
 language plpgsql security definer set search_path = '' as $$
 begin
+  if rw ? 'chest' then perform game.grant_chest(p, rw->>'chest', why, coalesce(ref, gen_random_uuid()::text)); end if;
   if rw ? 'coins' then perform game.book(p, 'coins', (rw->>'coins')::integer, why); end if;
   if rw ? 'gems' then perform game.book(p, 'gems', (rw->>'gems')::integer, why); end if;
   -- Gegenstand schon im Besitz: 200 Münzen statt nichts
@@ -385,11 +386,11 @@ begin
     if not pp.premium then perform game.fail('no_premium'); end if;
     if pp.claimed_premium & bit <> 0 then perform game.fail('already_claimed'); end if;
     update game.pass_progress set claimed_premium = claimed_premium | bit where player_id = p and season_id = s;
-    perform game.give_reward(p, t->'premium', 'pass_premium');
+    perform game.give_reward(p, t->'premium', 'pass_premium', s || ':' || tier);
   else
     if pp.claimed_free & bit <> 0 then perform game.fail('already_claimed'); end if;
     update game.pass_progress set claimed_free = claimed_free | bit where player_id = p and season_id = s;
-    perform game.give_reward(p, t->'free', 'pass_free');
+    perform game.give_reward(p, t->'free', 'pass_free', s || ':' || tier);
   end if;
   return game.state(p);
 end $$;
