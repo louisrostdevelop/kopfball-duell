@@ -15,13 +15,12 @@ kommen später und ersetzen nur die Daten in `js/content/cosmetics.js`.
 
 ## Inhalte
 
-Kosmetisch heißt: kein Einfluss aufs Spiel, auch nicht auf Trefferflächen.
+Kosmetisch heißt: kein Einfluss aufs Spiel, auch nicht auf Trefferflächen. Kopfbedeckungen gibt es nicht (entschieden 06.11.); Köpfe und Schuhe kommen als echte Grafik.
 
 | Art | Zum Start | Gilt für | Woher |
 |---|---|---|---|
 | Köpfe (Spielfiguren mit eigenem Super) | 12 (3 Basis, 3 Selten, 4 Episch, 2 Legendär) | – | Kisten, Shop |
-| Kopfbedeckung | 12 | jeden Kopf | Kisten, Shop, Pass |
-| Schuhe | 8 | jeden Kopf | Kisten, Shop, Pass |
+| Schuhe (einzige Kosmetik am Kopf/Körper) | 12 | jeden Kopf | Kisten, Shop, Pass |
 | Torexplosion (beide sehen sie, es läuft die des Torschützen) | 8 + 1 pro Kopf | Spieler | Kisten, Shop, Meisterschaft |
 | Figur-Emote (Kopf macht etwas) | 8 + 1 pro Kopf | Spieler | Kisten, Shop, Meisterschaft |
 | Emoji-Emote (Sprechblase) | 12 | Spieler | Kisten, Shop, Pass |
@@ -36,7 +35,7 @@ Alles sind feste Varianten zum Freischalten und Ausrüsten, kein Editor.
 
 **Emotes im Spiel:** höchstens 1 alle 3 Sekunden. Den Gegner kann man mit einem Tipp stummschalten, das wird gespeichert.
 
-**Spieler-Karte vor dem Anpfiff** (Online und Ranked): Kopf mit Level, Hut, Titel, Rahmen, Liga. Was jeder ausgerüstet hat,
+**Spieler-Karte vor dem Anpfiff** (Online und Ranked): Kopf mit Level, Titel, Rahmen, Liga. Was jeder ausgerüstet hat,
 schickt er beim Anpfiff mit. In Casual und Ranked prüft der Server, ob er es besitzt.
 
 ## Seltenheit

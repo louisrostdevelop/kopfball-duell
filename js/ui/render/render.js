@@ -1,6 +1,6 @@
 // Darstellung: Kamera, Arenen, Spieler, Ball, Partikel, HUD, Wiederholung
 import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
-import { drawHead, drawHat, drawShoe, drawBall, drawPuIcon, shade, shoeColor } from "./art.js";
+import { drawHead, drawShoe, drawBall, drawPuIcon, shade, shoeColor } from "./art.js";
 import { cosById } from "../../content/cosmetics.js";
 import { barY, shoePos, pr, kickPreview } from "../../core/physics.js";
 import { t as trn } from "../../content/i18n.js";
@@ -557,7 +557,7 @@ function drawPlayerBase(p) {
     ctx.beginPath(); ctx.ellipse(p.x, G + 3, r * 1.05, 11, 0, Math.min(a0, a1), Math.max(a0, a1)); ctx.stroke();
   }
 }
-// Kosmetik der beiden Spieler ({ hat, shoes, goalfx }) und stummgeschaltete Emotes, gesetzt zum Anpfiff
+// Kosmetik der beiden Spieler ({ shoes, goalfx }) und stummgeschaltete Emotes, gesetzt zum Anpfiff
 let matchCos = [{}, {}], muted = [false, false];
 export function setMatchCos(cos, mute = [false, false]) { matchCos = [cos?.[0] || {}, cos?.[1] || {}]; muted = mute; }
 export const setMuted = m => { muted = m; };
@@ -623,7 +623,6 @@ function drawPlayer(st, p, t, label) {
   const look = Math.atan2(b.y - p.y, b.x - p.x);
   const blink = Math.sin(t * 1.3 + p.i * 2) > 0.985;
   drawHead(ctx, p.ch, p.x, p.y, r, { dir: p.dir, look, mood: p.stun > 0 ? "sad" : p.mood, blink, effort: (p.kHeld && p.charge > 0.2) || p.kick > 0.1, frozen: p.frz > 0, t: t + p.i * 3 });
-  if (mc.hat) drawHat(ctx, mc.hat, p.x, p.y, r, p.dir, t);
   ctx.restore();
   if (p.frz > 0) drawIce(p, r, s, t);
   if (p.confT > 0) {

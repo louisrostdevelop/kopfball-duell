@@ -41,6 +41,8 @@ export function catalogSql() {
   L.push("insert into game.items (id, kind, rarity, price_coins, price_gems, meta) values");
   L.push(items.map(i => `  (${q(i.id)}, ${q(i.kind)}, ${q(i.rarity)}, ${q(i.coins)}, ${q(i.gems)}, ${q(JSON.stringify(i.meta))}::jsonb)`).join(",\n"));
   L.push("on conflict (id) do update set kind = excluded.kind, rarity = excluded.rarity, price_coins = excluded.price_coins, price_gems = excluded.price_gems, meta = excluded.meta, active = true;");
+  // Was es nicht mehr gibt (z. B. entfernte Kosmetik): nicht löschen (Besitz bleibt), aber nicht mehr aus Kisten oder Shop
+  L.push(`update game.items set active = false where id not in (${items.map(i => q(i.id)).join(", ")});`);
   L.push("insert into game.products (id, gems, items, price_cents, once_per_player) values");
   L.push(PRODUCTS.map(p => `  (${q(p.id)}, ${p.gems}, ${arr(p.items || [])}, ${p.price}, ${p.once ? "true" : "false"})`).join(",\n"));
   L.push("on conflict (id) do update set gems = excluded.gems, items = excluded.items, price_cents = excluded.price_cents, once_per_player = excluded.once_per_player, active = true;");

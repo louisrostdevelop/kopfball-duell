@@ -9,20 +9,20 @@ after(async () => { await env.close(); });
 const S = page => page.evaluate(async () => JSON.parse(JSON.stringify((await import("/js/app/profile.js")).S)));
 
 for (const [name, view] of [["Desktop", VIEW.desktop], ["Handy quer", VIEW.phone]]) test(`Ausrüstung (${name})`, async () => {
-  const { page, errors } = await openPage(env, view, { save: { shards: 60, cos: ["hat:1", "hat:3", "shoes:2", "goalfx:7", "emoji:3"] } });
+  const { page, errors } = await openPage(env, view, { save: { shards: 60, cos: ["shoes:1", "shoes:3", "goalfx:7", "emoji:3"] } });
   await click(page, "#navChests", 300); await click(page, "#btnLocker", 400);
-  assert.equal(await page.locator("#lockerGrid .lcard").count(), 12, "12 Hüte");
-  await click(page, '#lockerGrid [data-id="hat:3"]');
-  assert.equal((await S(page)).equip.hat, "hat:3");
-  // Herstellen: Hut 2 (selten, 50 Splitter)
-  await click(page, '#lockerGrid [data-id="hat:2"]', 400);
+  assert.equal(await page.locator("#lockerGrid .lcard").count(), 12, "12 Paar Schuhe");
+  assert.equal(await page.locator('#lockerTabs [data-tab="hat"]').count(), 0, "keine Hüte");
+  await click(page, '#lockerGrid [data-id="shoes:3"]');
+  assert.equal((await S(page)).equip.shoes, "shoes:3");
+  // Herstellen: Schuhe 2 (selten, 50 Splitter)
+  await click(page, '#lockerGrid [data-id="shoes:2"]', 400);
   let s = await S(page);
-  assert.ok(s.cos.includes("hat:2")); assert.equal(s.shards, 10); assert.equal(s.equip.hat, "hat:2", "gleich getragen");
+  assert.ok(s.cos.includes("shoes:2")); assert.equal(s.shards, 10); assert.equal(s.equip.shoes, "shoes:2", "gleich getragen");
   // zu wenig Splitter
-  await click(page, '#lockerGrid [data-id="hat:10"]', 300);
+  await click(page, '#lockerGrid [data-id="shoes:10"]', 300);
   assert.match(await page.textContent("#toasts"), /Splitter/);
-  // Schuhe, Torexplosion, Emote in Platz 2
-  await click(page, '#lockerTabs [data-tab="shoes"]'); await click(page, '#lockerGrid [data-id="shoes:2"]');
+  // Torexplosion, Emote in Platz 2
   await click(page, '#lockerTabs [data-tab="goalfx"]'); await click(page, '#lockerGrid [data-id="goalfx:7"]');
   await click(page, '#lockerTabs [data-tab="emotes"]'); await click(page, "#lockerSlots .eslot:nth-child(2)"); await click(page, '#lockerGrid [data-id="emoji:3"]');
   s = await S(page);
@@ -31,7 +31,7 @@ for (const [name, view] of [["Desktop", VIEW.desktop], ["Handy quer", VIEW.phone
   // Im Spiel: Kosmetik dabei, Emote-Leiste mit 4 Plätzen + Stumm, höchstens ein Emote in 3 s
   await page.evaluate(async () => { (await import("/js/app/modes.js")).startMode("quick"); });
   if (await page.locator("#btnKickoff").isVisible()) await click(page, "#btnKickoff", 3400);
-  assert.deepEqual(await page.evaluate(() => window.__kd.cfg.cos[0].hat), "hat:2");
+  assert.deepEqual(await page.evaluate(() => window.__kd.cfg.cos[0].shoes), "shoes:2");
   assert.equal(await page.locator("#emoteBar button").count(), 5);
   await page.evaluate(async () => { const g = await import("/js/app/game.js"); g.sendEmote("emoji:3"); g.sendEmote("GG"); });
   assert.equal(await page.evaluate(() => window.__kd.st.p[0].emo), "emoji:3");

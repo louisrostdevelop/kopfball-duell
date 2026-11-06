@@ -348,47 +348,16 @@ export function drawPuIcon(ctx, k, x, y, s, _col) {
   ctx.restore();
 }
 
-// ---------- Kosmetik (PLATZHALTER: einfache Formen in der Farbe des Gegenstands) ----------
-/** Kopfbedeckung auf einem Kopf (Mittelpunkt x, y, Radius r). Ändert nichts am Spiel, nur Bild. */
-export function drawHat(ctx, id, x, y, r, dir = 1, t = 0) {
-  const c = cosById(id); if (!c) return;
-  const lw = Math.max(2, r * 0.08), top = y - r * 0.78, col = c.col;
-  ctx.save(); ctx.lineJoin = "round"; ctx.lineWidth = lw; ctx.strokeStyle = INK; ctx.fillStyle = col;
-  switch (c.v % 4) {
-    case 0: // Kappe mit Schirm in Blickrichtung
-      ctx.beginPath(); ctx.arc(x, top + r * 0.2, r * 0.72, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(x + dir * r * 0.75, top + r * 0.2, r * 0.5, r * 0.13, 0, 0, TAU); ctx.fill(); ctx.stroke();
-      break;
-    case 1: // Mütze mit Bommel
-      ctx.beginPath(); ctx.arc(x, top + r * 0.28, r * 0.74, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = shade(col, -0.2); ctx.fillRect(x - r * 0.78, top + r * 0.16, r * 1.56, r * 0.24); ctx.strokeRect(x - r * 0.78, top + r * 0.16, r * 1.56, r * 0.24);
-      circ(ctx, x, top - r * 0.5, r * 0.2); ctx.fillStyle = "#fff"; ctx.fill(); ctx.stroke();
-      break;
-    case 2: { // Krone
-      ctx.beginPath(); ctx.moveTo(x - r * 0.6, top + r * 0.25);
-      for (let k = 0; k <= 4; k++) { const px = x - r * 0.6 + k * r * 0.3; ctx.lineTo(px, k % 2 ? top - r * 0.05 : top - r * 0.45); }
-      ctx.lineTo(x + r * 0.6, top + r * 0.25); ctx.closePath(); ctx.fill(); ctx.stroke();
-      break;
-    }
-    default: // Zylinder
-      ctx.fillRect(x - r * 0.42, top - r * 0.7, r * 0.84, r * 0.9); ctx.strokeRect(x - r * 0.42, top - r * 0.7, r * 0.84, r * 0.9);
-      ctx.beginPath(); ctx.ellipse(x, top + r * 0.2, r * 0.8, r * 0.14, 0, 0, TAU); ctx.fill(); ctx.stroke();
-  }
-  // Legendär: funkelt
-  if (c.rarity === "legend") { const a = (Math.sin(t * 4) + 1) / 2; ctx.globalAlpha = 0.5 + a * 0.5; star(ctx, x + r * 0.5, top - r * 0.3, r * 0.16, "#fff6b0", lw); }
-  ctx.restore();
-}
+// ---------- Kosmetik (PLATZHALTER: Schuhe in der Farbe des Gegenstands) ----------
 /** Schuhfarbe: ausgerüstete Schuhe, sonst Teamfarbe */
 export const shoeColor = (id, team) => { const c = cosById(id); return c ? c.col : team; };
 
-// Kleines Avatar-Bild für Menüs (opts.hat: Kopfbedeckung)
+// Kleines Avatar-Bild für Menüs
 export function avatarCanvas(chId, px, opts = {}) {
   const c = document.createElement("canvas");
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   c.width = c.height = Math.round(px * dpr); c.style.width = c.style.height = px + "px";
   const x = c.getContext("2d"); x.scale(dpr, dpr);
-  const r = px * (opts.hat ? 0.26 : 0.3), cy = px * (opts.hat ? 0.6 : 0.56);
-  drawHead(x, chId, px / 2, cy, r, { dir: opts.dir || 1, mood: opts.mood || "", look: opts.look });
-  if (opts.hat) drawHat(x, opts.hat, px / 2, cy, r, opts.dir || 1);
+  drawHead(x, chId, px / 2, px * 0.56, px * 0.3, { dir: opts.dir || 1, mood: opts.mood || "", look: opts.look });
   return c;
 }

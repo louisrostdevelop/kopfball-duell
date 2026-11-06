@@ -6,7 +6,7 @@ import { S } from "../../app/profile.js";
 import { App } from "../../app/state.js";
 import { cancelSearch, league } from "../../app/matchmaking.js";
 import { serverState } from "../../app/account.js";
-import { cleanCos, myCos } from "../../app/cosmetics.js";
+import { cleanCos } from "../../app/cosmetics.js";
 import { cosById } from "../../content/cosmetics.js";
 import { t } from "../../content/i18n.js";
 
@@ -16,7 +16,7 @@ const mmss = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart
 export function searchUI(mm) {
   if (!mm) return;
   $("srTitle").textContent = t(mm.mode === "ranked" ? "mode.ranked.name" : "mode.casual.name");
-  const av = $("srAv"); if (mm.state === "search" || !av.firstChild) { av.innerHTML = ""; av.append(avatarCanvas(S.char, 120, { hat: myCos().hat })); }
+  const av = $("srAv"); if (mm.state === "search" || !av.firstChild) { av.innerHTML = ""; av.append(avatarCanvas(S.char, 120)); }
   const rating = serverState() && serverState().season && serverState().season.rating;
   $("srMe").textContent = (S.name || t("ui.you")) + (mm.mode === "ranked" ? " · " + league(rating ? rating.mmr : 1000) + " " + (rating ? rating.mmr : 1000) : "");
   const st = $("srState"), opp = $("srOpp");
@@ -30,10 +30,10 @@ export function searchUI(mm) {
     const o = mm.opp || {};
     st.textContent = t(mm.state === "connect" ? "search.found" : "lobby.connected");
     opp.textContent = "";
-    // Spieler-Karte des Gegners: Kopf mit Hut (vom Server geprüft), Name, Level, Kopf-Level, Liga
+    // Spieler-Karte des Gegners: Kopf, Rahmen und Titel (vom Server geprüft), Name, Level, Kopf-Level, Liga
     const h = (mm.heads && mm.heads[mm.role === "host" ? "p2" : "p1"]) || {}, card = $("srThem");
     const oav = $("srOppAv"); oav.innerHTML = "";
-    const oc = cleanCos(h.cos), ocv = avatarCanvas((h.head || "head:kalle").replace(/^head:/, ""), 120, { hat: oc.hat, dir: -1 }), fr = cosById(oc.frame);
+    const oc = cleanCos(h.cos), ocv = avatarCanvas((h.head || "head:kalle").replace(/^head:/, ""), 120, { dir: -1 }), fr = cosById(oc.frame);
     if (fr) { ocv.className = "framed"; ocv.style.setProperty("--fc", fr.col); }
     oav.append(ocv);
     $("srOppName").textContent = (o.name || t("search.opponent")) + (oc.title ? " · " + cosById(oc.title).name : "");

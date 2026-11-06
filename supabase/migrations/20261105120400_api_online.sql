@@ -20,7 +20,6 @@ $$;
 create or replace function game.clean_cos(p uuid, c jsonb) returns jsonb
 language sql stable security definer set search_path = '' as $$
   select jsonb_strip_nulls(jsonb_build_object(
-    'hat', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'hat' and x.kind = 'hat'),
     'shoes', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'shoes' and x.kind = 'shoes'),
     'goalfx', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'goalfx' and x.kind = 'goalfx'),
     'title', (select i.item_id from game.inventory i join game.items x on x.id = i.item_id where i.player_id = p and i.item_id = c->>'title' and x.kind = 'title'),

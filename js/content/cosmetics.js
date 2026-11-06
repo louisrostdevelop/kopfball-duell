@@ -5,14 +5,14 @@ import { t } from "./i18n.js";
 import { CHARS } from "./config.js";
 
 /** Arten in Reihenfolge der Sammlung (aus Kisten); OWN_KINDS: alles, was man besitzen kann (dazu Titel, Rahmen) */
-export const COS_KINDS = ["hat", "shoes", "goalfx", "emote", "emoji"];
+export const COS_KINDS = ["shoes", "goalfx", "emote", "emoji"];
 export const OWN_KINDS = [...COS_KINDS, "title", "frame"];
 
 // Platzhalter-Farben und -Zeichen
 const PAL = ["#ff5a4f", "#ffd84a", "#4fd1ff", "#7fd17f", "#c8a2ff", "#ff9bd2", "#ff9f40", "#ffffff", "#3b3b58", "#2fd6b0", "#e8c170", "#9aa7ff"];
 const EMOJI = ["😂", "🔥", "😤", "😎", "🤡", "👏", "😱", "💪", "🙈", "👑", "⚽", "💤"];
 // Seltenheit je Art: so viele Selten / Episch / Legendär
-const MIX = { hat: [5, 4, 3], shoes: [4, 3, 1], goalfx: [3, 3, 2], emote: [4, 3, 1], emoji: [6, 4, 2] };
+const MIX = { shoes: [5, 4, 3], goalfx: [3, 3, 2], emote: [4, 3, 1], emoji: [6, 4, 2] };
 // Preise im Shop (Münzen / Juwelen), Freischalt-Level im Shop
 export const COS_PRICE = { selten: { coins: 150, gems: 60 }, episch: { coins: 400, gems: 150 }, legend: { coins: 900, gems: 350 } };
 

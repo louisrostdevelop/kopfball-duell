@@ -16,7 +16,7 @@ function rollRar(dist, rnd) {
 
 /**
  * @param {string} tier         bronze | silver | gold | legend
- * @param {object} st           { owned: Set("head:kalle", "hat:3", ...), heads: { kalle: level }, pity: { epic, legend, head, legendHead } }
+ * @param {object} st           { owned: Set("head:kalle", "shoes:3", ...), heads: { kalle: level }, pity: { epic, legend, head, legendHead } }
  * @param {() => number} rnd    Zufall 0..1
  * @param {string} [sure]       sicher ein neuer Kopf dieser Seltenheit (Level 2 / 5)
  * @returns {{ coins: number, gems: number, shards: number, items: object[], pity: object }}

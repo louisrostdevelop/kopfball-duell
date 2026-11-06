@@ -37,7 +37,7 @@ export function applyState(st) {
   if (Array.isArray(st.items)) {
     S.cos = st.items.filter(i => OWN_KINDS.includes(i.split(":")[0]));
     // Ausgerüstetes, das man nicht (mehr) hat, ablegen
-    for (const k of ["hat", "shoes", "goalfx", "title", "frame"]) if (S.equip[k] && !S.cos.includes(S.equip[k])) S.equip[k] = null;
+    for (const k of ["shoes", "goalfx", "title", "frame"]) if (S.equip[k] && !S.cos.includes(S.equip[k])) S.equip[k] = null;
     S.equip.emotes = S.equip.emotes.map(e => (e && S.cos.includes(e) ? e : null));
   }
   if (Array.isArray(st.chests)) S.chests = st.chests.map(c => ({ id: c.id, tier: c.tier, source: c.source, ref: c.ref, sure: c.sure || null }));

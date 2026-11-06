@@ -48,7 +48,7 @@ begin
   end if;
 
   if cos_rar is not null then
-    select id into it from game.items where kind in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') and rarity = cos_rar and active and meta->>'src' is distinct from 'mastery' order by random() limit 1;
+    select id into it from game.items where kind in ('shoes', 'goalfx', 'emote', 'emoji') and rarity = cos_rar and active and meta->>'src' is distinct from 'mastery' order by random() limit 1;
     if it is not null then
       if game.give_item(p, it, 'chest') then items := items || jsonb_build_object('id', it, 'rarity', cos_rar, 'dup', false);
       else
@@ -114,7 +114,7 @@ begin
   prev := game.idem_begin(p, request_key); if prev is not null then return prev; end if;
   perform game.limit_rate(p, 'craft', 20, interval '1 minute');
   select * into it from game.items where id = item and active;
-  if it.id is null or it.kind not in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') or it.meta->>'src' = 'mastery' then perform game.fail('not_craftable'); end if;
+  if it.id is null or it.kind not in ('shoes', 'goalfx', 'emote', 'emoji') or it.meta->>'src' = 'mastery' then perform game.fail('not_craftable'); end if;
   if exists (select 1 from game.inventory where player_id = p and item_id = item) then perform game.fail('already_owned'); end if;
   cost := (game.cfg('chest_shards')->'craft'->>it.rarity)::integer;
   update game.wallets set shards = shards - cost where player_id = p and shards >= cost;

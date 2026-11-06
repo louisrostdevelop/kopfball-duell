@@ -181,7 +181,7 @@ $$;
 -- ---------- Kosmetik-Wochenangebot: 6 Gegenstände, für alle gleich ----------
 create or replace function game.cos_offer() returns text[]
 language sql stable security definer set search_path = '' as $$
-  select array(select id from game.items where kind in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') and active and meta->>'src' is distinct from 'mastery'
+  select array(select id from game.items where kind in ('shoes', 'goalfx', 'emote', 'emoji') and active and meta->>'src' is distinct from 'mastery'
                 order by md5(game.week() || id) limit 6)
 $$;
 

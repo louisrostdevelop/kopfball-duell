@@ -50,7 +50,7 @@ export function lobbyUI(role) {
   const left = host ? me : App.opp, right = host ? App.opp : me;
   const put = (n, p, you) => {
     const av = $("vsAv" + n); av.innerHTML = "";
-    if (p) { av.append(avatarCanvas(p.ch, 110, { dir: n ? -1 : 1, hat: p.cos && p.cos.hat })); $("vsName" + n).textContent = p.name + (you ? " " + t("lobby.youTag") : ""); $("vsCh" + n).textContent = charById(p.ch).name + " · " + SUPERS[charById(p.ch).super].name; }
+    if (p) { av.append(avatarCanvas(p.ch, 110, { dir: n ? -1 : 1 })); $("vsName" + n).textContent = p.name + (you ? " " + t("lobby.youTag") : ""); $("vsCh" + n).textContent = charById(p.ch).name + " · " + SUPERS[charById(p.ch).super].name; }
     else { av.innerHTML = '<span class="wait">?</span>'; $("vsName" + n).textContent = t("lobby.waiting"); $("vsCh" + n).textContent = ""; }
   };
   put(0, left, host); put(1, right, !host);

@@ -1,4 +1,4 @@
-// Ausrüstung: Hut, Schuhe, Torexplosion, 4 Emote-Plätze. Besessenes antippen = tragen, Fehlendes mit Splittern herstellen.
+// Ausrüstung: Schuhe, Torexplosion, Titel, Rahmen, 4 Emote-Plätze. Besessenes antippen = tragen, Fehlendes mit Splittern herstellen.
 import { COSMETICS, cosById, MASTERY_ITEMS, SHARDS } from "../../content/cosmetics.js";
 import { RARITY } from "../../content/config.js";
 import { S } from "../../app/profile.js";
@@ -11,8 +11,8 @@ import { registerScreen, showScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
 import { num, t } from "../../content/i18n.js";
 
-const TABS = [["hat", ["hat"]], ["shoes", ["shoes"]], ["goalfx", ["goalfx"]], ["emotes", ["emote", "emoji"]], ["title", ["title"]], ["frame", ["frame"]]];
-let tab = "hat", slot = 0;
+const TABS = [["shoes", ["shoes"]], ["goalfx", ["goalfx"]], ["emotes", ["emote", "emoji"]], ["title", ["title"]], ["frame", ["frame"]]];
+let tab = "shoes", slot = 0;
 
 export function lockerScreen() { showScreen("locker"); }
 
@@ -24,7 +24,7 @@ function slotLabel(e) {
 function render() {
   $("lockerShards").textContent = num(S.shards || 0);
   const pv = $("lockerPreview"); pv.innerHTML = "";
-  const av = avatarCanvas(S.char, 120, { hat: S.equip.hat, mood: "happy" }), fr = cosById(S.equip.frame);
+  const av = avatarCanvas(S.char, 120, { mood: "happy" }), fr = cosById(S.equip.frame);
   if (fr) { av.className = "framed"; av.style.setProperty("--fc", fr.col); }
   pv.append(av);
   const ti = cosById(S.equip.title); $("lockerTitle").textContent = ti ? ti.name : "";

@@ -14,8 +14,8 @@ const MOCK = { path: fileURLToPath(new URL("./mockpeer.js", import.meta.url)) };
 test("Online: Lobby bis Revanche", async t => {
   const a = await openPage(env, VIEW, { init: [MOCK] });
   const A = a.page;
-  // Host trägt einen Hut und eine Torexplosion
-  await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.cos = ["hat:2", "goalfx:3", "emoji:5"]; p.S.equip = { hat: "hat:2", shoes: null, goalfx: "goalfx:3", emotes: ["emoji:5", null, null, null] }; });
+  // Host trägt Schuhe und eine Torexplosion
+  await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.cos = ["shoes:2", "goalfx:3", "emoji:5"]; p.S.equip = { shoes: "shoes:2", goalfx: "goalfx:3", title: null, frame: null, emotes: ["emoji:5", null, null, null] }; });
   await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
   await A.fill("#nameIn", "Louis"); await A.click("#btnHost"); await A.waitForTimeout(500);
   const code = (await A.textContent("#lobbyCode")).trim();
@@ -46,8 +46,8 @@ test("Online: Lobby bis Revanche", async t => {
     const s = await A.evaluate(() => window.__kd.st.stats[1]);
     assert.ok(s.slides >= 1, "Grätschen " + s.slides); assert.ok(s.bombs >= 1, "Bomben " + s.bombs);
   });
-  await t.test("Kosmetik: Gast sieht Hut und Torexplosion des Hosts, Emotes kommen an (höchstens eins in 3 s)", async () => {
-    assert.deepEqual(await B.evaluate(() => [window.__kd.cfg.cos[0].hat, window.__kd.cfg.cos[0].goalfx]), ["hat:2", "goalfx:3"]);
+  await t.test("Kosmetik: Gast sieht Schuhe und Torexplosion des Hosts, Emotes kommen an (höchstens eins in 3 s)", async () => {
+    assert.deepEqual(await B.evaluate(() => [window.__kd.cfg.cos[0].shoes, window.__kd.cfg.cos[0].goalfx]), ["shoes:2", "goalfx:3"]);
     // (🔥 wäre auch der Torjubel, deshalb GG als zweites Emote)
     await B.evaluate(async () => { const g = await import("/js/app/game.js"); g.sendEmote("😂"); g.sendEmote("GG"); });
     let seen = "";

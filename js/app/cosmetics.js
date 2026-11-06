@@ -1,4 +1,4 @@
-// Ausrüstung: was der Spieler trägt (Hut, Schuhe, Torexplosion, 4 Emote-Plätze). Nur Aussehen, kein Einfluss aufs Spiel.
+// Ausrüstung: was der Spieler trägt (Schuhe, Torexplosion, Titel, Rahmen, 4 Emote-Plätze). Nur Aussehen, kein Einfluss aufs Spiel.
 import { EMOTES } from "../content/config.js";
 import { cosById } from "../content/cosmetics.js";
 import { S, save } from "./profile.js";
@@ -9,7 +9,7 @@ const owns = id => !!id && S.cos.includes(id);
 export function myCos() {
   const e = S.equip || {};
   const o = k => (owns(e[k]) ? e[k] : null);
-  return { hat: o("hat"), shoes: o("shoes"), goalfx: o("goalfx"), title: o("title"), frame: o("frame"), emotes: emoteSlots() };
+  return { shoes: o("shoes"), goalfx: o("goalfx"), title: o("title"), frame: o("frame"), emotes: emoteSlots() };
 }
 
 /** Die 4 Emote-Plätze: Ausgerüstetes, leere Plätze mit den Standard-Emotes aufgefüllt */
@@ -40,5 +40,5 @@ export const validEmote = e => EMOTES.includes(e) || ["emote", "emoji"].includes
 export function cleanCos(o) {
   const ok = (id, k) => (id && cosById(id)?.kind === k ? id : null);
   if (!o || typeof o !== "object") return {};
-  return { hat: ok(o.hat, "hat"), shoes: ok(o.shoes, "shoes"), goalfx: ok(o.goalfx, "goalfx"), title: ok(o.title, "title"), frame: ok(o.frame, "frame"), emotes: Array.isArray(o.emotes) ? o.emotes.filter(validEmote).slice(0, 4) : [] };
+  return { shoes: ok(o.shoes, "shoes"), goalfx: ok(o.goalfx, "goalfx"), title: ok(o.title, "title"), frame: ok(o.frame, "frame"), emotes: Array.isArray(o.emotes) ? o.emotes.filter(validEmote).slice(0, 4) : [] };
 }

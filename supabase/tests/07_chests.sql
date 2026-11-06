@@ -77,7 +77,7 @@ begin
   assert (r->>'gems')::int = 30 and exists (select 1 from jsonb_array_elements(r->'items') x where x->>'id' like 'head:%'), 'Legendär-Kiste: ' || r::text;
 
   -- Doppelte Kosmetik -> Splitter (alle seltenen schon da, Bronze-Kiste immer mit Kosmetik)
-  insert into game.inventory (player_id, item_id, source) select u, id, 'test' from game.items where kind in ('hat', 'shoes', 'goalfx', 'emote', 'emoji') and rarity = 'selten' on conflict do nothing;
+  insert into game.inventory (player_id, item_id, source) select u, id, 'test' from game.items where kind in ('shoes', 'goalfx', 'emote', 'emoji') and rarity = 'selten' and active and meta->>'src' is distinct from 'mastery' on conflict do nothing;
   update game.chest_defs set cos_p = 1, head = '{}' where tier = 'bronze';
   update game.progress set pity = '{}' where player_id = u;
   s0 := (select shards from game.wallets where player_id = u);
@@ -101,7 +101,7 @@ begin
   it := (select id from game.items where kind = 'shoes' and rarity = 'episch' and id not in (select item_id from game.inventory where player_id = u) limit 1);
   perform pg_temp.login(u);
   perform pg_temp.expect_error($q$select api.craft_item('head:max', 'craft-0001')$q$, 'not_craftable');
-  perform pg_temp.expect_error($q$select api.craft_item('hat:1', 'craft-0002')$q$, 'already_owned');
+  perform pg_temp.expect_error($q$select api.craft_item('shoes:1', 'craft-0002')$q$, 'already_owned');
   r := api.craft_item(it, 'craft-0003');
   assert (r->>'shards')::int = 150 and (r->'state'->>'shards')::int = 10, 'hergestellt: ' || r::text;
   perform pg_temp.expect_error($q$select api.craft_item('goalfx:5', 'craft-0004')$q$, 'insufficient_funds');
@@ -110,13 +110,13 @@ begin
   -- Kosmetik in der Gegnersuche: nur Besessenes der passenden Art
   update game.players set level = 10 where id = u;
   delete from game.inventory where player_id = u and item_id in ('emoji:12', 'goalfx:8');   -- sicher nicht besessen (Kisten oben sind Zufall)
-  insert into game.inventory (player_id, item_id, source) values (u, 'emoji:1', 'test'), (u, 'hat:1', 'test') on conflict do nothing;
+  insert into game.inventory (player_id, item_id, source) values (u, 'emoji:1', 'test'), (u, 'shoes:1', 'test') on conflict do nothing;
   perform pg_temp.login(u);
-  perform api.queue_join('casual', 'head:kalle', '{"hat": "hat:1", "shoes": "hat:2", "goalfx": "goalfx:8", "emotes": ["GG", "emoji:1", "emoji:12", "x:y"]}');
+  perform api.queue_join('casual', 'head:kalle', '{"shoes": "shoes:1", "goalfx": "shoes:2", "frame": "goalfx:8", "emotes": ["GG", "emoji:1", "emoji:12", "x:y"]}');
   perform pg_temp.logout();
   r := (select cos from game.match_queue where player_id = u);
   perform pg_temp.login(u); perform api.queue_leave(); perform pg_temp.logout();
-  assert r->>'hat' = 'hat:1' and r->'shoes' is null and r->'goalfx' is null, 'nur Besessenes: ' || r::text;
+  assert r->>'shoes' = 'shoes:1' and r->'goalfx' is null and r->'frame' is null, 'nur Besessenes der passenden Art: ' || r::text;
   assert r->'emotes' = '["GG", "emoji:1"]'::jsonb, 'Emotes geprüft: ' || r::text;
 
   -- Weitere Quellen: alle Tagesaufgaben geschafft = Bronze (einmal am Tag)
@@ -173,7 +173,7 @@ begin
   perform game.book(v, 'coins', 5000, 'test');
   update game.players set level = 4 where id = v;
   -- ein Gegenstand außerhalb des Angebots
-  it := (select id from game.items where kind = 'hat' and not (id = any(game.cos_offer())) and id not in (select item_id from game.inventory where player_id = v) limit 1);
+  it := (select id from game.items where kind = 'shoes' and not (id = any(game.cos_offer())) and id not in (select item_id from game.inventory where player_id = v) limit 1);
   perform pg_temp.login(v);
   perform pg_temp.expect_error(format('select api.buy_item(%L, ''coins'', ''cos-buy-0002'')', it), 'not_in_offer');
   perform pg_temp.logout();
