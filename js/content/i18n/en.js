@@ -790,6 +790,8 @@ export default {
   "net.full": "The room is already full.",
   "net.hint": "If your buddy sent you a link, just open it.",
   "net.lagging": "Connection lagging …",
+  "net.reconnecting": "Connection lost, waiting up to 10 s …",
+  "net.back": "Reconnected",
   "net.hostLeft": "The host left the match",
   "net.loading": "Online mode is still loading. Try again in a moment.",
   "net.noRoom": "No room with code {code} found.",

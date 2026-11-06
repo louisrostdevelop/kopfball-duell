@@ -18,7 +18,8 @@
  * @property {(code: string, h: TransportHandlers) => void} join
  * @property {(msg: object) => void} send                  zuverlässig und geordnet (Lobby, Ereignisse, Statistik)
  * @property {(msg: object) => void} [sendFast]            häufige Daten (Zustände, Eingaben): darf verloren gehen, kommt dafür ohne Warten
- * @property {() => void} close
+ * @property {(after?: number) => void} close              after: erst nach so vielen ms schließen (letzte Nachricht kommt noch an)
+ * @property {() => void} [drop]                          nur die Verbindung trennen (Host behält den Raum), löst onClose aus
  * @property {() => boolean} isOpen
  * @property {() => "host"|"guest"|null} role
  */

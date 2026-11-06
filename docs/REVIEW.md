@@ -42,9 +42,20 @@ am Code.
 - **Vorbehalt:** Die Zahlen kommen vom Computer, die Start-Köpfe (Kalle, Yuki) und Emo liegen mit 36–39 % noch etwas
   unten. Mit echten Spieldaten nachjustieren.
 
-**B. Online: kein Wiederverbinden (entschieden: bauen).** Ein kurzer Netzaussetzer beendet ein Freundesspiel, in Ranked zählt er als
-Aufgabe. Vorschlag: 10 s Pause mit „Verbindung wird wiederhergestellt“, der Gast tritt demselben Raum automatisch wieder bei,
-der Host nimmt ihn mit derselben Spieler-ID an und schickt den vollen Stand.
+**B. Online: Wiederverbinden (entschieden: bauen, umgesetzt).** Vorher beendete ein kurzer Netzaussetzer ein
+Freundesspiel, in Ranked zählte er als Aufgabe. Jetzt:
+
+- Reißt die Verbindung im Spiel ab, steht das Spiel bis zu 10 s mit „Verbindung wird wiederhergestellt …“, die Spielzeit
+  läuft nicht weiter.
+- Der Gast tritt demselben Raum automatisch wieder bei und weist sich mit seinem Sitzungs-Merker und der Spiel-Nummer aus.
+  Der Host nimmt nur ihn an (sonst „Raum voll“) und schickt den Start erneut, die Zustände holen den Rest nach.
+- Kommt 8 s nichts an, ohne dass die Verbindung schließt, trennt die Seite selbst und versucht es neu. Kommt danach
+  weiterhin nichts (eingefrorener Gegner), gilt nach 7 s der bisherige Abbruch, es wird nicht endlos neu verbunden.
+- Wer das Spiel absichtlich verlässt, schickt „bye“, die andere Seite wartet dann nicht.
+- Tests: `online.test.mjs` „Verbindung reißt ab und kommt zurück“ (Spielstand bleibt, Zeit steht), „Gast kommt nicht
+  zurück“ (Host nach 10 s in der Lobby), „Gast friert ein“.
+- Nebenbei: Ein Sprung des Gasts ging bei langsamer CPU und schlechtem Netz gelegentlich verloren (1 von 6). Jeder Druck
+  gilt jetzt mindestens kurz, auch wenn danach keine Eingabe rechtzeitig kommt.
 
 **C. Ranked: der Host rechnet.** Ist der Host im Hintergrund, steht das Spiel. Nach 15 s bricht der Gast ab und meldet
 eine Aufgabe. Ohne Server-Schiedsrichter lässt sich ein manipulierter Host nicht erkennen. Der Server prüft heute
@@ -55,11 +66,12 @@ Eingaben oder ein Schiedsrichter-Dienst.
 
 | Fall | Verhalten |
 |---|---|
-| Gast schließt den Tab / Verbindung bricht | Host: Hinweis, zurück in die Lobby. Ranked: Host meldet Aufgabe, gewinnt nach spätestens 180 s (Wartung) |
-| Host schließt / bricht ab | Gast: „Gastgeber hat das Spiel verlassen“, ins Menü. Ranked: Gast meldet Aufgabe |
+| Netz reißt kurz ab | neu: Spiel steht bis 10 s, Gast verbindet automatisch neu, Spielstand bleibt |
+| Gast schließt den Tab / kommt nicht zurück | Host: nach 10 s Hinweis, zurück in die Lobby. Ranked: Host meldet Aufgabe, gewinnt nach spätestens 180 s (Wartung) |
+| Host verlässt das Spiel | Gast sofort (Abschied „bye“), schließt der Host nur den Tab: nach 10 s. Gast: „Gastgeber hat das Spiel verlassen“, ins Menü. Ranked: Gast meldet Aufgabe |
 | Beide melden „Gegner weg“ (z. B. Netz in der Mitte gerissen) | gleicher Spielstand → normal gewertet, abweichend → strittig, verfällt nach 24 h |
 | Verlierer reißt absichtlich die Verbindung | Gewinner meldet Aufgabe → Gewinner gewinnt, Abhauen bringt nichts |
-| Gast/Host friert ein ohne Verbindungsende | neu: Hinweis nach 4 s, Abbruch nach 15 s |
+| Gast/Host friert ein ohne Verbindungsende | neu: Hinweis nach 4 s, nach 8 s Trennung und Neuversuch, kommt weiter nichts: Abbruch |
 | Gast im Hintergrund mit gedrückter Taste | neu: zählt nach 350 ms als losgelassen |
 | Pakete verloren, Netz schwankt | Eingaben mehrfach mit Zählern, Zustände ungeordnet, Puffer passt sich an (Test „schlechtes Netz“) |
 | Alte Pakete aus dem letzten Spiel | über Spiel-Nummer verworfen |

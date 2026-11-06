@@ -67,5 +67,7 @@
     }
     if (m.type === "close" && c.open) { c.open = false; c.emit("close"); }
   };
+  // Test: Netz reißt ab (alle Verbindungen dieses Tabs schließen, die Peers bleiben)
+  window.__mockDrop = () => Object.values(peers).forEach(p => Object.values(p.conns).forEach(c => c.close()));
   window.Peer = Peer;
 })();

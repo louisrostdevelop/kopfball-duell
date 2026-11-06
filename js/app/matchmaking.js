@@ -5,8 +5,8 @@ import { S } from "./profile.js";
 import { myCos } from "./cosmetics.js";
 import { applyState } from "./account.js";
 import { quitToMenu } from "./game.js";
-import { hostData, guestData, hostStart } from "./online.js";
-import { App, inGame, VERSION } from "./state.js";
+import { hello, hostData, guestData, hostStart, netDropped } from "./online.js";
+import { App, inGame } from "./state.js";
 import { toast } from "../ui/dom.js";
 import { showScreen, swapScreen } from "../ui/nav.js";
 import { mmPanel, netNote } from "../ui/screens/online.js";
@@ -81,15 +81,16 @@ function matched(r) {
   if (r.role === "host") {
     Net.host({
       onData: d => { hostData(d); if (d.t === "hello" && App.opp && App.mm && App.mm.state === "connect") { App.mm.state = "play"; clearTimeout(timer); setTimeout(hostStart, 600); } },
-      onClose,
+      onClose: () => netDropped(onClose),
       onError: type => { if (my === gen) fail(t("net.roomFailed", { type })); },
     }, { code: roomOf(r.match) });
   } else {
     let tries = 0;
-    const join = () => Net.join(roomOf(r.match), {
-      onConn: () => Net.send({ t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: 1, v: VERSION }),   // Level kommt vom Server
+    App.roomCode = roomOf(r.match);
+    const join = () => Net.join(roomOf(r.match), App.joinH = {
+      onConn: () => Net.send(hello({ lv: 1 })),   // Level kommt vom Server
       onData: d => { guestData(d); if (d.t === "welcome" && App.mm) { App.mm.state = "play"; clearTimeout(timer); searchUI(App.mm); } },
-      onClose,
+      onClose: () => netDropped(onClose),
       onError: (type, wasOk) => { if (wasOk || my !== gen) return; if (type === "peer-unavailable" && ++tries < 12) setTimeout(() => { if (my === gen) join(); }, 1500); else fail(t("mm.connectFailed", { type })); },
     });
     setTimeout(join, 800);   // Host braucht einen Moment, bis der Raum offen ist

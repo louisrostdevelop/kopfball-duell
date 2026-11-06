@@ -88,8 +88,8 @@ export function updateBand() {
 }
 
 export function quitToMenu() {
-  if (App.mode === "host" || App.mode === "guest") Net.close();
-  App.netLost = null; App.lastRx = 0;
+  if (App.mode === "host" || App.mode === "guest") { Net.send({ t: "bye" }); Net.close(250); }   // „bye“: die andere Seite wartet nicht aufs Wiederverbinden
+  App.netLost = null; App.lastRx = 0; App.netWait = null;
   App.run = null; App.mm = null;
   document.body.classList.remove("ingame");
   $("gameBtns").hidden = true;

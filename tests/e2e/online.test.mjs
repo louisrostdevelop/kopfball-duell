@@ -108,7 +108,7 @@ test("Online bei schlechtem Netz", async () => {
 });
 
 // Gast friert ein (Tab im Hintergrund, Absturz), ohne dass die Verbindung schließt: festgehaltene Taste wirkt nicht
-// weiter, nach 4 s ein Hinweis, nach 15 s zurück in die Lobby (Review 06.11.2026)
+// weiter, nach 4 s ein Hinweis, nach 8 s Trennung, kommt danach nichts: zurück in die Lobby (Review 06.11.2026)
 test("Online: Gast friert ein", async () => {
   const a = await openPage(env, VIEW, { init: [MOCK] });
   const A = a.page;
@@ -126,7 +126,47 @@ test("Online: Gast friert ein", async () => {
   assert.ok(Math.abs(vx) < 5, "Gast läuft nicht mit festgehaltener Taste weiter: vx " + vx);
   await A.waitForTimeout(4000);
   assert.match(await A.textContent("#toasts"), /hakt/);
-  await A.waitForTimeout(11000);
+  await A.waitForTimeout(15000);   // nach 8 s getrennt, Gast verbindet neu, sendet aber nichts → Abbruch
   assert.deepEqual(await A.evaluate(() => [window.__kd.screen, window.__kd.mode]), ["lobby", "demo"]);
+  assert.deepEqual(a.errors.filter(e => !e.includes("TUNNEL")), []);
+});
+
+// Netz reißt mitten im Spiel ab: Spiel steht, der Gast tritt demselben Raum wieder bei, Spielstand bleibt erhalten.
+// Kommt er nicht zurück, geht der Host nach 10 s in die Lobby. (Review 06.11.2026)
+async function friendMatch() {
+  const a = await openPage(env, VIEW, { init: [MOCK] });
+  const A = a.page;
+  await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
+  await A.click("#btnHost"); await A.waitForTimeout(500);
+  const code = (await A.textContent("#lobbyCode")).trim();
+  const B = await a.ctx.newPage();
+  await B.goto(env.url + "/index.html?join=" + code); await B.waitForTimeout(2500);
+  if (await B.locator("#modalOk").isVisible()) await B.click("#modalOk");
+  await A.click("#btnLobbyStart"); await A.waitForTimeout(3600);
+  return { a, A, B };
+}
+test("Online: Verbindung reißt ab und kommt zurück", async () => {
+  const { a, A, B } = await friendMatch();
+  await A.evaluate(() => { window.__kd.st.s = [1, 0]; window.__kd.st.t = 60; });
+  await A.waitForTimeout(300);
+  // im Host mitschreiben (das Wiederverbinden kann schneller sein als eine Abfrage von außen): Spielzeit beim Warten
+  await A.evaluate(() => { window.__w = []; const tick = () => { const K = window.__kd; if (K.netWait) window.__w.push(K.st.t); if (window.__w.length < 2000) setTimeout(tick, 5); }; tick(); });
+  await B.evaluate(() => window.__mockDrop());
+  await A.waitForTimeout(3500);
+  const w = await A.evaluate(() => window.__w);
+  assert.ok(w.length > 0, "Host hat gewartet");
+  assert.equal(Math.min(...w), Math.max(...w), "Spielzeit lief beim Warten nicht weiter");
+  assert.equal(await A.evaluate(() => window.__kd.netWait), null, "wieder verbunden");
+  assert.deepEqual(await B.evaluate(() => [window.__kd.mode, window.__kd.st.s, window.__kd.snaps.length > 0]), ["guest", [1, 0], true]);
+  assert.deepEqual(await A.evaluate(() => [window.__kd.mode, window.__kd.st.ph]), ["host", "play"]);
+  assert.deepEqual(a.errors.filter(e => !e.includes("TUNNEL")), []);
+});
+test("Online: Gast kommt nicht zurück", async () => {
+  const { a, A, B } = await friendMatch();
+  await B.evaluate(() => window.__mockDrop()); await B.close();
+  await A.waitForTimeout(800);
+  assert.ok(await A.evaluate(() => !!window.__kd.netWait), "Host wartet");
+  await A.waitForTimeout(10500);
+  assert.deepEqual(await A.evaluate(() => [window.__kd.screen, window.__kd.netWait]), ["lobby", null]);
   assert.deepEqual(a.errors.filter(e => !e.includes("TUNNEL")), []);
 });

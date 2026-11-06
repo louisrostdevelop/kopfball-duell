@@ -111,7 +111,7 @@ export function hostGame() {
     },
     onConn: () => { $("lobbyNote").textContent = t("lobby.connected"); },
     onData: hostData,
-    onClose: hostLost,
+    onClose: () => netDropped(hostLost),
     onError: type => { $("lobbyNote").textContent = t("net.roomFailed", { type }) + " " + t("ui.tryAgain"); },
   });
 }
@@ -128,21 +128,64 @@ function guestLost() { if (App.mode === "guest" || App.screen === "lobby" || App
  * Netz weg, ohne dass die Verbindung sauber schließt), erst ein Hinweis, nach NET_LOST ms wie ein Abbruch.
  * App.netLost setzt, wer die Verbindung aufbaut (Freunde: hostLost/guestLost, Gegnersuche: matchmaking.js).
  */
-export const NET_WARN = 4000, NET_LOST = 15000;
+export const NET_WARN = 4000, NET_DROP = 8000, NET_LOST = 15000, RECONNECT_MS = 10000;
 export function watchNet(now) {
-  if ((App.mode !== "host" && App.mode !== "guest") || !App.st || App.st.ph === "end" || !App.lastRx) return;
+  if ((App.mode !== "host" && App.mode !== "guest") || !App.st || App.st.ph === "end" || !App.lastRx || App.netWait) return;
   const gap = now - App.lastRx;
   if (gap > NET_WARN && !App.lagWarn) { App.lagWarn = true; toast(t("net.lagging"), "i-close"); }
-  else if (gap < 1000) App.lagWarn = false;
+  else if (gap < 1000) { App.lagWarn = false; App.dropTried = false; }   // es kommt wieder etwas an
+  // erst die Verbindung trennen (löst Wiederverbinden aus), wenn das nicht hilft: Abbruch
+  if (gap > NET_DROP && Net.drop && !App.dropTried) { App.dropTried = true; Net.drop(); return; }
   if (gap > NET_LOST && App.netLost) { const f = App.netLost; App.netLost = null; App.lastRx = 0; Net.close(); f(); }
 }
+
+// ---------- Wiederverbinden ----------
+// Reißt die Verbindung mitten im Spiel ab, steht das Spiel bis zu RECONNECT_MS still. Der Gast tritt demselben Raum
+// wieder bei und weist sich mit seinem Sitzungs-Merker aus, der Host schickt den Start erneut, die Zustände holen den
+// Rest nach. Kommt keiner zurück, gilt der bisherige Abbruch (lost).
+const token = () => App.netTok || (App.netTok = Math.random().toString(36).slice(2, 12));
+export function hello(extra = {}) { return { t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: headLevel(S.char), cos: myCos(), v: VERSION, tok: token(), ...extra }; }
+export function netDropped(lost) {
+  if (App.netWait) return;
+  if (App.netBye) { App.netBye = false; lost(); return; }   // hat sich verabschiedet: nicht warten
+  if (!inGame() || !App.st || App.st.ph === "end" || (App.mode !== "host" && App.mode !== "guest")) { lost(); return; }
+  App.netWait = { until: performance.now() + RECONNECT_MS, lost };
+  toast(t("net.reconnecting"), "i-swap");
+  if (App.mode === "guest") rejoin();
+}
+function rejoin() {
+  if (!App.netWait || !App.roomCode || !App.joinH) return;
+  const h = App.joinH;
+  Net.join(App.roomCode, { ...h,
+    onConn: () => Net.send(hello({ resume: App.mid, ...(App.mm ? { lv: 1 } : {}) })),
+    onClose: () => { if (App.netWait) setTimeout(rejoin, 800); else h.onClose(); },
+    onError: () => { if (App.netWait) setTimeout(rejoin, 1000); },
+  });
+}
+/** Jeden Frame: true, solange auf die Gegenseite gewartet wird (dann steht das Spiel) */
+export function netWaitTick(now) {
+  const w = App.netWait; if (!w) return false;
+  if (now > w.until) { App.netWait = null; Net.close(); w.lost(); return false; }
+  return true;
+}
+// Nach dem Wiederverbinden noch NET_LOST − NET_DROP ms Zeit, bis etwas ankommt. Ein eingefrorener Gegner, der nur die
+// Verbindung neu aufbaut, verbindet so nicht endlos neu.
+function resumed() { App.netWait = null; App.lastRx = performance.now() - NET_DROP; App.lagWarn = true; App.dropTried = true; toast(t("net.back"), "i-check", true); }
 
 export function hostData(d) {
   App.lastRx = performance.now();
   switch (d.t) {
     case "hello":
+      // Rückkehr nach Abbruch: nur derselbe Gast (Merker), dann Spiel mit dem vollen Stand fortsetzen
+      if (App.netWait && App.mode === "host") {
+        if (App.opp && d.tok && d.tok === App.opp.tok && d.resume === App.mid && App.guestCfg) {
+          lastStats = ""; App.inSeqSeen = -1; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0];
+          Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true }); resumed();
+        } else Net.send({ t: "full" });
+        break;
+      }
       if (d.v !== VERSION) toast(t("net.oldVersionGuest"), "i-close");
-      App.opp = { name: (d.name || t("ui.guest")).slice(0, 12), ch: charById(d.ch).id, lv: d.lv, cos: cleanCos(d.cos) }; App.inSeqSeen = -1;
+      App.opp = { name: (d.name || t("ui.guest")).slice(0, 12), ch: charById(d.ch).id, lv: d.lv, cos: cleanCos(d.cos), tok: String(d.tok || "") }; App.inSeqSeen = -1;
       Net.send({ t: "welcome", name: S.name || t("ui.host"), ch: S.char, cos: myCos(), cfg: App.netCfg, v: VERSION });
       lobbyUI("host"); A.sfx("coin"); toast(t("lobby.joined", { name: App.opp.name }), "i-users");
       break;
@@ -158,6 +201,7 @@ export function hostData(d) {
       break;
     }
     case "ping": Net.send({ t: "pong", c: d.c }); break;
+    case "bye": App.netBye = true; break;
     case "rematch": toast(t("lobby.wantsRematch", { name: App.opp ? App.opp.name : t("ui.guest") }), "i-swap"); break;
   }
 }
@@ -172,8 +216,9 @@ export function hostStart() {
   const cfg = { mode: "host", levels: lv, cos, chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, fair: !!(App.mm && App.mm.mode === "ranked"), golden: true, names: [S.name || t("ui.you"), App.opp.name], labels: [t("hud.you"), null], ball: S.ball };
   App.mid++;
   const fixed = resolveObs(cfg);
-  Net.send({ t: "start", mid: App.mid, cfg: { ...fixed, mode: "guest", labels: [null, t("hud.you")] } });
-  beginMatch(fixed);
+  App.guestCfg = { ...fixed, mode: "guest", labels: [null, t("hud.you")] };
+  Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg });
+  beginMatch(fixed); App.dropTried = false;
   App.lastRx = performance.now(); App.guestInAt = App.lastRx; App.lagWarn = false;
   if (!App.mm) App.netLost = hostLost;
 }
@@ -184,10 +229,11 @@ export function tryJoin(code) {
   if (!Net.available()) { netNote(t("net.loading"), true); return; }
   saveName($("nameIn").value);
   netNote(t("net.connecting", { code: code.toUpperCase() }));
-  Net.join(code, {
-    onConn: () => Net.send({ t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: headLevel(S.char), cos: myCos(), v: VERSION }),
+  App.roomCode = code;
+  Net.join(code, App.joinH = {
+    onConn: () => Net.send(hello()),
     onData: guestData,
-    onClose: guestLost,
+    onClose: () => netDropped(guestLost),
     onError: (type, wasOk) => {
       if (wasOk) return;
       Net.close();
@@ -211,7 +257,8 @@ export function guestData(d) {
     case "full": Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
     case "start":
       App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock();
-      App.lastRx = performance.now(); App.lagWarn = false; if (!App.mm) App.netLost = guestLost;
+      App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; if (!App.mm) App.netLost = guestLost;
+      if (d.resume) resumed();
       break;
     case "s": {
       if (App.mode !== "guest" || d.mid !== App.mid) break; // alte Pakete vom letzten Spiel ignorieren
@@ -230,6 +277,7 @@ export function guestData(d) {
     case "stats": if (App.mode === "guest" && d.mid === App.mid && App.st) App.st.stats = d.stats; break;
     case "lobby": if (!App.mm) backToLobby(); break;
     case "pong": App.rtt = performance.now() - d.c; break;
+    case "bye": App.netBye = true; break;
   }
 }
 

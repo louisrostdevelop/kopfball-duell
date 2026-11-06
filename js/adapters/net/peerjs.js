@@ -22,11 +22,23 @@ function openFast(me, conn, h) {
     me.fast = ch;
   } catch (_) { me.fast = null; }
 }
-export function close() {
+/** after (ms): erst später wirklich schließen, damit eine letzte Nachricht („bye“) noch ankommt; neue Verbindungen sind sofort möglich */
+export function close(after = 0) {
   if (!cur) return; const c = cur; cur = null;
-  try { c.fast && c.fast.close(); } catch (_) {}
-  try { c.conn && c.conn.close(); } catch (_) {}
-  try { c.peer && c.peer.destroy(); } catch (_) {}
+  const fin = () => {
+    try { c.fast && c.fast.close(); } catch (_) {}
+    try { c.conn && c.conn.close(); } catch (_) {}
+    try { c.peer && c.peer.destroy(); } catch (_) {}
+  };
+  if (after > 0) setTimeout(fin, after); else fin();
+}
+/** Nur die Verbindung trennen (der Host behält seinen Raum, damit der Gast wieder beitreten kann). Löst onClose aus. */
+export function drop() {
+  if (!cur || !cur.conn) return;
+  const c = cur.conn;
+  try { c.close(); } catch (_) {}
+  // manche PeerJS-Versionen melden das eigene Schließen nicht: dann hier nachholen
+  if (cur && cur.conn === c && cur.onDrop) cur.onDrop();
 }
 export function send(m) { if (cur && cur.conn && cur.conn.open) try { cur.conn.send(m); } catch (_) {} }
 /** Für Zustände und Eingaben: schneller Kanal, falls offen, sonst der normale. Bei Stau lieber auslassen. */
@@ -52,7 +64,9 @@ export function host(h, { code: fixed = null, tries = 0 } = {}) {
     me.conn = conn;
     conn.on("open", () => { if (cur === me && me.conn === conn) { openFast(me, conn, h); if (h.onConn) h.onConn(); } });
     conn.on("data", d => { if (cur === me && me.conn === conn && d) h.onData && h.onData(d); });
-    conn.on("close", () => { if (cur === me && me.conn === conn) { me.conn = null; try { if (me.fast) me.fast.close(); } catch (_) {} me.fast = null; if (h.onClose) h.onClose(); } });
+    const closed = () => { if (cur === me && me.conn === conn) { me.conn = null; me.onDrop = null; try { if (me.fast) me.fast.close(); } catch (_) {} me.fast = null; if (h.onClose) h.onClose(); } };
+    me.onDrop = closed;
+    conn.on("close", closed);
   });
   peer.on("disconnected", () => { if (cur === me && !peer.destroyed) try { peer.reconnect(); } catch (_) {} });
   peer.on("error", e => {
@@ -75,7 +89,10 @@ export function join(code, h) {
     me.conn = conn;
     conn.on("open", () => { if (cur !== me) return; me.ok = true; openFast(me, conn, h); if (h.onConn) h.onConn(); });
     conn.on("data", d => { if (cur === me && d) h.onData && h.onData(d); });
-    conn.on("close", () => { if (cur === me) h.onClose && h.onClose(); });
+    let gone = false;
+    const closed = () => { if (cur === me && !gone) { gone = true; me.onDrop = null; h.onClose && h.onClose(); } };
+    me.onDrop = closed;
+    conn.on("close", closed);
   });
   peer.on("error", e => { if (cur !== me) return; h.onError && h.onError(e.type, me.ok); });
   setTimeout(() => { if (cur === me && !me.ok) h.onError && h.onError("timeout", false); }, 15000);

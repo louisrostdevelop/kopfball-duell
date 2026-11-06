@@ -6,7 +6,7 @@ import { S, save } from "./profile.js";
 import { render, setQuality } from "../ui/render/render.js";
 import { onEvent } from "./effects.js";
 import { startDemo } from "./game.js";
-import { guestFrame, hostSend, watchNet } from "./online.js";
+import { guestFrame, hostSend, netWaitTick, watchNet } from "./online.js";
 import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
@@ -36,7 +36,9 @@ function frame(now) {
   const rotated = I.isTouch && window.innerHeight > window.innerWidth && inGame();
   $("rotate").hidden = !rotated;
   watchNet(now);
-  if (App.mode === "guest") guestFrame(dt, now);
+  const netWait = netWaitTick(now);   // Verbindung weg: Spiel steht, bis der andere zurück ist oder die Zeit um ist
+  if (netWait) { /* nur zeichnen */ }
+  else if (App.mode === "guest") guestFrame(dt, now);
   else if (!App.paused && !(rotated && App.mode !== "host")) {
     App.acc = advance(st, dt, gatherInputs(dt), App.acc);
     if (App.mode === "host") hostSend(dt);
@@ -63,9 +65,10 @@ export function gatherInputs(dt) {
   if (App.mode === "local") return [I.getInput(0, "local"), I.getInput(1, "local")];
   if (App.mode === "host") {
     const g = App.guestIn, pd = App.gPend;
-    // Druck-Zähler gestiegen, die Taste ist aber schon wieder los: Druck trotzdem kurz geben (kurzer Sprung = halb hoch)
-    if (g[6] !== pd.sj) { if (!g[2] && pd.sj !== undefined) pd.j = 0.07; pd.sj = g[6]; }
-    if (g[7] !== pd.sd) { if (!g[5] && pd.sd !== undefined) pd.d = 0.03; pd.sd = g[7]; }
+    // Druck-Zähler gestiegen: Druck mindestens kurz geben (kurzer Sprung = halb hoch), auch wenn die Taste schon wieder
+    // los ist oder danach keine Eingabe mehr rechtzeitig kommt
+    if (g[6] !== pd.sj) { if (pd.sj !== undefined) pd.j = 0.07; pd.sj = g[6]; }
+    if (g[7] !== pd.sd) { if (pd.sd !== undefined) pd.d = 0.03; pd.sd = g[7]; }
     // Kommt länger keine Eingabe (Gast im Hintergrund, Paketverlust), nichts mehr festhalten: sonst läuft er ewig weiter
     const fresh = performance.now() - (App.guestInAt || 0) < 350;
     const out = { l: fresh && !!g[0], r: fresh && !!g[1], j: (fresh && !!g[2]) || pd.j > 0, k: fresh && !!g[3], s: fresh && !!g[4], d: (fresh && !!g[5]) || pd.d > 0 };
