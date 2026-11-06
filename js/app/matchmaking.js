@@ -106,11 +106,17 @@ function matched(r) {
 // Verbindungs-Check (Host): ein paar Pings, dann entscheiden. Ranked bei schlechter Verbindung: beide suchen neu
 // (Server bricht das Spiel ab und paart die zwei eine Weile nicht). Casual: nur ein Hinweis, gespielt wird trotzdem.
 async function checkThenStart(my) {
-  App.mm.state = "check"; searchUI(App.mm); App.pings = [];
-  for (let i = 0; i < NET_CHECK.samples; i++) { Net.send({ t: "ping", c: performance.now() }); await sleep(NET_CHECK.gapMs); }
-  await sleep(NET_CHECK.waitMs);
-  if (my !== gen || !App.mm) return;
-  const st = pingStats(App.pings), ms = st ? st.ms : 999, bad = netTooBad(st);
+  App.mm.state = "check"; searchUI(App.mm);
+  let st = null, bad = true;
+  // erst bei schlechter Messung eine zweite Runde: kurz ausgelastete Geräte (gerade geladen) schicken sonst Paare weg
+  for (let round = 0; round < NET_CHECK.rounds && bad; round++) {
+    App.pings = [];
+    for (let i = 0; i < NET_CHECK.samples; i++) { Net.send({ t: "ping", c: performance.now() }); await sleep(NET_CHECK.gapMs); }
+    await sleep(NET_CHECK.waitMs);
+    if (my !== gen || !App.mm) return;
+    st = pingStats(App.pings); bad = netTooBad(st);
+  }
+  const ms = st ? st.ms : 999;
   if (bad && App.mm.mode === "ranked") { Net.send({ t: "net", bad: true, ms }); setTimeout(() => requeue(ms), 150); return; }
   Net.send({ t: "net", bad: false, weak: bad, ms });
   if (bad) toast(t("mm.weakNet", { ms }), "i-globe");
