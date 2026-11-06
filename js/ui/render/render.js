@@ -596,7 +596,7 @@ function shades(x, y, r, dir) {
 const EMOTE_FX = {
   "67": (p, r, k, e) => { const w = Math.sin(k * 9); return { rot: w * 0.22 * e, dx: w * 7 * e, dy: -Math.abs(Math.cos(k * 9)) * 6 * e }; },
   crash: (p, r, k, e) => ({
-    dx: Math.sin(k * 70) * 3 * e, rot: Math.sin(k * 55) * 0.05 * e,
+    dx: Math.sin(k * 38) * 3 * e, rot: Math.sin(k * 31) * 0.05 * e,
     face: () => { ctx.globalAlpha = 0.35 * e; ctx.fillStyle = "#ff3b30"; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; },
     front: () => {
       for (let j = 0; j < 3; j++) {
@@ -622,22 +622,33 @@ const EMOTE_FX = {
     },
   }),
   peak: (p, r, k, e) => {
-    const h = 46 * (1 - (1 - e) ** 3), w = r * 1.8, gy = Math.max(G, p.y + r);
+    const h = 46 * (1 - (1 - e) ** 3), w = r * 1.9, pw = r * 0.75, gy = Math.max(G, p.y + r), top = gy - h;
     return {
-      dy: -h,
+      dy: -h, feet: true,
       back: () => {
-        ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = INK;
-        ctx.fillStyle = "#8a99ad"; ctx.beginPath(); ctx.moveTo(p.x - w, gy); ctx.lineTo(p.x, gy - h - 4); ctx.lineTo(p.x + w, gy); ctx.closePath(); ctx.fill(); ctx.stroke();
-        const qx = p.x - p.dir * r * 1.35, fy = gy - (h + 4) * (1 - r * 1.35 / w);
-        ctx.beginPath(); ctx.moveTo(qx, fy); ctx.lineTo(qx, fy - r * 2.1 * e); ctx.stroke();
-        ctx.fillStyle = TEAM[p.i]; ctx.beginPath(); ctx.moveTo(qx, fy - r * 2.1 * e); ctx.lineTo(qx - p.dir * 22 * e, fy - r * 2.1 * e + 8); ctx.lineTo(qx, fy - r * 2.1 * e + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
+        if (h < 1) return;
+        ctx.lineJoin = "round"; ctx.strokeStyle = INK;
+        // Berg mit kleinem Plateau (darauf stehen Kopf und Schuh), Schneekappe
+        ctx.beginPath(); ctx.moveTo(p.x - w, gy); ctx.lineTo(p.x - pw, top); ctx.lineTo(p.x + pw, top); ctx.lineTo(p.x + w, gy); ctx.closePath();
+        const g = ctx.createLinearGradient(0, top, 0, gy); g.addColorStop(0, "#9aa7c4"); g.addColorStop(1, "#4b5670");
+        ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = 3.5; ctx.stroke();
+        const sy = top + h * 0.4, sx = pw + (w - pw) * 0.4;
+        ctx.beginPath(); ctx.moveTo(p.x - pw, top); ctx.lineTo(p.x + pw, top); ctx.lineTo(p.x + sx, sy);
+        for (let j = 1; j < 6; j++) ctx.lineTo(p.x + sx - sx * 2 * j / 6, sy + (j % 2 ? -6 : 2));
+        ctx.lineTo(p.x - sx, sy); ctx.closePath(); ctx.fillStyle = "#fff"; ctx.fill(); ctx.lineWidth = 2.5; ctx.stroke();
+        // Fahne am Hang hinter dem Kopf
+        const off = r * 1.3, qx = p.x - p.dir * off, qb = top + (off - pw) / (w - pw) * h, ph = r * 2.9 * e, wv = Math.sin(k * 10) * 4;
+        ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(qx, qb); ctx.lineTo(qx, qb - ph); ctx.stroke();
+        ctx.fillStyle = TEAM[p.i]; ctx.beginPath(); ctx.moveTo(qx, qb - ph); ctx.quadraticCurveTo(qx - p.dir * 14, qb - ph - 3 + wv, qx - p.dir * 28, qb - ph + 2 + wv * 0.5); ctx.lineTo(qx - p.dir * 28, qb - ph + 18 + wv * 0.5); ctx.quadraticCurveTo(qx - p.dir * 14, qb - ph + 15 + wv, qx, qb - ph + 18); ctx.closePath(); ctx.fill(); ctx.lineWidth = 2.5; ctx.stroke();
       },
     };
   },
   bait: (p, r, k, e) => ({
     front: () => {
       const bx = p.x + p.dir * r * 0.6, by = p.y - r * 0.1, tx = bx + p.dir * r * 1.9 * e, ty = by - r * 1.5 * e;
-      ctx.lineCap = "round"; ctx.strokeStyle = "#7a4a22"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty); ctx.stroke();
+      ctx.lineCap = "round";
+      for (const [w, c] of [[8, INK], [4.5, "#9a5f2c"]]) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty); ctx.stroke(); }
+      ctx.fillStyle = "#c9ced8"; ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(bx + (tx - bx) * 0.18, by + (ty - by) * 0.18 + 6, 6, 0, TAU); ctx.fill(); ctx.stroke();
       const hx = tx + Math.sin(k * 3) * 6, hy = ty + 46 * e + Math.sin(k * 5) * 5;
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
       ctx.fillStyle = "#ff8fb1"; ctx.strokeStyle = INK; ctx.lineWidth = 2;
@@ -677,7 +688,7 @@ function reactAnim(p, r) {
 function mergeFx(a, b) {
   if (!a || !b) return a || b;
   const both = k => (a[k] && b[k] ? c => { a[k](c); b[k](c); } : a[k] || b[k]);
-  return { dx: (a.dx || 0) + (b.dx || 0), dy: (a.dy || 0) + (b.dy || 0), rot: (a.rot || 0) + (b.rot || 0), sc: (a.sc || 1) * (b.sc || 1), dir: a.dir || b.dir, mood: a.mood || b.mood, back: both("back"), face: both("face"), front: both("front") };
+  return { dx: (a.dx || 0) + (b.dx || 0), dy: (a.dy || 0) + (b.dy || 0), rot: (a.rot || 0) + (b.rot || 0), sc: (a.sc || 1) * (b.sc || 1), dir: a.dir || b.dir, mood: a.mood || b.mood, feet: a.feet || b.feet, back: both("back"), face: both("face"), front: both("front") };
 }
 function emoteAnim(p, r, t) {
   if (!p.emo || !p.emo.startsWith("emote:") || p.emoT <= 0 || muted[p.i]) return null;
@@ -721,6 +732,10 @@ function drawPlayer(st, p, t, label) {
     for (let k = -2; k <= 2; k++) { const lx = p.x + k * r * 0.35, len = r * (0.8 + 0.3 * Math.abs(Math.sin(t * 30 + k))); ctx.beginPath(); ctx.moveTo(lx, p.y - r - 10); ctx.lineTo(lx, p.y - r - 10 - len); ctx.stroke(); }
     ctx.restore();
   }
+  // Emote / Reaktion: Hintergrund zuerst (z. B. Berg unter Kopf und Schuh)
+  const ea = mergeFx(emoteAnim(p, r, t), reactAnim(p, r));
+  if (ea?.back) { ctx.save(); ea.back(ctx); ctx.restore(); }
+  const fy = ea?.feet ? ea.dy || 0 : 0; // Schuh geht mit (Berg)
   // Schuh (glüht beim Aufladen)
   if (p.kHeld && p.charge > 0.1) {
     ctx.globalCompositeOperation = "lighter";
@@ -731,10 +746,9 @@ function drawPlayer(st, p, t, label) {
     ctx.globalCompositeOperation = "source-over";
   }
   const mc = matchCos[p.i] || {};
-  drawShoe(ctx, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, shoeColor(mc.shoes, col), p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
-  const ea = mergeFx(emoteAnim(p, r, t), reactAnim(p, r));
+  drawShoe(ctx, s.x, s.y + fy, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, shoeColor(mc.shoes, col), p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
   let dx = 0;
-  if (ea) { dx = ea.dx || 0; dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; if (ea.back) { ctx.save(); ea.back(ctx); ctx.restore(); } }
+  if (ea) { dx = ea.dx || 0; dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; }
   ctx.save();
   ctx.translate(p.x + dx, p.y + r + dy); ctx.rotate(rot); ctx.scale(sqX, sqY); ctx.translate(-p.x, -p.y - r);
   const b = st.b;

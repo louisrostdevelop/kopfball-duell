@@ -8,10 +8,13 @@ before(async () => { env = await start(); });
 after(async () => { await env.close(); });
 
 const tap = async (page, key, ms = 60) => { await page.keyboard.down(key); await page.waitForTimeout(ms); await page.keyboard.up(key); };
+// Ball weit weg halten: sonst fällt ab und zu ein Tor, dann ist die Steuerung gesperrt und der Test schlägt zufällig fehl
+const holdBall = page => page.evaluate(() => { window.__hold = setInterval(() => { const s = window.__kd.st; s.b.x = 1300; s.b.y = 150; s.b.vx = 0; s.b.vy = 0; s.p[1].x = 1400; }, 10); });
+const releaseBall = page => page.evaluate(() => clearInterval(window.__hold));
 
 test("Tastatur allein", async t => {
   const { page, errors } = await openPage(env, VIEW.desktop);
-  await quickMatch(page); await logEvents(page);
+  await quickMatch(page); await logEvents(page); await holdBall(page);
   await t.test("S am Boden = Grätsche", async () => { await tap(page, "KeyS"); assert.deepEqual(await takeEvents(page, /^(slide|swing)0$/), ["slide0"]); });
   await page.waitForTimeout(600);
   await t.test("W halten, dann S = Sprung und Bombe", async () => {
@@ -26,6 +29,7 @@ test("Tastatur allein", async t => {
     await tap(page, "Enter", 80); assert.deepEqual(await takeEvents(page, /^(slide|swing)0$/), ["swing0"]);
   });
   await t.test("Bombe auf den Ball = quetschen", async () => {
+    await releaseBall(page);
     await page.evaluate(() => { const st = window.__kd.st, p = st.p[0]; p.x = 700; p.y = 250; p.onG = false; p.vy = 0; st.b.x = 735; st.b.y = 616; st.b.vx = 0; st.b.vy = 0; });
     await tap(page, "KeyS", 40);
     assert.deepEqual(await takeEvents(page, /^(bomb|squash)0$/), ["bomb0", "squash0"]);
@@ -37,7 +41,7 @@ test("Tastatur zu zweit: S und Pfeil runter getrennt", async () => {
   const { page, errors } = await openPage(env, VIEW.desktop);
   await click(page, "#modeCard", 200); await click(page, "#modeGrid [data-mode=local]", 200);
   await click(page, "#btnPlay", 200); await click(page, "#btnSelOk", 200); await click(page, "#btnKickoff", 3400);
-  await logEvents(page);
+  await logEvents(page); await holdBall(page);
   await tap(page, "ArrowDown"); assert.deepEqual(await takeEvents(page, /^(slide|swing)[01]$/, 200), ["slide1"]);
   await page.waitForTimeout(700);
   await tap(page, "KeyS"); assert.deepEqual(await takeEvents(page, /^(slide|swing)[01]$/, 200), ["slide0"]);
