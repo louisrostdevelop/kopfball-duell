@@ -6,13 +6,14 @@ import { $, esc, toast } from "../dom.js";
 import { levelModal } from "../modals.js";
 import { showScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
-import { endAgain, endMenu, shareResult } from "../../app/results.js";
+import { endAgain, endMenu, prepareShare, shareResult } from "../../app/results.js";
 import { t } from "../../content/i18n.js";
 import { CAREER } from "../../content/career.js";
 import { ARENAS } from "../../content/config.js";
 
 export function showEnd(r) {
   const st = App.st, [a, b] = st.s, me = r.me;
+  prepareShare();
   const ttl = $("endTitle");
   if (me < 0) { ttl.textContent = a === b ? t("end.draw") : t("end.wins", { name: App.names[a > b ? 0 : 1] }); ttl.className = "ribbon gold"; }
   else if (r.win) { ttl.textContent = r.runInfo === "cup" ? t("trophy.title") : t("end.win"); ttl.className = "ribbon" + (r.runInfo === "cup" ? " gold" : ""); }

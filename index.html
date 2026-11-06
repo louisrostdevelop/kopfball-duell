@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Headstars</title>
 <meta name="description" content="Head Soccer im Browser: 12 Köpfe mit Spezialschüssen, Power-ups, Cup und online gegen Kumpels per Link. Kostenlos, ohne Download.">
-<meta name="theme-color" content="#1a3fc4">
+<meta name="theme-color" content="#1b2b6b">
 <meta property="og:title" content="Headstars – fordere mich heraus!">
 <meta property="og:description" content="Head Soccer im Browser. Online gegen Kumpels per Link, Spezialschüsse, Power-ups. Ohne Download.">
 <meta property="og:image" content="https://headstars.app/og.jpg">
@@ -16,8 +16,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="icons/wordmark.webp" as="image">
 <link rel="preload" href="fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/nunito-900.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css?v=13">
@@ -37,7 +39,7 @@
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15.5 3.5 7 12l8.5 8.5 2.1-2.1L11.2 12l6.4-6.4-2.1-2.1Z"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1Zm2 0h6V7a3 3 0 0 0-6 0v3Z"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6V4Z"/></symbol>
-  <symbol id="i-share" viewBox="0 0 24 24"><path d="M18 2a4 4 0 1 1-3.3 6.3L9.9 10.8a4 4 0 0 1 0 2.4l4.8 2.5A4 4 0 1 1 14 18v-.2l-5.2-2.7a4 4 0 1 1 0-6.2L14 6.2V6a4 4 0 0 1 4-4Z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v8.2l2.6-2.6a2 2 0 1 1 2.8 2.8l-6 6a2 2 0 0 1-2.8 0l-6-6a2 2 0 1 1 2.8-2.8l2.6 2.6V4a2 2 0 0 1 2-2ZM4 19a2 2 0 0 1 2 2h12a2 2 0 1 1 0 4H6a4 4 0 0 1-4-4 2 2 0 0 1 2-2Z" transform="translate(0 -2)"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M18 2a4 4 0 1 1-3.3 6.3L9.9 10.8a4 4 0 0 1 0 2.4l4.8 2.5A4 4 0 1 1 14 18v-.2l-5.2-2.7a4 4 0 1 1 0-6.2L14 6.2V6a4 4 0 0 1 4-4Z"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 2h11a2 2 0 0 1 2 2v12h-2V4H8V2Zm-3 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V2ZM5 10v10h14V10H5Zm7 1.5 1.3 2.7 3 .4-2.2 2 .6 3-2.7-1.5-2.7 1.5.6-3-2.2-2 3-.4 1.3-2.7Z"/></symbol>
   <symbol id="i-inf" viewBox="0 0 24 24"><path d="M6.5 7C9 7 10.6 9 12 10.8 13.4 9 15 7 17.5 7a5 5 0 0 1 0 10c-2.5 0-4.1-2-5.5-3.8C10.6 15 9 17 6.5 17a5 5 0 0 1 0-10Zm0 3a2 2 0 0 0 0 4c1.1 0 2-1 3.3-2-1.3-1-2.2-2-3.3-2Zm11 0c-1.1 0-2 1-3.3 2 1.3 1 2.2 2 3.3 2a2 2 0 0 0 0-4Z"/></symbol>
@@ -92,6 +94,7 @@
       <button class="chip coin-chip" id="homeCoins" aria-label="Münzen, zum Shop" data-i18n-attr="aria-label:html.attr.muenzenZumShop"><span class="coin"></span><b class="coinNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
       <button class="chip gem-chip" id="homeGems" aria-label="Juwelen, zum Shop" hidden data-i18n-attr="aria-label:html.attr.juwelenZumShop"><span class="gem"></span><b class="gemNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
       <button class="chip star-chip" id="homeStars" aria-label="Erfolge" data-i18n-attr="aria-label:html.attr.erfolge"><svg class="ic"><use href="#i-star"/></svg><b id="starNum">0</b></button>
+      <button class="sqbtn" id="btnInstall" hidden aria-label="App installieren" data-i18n-attr="aria-label:install.title"><svg><use href="#i-download"/></svg></button>
       <button class="sqbtn" id="btnSettings" aria-label="Einstellungen" data-i18n-attr="aria-label:html.attr.einstellungen"><svg><use href="#i-gear"/></svg></button>
     </header>
 
@@ -358,6 +361,7 @@
         <div class="setrow"><svg><use href="#i-vib"/></svg><span data-i18n="html.settings.vibration">Vibration</span><button class="toggle" id="tglVib" aria-label="Vibration" data-i18n-attr="aria-label:html.attr.vibration"></button></div>
         <div class="setrow"><svg><use href="#i-stadium"/></svg><span data-i18n="html.settings.grafik">Grafik</span><div class="seg" id="segQual"></div></div>
         <div class="setrow"><svg><use href="#i-expand"/></svg><span data-i18n="html.settings.vollbild">Vollbild</span><button class="btn small ghost" id="btnFull" data-i18n="html.settings.umschalten">Umschalten</button></div>
+        <div class="setrow" id="rowInstall" hidden><svg><use href="#i-download"/></svg><span data-i18n="install.title">App installieren</span><button class="btn small yellow" id="btnInstall2" data-i18n="install.btn">Installieren</button></div>
       </div>
       <div class="panel account" id="accountPanel" hidden>
         <h4 data-i18n="html.settings.konto">Konto</h4>
@@ -419,7 +423,7 @@
 </div>
 <div id="modal" hidden><div class="modalcard" id="modalCard"></div></div>
 <div id="rotate" hidden><div class="phone"></div><b data-i18n="html.pause.handyDrehen">Handy drehen</b><span data-i18n="html.pause.querSpieltEsSich">Quer spielt es sich viel besser.</span></div>
-<div id="loading"><b class="ld-logo"><span>Head</span><br><span>stars</span></b><div class="ball"></div></div>
+<div id="loading"><img class="ld-word" src="icons/wordmark.webp" width="600" height="200" alt="Headstars" data-i18n-attr="alt:brand.name"><div class="ld-play"><svg class="ld-ball" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="ldc"><circle cx="50" cy="50" r="44"/></clipPath></defs><circle cx="50" cy="50" r="44" fill="#fff"/><g fill="#15112e" clip-path="url(#ldc)"><polygon points="50.0,35.0 64.3,45.4 58.8,62.1 41.2,62.1 35.7,45.4"/><polygon points="50.0,25.0 37.6,16.0 42.4,1.5 57.6,1.5 62.4,16.0"/><polygon points="73.8,42.3 78.5,27.7 93.8,27.7 98.5,42.3 86.1,51.3"/><polygon points="64.7,70.2 80.0,70.2 84.7,84.8 72.3,93.7 60.0,84.8"/><polygon points="35.3,70.2 40.0,84.8 27.7,93.7 15.3,84.8 20.0,70.2"/><polygon points="26.2,42.3 13.9,51.3 1.5,42.3 6.2,27.7 21.5,27.7"/></g><circle cx="50" cy="50" r="44" fill="none" stroke="#15112e" stroke-width="7"/><path d="M28 30 q8 -10 20 -12" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/></svg><i class="ld-shadow"></i></div></div>
 
 <script type="module" src="js/main.js?v=24"></script>
 </body>

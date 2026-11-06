@@ -69,9 +69,14 @@ Einmalig: [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/
    bash supabase/ops/deploy.sh <ref>
    ```
    Das spielt Migrationen, Katalog und die erste Saison ein, überträgt die Einstellungen aus `config.toml`
-   (`supabase config push`: freigegebenes Schema nur `api`, Gast-Anmeldung, Passwortregeln) und lädt die
+   (`supabase config push`: freigegebenes Schema nur `api`, Gast-Anmeldung, Mail-Vorlagen mit Code) und lädt die
    Edge Functions hoch. Das Skript lässt sich beliebig oft wiederholen.
 4. Im Dashboard einstellen (das geht nicht per Code):
+   - **Authentication → Emails → SMTP Settings**: eigener Mailversand (z. B. Resend, `smtp.resend.com`, Port 465,
+     Benutzer `resend`, Passwort = API-Schlüssel, Absender `noreply@headstars.app`). Der eingebaute Versand von Supabase
+     stellt nur an Team-Mitglieder zu, echte Spieler bekämen keinen Code.
+   - **Authentication → Emails → Templates**: „Change Email Address“ und „Magic Link“ aus `supabase/templates/` (macht
+     `config push` mit; sonst von Hand kopieren). Anmelden geht ohne Passwort: Code aus der Mail.
    - **Authentication → Sign In / Providers**: *Allow anonymous sign-ins* an, *Allow manual linking* an
    - **Authentication → Attack Protection**: Captcha an (Cloudflare Turnstile, kostenlos). Ohne Captcha kann
      jemand massenhaft Gast-Konten anlegen. Den Site-Key in `js/content/backend.js` unter `captchaSiteKey` eintragen.

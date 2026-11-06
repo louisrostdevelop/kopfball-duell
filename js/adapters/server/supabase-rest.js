@@ -69,17 +69,17 @@ export function createClient({ url, anonKey, storage = globalThis.localStorage, 
     ensureSession, rpc, fn: callFn,
     user: () => session && session.user,
     onAuthChange(cb) { subs.push(cb); },
-    /** Gast behält ID und Spielstand: E-Mail (und Passwort) hinzufügen. Supabase schickt eine Bestätigungs-Mail. */
-    async linkEmail(email, password, redirectTo) {
+    /** Gast behält ID und Spielstand: E-Mail hinzufügen. Supabase schickt eine Mail mit Code (und Link). */
+    async linkEmail(email, redirectTo) {
       const s = await ensureSession();
-      const u = await call("/auth/v1/user" + (redirectTo ? "?redirect_to=" + encodeURIComponent(redirectTo) : ""), { method: "PUT", token: s.access_token, body: password ? { email, password } : { email } });
+      const u = await call("/auth/v1/user" + (redirectTo ? "?redirect_to=" + encodeURIComponent(redirectTo) : ""), { method: "PUT", token: s.access_token, body: { email } });
       keep({ ...session, user: u }); return u;
     },
-    /** Passwort setzen oder ändern (nach bestätigter E-Mail), damit man sich auf anderen Geräten anmelden kann */
-    async setPassword(password) {
-      const s = await ensureSession();
-      const u = await call("/auth/v1/user", { method: "PUT", token: s.access_token, body: { password } });
-      keep({ ...session, user: u }); return u;
+    /** Code aus der Mail eingeben: beim Sichern (email_change) oder Anmelden (email). Ergibt die neue Sitzung. */
+    async verifyCode(type, email, token) { keep(fromAuth(await call("/auth/v1/verify", { body: { type, email, token } }))); return session.user; },
+    /** Anmelden auf einem anderen Gerät: Code an ein bestehendes Konto schicken (legt kein neues an) */
+    async sendLoginCode(email, redirectTo) {
+      await call("/auth/v1/otp" + (redirectTo ? "?redirect_to=" + encodeURIComponent(redirectTo) : ""), { body: { email, create_user: false } });
     },
     /** Rückkehr aus der Bestätigungs-Mail: Supabase hängt die neue Sitzung an die Adresse (#access_token=...).
      *  Gibt "ok", einen Fehlertext oder null (nichts da) zurück. */
@@ -92,7 +92,6 @@ export function createClient({ url, anonKey, storage = globalThis.localStorage, 
       keep({ access_token, refresh_token: q.get("refresh_token"), expires_at: Number(q.get("expires_at")) || Math.floor(Date.now() / 1000) + Number(q.get("expires_in") || 3600), user });
       return "ok";
     },
-    async signIn(email, password) { keep(fromAuth(await call("/auth/v1/token?grant_type=password", { body: { email, password } }))); return session.user; },
     async signOut() { const s = session; keep(null); if (s) await call("/auth/v1/logout", { token: s.access_token }).catch(() => {}); },
   };
 }

@@ -248,6 +248,15 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Mails mit 6-stelligem Code (und Link). Kein Passwort: Spielstand sichern = E-Mail-Änderung, Anmelden = Magic Link.
+[auth.email.template.email_change]
+subject = "Dein Headstars-Code · Your Headstars code: {{ .Token }}"
+content_path = "./supabase/templates/email-change.html"
+
+[auth.email.template.magic_link]
+subject = "Dein Headstars-Code · Your Headstars code: {{ .Token }}"
+content_path = "./supabase/templates/magic-link.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

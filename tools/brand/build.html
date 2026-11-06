@@ -1,0 +1,47 @@
+<!doctype html>
+<!-- Marken-Grafiken aus js/ui/brand.js und tools/brand/icon.js. Erzeugt mit: node tools/brand/build.mjs -->
+<html lang="en"><head><meta charset="utf-8">
+<style>
+@font-face { font-family: "Lilita One"; src: url("../../fonts/lilita.woff2") format("woff2"); }
+@font-face { font-family: Nunito; src: url("../../fonts/nunito-900.woff2") format("woff2"); font-weight: 900; }
+html, body { margin: 0; background: transparent; }
+.t { position: relative; overflow: hidden; }
+.t > canvas, .t > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#round { border-radius: 22%; }
+#og { width: 1200px; height: 630px; background: radial-gradient(60% 80% at 50% 38%, #4f7ee8 0%, #2c4fb0 30%, #1b2b6b 65%, #100c33 100%); font-family: Nunito, sans-serif; }
+#og .bokeh { position: absolute; inset: 0; filter: blur(8px); }
+#og .bokeh i { position: absolute; border-radius: 50%; background: #cfe0ff; }
+#og .beam { position: absolute; left: 50%; top: 0; width: 900px; height: 630px; transform: translateX(-50%); background: linear-gradient(rgb(160 200 255 / 30%), transparent 80%); clip-path: polygon(38% 0, 62% 0, 82% 100%, 18% 100%); mix-blend-mode: screen; }
+#og .rings { position: absolute; left: 50%; bottom: 40px; width: 760px; height: 120px; transform: translateX(-50%); border-radius: 50%; border: 6px solid rgb(110 200 255 / 50%); box-shadow: 0 0 0 26px rgb(110 200 255 / 10%); }
+#og .word { position: absolute; left: 50%; top: 18px; width: 900px; transform: translateX(-50%); }
+#og .word svg { width: 100%; height: auto; display: block; }
+#og .h { position: absolute; bottom: 30px; }
+#og .h0 { left: 70px; } #og .h1 { right: 70px; }
+#og .ball { position: absolute; left: 50%; top: 318px; transform: translateX(-50%); }
+#og .tag { position: absolute; left: 0; right: 0; bottom: 30px; text-align: center; color: #fff8e8; font: 900 30px Nunito; text-shadow: 0 3px 0 #15112e; }
+#og .tag b { color: #ffc21f; }
+</style></head><body>
+<div class="t" id="square" style="width:512px;height:512px"></div>
+<div class="t" id="round" style="width:512px;height:512px"></div>
+<div class="t" id="maskable" style="width:512px;height:512px"></div>
+<div class="t" id="word" style="width:900px;height:300px"></div>
+<div class="t" id="og"><div class="bokeh"></div><div class="beam"></div><div class="word"></div><div class="h h0"></div><div class="h h1"></div><div class="ball"></div>
+  <div class="tag">1 vs 1 head soccer · play a friend by link · <b>headstars.app</b></div></div>
+<script type="module">
+import { wordmarkSvg } from "../../js/ui/brand.js";
+import { avatarCanvas, drawBall } from "../../js/ui/render/art.js";
+import { iconCanvas } from "./icon.js";
+const $ = id => document.getElementById(id);
+await document.fonts.load("150px 'Lilita One'"); await document.fonts.load("900 30px Nunito");
+$("square").append(iconCanvas(1024)); $("round").append(iconCanvas(1024)); $("maskable").append(iconCanvas(1024, { safe: 0.8 }));
+$("word").innerHTML = wordmarkSvg({ id: "w1" });
+const og = $("og");
+og.querySelector(".bokeh").innerHTML = [[80, 90, 50, .25], [1080, 70, 64, .22], [980, 230, 26, .3], [190, 260, 22, .25], [1150, 360, 40, .15], [40, 400, 44, .14], [640, 40, 30, .12]]
+  .map(([x, y, r, a]) => `<i style="left:${x - r}px;top:${y - r}px;width:${2 * r}px;height:${2 * r}px;opacity:${a}"></i>`).join("");
+og.querySelector(".word").innerHTML = wordmarkSvg({ id: "w2" });
+og.querySelector(".h0").append(avatarCanvas("kalle", 360, { dir: 1, mood: "happy" }));
+og.querySelector(".h1").append(avatarCanvas("nala", 360, { dir: -1 }));
+const c = document.createElement("canvas"); c.width = c.height = 120; drawBall(c.getContext("2d"), "klassik", 60, 60, 50, 0.4, 1, null, { t: 1 });
+og.querySelector(".ball").append(c);
+document.body.dataset.ready = "1";
+</script></body></html>

@@ -8,7 +8,8 @@ import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
 import { backToLobby, hostStart } from "./online.js";
 import { App, myIdx, vsCpu } from "./state.js";
-import { $, shareOrCopy, toast } from "../ui/dom.js";
+import { $, copyText, shareOrCopy, toast } from "../ui/dom.js";
+import { shareCard } from "../ui/sharecard.js";
 import { trophyModal } from "../ui/modals.js";
 import { showEnd } from "../ui/screens/end.js";
 import { runScreen } from "../ui/screens/run.js";
@@ -144,10 +145,34 @@ export function endAgain() {
 
 export function endMenu() { A.sfx("click"); if (App.mm) { mmLeave(); return; } if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); return; } quitToMenu(); }
 
-export function shareResult() {
+function shareText() {
   const st = App.st, me = myIdx(), url = location.origin + location.pathname;
-  let text;
-  if (me >= 0) { const w = st.s[me] > st.s[1 - me]; text = t(w ? "share.won" : "share.lost", { a: st.s[me], b: st.s[1 - me], opp: App.names[1 - me], url }); }
-  else text = t("share.local", { p1: App.names[0], a: st.s[0], b: st.s[1], p2: App.names[1], url });
+  if (me >= 0) { const w = st.s[me] > st.s[1 - me]; return t(w ? "share.won" : "share.lost", { a: st.s[me], b: st.s[1 - me], opp: App.names[1 - me], url }); }
+  return t("share.local", { p1: App.names[0], a: st.s[0], b: st.s[1], p2: App.names[1], url });
+}
+
+// Bild schon beim Öffnen des Ergebnis-Bildschirms zeichnen: Safari erlaubt das Teilen-Menü nur direkt nach dem Antippen
+let shareImg = null;
+export function prepareShare() {
+  shareImg = null;
+  const st = App.st, cfg = App.cfg || {};
+  if (!st || !cfg.chars) return;
+  const job = { file: null };
+  shareImg = job;
+  shareCard({ chars: cfg.chars, names: App.names, score: [...st.s], me: myIdx(), frames: (cfg.cos || []).map(c => c && c.frame), url: location.host || "headstars.app" })   // i18n-ok: Adresse
+    .then(blob => { if (blob) job.file = new File([blob], "headstars.png", { type: "image/png" }); })   // i18n-ok: Dateiname
+    .catch(() => {});
+}
+
+export function shareResult() {
+  const text = shareText(), file = shareImg && shareImg.file;
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text, title: "Headstars" }).catch(() => {}); return; }   // i18n-ok: Marke
+  if (file && !navigator.share) {
+    // Rechner ohne Teilen-Menü: Bild herunterladen, Text kopieren
+    const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    copyText(text); toast(t("share.saved"), "i-check");
+    return;
+  }
   shareOrCopy({ title: "Headstars", text });   // i18n-ok: Marke
 }

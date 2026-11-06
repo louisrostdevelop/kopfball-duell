@@ -1,0 +1,23 @@
+<!doctype html>
+<!-- Mail-Vorlage für Supabase Auth (supabase/config.toml). Platzhalter: {{ .Token }} Code, {{ .ConfirmationURL }} Link -->
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Headstars</title></head>
+<body style="margin:0;padding:0;background:#100c33;font-family:Arial,Helvetica,sans-serif;color:#15112e">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#100c33;padding:24px 12px">
+<tr><td align="center">
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+  <tr><td align="center" style="background:#2c4fb0;background-image:radial-gradient(circle at 50% 30%,#4f7ee8,#1b2b6b);border-radius:24px 24px 0 0;padding:28px 20px 18px">
+   <img src="https://headstars.app/icons/wordmark-mail.png" width="300" height="100" alt="Headstars" style="display:block;border:0;width:300px;max-width:80%;height:auto">
+  </td></tr>
+  <tr><td style="background:#fff8e8;border-radius:0 0 24px 24px;padding:28px 28px 26px;text-align:center">
+   <p style="margin:0 0 4px;font-size:20px;font-weight:bold">Spielstand sichern</p>
+   <p style="margin:0 0 18px;font-size:14px;color:#5b5577">Save your progress</p>
+   <p style="margin:0 0 14px;font-size:15px;line-height:1.45">Gib diesen Code im Spiel ein, dann ist dein Spielstand gesichert:<br><span style="color:#5b5577">Enter this code in the game to save your progress:</span></p>
+   <div style="display:inline-block;background:#ffc21f;border:4px solid #15112e;border-radius:16px;padding:12px 22px;font-size:38px;font-weight:bold;letter-spacing:10px;font-family:'Courier New',monospace">{{ .Token }}</div>
+   <p style="margin:14px 0 22px;font-size:13px;color:#5b5577">Gilt 1 Stunde. · Valid for 1 hour.</p>
+   <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2f6bff;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;border:3px solid #15112e;border-radius:14px;padding:12px 22px">Direkt bestätigen · Confirm now</a>
+   <p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#7a7494">Nicht angefordert? Dann ignoriere diese Mail. · Didn't ask for this? Just ignore this e-mail.<br>
+   <a href="https://headstars.app" style="color:#2f6bff">headstars.app</a> · <a href="mailto:support@headstars.app" style="color:#2f6bff">support@headstars.app</a></p>
+  </td></tr>
+ </table>
+</td></tr></table>
+</body></html>

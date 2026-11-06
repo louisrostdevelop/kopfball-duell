@@ -215,3 +215,38 @@ test("Kisten mit Server: Level-Up vergibt, Server würfelt, Inhalt kommt ins Pro
   assert.ok((await db("select 1 from game.inventory where player_id = $1 and item_id = $2", [id, head.id])).length, "auf dem Server");
   assert.deepEqual(errors.filter(e => !/status of 400/.test(e)), []);
 });
+
+// Konto ohne Passwort: Gast sichert mit dem Code aus der Mail, ein zweites Gerät meldet sich mit Code an (Test-Code 123456)
+test("Konto: sichern und auf anderem Gerät anmelden, beides mit Code", { skip: !hasPg && "kein Postgres" }, async () => {
+  const q = `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev`;
+  const a = await openPage(env, VIEW.desktop, { query: q });
+  const A = a.page;
+  const sess = await until(() => A.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null")));
+  const id = sess.user.id;
+  const settle = async p => { await p.waitForTimeout(600); if (await p.locator("#modalOk").isVisible()) await click(p, "#modalOk", 300); };
+  await settle(A);
+  await click(A, "#btnSettings", 400);
+  await A.fill("#accMail", "spieler@example.org"); await click(A, "#accLink", 600);
+  assert.ok(await A.locator("#accCode").isVisible(), "Code-Feld nach dem Schicken");
+  await A.fill("#accCode", "000000"); await click(A, "#accConfirm", 500);
+  assert.match(await A.textContent("#accMsg"), /abgelaufen|expired/, "falscher Code abgelehnt");
+  assert.equal((await db("select is_anonymous from auth.users where id = $1", [id]))[0].is_anonymous, true, "noch Gast");
+  await A.fill("#accCode", "123456"); await click(A, "#accConfirm", 800);
+  assert.deepEqual((await db("select email, is_anonymous from auth.users where id = $1", [id]))[0], { email: "spieler@example.org", is_anonymous: false }, "Konto gesichert, gleiche ID");
+  assert.match(await A.textContent("#accBody"), /spieler@example\.org/);
+
+  // Zweites Gerät: unbekannte Adresse wird abgelehnt, dann mit Code anmelden
+  const b = await openPage(env, VIEW.desktop, { query: q });
+  const B = b.page;
+  await until(() => B.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null")));
+  await settle(B);
+  await click(B, "#btnSettings", 400); await click(B, "#accToLogin", 300);
+  await B.fill("#accMail", "niemand@example.org"); await click(B, "#accSend", 500);
+  assert.match(await B.textContent("#accMsg"), /kein Konto|no account/);
+  await B.fill("#accMail", "Spieler@example.org"); await click(B, "#accSend", 500);
+  await B.fill("#accCode", "123456");
+  await Promise.all([B.waitForNavigation({ timeout: 8000 }), B.click("#accLogin")]);
+  const s2 = await until(() => B.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null")));
+  assert.equal(s2.user.id, id, "zweites Gerät hat dasselbe Konto");
+  assert.deepEqual([...a.errors, ...b.errors].filter(e => !/40[03]|422|otp/.test(e)), []);
+});

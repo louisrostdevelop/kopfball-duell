@@ -631,11 +631,29 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 .phone { width: 62px; height: 104px; border: 5px solid #fff; border-radius: 14px; animation: rot 1.6s ease-in-out infinite; margin-bottom: 20px; box-shadow: 0 4px 0 var(--ink); }
 
 @keyframes rot { 40%, 70% { transform: rotate(-90deg); } }
-#loading { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; background: repeating-conic-gradient(from 0deg at 50% 50%, rgb(255 255 255 / 5%) 0 7deg, transparent 7deg 14deg), radial-gradient(circle, var(--blue), var(--blue-dd)); transition: opacity .4s; }
-.ld-logo { font-family: var(--display); font-weight: 400; font-size: 54px; line-height: .95; text-align: center; text-shadow: var(--o); transform: rotate(-4deg); }
-#loading .ball { width: 46px; height: 46px; border-radius: 50%; background: #fff; border: 4px solid var(--ink); animation: bounce .55s infinite alternate cubic-bezier(.5,0,1,.5); }
 
-@keyframes bounce { to { transform: translateY(-40px); } }
+/* Ladebildschirm im Stil der Startseite: Lichtkegel, unscharfe Stadionlichter, Schriftzug, springender Ball */
+#loading { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vmin; overflow: hidden;
+  background: radial-gradient(60% 75% at 50% 42%, #4f7ee8 0%, #2c4fb0 32%, #1b2b6b 66%, #100c33 100%); transition: opacity .4s; }
+
+#loading::before { content: ""; position: absolute; inset: 0; filter: blur(10px); opacity: .5;
+  background: radial-gradient(3vmin 3vmin at 10% 16%, #cfe0ff, transparent), radial-gradient(4vmin 4vmin at 88% 12%, #cfe0ff, transparent),
+    radial-gradient(2vmin 2vmin at 78% 40%, #cfe0ff, transparent), radial-gradient(2.5vmin 2.5vmin at 18% 62%, #cfe0ff, transparent), radial-gradient(3vmin 3vmin at 94% 74%, #cfe0ff, transparent); }
+
+#loading::after { content: ""; position: absolute; left: 50%; top: 0; width: 70vmin; height: 100%; transform: translateX(-50%);
+  background: linear-gradient(rgb(160 200 255 / 28%), transparent 75%); clip-path: polygon(38% 0, 62% 0, 90% 100%, 10% 100%); pointer-events: none; }
+.ld-word { position: relative; z-index: 1; width: min(76vw, 92vh * 1.5, 640px); height: auto; animation: ld-in .5s cubic-bezier(.2,1.4,.4,1) both; }
+.ld-play { position: relative; z-index: 1; width: 64px; height: 110px; }
+.ld-ball { position: absolute; left: 4px; top: 0; width: 56px; height: 56px; animation: ld-bounce .62s infinite alternate cubic-bezier(.45,0,1,.55); }
+.ld-shadow { position: absolute; left: 50%; bottom: 0; width: 54px; height: 10px; margin-left: -27px; border-radius: 50%; background: rgb(10 8 32 / 45%); animation: ld-shadow .62s infinite alternate cubic-bezier(.45,0,1,.55); }
+
+@keyframes ld-bounce { from { transform: translateY(0) rotate(0); } to { transform: translateY(46px) rotate(140deg); } }
+
+@keyframes ld-shadow { from { transform: scale(.55); opacity: .5; } to { transform: scale(1); opacity: 1; } }
+
+@keyframes ld-in { from { transform: scale(.85); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) { .ld-ball, .ld-shadow, .ld-word { animation: none; } }
 #loading.done { opacity: 0; pointer-events: none; }
 
 /* ---------- Anpassungen ---------- */
@@ -1417,3 +1435,10 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 /* Kosmetik-Tab: Hinweis statt Tagesangebot, als ruhige Infozeile mit Symbol */
 .deal > .hint { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 14px; border-radius: 14px; background: rgb(8 14 50 / 45%); color: #fff; opacity: 1; text-wrap: balance; }
 .deal > .hint svg { flex: none; width: 24px; height: 24px; fill: var(--yellow); filter: drop-shadow(0 2px 0 var(--ink)); }
+
+/* Anleitung „Zum Home-Bildschirm“ (iPhone) */
+.install-steps { margin: 4px 0 14px; padding-left: 1.4em; text-align: left; font-weight: 800; line-height: 1.5; }
+.install-steps li { margin: 4px 0; }
+
+/* Code aus der Mail: groß, mittig, Ziffern gesperrt */
+#accBody input.code { text-align: center; font: 900 26px var(--display); letter-spacing: .35em; }

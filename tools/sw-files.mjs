@@ -9,7 +9,7 @@ const walk = dir => readdirSync(dir).flatMap(f => { const p = join(dir, f); retu
 export function coreFiles() {
   const js = walk(join(ROOT, "js")).filter(f => f.endsWith(".js"));
   const fonts = walk(join(ROOT, "fonts")).filter(f => f.endsWith(".woff2"));
-  const rest = ["vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "manifest.webmanifest", "css/style.css", "index.html"].map(f => join(ROOT, f));
+  const rest = ["vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "icons/wordmark.webp", "manifest.webmanifest", "css/style.css", "index.html"].map(f => join(ROOT, f));
   return ["./", ...[...rest, ...js, ...fonts].map(f => relative(ROOT, f).split("\\").join("/")).sort()];
 }
 export function renderList(files) {

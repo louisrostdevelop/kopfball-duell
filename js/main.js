@@ -3,7 +3,7 @@
 // Schnittstellen aus js/ports/. Für einen Server (Konto, Profil-Sync) werden hier andere Adapter eingesteckt.
 import { fireSuper } from "./core/physics.js";
 import { provide } from "./app/services.js";
-import { initProfile, dailyCheck, S, save } from "./app/profile.js";
+import { initProfile, dailyCheck, S } from "./app/profile.js";
 import { startDemo, updateBand } from "./app/game.js";
 import { loop } from "./app/loop.js";
 import { tryJoin } from "./app/online.js";
@@ -13,6 +13,7 @@ import { onKey, onPad } from "./ui/controls.js";
 import { $, applyI18n, toast } from "./ui/dom.js";
 import { detectLang, setLang, t } from "./content/i18n.js";
 import { dailyModal } from "./ui/modals.js";
+import { canInstall, initInstall, install } from "./ui/install.js";
 import { initNav, showScreen } from "./ui/nav.js";
 import { initHud } from "./ui/hud.js";
 import { homeScreen, initHome, refreshTop } from "./ui/screens/home.js";
@@ -97,8 +98,10 @@ async function boot() {
         (synced || Promise.resolve()).then(() => awaitPurchase(S.gems || 0)).then(n => { homeScreen(); if (n) toast(t("shop.gemsPlus", { n }), "i-gem", true); });
       } else toast(t("shop.cancelled"), "i-close");
     }
-    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone;
-    if (ios && !S.iosHint) setTimeout(() => { toast(t("ios.hint")); S.iosHint = true; save(); }, d ? 6000 : 2500);
+    // App installieren: Knopf oben und in den Einstellungen, nur wenn es geht und die App nicht schon läuft
+    const showInstall = () => { const ok = canInstall(); $("btnInstall").hidden = !ok; $("rowInstall").hidden = !ok; };
+    $("btnInstall").onclick = install; $("btnInstall2").onclick = install;
+    initInstall(showInstall);
     // Einladungslink: ?join=CODE (alte Links mit #CODE gehen auch)
     const qs = new URLSearchParams(location.search).get("join") || "";
     const h = /^[A-Za-z0-9]{4}$/.test(qs) ? qs : (location.hash || "").slice(1);

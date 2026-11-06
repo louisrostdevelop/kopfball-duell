@@ -14,6 +14,8 @@ export async function startDevBackend({ dbUrl, port = 54321, log = false } = {})
   dbUrl = dbUrl || execFileSync("bash", [new URL("../supabase/local/start-db.sh", import.meta.url).pathname], { encoding: "utf8" }).trim().split("\n").pop();
   const pool = new pg.Pool({ connectionString: dbUrl, max: 8 });
   const refresh = new Map();   // refresh_token -> user id
+  const pendingMail = new Map();   // user id -> neue E-Mail (wartet auf den Code)
+  const DEV_CODE = "123456";       // Code aus der „Mail“ (Supabase schickt einen zufälligen)
   const tok = sub => "dev." + Buffer.from(JSON.stringify({ sub, exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
   const subOf = req => {
     const h = req.headers.authorization || "", t = h.replace(/^Bearer /, "");
@@ -43,9 +45,32 @@ export async function startDevBackend({ dbUrl, port = 54321, log = false } = {})
         return send(200, await session(id));
       }
       if (path === "/auth/v1/user" && req.method === "PUT") {
+        // wie Supabase: E-Mail erst nach dem Code übernehmen, bis dahin als new_email
         const id = subOf(req); if (!id || id === "expired") return send(401, { error_code: "bad_jwt" });
-        await pool.query("update auth.users set email = coalesce($2, email), is_anonymous = false where id = $1", [id, data.email || null]);
-        return send(200, await userRow(id));
+        if (data.email) {
+          const taken = await pool.query("select 1 from auth.users where lower(email) = lower($1) and id <> $2", [data.email, id]);
+          if (taken.rowCount) return send(422, { error_code: "email_exists" });
+          pendingMail.set(id, data.email);
+        }
+        return send(200, { ...await userRow(id), new_email: pendingMail.get(id) || null });
+      }
+      if (path === "/auth/v1/otp" && req.method === "POST") {
+        const { rows } = await pool.query("select id from auth.users where lower(email) = lower($1)", [data.email || ""]);
+        if (!rows.length && data.create_user === false) return send(422, { error_code: "otp_disabled" });
+        return send(200, {});
+      }
+      if (path === "/auth/v1/verify" && req.method === "POST") {
+        if (data.token !== DEV_CODE) return send(403, { error_code: "otp_expired" });
+        if (data.type === "email_change") {
+          const id = [...pendingMail].find(([, m]) => m.toLowerCase() === String(data.email || "").toLowerCase())?.[0];
+          if (!id) return send(403, { error_code: "otp_expired" });
+          pendingMail.delete(id);
+          await pool.query("update auth.users set email = $2, is_anonymous = false where id = $1", [id, data.email]);
+          return send(200, await session(id));
+        }
+        const { rows } = await pool.query("select id from auth.users where lower(email) = lower($1)", [data.email || ""]);
+        if (!rows.length) return send(403, { error_code: "otp_expired" });
+        return send(200, await session(rows[0].id));
       }
       if (path === "/auth/v1/logout") return send(204, null);
       const fn = /^\/rest\/v1\/rpc\/([a-z_]{1,40})$/.exec(path);

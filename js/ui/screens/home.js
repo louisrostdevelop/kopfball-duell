@@ -15,6 +15,7 @@ import { dailyBriefing } from "./run.js";
 import { setShopTab } from "./shop.js";
 import { availableModes } from "./modes.js";
 import { t as tx } from "../../content/i18n.js";
+import { canInstall, installAsk } from "../install.js";
 
 export let showcaseT = 0, showcaseTap = 0;
 export const juggle = { y: 0, vy: 0, a: 0, hits: 0 };
@@ -24,6 +25,11 @@ export function tapShowcase() { showcaseTap = 0.5; juggle.vy = Math.min(juggle.v
 
 export function homeScreen() {
   refreshTop();
+  // einmal nach ein paar Spielen fragen, ob man die App installieren will (nie über einem anderen Fenster)
+  if (canInstall() && !S.installAsked && (S.stats && S.stats.games) >= 3) setTimeout(() => {
+    if (!$("modal").hidden || App.screen !== "home" || S.installAsked) return;
+    S.installAsked = true; save(); installAsk();
+  }, 900);
   const c = charById(S.char), rar = rarityOf(c);
   $("stName").textContent = c.name; $("stSuper").textContent = SUPERS[c.super].name;
   const rb = $("stRarity"); rb.textContent = RARITY[rar]; rb.style.setProperty("--rc", RCOL[rar]); rb.parentElement.style.setProperty("--rc", RCOL[rar]);
