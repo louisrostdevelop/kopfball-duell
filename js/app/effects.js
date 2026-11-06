@@ -11,7 +11,7 @@ import { t } from "../content/i18n.js";
 export const PHRASES = [0, 1, 2, 3, 4, 5, 6, 7].map(i => "fx.phrase." + i);   // Schlüssel, übersetzt beim Anzeigen
 
 export const CELEB = { kalle: "🔥", yuki: "❄️", bolt: "⚡", rocco: "🚀", nala: "🍌", flummi: "🎈", phantom: "👻", tank: "💪", tina: "🌪️", magnus: "🧲", max: "☄️", kaiser: "👑",
-  emo: "🖤", rapper: "💸", raver: "🎶", gamer: "🎮", npc: "💬", moai: "🗿", crypto: "📈", sigma: "🕶️", chad: "💎", brezel: "🥨" };
+  emo: "🖤", rapper: "💸", raver: "🎧", gamer: "🎮", npc: "💬", moai: "🗿", crypto: "📈", sigma: "😎", chad: "💎", brezel: "🥨" };
 
 export function onEvent(e, remote) {
   const demo = App.mode === "demo", st = App.st;

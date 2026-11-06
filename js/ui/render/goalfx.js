@@ -344,12 +344,12 @@ export const HEAD_FX = {
   kaiser: { mode: "rain", hero: "👑", items: ["👑", "🪙"], col: "#ffe14d" },
   emo: { mode: "rain", hero: "🖤", items: ["💧", "🖤"], col: "#7f9cff" },
   rapper: { mode: "rain", hero: "💸", items: ["💸", "💵"], col: "#ffcf3a" },
-  raver: { mode: "burst", hero: "🎶", items: ["🎶", "🎵"], col: "#5effc8", strobe: true },
+  raver: { mode: "burst", hero: "🎧", items: ["🎧", "✨", "💜"], col: "#5effc8", strobe: true },
   gamer: { mode: "burst", hero: "🎮", items: ["🎮", "🏆"], col: "#22d3ee" },
   npc: { mode: "rise", hero: "💬", items: ["💬"], col: "#c9d2e3" },
   moai: { mode: "fall", hero: "🗿", items: ["🗿"], col: "#a3a69c", quake: true },
   crypto: { mode: "chart", hero: "📈", items: ["🪙"], col: "#f7931a" },
-  sigma: { mode: "rise", hero: "🕶️", items: ["🕶️"], col: "#b8c0d8" },
+  sigma: { mode: "rise", hero: "😎", items: ["😎", "🖤"], col: "#b8c0d8" },
   chad: { mode: "burst", hero: "💎", items: ["💎", "✨"], col: "#2f80ed" },
   brezel: { mode: "rain", hero: "🥨", items: ["🥨"], col: "#e63946" },
 };
@@ -376,7 +376,7 @@ GFX.mastery = {
     if (M.mode === "rise") for (let i = 0; i < a.n(16); i++) a.P({ type: "emoji", text: it(i), x: s.x + s.dir * rand(0, 480), y: G - rand(0, 40), vx: rand(-40, 40), vy: M.fast ? rand(-900, -600) : rand(-320, -160), g: M.fast ? -200 : -30, life: rand(2.2, 2.8), size: rand(34, 56), rot: M.fast ? -0.7 * s.dir : rand(-0.3, 0.3), vr: M.fast ? 0 : rand(-1, 1), float: true });
     if (M.mode === "fall") s.rocks = Array.from({ length: 4 }, (_, k) => ({ x: s.x + s.dir * (90 + k * 120), t0: 0.15 + k * 0.22, hit: false }));
     if (M.mode === "orbit") s.orb = Array.from({ length: a.n(12) }, (_, k) => ({ a: k / 12 * TAU, r: rand(90, 170), ch: it(k) }));
-    if (M.mode === "chart") { s.pts = Array.from({ length: 14 }, (_, k) => k < 10 ? 20 + k * 22 + hn(k) * 25 : 230 - (k - 9) * 70); for (let i = 0; i < a.n(18); i++) a.P({ type: "emoji", text: it(i), x: ax + rand(-200, 200), y: rand(-500, -50), vx: rand(-40, 40), vy: rand(0, 200), g: 1200, life: 2.8, size: rand(28, 40), rot: 0, vr: rand(-6, 6) }); }
+    if (M.mode === "chart") { s.pts = Array.from({ length: 14 }, (_, k) => (k < 10 ? 10 + k * 14 + hn(k) * 18 : 150 - (k - 9) * 45)); for (let i = 0; i < a.n(18); i++) a.P({ type: "emoji", text: it(i), x: ax + rand(-200, 200), y: rand(-500, -50), vx: rand(-40, 40), vy: rand(0, 200), g: 1200, life: 2.8, size: rand(28, 40), rot: 0, vr: rand(-6, 6) }); }
     if (M.flame) for (let i = 0; i < a.n(24); i++) a.P({ type: "flame", x: s.x + rand(-30, 30), y: s.y + rand(-30, 30), vx: s.dir * rand(100, 500), vy: rand(-500, -100), life: rand(0.5, 0.9), max: 0.9, size: rand(26, 44), col: "rgba(255,110,20,.8)", add: true, drag: 1.5 });
     if (M.frost) for (let i = 0; i < a.n(20); i++) { const ang = rand(0, TAU), sp = rand(300, 800); a.P({ type: "shard", x: s.x, y: s.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 150, life: rand(0.7, 1.2), size: rand(7, 13), col: "#bdf3ff", rot: ang, vr: rand(-8, 8), g: 800, drag: 1.4 }); }
   },
@@ -387,7 +387,7 @@ GFX.mastery = {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); ctx.restore();
     if (M.mode === "chart") {
       // Kurs: steigt grün, stürzt rot
-      const { x: cx } = at(s), x0 = cx - 260, n = Math.min(s.pts.length, 1 + Math.floor(s.t * 9)), base = G - 120;
+      const { x: cx } = at(s), x0 = cx - 260, n = Math.min(s.pts.length, 1 + Math.floor(s.t * 9)), base = G - 40;
       ctx.save(); ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.globalAlpha = f;
       for (let k = 1; k < n; k++) {
         const up = s.pts[k] >= s.pts[k - 1];
@@ -406,7 +406,12 @@ GFX.mastery = {
     if (M.mode === "fall") for (const r of s.rocks) {
       const q = (t - r.t0) / 0.35; if (q < 0) continue;
       const y = -300 + (G - 30 + 300) * Math.min(1, q), x = r.x + s.dir * 160 * (1 - Math.min(1, q));
-      if (q < 1) { ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = M.col; ctx.lineWidth = 10; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + s.dir * 60, y - 110); ctx.stroke(); ctx.restore(); emoji(ctx, M.items[0], x, y, 64, -0.4 * s.dir); }
+      if (q < 1) {
+        // Schweif aus Feuer und Rauch hinter dem Brocken, dann der Brocken selbst
+        s.a.P({ type: "flame", x: x + rand(-10, 10), y: y + rand(-10, 10), vx: rand(-40, 40), vy: rand(-80, -20), life: 0.35, max: 0.35, size: rand(26, 38), col: "rgba(255,110,20,.8)", add: true });
+        s.a.P({ type: "smoke", x: x + rand(-14, 14), y: y - 20, vx: rand(-30, 30), vy: rand(-60, -20), life: 0.6, size: rand(10, 16), col: "rgba(255,255,255,.35)", drag: 2 });
+        emoji(ctx, M.items[0], x, y, 64, -0.4 * s.dir);
+      }
       else if (!r.hit) { r.hit = true; s.a.shake(14); for (let i = 0; i < s.a.n(12); i++) s.a.P({ type: "rock", x: r.x, y: G - 4, vx: rand(-420, 420), vy: rand(-700, -250), life: rand(0.6, 1), size: rand(5, 10), col: "#7a5a40", g: 1800, rot: rand(0, TAU), vr: rand(-10, 10) }); s.a.P({ type: "emoji", text: M.items[0], x: r.x, y: G - 30, vx: 0, vy: -200, g: 1300, life: 2, size: 60, rot: 0, vr: 0 }); }
     }
     if (M.mode === "orbit") {
