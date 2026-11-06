@@ -54,8 +54,18 @@ begin
   update game.mm_avoid set until = now() - interval '1 second';
   assert not game.avoids(a, b), 'Sperre abgelaufen';
 
-  -- Zu spät: nach dem Melden oder lange nach dem Paaren kein Abbruch mehr
+  -- Angepfiffen: kein Abbruch mehr (sonst ließe sich mitten im Spiel eine Niederlage verhindern)
   m := (mc->>'match')::uuid;
+  perform pg_temp.login(c);
+  perform pg_temp.expect_error(format('select api.match_started(%L)', (mb->>'match')), 'unknown_match');   -- nicht seins
+  r := api.match_started(m); perform pg_temp.logout();
+  assert r->>'status' = 'started' and (select started_at from game.matches where id = m) is not null, 'Anpfiff gemeldet';
+  perform pg_temp.login(a);
+  perform pg_temp.expect_error(format('select api.match_abort(%L)', m), 'too_late');
+  perform pg_temp.logout();
+  update game.matches set started_at = null where id = m;
+
+  -- Zu spät: lange nach dem Paaren kein Abbruch mehr
   update game.matches set created_at = now() - interval '5 minutes' where id = m;
   perform pg_temp.login(c);
   perform pg_temp.expect_error(format('select api.match_abort(%L)', m), 'too_late');

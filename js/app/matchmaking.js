@@ -93,6 +93,7 @@ function matched(r) {
       onData: d => {
         guestData(d);
         if (d.t === "welcome" && App.mm) { App.mm.state = "check"; clearTimeout(timer); searchUI(App.mm); }
+        if (d.t === "start" && !d.resume && App.mm) started(App.mm);
         if (d.t === "net" && App.mm) { if (d.bad) requeue(d.ms); else { if (d.weak) toast(t("mm.weakNet", { ms: d.ms }), "i-globe"); App.mm.state = "play"; searchUI(App.mm); } }
       },
       onClose: () => netDropped(onClose),
@@ -114,8 +115,11 @@ async function checkThenStart(my) {
   Net.send({ t: "net", bad: false, weak: bad, ms });
   if (bad) toast(t("mm.weakNet", { ms }), "i-globe");
   App.mm.state = "play"; searchUI(App.mm);
+  started(App.mm);
   setTimeout(hostStart, 400);
 }
+// Anpfiff an den Server melden (beide Seiten): danach kann keiner das Spiel mehr per Abbruch ungültig machen
+const started = mm => { if (mm.match && server.matchStarted) server.matchStarted(mm.match).catch(() => {}); };
 const sleep = ms => new Promise(r => { setTimeout(r, ms); });
 
 async function requeue(ms) {

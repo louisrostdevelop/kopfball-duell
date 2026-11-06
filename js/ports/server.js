@@ -27,6 +27,7 @@
  * @property {() => Promise<{ matched: boolean, waited?: number, match?: string, role?: "host"|"guest", opponent?: object }>} queuePoll
  * @property {() => Promise<object>} queueLeave
  * @property {(match: string) => Promise<{ status: string }>} matchAbort   Spiel vor dem Anpfiff abbrechen (Verbindung zu schlecht)
+ * @property {(match: string) => Promise<{ status: string }>} matchStarted Anpfiff melden: danach kein Abbruch mehr
  * @property {(match: string, r: { score: number[], duration: number }) => Promise<{ status: string, result?: object }>} reportOnline
  * @property {(match: string) => Promise<{ status: string, result?: object }>} matchStatus
  * @property {(board: "endless") => Promise<object[]>} leaderboard          Bestenliste (Top 50)

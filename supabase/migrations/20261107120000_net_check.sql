@@ -1,8 +1,11 @@
 -- =====================================================================================
 -- Verbindungs-Check nach dem Paaren (js/app/matchmaking.js): Ist der Ping zwischen beiden zu schlecht, bricht der
 -- Host das Spiel vor dem Anpfiff ab (api.match_abort). Beide suchen neu; dieselben zwei werden eine Weile nicht
--- mehr gepaart (game.mm_avoid). Gilt nur vor dem Anpfiff, sonst ließe sich so eine Niederlage verhindern.
+-- mehr gepaart (game.mm_avoid). Gilt nur vor dem Anpfiff, sonst ließe sich so eine Niederlage verhindern:
+-- Beide melden den Anpfiff (api.match_started), danach lehnt match_abort ab. Ein ehrlicher Spieler reicht.
 -- =====================================================================================
+
+alter table game.matches add column if not exists started_at timestamptz;
 
 create table if not exists game.mm_avoid (
   a uuid not null references game.players (id) on delete cascade,
@@ -23,13 +26,26 @@ begin
   if mt.id is null or p not in (mt.p1, mt.p2) then perform game.fail('unknown_match'); end if;
   if mt.status = 'void' then return jsonb_build_object('status', 'void'); end if;
   if mt.status <> 'open' or mt.report1 is not null or mt.report2 is not null then perform game.fail('too_late'); end if;
-  if mt.created_at < now() - interval '90 seconds' then perform game.fail('too_late'); end if;
+  -- angepfiffen (einer hat es gemeldet) oder zu lange her (falls beide Meldungen fehlen): zu spät
+  if mt.started_at is not null or mt.created_at < now() - interval '60 seconds' then perform game.fail('too_late'); end if;
   update game.matches set status = 'void', settled_at = now() where id = match;
   delete from game.match_queue where match_id = match;
   delete from game.mm_avoid where until < now();
   insert into game.mm_avoid (a, b, until) values (least(mt.p1, mt.p2), greatest(mt.p1, mt.p2), now() + interval '15 minutes')
   on conflict (a, b) do update set until = excluded.until;
   return jsonb_build_object('status', 'void');
+end $$;
+
+-- Anpfiff melden (Host beim Start, Gast beim Empfang des Starts): ab jetzt kein Abbruch mehr
+create or replace function api.match_started(match uuid) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare p uuid := game.me();
+begin
+  perform game.limit_rate(p, 'match_started', 30, interval '10 minutes');
+  update game.matches set started_at = coalesce(started_at, now())
+   where id = match and p in (p1, p2) and status = 'open';
+  if not found then perform game.fail('unknown_match'); end if;
+  return jsonb_build_object('status', 'started');
 end $$;
 
 -- Wie 20261105120400_api_online.sql, dazu: Paare mit schlechter Verbindung (game.mm_avoid) nicht erneut zusammenbringen
@@ -89,5 +105,7 @@ begin
 end $$;
 
 revoke all on function api.match_abort(uuid) from public, anon;
+revoke all on function api.match_started(uuid) from public, anon;
+grant execute on function api.match_started(uuid) to authenticated;
 grant execute on function api.match_abort(uuid) to authenticated;
 revoke all on function game.avoids(uuid, uuid) from public, anon, authenticated;

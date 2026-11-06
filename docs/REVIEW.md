@@ -74,6 +74,8 @@ Eingaben oder ein Schiedsrichter-Dienst.
 | Gast/Host friert ein ohne Verbindungsende | neu: Hinweis nach 4 s, nach 8 s Trennung und Neuversuch, kommt weiter nichts: Abbruch |
 | Gast im Hintergrund mit gedrückter Taste | neu: zählt nach 350 ms als losgelassen |
 | Pakete verloren, Netz schwankt | Eingaben mehrfach mit Zählern, Zustände ungeordnet, Puffer passt sich an (Test „schlechtes Netz“) |
+| Ranked: Verbindung beim Paaren zu schlecht (Ping + Schwankung > 180 ms) | Spiel wird vor dem Anpfiff abgebrochen, beide suchen neu, dasselbe Paar 15 min nicht. Casual: nur ein Hinweis (PR #6) |
+| Verlierer bricht ein Ranked-Spiel per Konsole ab (`api.match_abort`) | geht nur vor dem Anpfiff: beide melden den Anpfiff (`api.match_started`), ein ehrlicher Spieler reicht. Ohne Meldung höchstens 60 s nach dem Paaren |
 | Alte Pakete aus dem letzten Spiel | über Spiel-Nummer verworfen |
 | Dritter versucht beizutreten | „Raum voll“ |
 | Verschiedene Spielversionen | Hinweis bzw. Abbruch beim Gast |

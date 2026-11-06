@@ -74,6 +74,10 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   assert.equal(m.mode, "ranked");
   const host = m.p1 === ida ? A : B, guest = host === A ? B : A;
   assert.equal(await host.evaluate(() => window.__kd.mode), "host");
+  // Anpfiff beim Server gemeldet: ab jetzt lässt sich das Spiel nicht mehr per Abbruch ungültig machen
+  assert.ok(await until(async () => (await db("select started_at from game.matches where id = $1", [m.id]))[0].started_at), "Anpfiff gemeldet");
+  const abort = await guest.evaluate(async id => { try { await (await import("/js/app/services.js")).server.matchAbort(id); return "ok"; } catch (e) { return String(e.message || e); } }, m.id);
+  assert.match(abort, /too_late/, "kein Abbruch nach dem Anpfiff");
   // Kosmetik vom Server geprüft: Schuhe ja, Torexplosion (nicht besessen) nein; beide sehen dasselbe
   const ia = m.p1 === ida ? 0 : 1;
   for (const p of [A, B]) assert.deepEqual(await p.evaluate(i => [window.__kd.cfg.cos[i].shoes, window.__kd.cfg.cos[i].goalfx], ia), ["shoes:4", null]);

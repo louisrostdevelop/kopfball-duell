@@ -49,6 +49,7 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     queuePoll: () => client.rpc("queue_poll"),
     queueLeave: () => client.rpc("queue_leave"),
     matchAbort: match => client.rpc("match_abort", { match }),
+    matchStarted: match => client.rpc("match_started", { match }),
     reportOnline: (match, r) => client.rpc("report_match", { match, r }),
     matchStatus: match => client.rpc("match_status", { match }),
     rankedBoard: (n = 50) => client.rpc("ranked_board", { lim: n, offs: 0 }),
