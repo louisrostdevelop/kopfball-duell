@@ -6,6 +6,7 @@ import { myCos } from "./cosmetics.js";
 import { applyState } from "./account.js";
 import { quitToMenu } from "./game.js";
 import { hello, hostData, guestData, hostStart, netDropped } from "./online.js";
+import { NET_CHECK, netTooBad, pingStats } from "./netcode.js";
 import { App, inGame } from "./state.js";
 import { toast } from "../ui/dom.js";
 import { showScreen, swapScreen } from "../ui/nav.js";
@@ -80,7 +81,7 @@ function matched(r) {
   App.netLost = onClose;   // Wächter in online.js: Gegenseite friert ein, ohne dass die Verbindung schließt
   if (r.role === "host") {
     Net.host({
-      onData: d => { hostData(d); if (d.t === "hello" && App.opp && App.mm && App.mm.state === "connect") { App.mm.state = "play"; clearTimeout(timer); setTimeout(hostStart, 600); } },
+      onData: d => { hostData(d); if (d.t === "hello" && App.opp && App.mm && App.mm.state === "connect") { clearTimeout(timer); checkThenStart(my); } },
       onClose: () => netDropped(onClose),
       onError: type => { if (my === gen) fail(t("net.roomFailed", { type })); },
     }, { code: roomOf(r.match) });
@@ -89,12 +90,40 @@ function matched(r) {
     App.roomCode = roomOf(r.match);
     const join = () => Net.join(roomOf(r.match), App.joinH = {
       onConn: () => Net.send(hello({ lv: 1 })),   // Level kommt vom Server
-      onData: d => { guestData(d); if (d.t === "welcome" && App.mm) { App.mm.state = "play"; clearTimeout(timer); searchUI(App.mm); } },
+      onData: d => {
+        guestData(d);
+        if (d.t === "welcome" && App.mm) { App.mm.state = "check"; clearTimeout(timer); searchUI(App.mm); }
+        if (d.t === "net" && App.mm) { if (d.bad) requeue(d.ms); else { if (d.weak) toast(t("mm.weakNet", { ms: d.ms }), "i-globe"); App.mm.state = "play"; searchUI(App.mm); } }
+      },
       onClose: () => netDropped(onClose),
       onError: (type, wasOk) => { if (wasOk || my !== gen) return; if (type === "peer-unavailable" && ++tries < 12) setTimeout(() => { if (my === gen) join(); }, 1500); else fail(t("mm.connectFailed", { type })); },
     });
     setTimeout(join, 800);   // Host braucht einen Moment, bis der Raum offen ist
   }
+}
+
+// Verbindungs-Check (Host): ein paar Pings, dann entscheiden. Ranked bei schlechter Verbindung: beide suchen neu
+// (Server bricht das Spiel ab und paart die zwei eine Weile nicht). Casual: nur ein Hinweis, gespielt wird trotzdem.
+async function checkThenStart(my) {
+  App.mm.state = "check"; searchUI(App.mm); App.pings = [];
+  for (let i = 0; i < NET_CHECK.samples; i++) { Net.send({ t: "ping", c: performance.now() }); await sleep(NET_CHECK.gapMs); }
+  await sleep(NET_CHECK.waitMs);
+  if (my !== gen || !App.mm) return;
+  const st = pingStats(App.pings), ms = st ? st.ms : 999, bad = netTooBad(st);
+  if (bad && App.mm.mode === "ranked") { Net.send({ t: "net", bad: true, ms }); setTimeout(() => requeue(ms), 150); return; }
+  Net.send({ t: "net", bad: false, weak: bad, ms });
+  if (bad) toast(t("mm.weakNet", { ms }), "i-globe");
+  App.mm.state = "play"; searchUI(App.mm);
+  setTimeout(hostStart, 400);
+}
+const sleep = ms => new Promise(r => { setTimeout(r, ms); });
+
+async function requeue(ms) {
+  const mm = App.mm; if (!mm) return;
+  toast(t("mm.badNet", { ms }), "i-globe");
+  stop(); Net.close(); App.mm = null;
+  await server.matchAbort(mm.match).catch(() => {});
+  findMatch(mm.mode).catch(e => fail(errText(e)));
 }
 
 function fail(msg) {

@@ -11,6 +11,7 @@ after(async () => { await env.close(); });
 const VIEW = { viewport: { width: 1100, height: 620 } };
 const MOCK = { path: fileURLToPath(new URL("./mockpeer.js", import.meta.url)) };
 
+const pingOf = p => p.evaluate(() => { const e = document.getElementById("netPing"); return { vis: !e.hidden && !!e.offsetParent, bars: +e.dataset.bars || 0, ms: document.getElementById("netPingMs").textContent }; });
 test("Online: Lobby bis Revanche", async t => {
   const a = await openPage(env, VIEW, { init: [MOCK] });
   const A = a.page;
@@ -63,6 +64,9 @@ test("Online: Lobby bis Revanche", async t => {
     const sb = await B.evaluate(() => ({ mode: window.__kd.mode, snaps: window.__kd.snaps.length }));
     assert.equal(sb.mode, "guest"); assert.ok(sb.snaps > 0);
   });
+  await t.test("Ping-Balken auf beiden Seiten, gutes Netz = viele Balken", async () => {
+    for (const p of [A, B]) { const x = await pingOf(p); assert.ok(x.vis, "sichtbar"); assert.ok(x.bars >= 3, `Balken ${x.bars} (${x.ms})`); }
+  });
   await t.test("Abpfiff und Revanche", async () => {
     await A.evaluate(() => { window.__kd.st.t = 0.5; window.__kd.st.s = [2, 1]; }); await A.waitForTimeout(2500);
     for (const p of [A, B]) if (await p.locator("#modal").isVisible()) await p.click("#modalOk");
@@ -104,6 +108,7 @@ test("Online bei schlechtem Netz", async () => {
   const g = await B.evaluate(() => ({ seq: window.__kd.lastSeq, delay: window.__kd.clock.delay() }));
   assert.ok(g.seq > 150, "Zustände kommen an: " + g.seq);
   assert.ok(g.delay > 90, "Puffer an schlechtes Netz angepasst: " + g.delay.toFixed(0) + " ms");
+  for (const p of [A, B]) { const x = await pingOf(p); assert.ok(x.vis, "Ping-Anzeige sichtbar"); assert.ok(x.bars <= 2, `schlechtes Netz zeigt wenige Balken: ${x.bars} (${x.ms})`); }
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
 });
 

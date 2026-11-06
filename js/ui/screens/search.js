@@ -28,7 +28,7 @@ export function searchUI(mm) {
     clearInterval(clock);
     $("scr-search").classList.add("found");
     const o = mm.opp || {};
-    st.textContent = t(mm.state === "connect" ? "search.found" : "lobby.connected");
+    st.textContent = t(mm.state === "connect" ? "search.found" : mm.state === "check" ? "search.checking" : "lobby.connected");
     opp.textContent = "";
     // Spieler-Karte des Gegners: Kopf, Rahmen und Titel (vom Server geprüft), Name, Level, Kopf-Level, Liga
     const h = (mm.heads && mm.heads[mm.role === "host" ? "p2" : "p1"]) || {}, card = $("srThem");

@@ -72,3 +72,15 @@ export function makeClock({ sendMs = 1000 / 30, minDelay = 35, maxDelay = 250 } 
     get jitter() { return jit; },
   };
 }
+
+/** Ping aus den letzten Proben (Hin und zurück, ms): Median und mittlere Abweichung davon (Schwankung) */
+export function pingStats(samples) {
+  if (!samples || !samples.length) return null;
+  const s = [...samples].sort((a, b) => a - b), ms = s[Math.floor(s.length / 2)];
+  return { ms: Math.round(ms), jitter: Math.round(s.reduce((a, v) => a + Math.abs(v - ms), 0) / s.length) };
+}
+/** Balken 1–4 für die Anzeige. Schwankung zählt doppelt: sie macht die Ruckler, nicht der Ping allein. */
+export const pingBars = st => { if (!st) return 0; const e = st.ms + 2 * st.jitter; return e < 70 ? 4 : e < 120 ? 3 : e < 190 ? 2 : 1; };
+/** Verbindungs-Check nach dem Paaren: Proben, Abstand, ab wann es zu schlecht ist (Ranked: neu suchen, Casual: Hinweis) */
+export const NET_CHECK = { samples: 6, gapMs: 200, waitMs: 400, badMs: 180 };
+export const netTooBad = st => !st || st.ms + st.jitter > NET_CHECK.badMs;
