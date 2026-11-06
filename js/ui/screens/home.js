@@ -26,7 +26,7 @@ export function homeScreen() {
   refreshTop();
   const c = charById(S.char), rar = rarityOf(c);
   $("stName").textContent = c.name; $("stSuper").textContent = SUPERS[c.super].name;
-  const rb = $("stRarity"); rb.textContent = RARITY[rar]; rb.style.setProperty("--rc", RCOL[rar]);
+  const rb = $("stRarity"); rb.textContent = RARITY[rar]; rb.style.setProperty("--rc", RCOL[rar]); rb.parentElement.style.setProperty("--rc", RCOL[rar]);
   const m = availableModes().find(x => x.id === S.mode) || MODES[0];
   $("mcTitle").textContent = m.name;
   let sub = m.desc;
@@ -77,6 +77,59 @@ export function refreshTop() {
   const dl = deal(); $("shopBadge").hidden = !(dl && S.coins >= dl.price) && !CHARS.some(c => !owns("chars", c.id) && c.price <= S.coins);
 }
 
+// Bühne hinter dem Kopf: weicher Schein in der Farbe der Seltenheit, klares Podest mit Lichtringen, wenige weiche Lichtpunkte
+const RC = { basis: [63, 139, 255], selten: [47, 199, 96], episch: [166, 92, 255], legend: [255, 179, 0] };
+const hash = n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+function stageFx(x, w, cx, baseY, r, t) {
+  const [cr, cg, cb] = RC[rarityOf(charById(S.char))] || RC.basis, col = a => `rgba(${cr},${cg},${cb},${a})`;
+  const tint = (q, u) => `rgb(${Math.round(q[0] + (cr - q[0]) * u)},${Math.round(q[1] + (cg - q[1]) * u)},${Math.round(q[2] + (cb - q[2]) * u)})`;
+  const headY = baseY - r * 1.02, pw = r * 1.55, ph = r * 0.3, depth = r * 0.26, TAU = Math.PI * 2;
+  x.save();
+  x.globalCompositeOperation = "lighter";
+  // großer, weicher Schein hinter dem Kopf
+  const pulse = 0.88 + 0.12 * Math.sin(t * 1.6), ag = x.createRadialGradient(cx, headY - r * 0.1, r * 0.2, cx, headY - r * 0.1, r * 2.6);
+  ag.addColorStop(0, col(0.5 * pulse)); ag.addColorStop(0.45, col(0.18 * pulse)); ag.addColorStop(1, col(0));
+  x.fillStyle = ag; x.fillRect(cx - r * 2.7, headY - r * 2.8, r * 5.4, r * 5.4);
+  // wenige große Lichtpunkte (Bokeh), steigen langsam
+  for (let i = 0; i < 7; i++) {
+    const u = (t * (0.035 + hash(i) * 0.03) + hash(i * 7)) % 1, px = cx + (hash(i * 3) - 0.5) * r * 4.4, py = baseY - u * r * 3.4;
+    const z = r * (0.1 + hash(i * 5) * 0.16), al = Math.sin(u * Math.PI) * (0.16 + hash(i * 9) * 0.14);
+    const bg = x.createRadialGradient(px, py, 0, px, py, z); bg.addColorStop(0, i % 3 ? col(al) : `rgba(255,255,255,${al})`); bg.addColorStop(0.7, i % 3 ? col(al * 0.6) : `rgba(255,255,255,${al * 0.6})`); bg.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = bg; x.beginPath(); x.arc(px, py, z, 0, TAU); x.fill();
+  }
+  // Lichtringe auf dem Boden, laufen langsam nach außen
+  for (let k = 0; k < 2; k++) {
+    const u = (t * 0.32 + k / 2) % 1, s = 1 + u * 0.75;
+    x.beginPath(); x.ellipse(cx, baseY + depth, pw * s, ph * s, 0, 0, TAU);
+    x.strokeStyle = col(0.5 * (1 - u)); x.lineWidth = Math.max(1.5, r * 0.025); x.stroke();
+  }
+  const fg = x.createRadialGradient(cx, baseY + depth, pw * 0.3, cx, baseY + depth, pw * 1.6);
+  fg.addColorStop(0, col(0.35)); fg.addColorStop(1, col(0));
+  x.fillStyle = fg; x.beginPath(); x.ellipse(cx, baseY + depth, pw * 1.6, ph * 1.7, 0, 0, TAU); x.fill();
+  x.globalCompositeOperation = "source-over";
+  // Podest: Seite
+  const side = x.createLinearGradient(cx - pw, 0, cx + pw, 0);
+  side.addColorStop(0, "#0a0f30"); side.addColorStop(0.4, tint([34, 48, 120], 0.25)); side.addColorStop(1, "#070b24");
+  x.beginPath(); x.moveTo(cx - pw, baseY); x.lineTo(cx - pw, baseY + depth); x.ellipse(cx, baseY + depth, pw, ph, 0, Math.PI, 0, true); x.lineTo(cx + pw, baseY); x.closePath();
+  x.fillStyle = side; x.fill(); x.lineWidth = 3; x.lineJoin = "round"; x.strokeStyle = "#15112e"; x.stroke();
+  // feine Lichtkante unten an der Seite
+  x.beginPath(); x.ellipse(cx, baseY + depth, pw - 1.5, ph - 1.5, 0, Math.PI * 0.12, Math.PI * 0.88);
+  x.strokeStyle = col(0.75); x.lineWidth = 2; x.stroke();
+  // Deckel: Farbe der Seltenheit, zur Mitte heller
+  const top = x.createRadialGradient(cx, baseY - ph * 0.15, 2, cx, baseY, pw);
+  top.addColorStop(0, tint([60, 80, 170], 0.55)); top.addColorStop(0.75, tint([30, 44, 120], 0.45)); top.addColorStop(1, tint([18, 26, 80], 0.35));
+  x.beginPath(); x.ellipse(cx, baseY, pw, ph, 0, 0, TAU); x.fillStyle = top; x.fill();
+  x.lineWidth = 3; x.strokeStyle = "#15112e"; x.stroke();
+  // Innenring + heller Rand vorne
+  x.beginPath(); x.ellipse(cx, baseY, pw * 0.82, ph * 0.74, 0, 0, TAU); x.strokeStyle = col(0.85); x.lineWidth = Math.max(1.5, r * 0.03); x.stroke();
+  x.beginPath(); x.ellipse(cx, baseY, pw - 3, ph - 2.5, 0, Math.PI * 0.15, Math.PI * 0.85); x.strokeStyle = "rgba(255,255,255,.35)"; x.lineWidth = 2; x.stroke();
+  // Kontaktschatten unter dem Kopf
+  const cs = x.createRadialGradient(cx, baseY, 0, cx, baseY, r * 0.9);
+  cs.addColorStop(0, "rgba(4,8,30,.5)"); cs.addColorStop(1, "rgba(4,8,30,0)");
+  x.fillStyle = cs; x.beginPath(); x.ellipse(cx, baseY, r * 0.9, ph * 0.6, 0, 0, TAU); x.fill();
+  x.restore();
+}
+
 export function drawShowcase(dt) {
   const cv = $("showcase"); if (!cv || App.screen !== "home") return;
   const dpr = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
@@ -92,21 +145,7 @@ export function drawShowcase(dt) {
   const r = Math.max(30, Math.min(w * 0.2, avail * 0.3));
   const baseY = avail - r * 0.15; // Boden der Bühne
   const cx = w / 2;
-  // Spot
-  const sp = x.createRadialGradient(cx, baseY - r * 1.4, 10, cx, baseY - r * 1.4, r * 3.2);
-  sp.addColorStop(0, "rgba(255,255,255,.30)"); sp.addColorStop(1, "rgba(255,255,255,0)");
-  x.fillStyle = sp; x.fillRect(0, 0, w, h);
-  // Podest
-  const pw = r * 1.7, ph = r * 0.32;
-  x.save();
-  x.shadowColor = "rgba(120,180,255,.7)"; x.shadowBlur = 30;
-  x.fillStyle = "#15112e"; x.beginPath(); x.ellipse(cx, baseY + ph * 0.45, pw, ph, 0, 0, Math.PI * 2); x.fill();
-  x.shadowBlur = 0;
-  const pg = x.createLinearGradient(0, baseY - ph, 0, baseY + ph); pg.addColorStop(0, "#5d8dff"); pg.addColorStop(1, "#1a3fc4");
-  x.fillStyle = pg; x.beginPath(); x.ellipse(cx, baseY, pw, ph, 0, 0, Math.PI * 2); x.fill();
-  x.lineWidth = 3; x.strokeStyle = "#15112e"; x.stroke();
-  x.fillStyle = "rgba(255,255,255,.22)"; x.beginPath(); x.ellipse(cx, baseY - ph * 0.25, pw * 0.7, ph * 0.45, 0, 0, Math.PI * 2); x.fill();
-  x.restore();
+  stageFx(x, w, cx, baseY, r, t);
   // Jonglieren: Ball fällt auf den Kopf, Kopf nickt ihn wieder hoch
   const headY = baseY - r * 1.02, top = headY - r;
   const j = juggle, g = r * 9;
@@ -122,7 +161,13 @@ export function drawShowcase(dt) {
   // Kopf
   x.save(); x.translate(cx, baseY); x.scale(1 + bump * 0.8, 1 - bump); x.translate(-cx, -baseY);
   const look = -Math.PI / 2 + Math.sin(t * 2) * 0.3;
-  drawHead(x, S.char, cx, headY - bump * r * 0.4, r, { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t });
+  // Kopf mit Lichtkante in der Farbe der Seltenheit
+  const [gr, gg, gb] = RC[rarityOf(charById(S.char))] || RC.basis;
+  const hopt = { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t }, hy = headY - bump * r * 0.4, far = 10000;
+  // nur der Schatten landet im Bild (Kopf selbst weit außerhalb), sonst färbt der Schein das Gesicht ein
+  x.save(); x.shadowColor = `rgba(${gr},${gg},${gb},.95)`; x.shadowBlur = r * 0.5 * dpr; x.shadowOffsetX = far * dpr; x.translate(-far, 0);
+  drawHead(x, S.char, cx, hy, r, hopt); x.restore();
+  drawHead(x, S.char, cx, hy, r, hopt);
   x.restore();
   drawBall(x, S.ball, bx, j.y, br, j.a, 1, null, { t, vy: j.vy });
 }

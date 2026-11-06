@@ -7,7 +7,7 @@ import { arenaThumb } from "../render/render.js";
 import { ballCanvas } from "./shop.js";
 import { chestEl } from "./chests.js";
 import { refreshTop } from "./home.js";
-import { $, $$, svg, toast } from "../dom.js";
+import { $, $$, emptyState, svg, toast } from "../dom.js";
 import { registerScreen, showScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
 import { money, t } from "../../content/i18n.js";
@@ -33,7 +33,7 @@ function rewardEl(rw) {
 export function passScreen() {
   const v = passView(), top = $("passTop"), track = $("passTrack");
   $$(".gemNum").forEach(e => e.textContent = S.gems || 0);
-  if (!v) { top.innerHTML = `<p class="hint center">${t("err.mm.no_season")}</p>`; track.innerHTML = ""; return; }
+  if (!v) { top.innerHTML = emptyState("i-cal", t("err.mm.no_season")); track.innerHTML = ""; return; }
   const next = v.tiers.find(x => !x.reached), prev = [...v.tiers].reverse().find(x => x.reached);
   const span = next ? next.points - (prev ? prev.points : 0) : 1, inSpan = next ? v.points - (prev ? prev.points : 0) : 1;
   top.innerHTML = `<div class="pt-info"><b>${t("pass.season", { n: v.season })}</b><small>${t("pass.status", { days: daysLeft(v.endsAt), pts: v.points })} · ${next ? t("pass.nextAt", { n: next.points }) : t("pass.allDone")}</small>
