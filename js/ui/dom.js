@@ -9,6 +9,8 @@ export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 export const RCOL = { basis: "var(--r-basis)", selten: "var(--r-selten)", episch: "var(--r-episch)", legend: "var(--r-legend)" };
 
 export const svg = id => `<svg><use href="#${id}"/></svg>`;
+/** Leerer Zustand: großes Symbol + Satz, mittig (statt einer kleinen Textzeile auf leerer Fläche) */
+export const emptyState = (icon, text) => `<div class="emptystate">${svg(icon)}<p>${esc(text)}</p></div>`;
 
 export function shareOrCopy(d) {
   if (navigator.share) { navigator.share(d).catch(() => {}); return; }

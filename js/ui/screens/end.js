@@ -17,11 +17,12 @@ export function showEnd(r) {
   if (me < 0) { ttl.textContent = a === b ? t("end.draw") : t("end.wins", { name: App.names[a > b ? 0 : 1] }); ttl.className = "ribbon gold"; }
   else if (r.win) { ttl.textContent = r.runInfo === "cup" ? t("trophy.title") : t("end.win"); ttl.className = "ribbon" + (r.runInfo === "cup" ? " gold" : ""); }
   else { ttl.textContent = a === b ? t("end.draw") : t("end.loss"); ttl.className = "ribbon " + (a === b ? "draw" : "lose"); }
-  [0, 1].forEach(i => { const av = $("endAv" + i); av.innerHTML = ""; const won = st.s[i] > st.s[1 - i]; av.append(avatarCanvas(st.p[i].ch, 92, { dir: i ? -1 : 1, mood: won ? "happy" : st.s[i] < st.s[1 - i] ? "sad" : "" })); $("endN" + i).textContent = App.names[i]; });
+  ttl.closest(".endcard").dataset.tone = /gold/.test(ttl.className) ? "gold" : /lose/.test(ttl.className) ? "lose" : /draw/.test(ttl.className) ? "draw" : "win";
+  [0, 1].forEach(i => { const av = $("endAv" + i); av.innerHTML = ""; const won = st.s[i] > st.s[1 - i]; av.append(avatarCanvas(st.p[i].ch, 84, { dir: i ? -1 : 1, mood: won ? "happy" : st.s[i] < st.s[1 - i] ? "sad" : "" })); $("endN" + i).textContent = App.names[i]; });
   $("endS0").textContent = a; $("endS1").textContent = b;
   const s0 = st.stats[0], s1 = st.stats[1];
   const rows = [[t("stat.shots"), s0.shots, s1.shots], [t("stat.headers"), s0.heads, s1.heads], [t("stat.supers"), s0.supers, s1.supers], [t("stat.pus"), s0.pus, s1.pus], [t("stat.stomps"), s0.stomps, s1.stomps]].filter(row => row[1] + row[2] > 0);
-  $("endStats").innerHTML = rows.map(([l, x, y]) => `<span class="v">${x}</span><span class="lbl">${l}</span><span class="v r">${y}</span>`).join("");
+  $("endStats").innerHTML = rows.map(([l, x, y]) => `<span class="st"><span class="v">${x}</span><span class="lbl">${l}</span><span class="v r">${y}</span></span>`).join("");
   const rw = $("endRewards"); rw.innerHTML = "";
   r.lines.forEach(([l, c], n) => { const d = document.createElement("div"); d.className = "rw-line"; d.style.animationDelay = (0.2 + n * 0.22) + "s"; d.innerHTML = `<span class="coin"></span><b>+${c}</b><span>${esc(l)}</span>`; rw.append(d); setTimeout(() => A.sfx("coin"), 200 + n * 220); });
   if (r.lines.length) {

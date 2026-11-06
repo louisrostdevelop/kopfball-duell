@@ -46,9 +46,12 @@ function render() {
   for (const c of list) {
     const own = S.cos.includes(c.id), on = own && isEquipped(c.id), cost = SHARDS.craft[c.rarity];
     const d = document.createElement("button"); d.className = `lcard r-${c.rarity}` + (own ? "" : " locked") + (on ? " on" : ""); d.dataset.id = c.id;
-    if (c.kind === "title") d.append(Object.assign(document.createElement("span"), { className: "titletag", textContent: c.name }));
-    else if (c.kind === "frame") d.append(avatarCanvas(c.head || S.char, 64, { frame: c.id }));
-    else d.append(cosIcon(c.id, 52));
+    const box = document.createElement("span"); box.className = "lprev";
+    if (c.kind === "title") box.append(Object.assign(document.createElement("span"), { className: "titletag", textContent: c.name }));
+    else if (c.kind === "frame") box.append(avatarCanvas(c.head || S.char, 64, { frame: c.id }));
+    else box.append(cosIcon(c.id, 52));
+    if (!own) box.insertAdjacentHTML("beforeend", `<svg class="lk"><use href="#i-lock"/></svg>`);
+    d.append(box);
     d.insertAdjacentHTML("beforeend", `<b>${esc(c.name)}</b><small>${RARITY[c.rarity]}</small>` +
       (own ? `<em>${on ? t("locker.worn") : t("locker.wear")}</em>` : `<em class="craft">${t("locker.craft", { n: cost })}</em>`));
     d.onclick = async () => {

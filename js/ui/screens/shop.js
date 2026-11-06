@@ -127,7 +127,7 @@ export function initShop() {
 
 // Kosmetik: 6 Angebote pro Woche, für Münzen oder Juwelen (Kisten gibt es hier nie)
 function cosShop() {
-  $("dealBox").innerHTML = `<p class="hint">${t("shop.cosWeek")}</p>`;
+  $("dealBox").innerHTML = `<p class="hint">${svg("i-cal")}${t("shop.cosWeek")}</p>`;
   const g = $("shopGrid"); g.innerHTML = "";
   for (const id of cosOfferNow()) {
     const c = cosById(id); if (!c) continue;
