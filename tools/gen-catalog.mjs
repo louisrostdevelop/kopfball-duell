@@ -30,7 +30,7 @@ export function catalogSql() {
     ...ARENAS.map(a => ({ id: "arena:" + a.id, kind: "arena", rarity: rarityOf(a), coins: a.price, gems: null, meta: { name: a.name } })),
     // Kosmetik: (noch) nicht im Shop, nur aus Kisten und zum Herstellen
     // Kosmetik: aus Kisten, herstellbar, im Shop nur im Wochenangebot (game.cos_offer)
-    ...COSMETICS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: COS_PRICE[c.rarity].coins, gems: COS_PRICE[c.rarity].gems, meta: { n: c.n } })),
+    ...COSMETICS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: COS_PRICE[c.rarity].coins, gems: COS_PRICE[c.rarity].gems, meta: { n: c.n, ...(c.fx ? { fx: c.fx } : {}), ...(c.glyph ? { glyph: c.glyph } : {}) } })),
     // Meisterschaft: nur über die Kopf-Stufen (nicht aus Kisten, nicht herstellbar)
     ...MASTERY_ITEMS.map(c => ({ id: c.id, kind: c.kind, rarity: c.rarity, coins: null, gems: null, meta: { src: "mastery", head: c.head, stage: c.stage } })),
   ];

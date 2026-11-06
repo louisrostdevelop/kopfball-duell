@@ -127,7 +127,7 @@ export function buildEmoteBar() {
   const bar = $("emoteBar"); bar.innerHTML = "";
   emoteSlots().forEach((e, n) => {
     const b = document.createElement("button"), c = cosById(e);
-    b.textContent = c ? (c.kind === "emoji" ? c.glyph : "★" + c.n) : e; b.title = t("hud.emoteKey", { n: n + 1 }); b.onclick = () => sendEmote(e);
+    b.textContent = c ? (c.kind === "emoji" ? c.glyph : c.ic) : e; b.title = t("hud.emoteKey", { n: n + 1 }); b.onclick = () => sendEmote(e);
     bar.append(b);
   });
   const m = document.createElement("button"); m.className = "mute"; m.textContent = S.muteOpp ? "🔇" : "🔈"; m.title = t("hud.muteOpp");

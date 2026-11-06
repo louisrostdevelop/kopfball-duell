@@ -561,12 +561,84 @@ function drawPlayerBase(p) {
 let matchCos = [{}, {}], muted = [false, false];
 export function setMatchCos(cos, mute = [false, false]) { matchCos = [cos?.[0] || {}, cos?.[1] || {}]; muted = mute; }
 export const setMuted = m => { muted = m; };
-// Figur-Emote (PLATZHALTER): Kopf hüpft, dreht, wackelt oder wächst
-function emoteAnim(p) {
-  if (!p.emo || !p.emo.startsWith("emote:") || p.emoT <= 0) return null;
-  const c = cosById(p.emo); if (!c) return null;
-  const k = 2.2 - p.emoT, w = Math.sin(k * 12);
-  return [{ dy: -Math.abs(w) * 22 }, { rot: k * 8 }, { rot: w * 0.3 }, { sc: 1 + Math.abs(w) * 0.18 }][c.v % 4];
+// Figur-Emotes (Meme-Trends 2026, PLATZHALTER-Grafik): Bewegung des Kopfes (dx, dy, rot, sc, dir) und Zeichnungen
+// dahinter (back), auf dem Gesicht (face, gleiche Koordinaten wie der Kopf) und davor (front). e = ein/aus geblendet 0..1
+function shades(x, y, r, dir) {
+  const cx = x + dir * r * 0.14, ey = y - r * 0.02, es = r * 0.22;
+  ctx.fillStyle = INK;
+  for (const s of [-1, 1]) { const ex = cx + s * r * 0.27; roundRect(ex - es * 1.05, ey - es * 0.75, es * 2.1, es * 1.4, es * 0.5); ctx.fill(); }
+  ctx.strokeStyle = INK; ctx.lineWidth = r * 0.07; ctx.beginPath(); ctx.moveTo(cx - r * 0.1, ey - es * 0.3); ctx.lineTo(cx + r * 0.1, ey - es * 0.3); ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = r * 0.05;
+  for (const s of [-1, 1]) { const ex = cx + s * r * 0.27; ctx.beginPath(); ctx.moveTo(ex - es * 0.6, ey - es * 0.35); ctx.lineTo(ex - es * 0.15, ey - es * 0.35); ctx.stroke(); }
+}
+const EMOTE_FX = {
+  "67": (p, r, k, e) => { const w = Math.sin(k * 9); return { rot: w * 0.22 * e, dx: w * 7 * e, dy: -Math.abs(Math.cos(k * 9)) * 6 * e }; },
+  crash: (p, r, k, e) => ({
+    dx: Math.sin(k * 70) * 3 * e, rot: Math.sin(k * 55) * 0.05 * e,
+    face: () => { ctx.globalAlpha = 0.35 * e; ctx.fillStyle = "#ff3b30"; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; },
+    front: () => {
+      for (let j = 0; j < 3; j++) {
+        const ph = (k * 1.6 + j / 3) % 1;
+        ctx.globalAlpha = (1 - ph) * e * 0.85; ctx.fillStyle = "#fff"; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.x + (j - 1) * r * 0.55 + Math.sin(ph * 8) * 4, p.y - r - ph * 42, 5 + ph * 9, 0, TAU); ctx.fill(); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    },
+  }),
+  nod: (p, r, k, e) => ({ rot: Math.abs(Math.sin(k * 3.5)) * 0.2 * p.dir * e, mood: "sad" }),
+  peak: (p, r, k, e) => {
+    const h = 46 * (1 - (1 - e) ** 3), w = r * 1.8, gy = Math.max(G, p.y + r);
+    return {
+      dy: -h,
+      back: () => {
+        ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = INK;
+        ctx.fillStyle = "#8a99ad"; ctx.beginPath(); ctx.moveTo(p.x - w, gy); ctx.lineTo(p.x, gy - h - 4); ctx.lineTo(p.x + w, gy); ctx.closePath(); ctx.fill(); ctx.stroke();
+        const qx = p.x - p.dir * r * 1.35, fy = gy - (h + 4) * (1 - r * 1.35 / w);
+        ctx.beginPath(); ctx.moveTo(qx, fy); ctx.lineTo(qx, fy - r * 2.1 * e); ctx.stroke();
+        ctx.fillStyle = TEAM[p.i]; ctx.beginPath(); ctx.moveTo(qx, fy - r * 2.1 * e); ctx.lineTo(qx - p.dir * 22 * e, fy - r * 2.1 * e + 8); ctx.lineTo(qx, fy - r * 2.1 * e + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
+      },
+    };
+  },
+  bait: (p, r, k, e) => ({
+    front: () => {
+      const bx = p.x + p.dir * r * 0.6, by = p.y - r * 0.1, tx = bx + p.dir * r * 1.9 * e, ty = by - r * 1.5 * e;
+      ctx.lineCap = "round"; ctx.strokeStyle = "#7a4a22"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty); ctx.stroke();
+      const hx = tx + Math.sin(k * 3) * 6, hy = ty + 46 * e + Math.sin(k * 5) * 5;
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.fillStyle = "#ff8fb1"; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(hx, hy + 6, 4, 8, Math.sin(k * 9) * 0.5, 0, TAU); ctx.fill(); ctx.stroke();
+    },
+  }),
+  unbothered: (p, r, k, e) => ({ dir: -p.dir, rot: -p.dir * 0.1 * e, face: () => shades(p.x, p.y, r, -p.dir) }),
+  mog: (p, r, k, e) => ({
+    sc: 1 + 0.35 * e, dy: -4 * e,
+    back: () => { ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.beginPath(); ctx.ellipse(p.x + p.dir * r * 2.2 * e, G - 3, r * 2.2 * e + 1, 9, 0, 0, TAU); ctx.fill(); },
+  }),
+  aura: (p, r, k, e, t) => ({
+    dy: -(10 + Math.sin(k * 4) * 3) * e,
+    back: () => {
+      ctx.globalCompositeOperation = "lighter";
+      const rr = r * (1.9 + Math.sin(t * 6) * 0.1), y = p.y - 10 * e;
+      const g = ctx.createRadialGradient(p.x, y, r * 0.6, p.x, y, rr);
+      g.addColorStop(0, `rgba(255,216,74,${0.8 * e})`); g.addColorStop(1, "rgba(255,216,74,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, y, rr, 0, TAU); ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+    },
+    face: () => shades(p.x, p.y, r, p.dir),
+    front: () => {
+      for (let j = 0; j < 5; j++) {
+        const a = t * 2 + j * TAU / 5, d = r * 1.45;
+        starShape(p.x + Math.cos(a) * d, p.y - 10 * e + Math.sin(a) * d * 0.8, 6 + 2 * Math.sin(t * 8 + j), a);
+        ctx.globalAlpha = e; ctx.fillStyle = COL.gold; ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke(); ctx.globalAlpha = 1;
+      }
+    },
+  }),
+};
+function emoteAnim(p, r, t) {
+  if (!p.emo || !p.emo.startsWith("emote:") || p.emoT <= 0 || muted[p.i]) return null;
+  const c = cosById(p.emo), f = c && EMOTE_FX[c.fx]; if (!f) return null;
+  const k = 2.2 - p.emoT, e = Math.min(1, k * 5, p.emoT * 4);
+  return f(p, r, k, e, t);
 }
 function drawPlayer(st, p, t, label) {
   const c = charById(p.ch), r = pr(p), col = TEAM[p.i];
@@ -615,15 +687,18 @@ function drawPlayer(st, p, t, label) {
   }
   const mc = matchCos[p.i] || {};
   drawShoe(ctx, s.x, s.y, SR * p.sc, p.slide > 0 ? p.slideDir : p.dir, shoeColor(mc.shoes, col), p.slide > 0 ? -p.slideDir * 0.5 : p.bomb ? p.dir * 0.8 : p.kick > 0 ? -p.dir * 0.6 * s.k : p.kHeld && p.charge > 0 ? p.dir * p.charge * 0.55 : 0);
-  const ea = emoteAnim(p);
-  if (ea) { dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; }
+  const ea = emoteAnim(p, r, t);
+  let dx = 0;
+  if (ea) { dx = ea.dx || 0; dy += ea.dy || 0; rot += ea.rot || 0; sqX *= ea.sc || 1; sqY *= ea.sc || 1; if (ea.back) { ctx.save(); ea.back(); ctx.restore(); } }
   ctx.save();
-  ctx.translate(p.x, p.y + r + dy); ctx.rotate(rot); ctx.scale(sqX, sqY); ctx.translate(-p.x, -p.y - r);
+  ctx.translate(p.x + dx, p.y + r + dy); ctx.rotate(rot); ctx.scale(sqX, sqY); ctx.translate(-p.x, -p.y - r);
   const b = st.b;
   const look = Math.atan2(b.y - p.y, b.x - p.x);
   const blink = Math.sin(t * 1.3 + p.i * 2) > 0.985;
-  drawHead(ctx, p.ch, p.x, p.y, r, { dir: p.dir, look, mood: p.stun > 0 ? "sad" : p.mood, blink, effort: (p.kHeld && p.charge > 0.2) || p.kick > 0.1, frozen: p.frz > 0, t: t + p.i * 3 });
+  drawHead(ctx, p.ch, p.x, p.y, r, { dir: ea?.dir || p.dir, look, mood: p.stun > 0 ? "sad" : ea?.mood || p.mood, blink, effort: (p.kHeld && p.charge > 0.2) || p.kick > 0.1, frozen: p.frz > 0, t: t + p.i * 3 });
+  if (ea?.face) { ctx.save(); ea.face(); ctx.restore(); }
   ctx.restore();
+  if (ea?.front) { ctx.save(); ctx.translate(dx, dy); ea.front(); ctx.restore(); }
   if (p.frz > 0) drawIce(p, r, s, t);
   if (p.confT > 0) {
     ctx.save(); ctx.strokeStyle = "#b28cff"; ctx.lineWidth = 3;
@@ -646,15 +721,17 @@ function drawPlayer(st, p, t, label) {
   if (p.emo && p.emoT > 0 && !muted[p.i]) {
     const a = Math.min(1, p.emoT * 3), pop = 1 + Math.max(0, p.emoT - 1.9) * 2;
     const ex = p.x + p.dir * r * 0.7, ey = p.y - r - 62;
+    const ec = cosById(p.emo), txt = ec?.kind === "emote" ? ec.label : null;
     ctx.save(); ctx.globalAlpha = a; ctx.translate(ex, ey); ctx.scale(pop, pop);
+    ctx.font = txt || p.emo.length > 2 ? "22px 'Lilita One', Impact" : "30px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'";
+    const bw = txt ? Math.max(68, ctx.measureText(txt).width + 28) : 68;
     ctx.fillStyle = "#fff"; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineJoin = "round";
-    roundRect(-34, -26, 68, 48, 18); ctx.fill(); ctx.stroke();
+    roundRect(-bw / 2, -26, bw, 48, 18); ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-p.dir * 4, 21); ctx.lineTo(-p.dir * 16, 36); ctx.lineTo(p.dir * 8, 21); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#fff"; ctx.fillRect(-p.dir * 6 - 6, 17, 16, 6);
-    ctx.font = p.emo.length > 2 ? "22px 'Lilita One', Impact" : "30px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    const ec = cosById(p.emo);
-    if (ec && ec.kind === "emote") { ctx.fillStyle = ec.col; ctx.beginPath(); ctx.arc(0, -2, 15, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = INK; ctx.font = "18px 'Lilita One', Impact"; ctx.fillText(String(ec.n), 0, -1); }
-    else { ctx.fillStyle = INK; ctx.fillText(ec ? ec.glyph : p.emo, 0, 0); }
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = INK;
+    if (txt && /^\p{Extended_Pictographic}/u.test(txt)) ctx.font = "30px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'";
+    ctx.fillText(txt || (ec ? ec.glyph : p.emo), 0, 0);
     ctx.restore();
   }
 }

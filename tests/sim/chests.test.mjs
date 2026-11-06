@@ -12,6 +12,12 @@ test("Inhalte: 40 Platzhalter (keine Hüte), IDs eindeutig, Kisten-Chancen gült
   assert.equal(K.COSMETICS.length, 40);
   assert.equal(new Set(K.COSMETICS.map(c => c.id)).size, 40);
   assert.ok(!K.COSMETICS.some(c => c.kind === "hat"));
+  // Trend-Emotes: jede Figur-Emote hat Animation, Text, Symbol; Emoji eindeutig und nicht schon frei
+  const em = K.COSMETICS.filter(c => c.kind === "emote"), ej = K.COSMETICS.filter(c => c.kind === "emoji");
+  assert.ok(em.every(c => c.fx && c.label && c.ic) && new Set(em.map(c => c.fx)).size === em.length);
+  assert.equal(new Set(ej.map(c => c.glyph)).size, ej.length);
+  assert.ok(!ej.some(c => C.EMOTES.includes(c.glyph)), "Emoji nicht doppelt zu den freien");
+  assert.ok(K.MASTERY_ITEMS.filter(c => c.kind === "emote").every(c => c.fx && c.label));
   for (const k of K.CHEST_TIERS) {
     const c = K.CHESTS[k], s = Object.values(c.cos.rar).reduce((a, b) => a + b, 0);
     assert.ok(Math.abs(s - 1) < 1e-9, k + ": Seltenheiten der Kosmetik = 100 %");

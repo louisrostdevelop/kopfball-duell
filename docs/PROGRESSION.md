@@ -33,6 +33,8 @@ Alles sind feste Varianten zum Freischalten und Ausrüsten, kein Editor.
 - 4 Emote-Plätze (Figur oder Emoji)
 - 1 Titel, 1 Rahmen
 
+**Emotes (Meme-Trends 2026, Platzhalter-Grafik):** Figur-Emotes: 6-7, Crashout, Stolz enttäuscht, Peak (selten), Ragebait, Unbothered, Mog (episch), Aura +1000 (legendär); die Meisterschafts-Emotes nutzen dieselben Animationen mit dem Namen des Kopfes. Emoji: 😭 💀 👀 🫠 🤯 🙃 (selten), 🧢 💅 🤫 🫡 (episch), 🗿 🐐 (legendär); 😂 🔥 😤 😎 🤡 GG hat jeder frei. Keine echten Personen, keine fremden Figuren oder Sounds, keine abwertenden Begriffe. Austauschen: nur `EMOTE_DEFS`/`EMOJI` in js/content/cosmetics.js und die Animation in render.js (`EMOTE_FX`).
+
 **Emotes im Spiel:** höchstens 1 alle 3 Sekunden. Den Gegner kann man mit einem Tipp stummschalten, das wird gespeichert.
 
 **Spieler-Karte vor dem Anpfiff** (Online und Ranked): Kopf mit Level, Titel, Rahmen, Liga. Was jeder ausgerüstet hat,

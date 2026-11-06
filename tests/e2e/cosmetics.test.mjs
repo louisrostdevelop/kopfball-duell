@@ -40,6 +40,11 @@ for (const [name, view] of [["Desktop", VIEW.desktop], ["Handy quer", VIEW.phone
   // Torexplosion zeichnen (alle Platzhalter-Varianten)
   await page.evaluate(async () => { const r = await import("/js/ui/render/render.js"); for (const n of [1, 2, 3, 4, 5, 6, 7, 8]) r.fx.burst("goal", 600, 300, { fx: "goalfx:" + n }); });
   await page.waitForTimeout(400);
+  // Alle Figur-Emotes zeichnen (auch das der Meisterschaft)
+  for (const id of ["emote:1", "emote:2", "emote:3", "emote:4", "emote:5", "emote:6", "emote:7", "emote:8", "emote:m-kalle"]) {
+    await page.evaluate(e => { const p = window.__kd.st.p[0]; p.emo = e; p.emoT = 1.5; }, id);
+    await page.waitForTimeout(120);
+  }
   assert.deepEqual(errors, []);
 });
 

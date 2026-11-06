@@ -10,7 +10,20 @@ export const OWN_KINDS = [...COS_KINDS, "title", "frame"];
 
 // Platzhalter-Farben und -Zeichen
 const PAL = ["#ff5a4f", "#ffd84a", "#4fd1ff", "#7fd17f", "#c8a2ff", "#ff9bd2", "#ff9f40", "#ffffff", "#3b3b58", "#2fd6b0", "#e8c170", "#9aa7ff"];
-const EMOJI = ["😂", "🔥", "😤", "😎", "🤡", "👏", "😱", "💪", "🙈", "👑", "⚽", "💤"];
+// Emoji (die freien 😂 🔥 😤 😎 🤡 GG hat jeder schon): 6 selten, 4 episch, 2 legendär
+const EMOJI = ["😭", "💀", "👀", "🫠", "🤯", "🙃", "🧢", "💅", "🤫", "🫡", "🗿", "🐐"];
+// Figur-Emotes nach Meme-Trends 2026 (Animation: render.js EMOTE_FX). fx = Animation, label = Text in der Sprechblase,
+// ic = Symbol in der Sammlung. Reihenfolge: 4 selten, 3 episch, 1 legendär
+export const EMOTE_DEFS = [
+  { fx: "67", label: "6-7", ic: "6-7" },
+  { fx: "crash", label: "CRASH OUT", ic: "💢" },
+  { fx: "nod", label: "👍", ic: "👍" },
+  { fx: "peak", label: "PEAK", ic: "⛰️" },
+  { fx: "bait", label: "RAGEBAIT", ic: "🎣" },
+  { fx: "unbothered", label: "…", ic: "🕶️" },
+  { fx: "mog", label: "MOG", ic: "📏" },
+  { fx: "aura", label: "+1000 AURA", ic: "✨" },
+];
 // Seltenheit je Art: so viele Selten / Episch / Legendär
 const MIX = { shoes: [5, 4, 3], goalfx: [3, 3, 2], emote: [4, 3, 1], emoji: [6, 4, 2] };
 // Preise im Shop (Münzen / Juwelen), Freischalt-Level im Shop
@@ -21,7 +34,9 @@ function make(kind) {
   return rar.map((rarity, i) => {
     const o = { id: `${kind}:${i + 1}`, kind, n: i + 1, rarity, col: PAL[i % PAL.length], v: i };
     if (kind === "emoji") o.glyph = EMOJI[i % EMOJI.length];
-    Object.defineProperty(o, "name", { get: () => t("cos.name", { kind: t("cos.kind." + kind), n: i + 1 }), enumerable: true });
+    if (kind === "emote") Object.assign(o, EMOTE_DEFS[i % EMOTE_DEFS.length]);
+    const name = () => (kind === "emote" ? t("emote." + o.fx) : kind === "emoji" ? t("cos.kind.emoji") + " " + o.glyph : t("cos.name", { kind: t("cos.kind." + kind), n: i + 1 }));
+    Object.defineProperty(o, "name", { get: name, enumerable: true });
     return o;
   });
 }
@@ -43,6 +58,7 @@ const masteryId = (kind, head) => (kind === "title:fan" ? `title:fan-${head}` : 
 export const MASTERY_ITEMS = CHARS.flatMap((c, hi) => MASTERY.map((m, si) => {
   const id = masteryId(m.item, c.id), kind = id.split(":")[0];
   const o = { id, kind, head: c.id, stage: si + 1, rarity: "legend", col: c.acc, v: hi, n: "M", mastery: true };
+  if (kind === "emote") Object.assign(o, EMOTE_DEFS[hi % EMOTE_DEFS.length], { label: c.name.toUpperCase(), ic: "★" });
   Object.defineProperty(o, "name", { get: () => (kind === "title" ? t(m.item === "title:fan" ? "mastery.titleFan" : "mastery.titleMaster", { name: c.name }) : t("mastery.item." + kind, { name: c.name })), enumerable: true });
   return o;
 }));
