@@ -1,6 +1,6 @@
 // Laufzeitzustand der App (Modus, aktuelles Spiel, Online-Puffer) und Abfragen darauf
 
-export const VERSION = 7;   // Online-Protokoll: 7 = mit Kosmetik und Emote-Plätzen (6: kompakte Zustände, schneller Kanal)
+export const VERSION = 8;   // Online-Protokoll: 8 = Meme-Supers (traurig, verliebt) (7: Kosmetik und Emote-Plätze, 6: kompakte Zustände)
 
 export const App = {
   mode: "demo", st: null, ai: [null, null], cfg: null, acc: 0, paused: false, endShown: false,

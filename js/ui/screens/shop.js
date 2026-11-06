@@ -36,7 +36,8 @@ export function shopScreen() {
     c.append(bb); db.append(c);
   }
   const g = $("shopGrid"); g.innerHTML = "";
-  const kind = shopTab, items = kind === "chars" ? CHARS : kind === "balls" ? BALLS : ARENAS;
+  const RANK = { basis: 0, selten: 1, episch: 2, legend: 3 };
+  const kind = shopTab, items = kind === "chars" ? [...CHARS].sort((p, q) => RANK[rarityOf(p)] - RANK[rarityOf(q)] || p.price - q.price) : kind === "balls" ? BALLS : ARENAS;
   items.forEach(it => {
     const d = document.createElement("div"); d.className = "sitem";
     const own = owns(kind, it.id), eq = (kind === "chars" ? S.char : kind === "balls" ? S.ball : S.arena) === it.id;

@@ -19,7 +19,9 @@ export function selectScreen(opts) {
   selCtx = { ...opts, pick: opts.cur || S.char };
   $("selTitle").textContent = opts.title;
   const grid = $("charGrid"); grid.innerHTML = "";
-  CHARS.forEach(c => {
+  // nach Seltenheit, dann Preis sortiert (mit 22 Köpfen sonst ein bunter Flickenteppich)
+  const RANK = { basis: 0, selten: 1, episch: 2, legend: 3 };
+  [...CHARS].sort((p, q) => RANK[rarityOf(p)] - RANK[rarityOf(q)] || p.price - q.price).forEach(c => {
     const b = document.createElement("button"); b.className = "ccard"; b.dataset.id = c.id;
     const locked = !owns("chars", c.id), rar = rarityOf(c);
     b.style.setProperty("--rc", RCOL[rar]);

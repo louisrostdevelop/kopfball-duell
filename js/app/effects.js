@@ -68,6 +68,13 @@ export function onEvent(e, remote) {
     case "puSpawn": snd("puSpawn"); break;
     case "freeze": fx.burst("freeze", e.x, e.y); snd("freeze"); break;
     case "burn": snd("burn"); fx.shake(9); break;
+    case "sad": snd("freeze"); fx.burst("text", e.x, e.y - 70, { text: t("fx.sad"), col: "#7fd0ff", size: 24 }); break;
+    case "blind": snd("zap"); fx.burst("pu", e.x, e.y, { col: "#ffe14d" }); fx.burst("text", e.x, e.y - 70, { text: t("fx.blind"), col: "#ffe14d", size: 24 }); break;
+    case "bass": snd("quake"); fx.shake(10); fx.burst("text", e.x, e.y - 70, { text: t("fx.bass"), col: "#5effc8", size: 24 }); break;
+    case "lag": snd("tick"); fx.burst("text", e.x, e.y - 70, { text: t("fx.lag"), col: "#ff3d6e", size: 26 }); break;
+    case "rug": snd("bump", 1.2); fx.burst("dust", e.x, G, { n: 10 }); fx.burst("text", e.x, e.y - 70, { text: t("fx.rug"), col: "#ff3d6e", size: 24 }); break;
+    case "charm": snd("emote"); fx.burst("text", e.x, e.y - 70, { text: t("fx.charm"), col: "#ff4f9a", size: 24 }); break;
+    case "drop": fx.burst("text", e.x, e.y - 50, { text: t("fx.drop"), col: "#5effc8", size: 22 }); break;
     case "stomp": fx.burst("stomp", e.x, e.y); snd(e.bomb ? "pound" : "stomp", e.bomb ? 1 : undefined); if (e.bomb) fx.shake(6 + 6 * e.k); fx.burst("text", e.x, e.y - 30, { text: e.bomb ? t("fx.bomb") : t("fx.boing"), col: e.bomb ? COL.gold : "#fff", size: 28 }); break;
     case "quake": fx.burst("quake", e.x, e.y); snd("quake"); fx.shake(22); break;
     case "save": snd("head"); fx.burst("text", e.x, e.y - 40, { text: t("fx.save"), col: "#8ef3ff", size: 28 }); fx.hype(0.4); break;

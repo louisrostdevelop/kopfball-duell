@@ -5,7 +5,7 @@ import { goal } from "./goal.js";
 import { kickVec } from "./kick.js";
 import { obsBall } from "./obstacles.js";
 import { baseBR, gMul, headStats, kickMul, maxBall, wgt } from "./rules.js";
-import { endFx, fxGravity, meteorImpact, superStep, touch } from "./supers.js";
+import { endFx, fxGravity, meteorImpact, stoneRoll, superStep, touch } from "./supers.js";
 import { bombBall, slideBall } from "./tricks.js";
 import { BG, KICK, bv, pv } from "./tuning.js";
 
@@ -61,8 +61,8 @@ export function ballPhysics(st, dt, postGoal) {
     if (imp > 140) b.vx *= roll; else b.vx *= 1 - (1 - roll) * KICK.rollFric * dt;
     if (Math.abs(b.vy) < 70) b.vy = 0;
     if (imp > 220) ev(st, { t: "bounce", x: b.x, y: G, v: imp });
-    if (b.fx === "meteor" && b.fxP === 2) { meteorImpact(st, b); }
-    if (b.fx && !["bouncy", "giant"].includes(b.fx)) endFx(st);
+    if ((b.fx === "meteor" || b.fx === "stone") && b.fxP === 2) { meteorImpact(st, b); if (b.fx === "stone") stoneRoll(st, b); }
+    if (b.fx && !["bouncy", "giant"].includes(b.fx) && !(b.fx === "stone" && b.fxP === 3)) endFx(st);
   }
   if (st.obs && st.obs.length) obsBall(st, b, dt);
   // Decke & Wände

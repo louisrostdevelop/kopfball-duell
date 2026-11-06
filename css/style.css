@@ -776,9 +776,11 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   #scr-rules .sheetfoot .btn.big { padding: 6px 18px 9px; font-size: 20px; }
   .rulesum { font-size: 12.5px; }
 
-  /* Köpfe: 6 x 2 Raster links, Details rechts */
-  .selgrid { grid-template-columns: 1fr 240px; gap: 10px; }
+  /* Köpfe: 6er-Raster links (scrollt in sich, seit es mehr als 12 Köpfe gibt), Details rechts */
+  #scr-select { display: flex; flex-direction: column; }
+  .selgrid { grid-template-columns: 1fr 240px; gap: 10px; flex: 1; min-height: 0; width: 100%; }
   .cardgrid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  #charGrid { min-height: 0; overflow-y: auto; padding: 8px 8px 8px 4px; }
   .ccard { padding: 4px 2px 5px; border-radius: 12px; gap: 0; }
   .ccard canvas { width: 54px !important; height: 54px !important; }
   .ccard b { font-size: 12px; margin-top: -2px; }
@@ -1204,7 +1206,7 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 .coin.big, .gem.big { transform: scale(1.8); margin: 14px; }
 .co-btns { display: flex; gap: 12px; }
 .cosic { --s: 56px; position: relative; display: grid; place-items: center; width: var(--s); height: var(--s); font-size: calc(var(--s) * .72); line-height: 1; }
-.cosic svg { width: 100%; height: 100%; }
+.cosic svg, .cosic canvas { width: 100%; height: 100%; }
 .cosic b.eic { background: #fff; color: var(--ink); border: 2px solid var(--ink); padding: 0 4px; font-size: 13px; white-space: nowrap; }
 .cosic b { position: absolute; right: -4px; bottom: -4px; min-width: 20px; height: 20px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 12px; display: grid; place-items: center; }
 .oddtab { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }

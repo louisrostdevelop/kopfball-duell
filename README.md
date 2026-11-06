@@ -6,7 +6,7 @@ Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy,
 
 ## Was drin ist
 
-- **12 Köpfe**, jeder mit eigenem Spezialschuss: Feuerball, Eisschuss, Donnerkeil, Rakete, Bananenflanke, Flummi, Geisterball, Riesenball, Tornado, Magnetschuss, Meteor, Dreifach.
+- **22 Köpfe**, jeder mit eigenem Spezialschuss: Feuerball, Eisschuss, Donnerkeil, Rakete, Bananenflanke, Flummi, Geisterball, Riesenball, Tornado, Magnetschuss, Meteor, Dreifach. Dazu 10 Meme- und Szene-Köpfe (Emo, Rapper, Raver, Gamer, NPC, Steinkopf, Krypto-Bro, Sigma, Kinn-Chad, Brezelini Kickerini) mit Sad-Ball, Flex-Ball, Bass-Drop, Aimbot, Copy-Paste, Steinschlag, Kryptoball, Ghosting, Rizz-Ball und Brezel-Looping.
 - **12 Power-ups**, die man mit dem Ball abschießt: Riesenkopf, Mini-Gegner, Einfrieren, Turbo, Sprungfeder, Feuerschuss, Torwand, Riesentor, Super voll, Verwirrung, Doppelsprung, Rückenwind. Alles bleibt abwehrbar.
 - **5 Arenen** mit eigener Physik: Flutlicht, Strand (Sand bremst), Neon City (schneller), Eishalle (rutschig), Mond (wenig Schwerkraft).
 - **10 Modi:** Schnelles Spiel (4 Stufen), Cup mit 3 Runden, Karriere (4 Ligen, 20 feste Gegner, bis zu 3 Sterne pro Spiel, Bonus pro Liga), Casual und Ranked (Gegnersuche, mit Server; in Ranked kommen Power-ups immer als Paar, eins pro Seite), mit Freunden per Link oder QR-Code, zu zweit an einem Gerät, Tages-Challenge, Endlos (Siege am Stück), Training gegen einen Torwart.
@@ -15,7 +15,7 @@ Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy,
 - **Schuss:** halten lädt auf, loslassen schießt. Voll geladen fliegt der Ball härter und höher. Sauber mit dem Fuß getroffen gibt am meisten Wumms, ein geladener Kopfball etwas weniger.
 - Golden Goal bei Gleichstand, Zeitlupe und Wiederholung nach jedem Tor, Emotes.
 - **Fortschritt:** Münzen, Level, Tagesbonus, tägliche Aufgaben, Angebot des Tages, Shop für Köpfe, Bälle und Arenen, 16 Erfolge. Wird im Browser gespeichert.
-- **Kisten:** bei jedem Level-Up (Bronze bis Legendär), für Tages- und Wochenaufgaben, Tages-Challenge, Erfolgs-Stufen, Karriere-Ligen, Kopf-Meisterschaft, Pass und Ranked-Saisonende, mit Köpfen und Kosmetik (vorerst Platzhalter), Chancen offen, Garantien, doppelte werden zu Splittern oder Kopf-XP. Nur erspielbar.
+- **Kisten:** bei jedem Level-Up (Bronze bis Legendär), für Tages- und Wochenaufgaben, Tages-Challenge, Erfolgs-Stufen, Karriere-Ligen, Kopf-Meisterschaft, Pass und Ranked-Saisonende, mit Köpfen und Kosmetik (10 Schuh-Skins, Rest vorerst Platzhalter), Chancen offen, Garantien, doppelte werden zu Splittern oder Kopf-XP. Nur erspielbar.
 - **Meisterschaft pro Kopf:** 5 Stufen mit Titel, Rahmen, eigenem Emote und eigener Torexplosion.
 - **Ausrüstung:** Schuhe, Torexplosion, Titel, Rahmen (sieht auch der Gegner), 4 Emote-Plätze (höchstens eins alle 3 s, Gegner stummschaltbar), Herstellen mit Splittern.
 - **Mit Server (optional):** Konto, Juwelen-Shop, Saison-Pass, Kopf-Level (bis +25 %), Bestenlisten, Freunde. Siehe [docs/BACKEND.md](docs/BACKEND.md).

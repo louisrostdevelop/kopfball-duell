@@ -8,10 +8,11 @@ const C = await import("../../js/content/config.js");
 const rng = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 const base = () => ({ owned: new Set(["head:kalle", "head:yuki", "head:bolt"]), heads: {}, pity: {} });
 
-test("Inhalte: 40 Platzhalter (keine Hüte), IDs eindeutig, Kisten-Chancen gültig", async () => {
-  assert.equal(K.COSMETICS.length, 40);
-  assert.equal(new Set(K.COSMETICS.map(c => c.id)).size, 40);
+test("Inhalte: 38 Gegenstände (10 Schuh-Skins, keine Hüte), IDs eindeutig, Kisten-Chancen gültig", async () => {
+  assert.equal(K.COSMETICS.length, 38);
+  assert.equal(new Set(K.COSMETICS.map(c => c.id)).size, 38);
   assert.ok(!K.COSMETICS.some(c => c.kind === "hat"));
+  assert.ok(K.COSMETICS.filter(c => c.kind === "shoes").every(c => c.skin));
   // Trend-Emotes: jede Figur-Emote hat Animation, Text, Symbol; Emoji eindeutig und nicht schon frei
   const em = K.COSMETICS.filter(c => c.kind === "emote"), ej = K.COSMETICS.filter(c => c.kind === "emoji");
   assert.ok(em.every(c => c.fx && c.label && c.ic) && new Set(em.map(c => c.fx)).size === em.length);
