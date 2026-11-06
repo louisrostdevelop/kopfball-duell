@@ -28,9 +28,12 @@ zeigt nur `api`.
 | Doppelte Buchungen | Anfrage-Schlüssel (gleiche Anfrage = gleiche Antwort), Webhook-Kennung eindeutig |
 | Negativer Kontostand | atomare Buchung mit Bedingung, Prüfung in der Tabelle, Buchungsjournal (`ledger`) |
 | Spam | Grenzen pro Spieler und Aktion (`rate_limits`) |
-| Bot-Farmen gegen den Computer | weiches Tageslimit 600 Münzen, harte Grenze 1500 (danach nichts mehr) |
-| Sieg-Absprachen in Ranked | mehr als 5 Spiele desselben Paars in 24 h zählen nicht |
-| Erfundene Ergebnisse | Plausibilitätsprüfung; Online zählt nur, wenn beide Seiten dasselbe melden |
+| Bot-Farmen gegen den Computer | Zeitkonto (gemeldete Spielzeit kann nicht schneller vergehen als echte, Vorrat 30 min), 80 belohnte Spiele pro Tag, Münz-Tageslimit weich 600 / hart 1500 |
+| Sieg-Absprachen online | mehr als 5 Spiele desselben Paars in 24 h bringen weder Wertung noch Münzen; 40 belohnte Online-Spiele pro Tag |
+| Erfundene Ergebnisse | Statistik muss zum Ergebnis passen, Training bringt nichts; Online zählt nur, wenn beide Seiten dasselbe melden und das Spiel lange genug lief |
+| Abhauen bei Rückstand | meldet nur eine Seite "Gegner weg", gewinnt sie nach 3 min (Wartung) |
+| Bestenlisten | Endlos-Rekord entsteht auf dem Server aus den gemeldeten Siegen in Folge, der Client kann nichts eintragen |
+| "Heute" | immer UTC (`game.today()`), unabhängig von der Zeitzone der Sitzung |
 | Käufe | nur per signiertem Stripe-Webhook, Preis aus der Datenbank, nie vom Client |
 
 ## Gemessen (Lasttest, 100 000 Spieler, 2 vCPU, 16 Verbindungen)
@@ -39,12 +42,14 @@ zeigt nur `api`.
 
 | Aufruf | Anfragen/s | vorher |
 |---|---|---|
-| `api.me()` (Start) | ~1600 | |
-| Spiel melden | ~840 | 760 |
-| Bestenliste Top 50 | ~2200 | |
-| Mein Rang | ~7000 | 65 |
-| Warteschlange (beitreten + suchen) | ~1600 | 1040 |
-| Wartung (alle 10 min) | 0,1 s | 216 s |
+| `api.me()` (Start) | ~1700 | |
+| Spiel melden | ~910 | 760 |
+| Bestenliste Top 50 | ~2500 | |
+| Mein Rang | ~9300 | 65 |
+| Warteschlange (beitreten + suchen) | ~2050 | 1040 |
+| Wartung (alle 10 min, löscht dabei 500 alte Gäste) | 0,5 s | 216 s |
+
+Einzelaufrufe: `me` 3,8 ms, Spiel melden 12 ms, Bestenliste Seite 1000 30 ms, Freunde 1,9 ms.
 
 Zum Vergleich: 1000 gleichzeitige Spieler erzeugen grob 20 bis 50 Anfragen pro Sekunde.
 Die kleinste Supabase-Instanz hat damit viel Luft.
@@ -63,8 +68,9 @@ Einmalig: [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/
    export SUPABASE_ACCESS_TOKEN=...  SUPABASE_DB_PASSWORD=...  SUPABASE_DB_URL='postgresql://postgres.<ref>:...@...:5432/postgres'
    bash supabase/ops/deploy.sh <ref>
    ```
-   Das spielt Migrationen, Katalog und die erste Saison ein und lädt die Edge Functions hoch. Das Skript lässt
-   sich beliebig oft wiederholen.
+   Das spielt Migrationen, Katalog und die erste Saison ein, überträgt die Einstellungen aus `config.toml`
+   (`supabase config push`: freigegebenes Schema nur `api`, Gast-Anmeldung, Passwortregeln) und lädt die
+   Edge Functions hoch. Das Skript lässt sich beliebig oft wiederholen.
 4. Im Dashboard einstellen (das geht nicht per Code):
    - **Authentication → Sign In / Providers**: *Allow anonymous sign-ins* an, *Allow manual linking* an
    - **Authentication → Attack Protection**: Captcha an (Cloudflare Turnstile, kostenlos). Ohne Captcha kann
@@ -103,6 +109,38 @@ SUPABASE_DB_URL=... BACKUP_PASSPHRASE=... bash supabase/ops/restore.sh backups/k
 
 Das läuft als eine Transaktion: entweder alles oder nichts. In ein Projekt, das schon Spieler hat, wird nicht
 eingespielt. `supabase/tests/20_ops.sh` prüft Sicherung und Wiederherstellung bei jedem Testlauf.
+
+## Konto löschen
+
+Spieler löschen ihr Konto selbst (Einstellungen → Konto → *Konto und Daten löschen*, Server: `api.delete_account('DELETE')`).
+Gelöscht werden das Konto und alle Spielerdaten. Käufe bleiben 10 Jahre (Aufbewahrungspflicht), aber ohne
+Verbindung zum Spieler. Die Löschung wird in `game.erasures` vermerkt; `restore.sh` löscht diese Konten nach dem
+Einspielen einer älteren Sicherung wieder.
+
+## Sicherheits-Review (November 2026)
+
+Ein Review mit Lasttest hat folgende Lücken gefunden. Jede behobene hat einen Test in `supabase/tests/05_review.sql`
+(oder `10_concurrency.sh`), der vorher gescheitert wäre.
+
+| Fund | Stand |
+|---|---|
+| C1 Tagesbonus und Tageslimits per Zeitzone der Sitzung zurücksetzbar | behoben (`game.today()`, UTC) |
+| H1 CPU-Spiele beliebig schnell meldbar, Training gab Belohnungen, Statistik ungeprüft | behoben (Zeitkonto, Tagesgrenze, Statistik-Prüfung) |
+| H2 Import alter Spielstände unbegrenzt wiederholbar | behoben (nur 24 h nach Kontoanlage, Münzen + Gegenstände gemeinsam gedeckelt) |
+| H3 Online-Absprachen brachten weiter Münzen | behoben (Paar-Grenze und Tagesgrenze sperren auch Belohnungen, Mindestdauer) |
+| H4 Wer bei Rückstand abhaut, verliert nie | behoben (einseitige Meldung wird nach 3 min gewertet) |
+| H5 Rückbuchung ließ ausgegebene Juwelen, Pass und Gegenstände | behoben (Juwelen-Schuld, Pass und Gegenstände entzogen, Konto markiert) |
+| M1–M3 Ränge falsch auf späteren Seiten, bei Gleichstand und nach Löschungen | behoben |
+| M4 Bestenlisten frei vom Client beschreibbar | behoben (Endlos nur aus Server-Daten) |
+| M5 Doppelter Pass-Kauf in zwei Tabs | behoben (Zeilensperre) |
+| M8 Projekt-Einstellungen nur von Hand | behoben (`config push` in `deploy.sh`) |
+| M9 Kein Konto-Löschen (DSGVO) | behoben |
+| Stripe: Betrag/Währung, Teil-Erstattungen, Idempotenz, CORS | behoben |
+| M6 Siege mit Zweitkonten verschieben | teilweise: nur die Paar-Grenze. Besser wäre eine Wertungsbremse für neue Konten |
+| M7 `ledger` und Anfrage-Tabellen wachsen unbegrenzt | offen: ab ~10 Mio. Zeilen nach Monat partitionieren |
+| Strafe für häufige Streitfälle | offen |
+| Erfolge, deren Fakten der Client meldet | teilweise: nur Plausibilität |
+| Sicherung enthält alle Spalten von `auth.users` | offen: auf die nötigen Spalten beschränken |
 
 ## Saisons
 

@@ -86,40 +86,40 @@ Netzcode (`app/netcode.js`, `adapters/net/peerjs.js`):
 ## Tests
 
 ```
-npm test            Spiellogik: 33 Referenzspiele, Edge-Case-Matrix, Profil/Adapter, Schichten-Regeln (~6 s)
-npm run test:e2e    Browser: Menü-Rundgang, Tastatur und Touch, Online mit zwei Tabs, Handy-Layout (~4 min)
+npm run lint        ESLint (streng, 0 Warnungen) und Stylelint
+npm test            Lint, dann Spiellogik: 33 Referenzspiele, Edge-Case-Matrix, Netzcode, Sprachen, Schichten-Regeln (~7 s)
+npm run test:e2e    Browser: Menü-Rundgang, Tastatur und Touch, Online mit zwei Tabs (auch bei schlechtem Netz), Handy-Layout, Englisch
+npm run test:db     Datenbank: Sicherheit, Wirtschaft, Online, Review-Funde, Gleichzeitigkeit, Sicherung
 npm run golden:update   Referenzspiele neu aufnehmen (nur bei gewollter Spieländerung, im Commit begründen)
 ```
 
 Die **Referenzspiele** (`tests/sim/golden.test.mjs`) sind das Sicherheitsnetz für Umbauten: 33 Spiele mit
 festem Zufall über alle Arenen, Hindernisse, Regeln und Modi. Ändert ein Umbau auch nur eine Nachkommastelle
-im Spielverlauf, schlägt der Test fehl. Die GitHub Action führt beide Testgruppen bei jedem Push aus.
+im Spielverlauf, schlägt der Test fehl. Die GitHub Actions führen Lint und Spiellogik, dann den Browser-Test aus; die Datenbank-Tests nur, wenn sich `supabase/` ändert.
 
 Werkzeuge fürs Balancing liegen in `tools/balance/` (Simulationen vieler Spiele mit Varianten).
 
-## Server-Anbindung (geplant: Supabase)
+## Sprachen (`js/content/i18n.js`)
 
-Was dafür schon vorbereitet ist:
+Kein Text steht fest im Code. Alles, was Spieler lesen, kommt aus den Wörterbüchern `js/content/i18n/de.js` und
+`en.js` (je ~710 Schlüssel: Inhalte oben, Oberfläche darunter, sortiert).
 
-- **Profil:** `adapters/storage/synced.js` hält das Profil lokal und gleicht es mit einem beliebigen
-  Server-Speicher ab (neuer gewinnt, Speichern gebündelt). Fehlt nur ein `ProfileStore` für Supabase.
-- **Spieler:** `ports/auth.js` beschreibt Gast und Konto. Heute ein lokaler Gast mit fester ID
-  (`adapters/auth/guest.js`). Supabase Auth hat anonyme Anmeldung, die sich später mit E-Mail oder
-  Google verknüpfen lässt. Die ID bleibt dabei gleich.
-- **Regeln für Belohnungen:** `core/economy.js` hat keine Abhängigkeit zum Browser und kann in einer
-  Supabase Edge Function laufen, damit Münzen und Bestenlisten nicht im Browser gefälscht werden können.
-- **Online:** `ports/transport.js`. Die Spieldaten bleiben direkt zwischen den Spielern (WebRTC),
-  Supabase Realtime kann den Verbindungsaufbau und die Lobby übernehmen.
+| Wo | Wie |
+|---|---|
+| JavaScript | `t("shop.gems", { n: 550 })` → „550 Juwelen“ / „550 Gems“. Werte dürfen Funktionen sein (Mehrzahl) |
+| HTML | `data-i18n="schlüssel"` für Text, `data-i18n-attr="aria-label:schlüssel;placeholder:schlüssel"` für Attribute; `applyI18n()` in `ui/dom.js` |
+| Inhalte (Köpfe, Arenen, Modi, Aufgaben) | Namen und Texte als Getter über `localize()`, die Daten selbst bleiben sprachfrei |
+| Zahlen und Preise | `num()` und `money()` mit dem Format der Sprache |
 
-Schritte für Supabase:
+Die Sprache wählt der Spieler in den Einstellungen (Auto, DE, EN); *Auto* nimmt die Browser-Sprache, sonst Englisch.
+Neue Sprache = neue Datei in `js/content/i18n/` mit denselben Schlüsseln und ein Eintrag in `i18n.js`.
 
-1. Projekt anlegen, Tabelle `profiles (id uuid primary key references auth.users, data jsonb, updated_at timestamptz)`
-   mit Row Level Security: jeder liest und schreibt nur seine eigene Zeile.
-2. `adapters/auth/supabase.js`: `signInAnonymously()`, Sitzung merken, `upgrade()` für E-Mail/Google.
-3. `adapters/storage/supabase.js`: `load()` liest `data`, `save(p)` schreibt `data` und `updated_at`.
-4. In `main.js`: `initProfile(syncedProfileStore(localProfileStore(), supabaseProfileStore(client)))`
-   und `provide({ auth: supabaseAuth(client) })`.
-5. Später: Edge Function für Spielende-Belohnungen und Bestenliste, Realtime-Kanal für Lobby und Matchmaking.
+`tests/sim/i18n.test.mjs` prüft bei jedem Lauf: beide Wörterbücher haben dieselben Schlüssel und Platzhalter,
+jeder benutzte Schlüssel existiert, im HTML hat jeder sichtbare Text einen Schlüssel, und in `js/ui`, `js/app`,
+`js/core` steht kein Text im Code (`tools/i18n-scan.mjs`; Ausnahmen mit `// i18n-ok`).
+
+Die Rechtstexte liegen auf Englisch in `legal/` (Datenschutz, Nutzungsbedingungen, Impressum) und sind aus den
+Einstellungen und dem Juwelen-Shop verlinkt.
 
 ## Bekannte nächste Schritte
 

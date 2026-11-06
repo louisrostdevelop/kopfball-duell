@@ -9,12 +9,14 @@ Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy,
 - **12 Köpfe**, jeder mit eigenem Spezialschuss: Feuerball, Eisschuss, Donnerkeil, Rakete, Bananenflanke, Flummi, Geisterball, Riesenball, Tornado, Magnetschuss, Meteor, Dreifach.
 - **12 Power-ups**, die man mit dem Ball abschießt: Riesenkopf, Mini-Gegner, Einfrieren, Turbo, Sprungfeder, Feuerschuss, Torwand, Riesentor, Super voll, Verwirrung, Doppelsprung, Rückenwind. Alles bleibt abwehrbar.
 - **5 Arenen** mit eigener Physik: Flutlicht, Strand (Sand bremst), Neon City (schneller), Eishalle (rutschig), Mond (wenig Schwerkraft).
-- **7 Modi:** Schnelles Spiel (4 Stufen), Cup mit 3 Runden, Online per Link oder QR-Code, zu zweit an einem Gerät, Tages-Challenge, Endlos (Siege am Stück), Training gegen einen Torwart.
+- **9 Modi:** Schnelles Spiel (4 Stufen), Cup mit 3 Runden, Casual und Ranked (Gegnersuche, mit Server), mit Freunden per Link oder QR-Code, zu zweit an einem Gerät, Tages-Challenge, Endlos (Siege am Stück), Training gegen einen Torwart.
 - **Eigene Regeln:** Schussstärke, Abprall, Ballgröße, Tore, Tempo, Sieg (Zeit oder Erster bis 3/5), unter „Mehr“ Schwerkraft, Boden, Power-ups, Spezialschüsse. Drei Vorlagen (Chaos, Mondfußball, Eisfläche) und bis zu fünf eigene Presets. Online stellt der Gastgeber die Regeln ein.
 - **Hindernisse:** pro Arena drei spiegelbildliche Layouts (Banden, Brücke, Treppe, Surfbretter, Welle, Wasserbälle, Flipper, Laser, Aufzug, Schollen, Eiszapfen, Gletscher, Asteroiden, Krater, Umlaufbahn) oder Zufall. Dazu Feldgröße Klein/Normal/Groß.
 - **Schuss:** halten lädt auf, loslassen schießt. Voll geladen fliegt der Ball härter und höher. Sauber mit dem Fuß getroffen gibt am meisten Wumms, ein geladener Kopfball etwas weniger.
 - Golden Goal bei Gleichstand, Zeitlupe und Wiederholung nach jedem Tor, Emotes.
 - **Fortschritt:** Münzen, Level, Tagesbonus, tägliche Aufgaben, Angebot des Tages, Shop für Köpfe, Bälle und Arenen, 16 Erfolge. Wird im Browser gespeichert.
+- **Mit Server (optional):** Konto, Juwelen-Shop, Saison-Pass, Kopf-Level (bis +25 %), Bestenlisten, Freunde. Siehe [docs/BACKEND.md](docs/BACKEND.md).
+- **Deutsch und Englisch**, umschaltbar in den Einstellungen.
 - Als App installierbar (Zum Home-Bildschirm hinzufügen), dann im Vollbild und offline spielbar.
 
 ## Steuerung
@@ -32,7 +34,7 @@ Emotes: Tasten 1 bis 6 oder der Smiley-Button oben links. Pause: Esc, P oder Sta
 
 ## Online
 
-„Online“ → „Raum erstellen“ → Link oder QR-Code schicken. Der Kumpel öffnet den Link und ist direkt in der Lobby. Läuft Peer-to-Peer über WebRTC ([PeerJS](https://peerjs.com/)): der Gastgeber rechnet die Physik, der Gast schickt seine Tasten und sieht seine eigene Figur sofort (Vorhersage), alles andere wird geglättet.
+„Online“ → „Raum erstellen“ → Link oder QR-Code schicken. Der Kumpel öffnet den Link und ist direkt in der Lobby. Läuft Peer-to-Peer über WebRTC ([PeerJS](https://peerjs.com/)): der Gastgeber rechnet die Physik, der Gast schickt seine Tasten und sieht seine eigene Figur sofort (Vorhersage), alles andere wird geglättet. Der Spielstand geht über einen eigenen, unzuverlässigen Kanal (kein Warten auf verlorene Pakete), kompakt kodiert (~6 KB/s).
 
 Manche Netze (Schule, Firma, manche Handynetze) blockieren direkte Verbindungen. Dann hilft meist ein anderes WLAN oder mobile Daten.
 

@@ -1,0 +1,18 @@
+/* Rechtliche Seiten (privacy, terms, imprint): schlicht, gut lesbar, hell und dunkel */
+:root { --bg: #f6f1e6; --card: #fffaf0; --ink: #1c1838; --muted: #5d5873; --line: #e2d7bf; --link: #1a3fc4; }
+@media (prefers-color-scheme: dark) { :root { --bg: #14122a; --card: #1e1b3a; --ink: #f3eedf; --muted: #b2adc8; --line: #34305a; --link: #8fb0ff; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 28px 0 8px; }
+h3 { font-size: 16px; margin: 18px 0 4px; }
+p, li { color: var(--ink); }
+.meta, .note { color: var(--muted); font-size: 14px; }
+.note { border-left: 3px solid var(--line); padding-left: 12px; }
+a { color: var(--link); }
+nav { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; font-size: 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.ph { background: #ffe27a; color: #1c1838; padding: 0 4px; border-radius: 4px; }
