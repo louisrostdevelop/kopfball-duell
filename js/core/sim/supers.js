@@ -103,7 +103,7 @@ export function fireSuper(st, p, kind) {
     case "stone": b.vx = 0; b.vy = -2300; b.fxTX = t.x; b.fxTY = G; break;
     case "crypto": b.vx = p.dir * 380; b.vy = -760; break;
     case "ghosting": aim(b, t.x, t.y, 1150); break;
-    case "rizz": aim(b, t.x, t.y - 60, 1000); st.p.forEach(o => { if (o.i !== p.i) o.charmT = Math.max(o.charmT || 0, 0.7); }); break;
+    case "rizz": aim(b, t.x, t.y - 60, 1000); break; // verliebt erst beim Abwehren (wie jeder Super: erst abwehrbar, dann Preis)
     case "brezel": b.vx = p.dir * 900; b.vy = -220; b.fxDX = p.dir; break;
   }
   st.hs = 0.12; st.slow = 0.25;

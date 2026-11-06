@@ -43,7 +43,7 @@ export default {
   "super.ghosting.name": "Ghosting",
   "super.ghosting.desc": "Meldet sich nicht: unsichtbar bis kurz vor dem Tor.",
   "super.rizz.name": "Rizz-Ball",
-  "super.rizz.desc": "Herzchen-Schlangenlinie. Der Gegner läuft verliebt hinterher.",
+  "super.rizz.desc": "Herzchen-Schlangenlinie. Wer abwehrt, läuft kurz verliebt hinterher.",
   "super.brezel.name": "Brezel-Looping",
   "super.brezel.desc": "Fliegt einen Looping und brennt dann ins Tor.",
   "arena.stadion.name": "Flutlicht",

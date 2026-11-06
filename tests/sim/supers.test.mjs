@@ -68,11 +68,12 @@ for (const id of MEME) {
   });
 }
 
-test("Rizz-Ball: Gegner läuft verliebt zum Ball, ohne etwas zu drücken", () => {
+test("Rizz-Ball: beim Abschuss behält der Gegner die Steuerung, verliebt läuft er dem Ball hinterher", () => {
   const st = setup("chad", 1200);
   P.fireSuper(st, st.p[0], "rizz");
+  assert.equal(st.p[1].charmT || 0, 0, "Abschuss allein nimmt keine Steuerung");
+  st.p[1].charmT = 0.6; // so wie nach dem Abwehren
   const x0 = st.p[1].x;
-  assert.ok(st.p[1].charmT > 0);
   run(st, 0.4);
   assert.ok(st.p[1].x < x0 - 40, `läuft Richtung Ball (${x0.toFixed(0)} -> ${st.p[1].x.toFixed(0)})`);
 });

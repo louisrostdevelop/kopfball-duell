@@ -42,7 +42,7 @@ export default {
   "super.ghosting.name": "Ghosting",
   "super.ghosting.desc": "Leaves you on read: invisible until just before the goal.",
   "super.rizz.name": "Rizz Ball",
-  "super.rizz.desc": "Heart-shaped wiggle. The opponent follows it, smitten.",
+  "super.rizz.desc": "Heart-shaped wiggle. Whoever blocks it follows it for a moment, smitten.",
   "super.brezel.name": "Pretzel Loop",
   "super.brezel.desc": "Flies a loop, then burns into the goal.",
   "arena.stadion.name": "Floodlight",
