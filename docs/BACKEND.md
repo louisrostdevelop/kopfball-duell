@@ -185,6 +185,16 @@ in der Datei.
 
 ## Zahlungen (Stripe)
 
+**Zum Start aus** (entschieden 06.11.2026). Schalter: `PAYMENTS` in `js/content/config.js`.
+
+- Aus heißt: kein Juwelen-Tab im Shop, keine Euro-Preise, kein Euro-Knopf beim Premium-Pass. `catalog.sql` stellt alle
+  Produkte auf inaktiv, `api.shop` liefert nichts, `create-checkout` lehnt jedes Produkt ab (`unknown_product`).
+- Juwelen gibt es weiter im Spiel (Pass, Erfolge, Kisten). Der Premium-Pass bleibt für Juwelen kaufbar.
+  Kein Gegenstand gab es nur gegen Echtgeld, es fällt also nichts weg.
+- Stripe-Schlüssel und Webhook müssen dafür nicht eingerichtet sein.
+- Einschalten: `PAYMENTS = true`, `npm run catalog`, `catalog.sql` einspielen, dazu die Schritte unten. Vorher
+  Widerrufsbelehrung, AGB und Umsatzsteuer klären.
+
 1. Stripe-Konto, dann in `supabase/.env.production` (nicht ins Repo):
    ```
    STRIPE_SECRET_KEY=sk_live_...

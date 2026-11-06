@@ -14,6 +14,14 @@ do $$
 declare u uuid; old_guest uuid; buyer_guest uuid; r jsonb;
 begin
   insert into auth.users (id, is_anonymous) values (gen_random_uuid(), false) returning id into u;
+  -- Echtgeld zum Start aus (PAYMENTS in js/content/config.js): Shop leer, create-checkout findet kein Produkt
+  perform set_config('request.jwt.claim.sub', u::text, true);
+  set local role authenticated;
+  r := api.shop();
+  reset role;
+  assert jsonb_array_length(r) = 0, 'Echtgeld aus: keine Produkte';
+  -- ab hier die Kauf-Abläufe wie mit eingeschaltetem Echtgeld
+  update game.products set active = true;
   set local role service_role;
   r := api.grant_purchase(u, 'stripe', 'cs_test_1', 'gems_550', 499, 'EUR');
   assert r ? 'purchase', 'Kauf gebucht';

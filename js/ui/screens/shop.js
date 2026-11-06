@@ -1,5 +1,5 @@
 // Shop: Köpfe, Bälle, Arenen, Angebot des Tages
-import { ARENAS, BALLS, charById, CHARS, gemPrice, gemsInEuro, RARITY, rarityOf, SUPERS } from "../../content/config.js";
+import { ARENAS, BALLS, charById, CHARS, gemPrice, gemsInEuro, PAYMENTS, RARITY, rarityOf, SUPERS } from "../../content/config.js";
 import { arenaInShop, buy, buyDeal, checkAch, deal, owns, S, save, seasonNow, shopLevel } from "../../app/profile.js";
 import { cosById, COS_PRICE } from "../../content/cosmetics.js";
 import { cosIcon } from "./chests.js";
@@ -19,7 +19,8 @@ export function setShopTab(tab) { shopTab = tab; shopScreen(); }
 
 export function shopScreen() {
   $$(".gemOnly").forEach(e => e.hidden = !serverOn());
-  if (shopTab === "gems" && !serverOn()) shopTab = "chars";
+  $$(".payOnly").forEach(e => e.hidden = !serverOn() || !PAYMENTS);   // Juwelen-Tab: nur mit Echtgeld
+  if (shopTab === "gems" && (!serverOn() || !PAYMENTS)) shopTab = "chars";
   $$("#shopTabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === shopTab));
   $$(".gemNum").forEach(e => e.textContent = S.gems || 0);
   if (shopTab === "gems") { gemShop(); return; }
@@ -63,7 +64,7 @@ export function shopScreen() {
       const gp = gemPrice(it), row = document.createElement("div"); row.className = "buy2";
       const bc = document.createElement("button"); bc.className = "btn yellow small"; bc.innerHTML = `<span class="coin"></span>${it.price}`; bc.disabled = S.coins < it.price;
       bc.onclick = () => { if (buy(kind, it.id, it.price)) { A.sfx("levelup"); equip(); unlockModal(it); checkAch({}); refreshTop(); shopScreen(); } };
-      const bg = document.createElement("button"); bg.className = "btn pink small"; bg.innerHTML = `<span class="gem"></span>${gp}`; bg.title = "≈ " + gemsInEuro(gp);
+      const bg = document.createElement("button"); bg.className = "btn pink small"; bg.innerHTML = `<span class="gem"></span>${gp}`; if (PAYMENTS) bg.title = "≈ " + gemsInEuro(gp);
       bg.disabled = (S.gems || 0) < gp;
       bg.onclick = async () => {
         bg.disabled = true;
@@ -71,7 +72,7 @@ export function shopScreen() {
         catch (_) { toast(t("shop.buyFailed"), "i-close"); bg.disabled = false; }
       };
       row.append(bc, bg); d.append(row);
-      d.insertAdjacentHTML("beforeend", `<small class="euro">≈ ${gemsInEuro(gp)}</small>`);
+      if (PAYMENTS) d.insertAdjacentHTML("beforeend", `<small class="euro">≈ ${gemsInEuro(gp)}</small>`);
       g.append(d); return;
     }
     else { btn.className = "btn yellow small"; btn.innerHTML = `<span class="coin"></span>${it.price}`; btn.disabled = S.coins < it.price; btn.onclick = () => { if (buy(kind, it.id, it.price)) { A.sfx("levelup"); equip(); if (kind === "chars") unlockModal(it); else toast(t("shop.bought", { name: it.name }), kind === "balls" ? "i-ball" : "i-stadium", true); checkAch({}); refreshTop(); shopScreen(); } }; }
@@ -146,7 +147,7 @@ function cosShop() {
       };
       const bc = document.createElement("button"); bc.className = "btn yellow small"; bc.innerHTML = `<span class="coin"></span>${pr.coins}`; bc.disabled = S.coins < pr.coins; bc.onclick = () => go("coins", bc);
       row.append(bc);
-      if (serverOn()) { const bg = document.createElement("button"); bg.className = "btn pink small"; bg.innerHTML = `<span class="gem"></span>${pr.gems}`; bg.title = "≈ " + gemsInEuro(pr.gems); bg.disabled = (S.gems || 0) < pr.gems; bg.onclick = () => go("gems", bg); row.append(bg); }
+      if (serverOn()) { const bg = document.createElement("button"); bg.className = "btn pink small"; bg.innerHTML = `<span class="gem"></span>${pr.gems}`; if (PAYMENTS) bg.title = "≈ " + gemsInEuro(pr.gems); bg.disabled = (S.gems || 0) < pr.gems; bg.onclick = () => go("gems", bg); row.append(bg); }
       d.append(row);
     }
     g.append(d);

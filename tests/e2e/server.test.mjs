@@ -119,12 +119,22 @@ test("Saison-Pass abholen, Kopf aufwerten, Casual/Ranked in der Modus-Auswahl", 
   assert.ok(await page.locator("#modeGrid .mcard.locked", { hasText: "Ranked" }).count() === 1, "Ranked gesperrt für Gäste");
   await click(page, "#scr-modes [data-back]");
 
+  // Echtgeld zum Start aus (PAYMENTS): kein Juwelen-Tab, keine Euro-Preise, die Juwelen-Anzeige führt zu den Köpfen
+  await click(page, "#homeGems", 400);
+  assert.equal(await page.locator('#shopTabs [data-tab="gems"]').isVisible(), false, "kein Juwelen-Tab");
+  assert.equal(await page.locator('#shopTabs [data-tab="chars"].on').count(), 1, "Köpfe offen");
+  assert.ok(await page.locator("#shopGrid .btn.pink").count() > 0, "Köpfe für Juwelen kaufbar");
+  assert.doesNotMatch(await page.textContent("#scr-shop"), /€/, "keine Euro-Preise");
+  assert.deepEqual(await page.evaluate(async () => (await (await import("/js/app/services.js")).server.shop())), [], "Server: keine Produkte");
+  await click(page, "#scr-shop [data-back]");
+
   // Pass: drei Stufen erreicht, Gratis abholen, Premium mit Juwelen
   await click(page, "#navTasks", 300);
   assert.equal(await page.textContent("#passBadge"), "3");
   await click(page, "#btnPass", 400);
   await click(page, ".ptier:nth-child(1) .pt-cell.free .btn.yellow", 600);
   assert.equal((await db("select claimed_free from game.pass_progress where player_id = $1", [id]))[0].claimed_free, "1");
+  assert.equal(await page.locator(".pt-premium .btn.green").count(), 0, "Premium nicht für Euro");
   await click(page, ".pt-premium .btn.pink", 800);
   assert.ok((await db("select premium from game.pass_progress where player_id = $1", [id]))[0].premium, "Premium gekauft");
   await click(page, ".ptier:nth-child(1) .pt-cell.prem .btn.yellow", 600);

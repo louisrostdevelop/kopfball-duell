@@ -183,7 +183,12 @@ export function leveledStats(c, lvl) {
 }
 export const GEM_PRICE = { basis: null, selten: 450, episch: 700, legend: 900 };
 export const gemPrice = c => GEM_PRICE[rarityOf(c)];
-// Euro-Wert von Juwelen, immer neben Juwelen-Preisen angezeigt (Basis: kleinstes Paket, 100 Juwelen = 0,99 €)
+// Echtgeld-Käufe (Juwelen-Pakete, Starter-Paket, Premium-Pass für Euro). Aus: kein Juwelen-Tab, keine Euro-Preise,
+// der Server-Katalog (tools/gen-catalog.mjs) stellt alle Produkte auf inaktiv, dann lehnt auch create-checkout ab.
+// Juwelen gibt es weiter im Spiel (Pass, Erfolge, Kisten), der Premium-Pass bleibt für Juwelen kaufbar.
+// Zum Start aus (entschieden 06.11.2026), später einschalten: hier true, Katalog neu erzeugen und einspielen.
+export const PAYMENTS = false;
+// Euro-Wert von Juwelen, bei Echtgeld immer neben Juwelen-Preisen angezeigt (Basis: kleinstes Paket, 100 Juwelen = 0,99 €)
 export const gemsInEuro = n => money(Math.round(n * 0.99));
 
 // Spielmodi (Reihenfolge = Reihenfolge der Karten)

@@ -1,5 +1,5 @@
 // Startseite mit Bühne (jonglierender Kopf), Tageskarten und Kopfzeile
-import { charById, CHARS, DIFFS, MODES, RARITY, rarityOf, SUPERS } from "../../content/config.js";
+import { charById, CHARS, DIFFS, MODES, PAYMENTS, RARITY, rarityOf, SUPERS } from "../../content/config.js";
 import { MAX_STARS, totalStars } from "../../core/career.js";
 import { online as serverOn, passView } from "../../app/account.js";
 import { matchLen } from "../../core/physics.js";
@@ -144,5 +144,5 @@ export function initHome() {
   $("btnProfile").onclick = () => { A.sfx("click"); showScreen("ach"); };
   $("btnSettings").onclick = () => { A.sfx("click"); showScreen("settings"); };
   $("homeCoins").onclick = () => { A.sfx("click"); showScreen("shop"); };
-  $("homeGems").onclick = () => { A.sfx("click"); setShopTab("gems"); showScreen("shop"); };
+  $("homeGems").onclick = () => { A.sfx("click"); setShopTab(PAYMENTS ? "gems" : "chars"); showScreen("shop"); };
 }

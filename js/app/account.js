@@ -2,6 +2,7 @@
 // Level, Besitz). Das Spiel rechnet weiter lokal vor (sofortige Anzeige) und übernimmt danach die Zahlen vom Server.
 // Ohne Server passiert hier nichts, das Spiel läuft lokal wie bisher.
 import { applyChestItems, buyCosLocal, craftLocal, openChestLocal, S, save, setHooks } from "./profile.js";
+import { PAYMENTS } from "../content/config.js";
 import { cosOffer, weekOf } from "../core/economy.js";
 import { OWN_KINDS } from "../content/cosmetics.js";
 import { has, server } from "./services.js";
@@ -156,7 +157,7 @@ export async function buyCos(id, currency = "coins") {
 /** Echtgeld-Produkte vom Server (mit "buyable" für diesen Spieler) */
 export const shopProducts = () => server.shop();
 /** Zur Bezahlseite (Stripe). Kommt mit ?kauf=ok oder ?kauf=abgebrochen zurück. */
-export async function startCheckout(product) { location.href = await server.checkout(product, lang()); }
+export async function startCheckout(product) { if (!PAYMENTS) throw new Error("payments off"); location.href = await server.checkout(product, lang()); }
 /** Nach der Rückkehr von der Bezahlseite: ein paar Mal nachsehen, bis die Juwelen da sind */
 export async function awaitPurchase(before, tries = 10) {
   for (let i = 0; i < tries; i++) {

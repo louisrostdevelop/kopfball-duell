@@ -5,7 +5,7 @@
 // tests/sim/catalog.test.mjs prüft, dass sie aktuell ist. Auf dem Server einspielen: siehe docs/BACKEND.md.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE, SHOP_LEVEL } from "../js/content/config.js";
+import { CHARS, BALLS, ARENAS, ACHIEVEMENTS, rarityOf, GEM_PRICE, SHOP_LEVEL, PAYMENTS } from "../js/content/config.js";
 import { TASKS, WEEKLY } from "../js/core/economy.js";
 import { CAREER } from "../js/content/career.js";
 import { CHESTS, CHEST_TIERS, COSMETICS, COS_PRICE, FRAMES, HEAD_DUP_XP, MASTERY, MASTERY_ITEMS, PITY, SHARDS } from "../js/content/cosmetics.js";
@@ -46,9 +46,10 @@ export function catalogSql() {
   L.push("on conflict (id) do update set kind = excluded.kind, rarity = excluded.rarity, price_coins = excluded.price_coins, price_gems = excluded.price_gems, meta = excluded.meta, active = true;");
   // Was es nicht mehr gibt (z. B. entfernte Kosmetik): nicht löschen (Besitz bleibt), aber nicht mehr aus Kisten oder Shop
   L.push(`update game.items set active = false where id not in (${items.map(i => q(i.id)).join(", ")});`);
-  L.push("insert into game.products (id, gems, items, price_cents, once_per_player) values");
-  L.push(PRODUCTS.map(p => `  (${q(p.id)}, ${p.gems}, ${arr(p.items || [])}, ${p.price}, ${p.once ? "true" : "false"})`).join(",\n"));
-  L.push("on conflict (id) do update set gems = excluded.gems, items = excluded.items, price_cents = excluded.price_cents, once_per_player = excluded.once_per_player, active = true;");
+  L.push(`-- Echtgeld ${PAYMENTS ? "an" : "aus"} (PAYMENTS in js/content/config.js)`);
+  L.push("insert into game.products (id, gems, items, price_cents, once_per_player, active) values");
+  L.push(PRODUCTS.map(p => `  (${q(p.id)}, ${p.gems}, ${arr(p.items || [])}, ${p.price}, ${p.once ? "true" : "false"}, ${PAYMENTS ? "true" : "false"})`).join(",\n"));
+  L.push("on conflict (id) do update set gems = excluded.gems, items = excluded.items, price_cents = excluded.price_cents, once_per_player = excluded.once_per_player, active = excluded.active;");
   L.push("insert into game.task_defs (id, goals, reward) values");
   L.push(TASKS.map(t => `  (${q(t.id)}, array[${t.n.join(", ")}], ${t.reward})`).join(",\n"));
   L.push("on conflict (id) do update set goals = excluded.goals, reward = excluded.reward, active = true;");

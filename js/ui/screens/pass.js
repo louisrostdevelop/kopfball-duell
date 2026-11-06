@@ -1,5 +1,5 @@
 // Saison-Pass (nur mit Server): Punkte aus Spielen, Stufen mit Gratis- und Premium-Belohnung
-import { arenaById, BALLS, charById, gemsInEuro } from "../../content/config.js";
+import { arenaById, BALLS, charById, gemsInEuro, PAYMENTS } from "../../content/config.js";
 import { S } from "../../app/profile.js";
 import { buyPassWithGems, claimPass, online as serverOn, passView, PASS_GEMS, shopProducts, startCheckout } from "../../app/account.js";
 import { avatarCanvas } from "../render/art.js";
@@ -41,11 +41,11 @@ export function passScreen() {
   if (!v.premium) {
     const box = document.createElement("div"); box.className = "pt-premium";
     box.innerHTML = `<span>${svg("i-crown")}<b>${t("pass.premium")}</b><small>${t("pass.premiumSub")}</small></span>`;
-    const bg = document.createElement("button"); bg.className = "btn small pink"; bg.innerHTML = `<span class="gem"></span>${PASS_GEMS}`; bg.title = "≈ " + gemsInEuro(PASS_GEMS);
+    const bg = document.createElement("button"); bg.className = "btn small pink"; bg.innerHTML = `<span class="gem"></span>${PASS_GEMS}`; if (PAYMENTS) bg.title = "≈ " + gemsInEuro(PASS_GEMS);
     bg.disabled = (S.gems || 0) < PASS_GEMS;
     bg.onclick = async () => { bg.disabled = true; try { await buyPassWithGems(); A.sfx("levelup"); toast(t("pass.premiumOn"), "i-crown", true); refreshTop(); passScreen(); } catch (_) { toast(t("shop.buyFailed"), "i-close"); bg.disabled = false; } };
     box.append(bg);
-    shopProducts().then(list => {
+    if (PAYMENTS) shopProducts().then(list => {
       const p = list.find(x => x.id === "premium_pass"); if (!p || !p.buyable) return;
       const be = document.createElement("button"); be.className = "btn small green"; be.textContent = euro(p.priceCents);
       be.onclick = () => { be.disabled = true; startCheckout(p.id).catch(() => { toast(t("shop.checkoutDown"), "i-close"); be.disabled = false; }); };
