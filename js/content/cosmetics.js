@@ -3,7 +3,7 @@
 // (EMOTE_DEFS, GOALFX_DEFS). Rahmen und Meisterschafts-Inhalte sind noch PLATZHALTER; echte Inhalte ersetzen nur die
 // Listen (gleiche Felder). Kisten-Tabellen gelten auch auf dem Server (supabase/catalog.sql).
 import { t } from "./i18n.js";
-import { CHARS } from "./config.js";
+import { CHARS, SUPERS } from "./config.js";
 
 /** Arten in Reihenfolge der Sammlung (aus Kisten); OWN_KINDS: alles, was man besitzen kann (dazu Titel, Rahmen) */
 export const COS_KINDS = ["shoes", "goalfx", "emote", "emoji"];
@@ -97,11 +97,35 @@ export const MASTERY_ITEMS = CHARS.flatMap((c, hi) => MASTERY.map((m, si) => {
   const o = { id, kind, head: c.id, stage: si + 1, rarity: "legend", col: c.acc, v: hi, n: "M", mastery: true };
   if (kind === "emote") Object.assign(o, EMOTE_DEFS[hi % EMOTE_DEFS.length], { label: c.name.toUpperCase(), ic: "★" });
   if (kind === "goalfx") Object.assign(o, { fx: "mastery", ic: "★" }); // Szene pro Kopf: goalfx.js HEAD_FX
+  // Meister-Rahmen: Ring in der Kopffarbe, Edelstein in der Farbe seines Supers (js/ui/render/frames.js)
+  if (kind === "frame") Object.assign(o, { style: "mastery", badge: SUPERS[c.super].col });
   Object.defineProperty(o, "name", { get: () => (kind === "title" ? t(m.item === "title:fan" ? "mastery.titleFan" : "mastery.titleMaster", { name: c.name }) : t("mastery.item." + kind, { name: c.name })), enumerable: true });
   return o;
 }));
 export const masteryReward = (head, stage) => masteryId(MASTERY[stage - 1].item, head);
-const ALL = [...COSMETICS, ...MASTERY_ITEMS];
+
+// ---------- Rahmen aus Erfolgen, Pass und Liga: nicht aus Kisten, nicht herstellbar ----------
+// style = Zeichnung in js/ui/render/frames.js. src: ach = Siege-Erfolge (ACHIEVEMENTS.item), pass = Pass-Stufe
+// (supabase/ops/new-season.sql), league = Ranked-Saisonende nach Liga (game.maintenance)
+export const LEAGUE_IDS = ["bronze", "silver", "gold", "platinum", "diamond", "legend"];
+const LEAGUE_COL = ["#c47a3f", "#c9d2e3", "#ffcb2b", "#9ef0ea", "#8cc2ff", "#b98cff"];
+export const FRAMES = [
+  { id: "frame:medal-bronze", style: "medal", metal: "bronze", rarity: "selten", src: "ach", col: "#c47a3f" },
+  { id: "frame:medal-silver", style: "medal", metal: "silver", rarity: "episch", src: "ach", col: "#c9d2e3" },
+  { id: "frame:medal-gold",   style: "medal", metal: "gold",   rarity: "legend", src: "ach", col: "#ffcb2b" },
+  { id: "frame:pass-flood",   style: "flood", rarity: "episch", src: "pass", col: "#3a4470" },
+  { id: "frame:pass-neon",    style: "neon",  rarity: "episch", src: "pass", col: "#ff4fd8" },
+  { id: "frame:pass-turf",    style: "turf",  rarity: "episch", src: "pass", col: "#2fc463" },
+  { id: "frame:pass-net",     style: "net",   rarity: "episch", src: "pass", col: "#e9eef8" },
+  { id: "frame:pass-flame",   style: "flame", rarity: "legend", src: "pass", col: "#ff8a1c" },
+  { id: "frame:pass-pixel",   style: "pixel", rarity: "legend", src: "pass", col: "#22d3ee" },
+  ...LEAGUE_IDS.map((l, i) => ({ id: `frame:league-${l}`, style: "league", league: l, rarity: i < 3 ? "episch" : "legend", src: "league", col: LEAGUE_COL[i] })),
+].map(f => {
+  const o = { ...f, kind: "frame" };
+  Object.defineProperty(o, "name", { get: () => t("frame." + f.id.slice(6)), enumerable: true });
+  return o;
+});
+const ALL = [...COSMETICS, ...MASTERY_ITEMS, ...FRAMES];
 export const cosById = id => ALL.find(c => c.id === id);
 
 // ---------- Kisten ----------

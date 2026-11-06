@@ -127,6 +127,10 @@ begin
       from game.ratings r where r.season_id = se and r.games >= 5
     on conflict (player_id, source, ref) do nothing;
     get diagnostics g = row_count; f := f + g;
+    -- dazu der Rahmen der erreichten Liga (Grenzen wie LEAGUES in js/app/matchmaking.js)
+    perform game.give_item(r.player_id, 'frame:league-' || case when r.mmr >= 2000 then 'legend' when r.mmr >= 1700 then 'diamond' when r.mmr >= 1450 then 'platinum'
+                                                              when r.mmr >= 1250 then 'gold' when r.mmr >= 1100 then 'silver' else 'bronze' end, 'season')
+      from game.ratings r where r.season_id = se and r.games >= 5;
     update game.seasons set rewarded_at = now() where id = se;
   end loop;
   return jsonb_build_object('queue', a, 'oneSided', b, 'void', c, 'requests', d, 'guests', e, 'seasonChests', f);

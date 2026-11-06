@@ -322,6 +322,7 @@ create table if not exists game.achievement_defs (
   goal integer
 );
 alter table game.achievement_defs add column if not exists chest text;   -- Kiste für die Erfolgs-Stufe
+alter table game.achievement_defs add column if not exists item text;    -- Gegenstand (z. B. Medaillen-Rahmen)
 
 -- Wörter, die in Namen nicht vorkommen dürfen
 create table if not exists game.banned_words (word text primary key);

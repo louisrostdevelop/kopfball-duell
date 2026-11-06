@@ -153,6 +153,7 @@ begin
       ach := ach || jsonb_build_object(a.id, now());
       perform game.book(p, 'coins', a.reward, 'achievement', a.id);
       if a.chest is not null then perform game.grant_chest(p, a.chest, 'ach', a.id); end if;
+      if a.item is not null then perform game.give_item(p, a.item, 'ach'); end if;
       got := got || to_jsonb(a.id);
     end if;
   end loop;

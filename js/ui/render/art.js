@@ -4,6 +4,7 @@ import { cosById } from "../../content/cosmetics.js";
 import { INK, TAU, circ, shade, stroke } from "./paint.js";
 import { MEME_STYLES, drawMemeHead } from "./meme-heads.js";
 import { drawShoeSkin } from "./shoes.js";
+import { drawFrame } from "./frames.js";
 export { shade };
 
 // o: { dir, look (Winkel), mood, blink, effort, frozen, t }
@@ -356,12 +357,27 @@ export function shoeCanvas(skin, px) {
   return c;
 }
 
-// Kleines Avatar-Bild für Menüs
+// Kleines Avatar-Bild für Menüs. opts.frame: Rahmen (ID), opts.live: Rahmen animiert, solange das Bild im Dokument
+// hängt (nur für ein großes Bild gleichzeitig, die Leucht-Effekte sind teuer)
 export function avatarCanvas(chId, px, opts = {}) {
   const c = document.createElement("canvas");
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   c.width = c.height = Math.round(px * dpr); c.style.width = c.style.height = px + "px";
   const x = c.getContext("2d"); x.scale(dpr, dpr);
-  drawHead(x, chId, px / 2, px * 0.56, px * 0.3, { dir: opts.dir || 1, mood: opts.mood || "", look: opts.look });
+  const fr = opts.frame ? cosById(opts.frame) : null, dir = opts.dir || 1;
+  // mit Rahmen kleiner, damit Flügel, Krone und Strahlen ins Bild passen
+  const r = px * (fr ? 0.2 : 0.3), cy = px * (fr ? 0.53 : 0.56);
+  const paint = t => {
+    x.clearRect(0, 0, px, px);
+    if (fr) drawFrame(x, fr, px / 2, cy, r * 1.13, t, "back");
+    drawHead(x, chId, px / 2, cy, r, { dir, mood: opts.mood || "", look: opts.look, t });
+    if (fr) drawFrame(x, fr, px / 2, cy, r * 1.13, t, "front");
+  };
+  if (fr && opts.live) {
+    let seen = false;
+    const loop = ms => { if (c.isConnected) seen = true; else if (seen) return; paint(ms / 1000); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+  paint(fr ? 1.3 : undefined);
   return c;
 }

@@ -140,7 +140,7 @@ export const ACHIEVEMENTS = [
   { id: "powerups",  reward: 100, goal: 25, stat: "pus", series: "pus", tier: 1, chest: "bronze" },
   { id: "goals50",   reward: 200, goal: 50, stat: "goals", series: "goals", tier: 1, chest: "bronze" },
   { id: "stomp",     reward: 80, goal: 10, stat: "stomps", series: "stomp", tier: 1, chest: "bronze" },
-  { id: "wins25",    reward: 300, goal: 25, stat: "wins", series: "wins", tier: 1, chest: "bronze" },
+  { id: "wins25",    reward: 300, goal: 25, stat: "wins", series: "wins", tier: 1, chest: "bronze", item: "frame:medal-bronze" },
   // Stufen 2 und 3 (Kiste je Stufe, docs/PROGRESSION.md)
   { id: "header100", reward: 250, goal: 100, stat: "headGoals", series: "header", tier: 2, chest: "silver" },
   { id: "header500", reward: 500, goal: 500, stat: "headGoals", series: "header", tier: 3, chest: "gold" },
@@ -150,8 +150,8 @@ export const ACHIEVEMENTS = [
   { id: "goals2000", reward: 800, goal: 2000, stat: "goals", series: "goals", tier: 3, chest: "gold" },
   { id: "stomp50",   reward: 200, goal: 50, stat: "stomps", series: "stomp", tier: 2, chest: "silver" },
   { id: "stomp200",  reward: 400, goal: 200, stat: "stomps", series: "stomp", tier: 3, chest: "gold" },
-  { id: "wins250",   reward: 600, goal: 250, stat: "wins", series: "wins", tier: 2, chest: "silver" },
-  { id: "wins1000",  reward: 1000, goal: 1000, stat: "wins", series: "wins", tier: 3, chest: "gold" },
+  { id: "wins250",   reward: 600, goal: 250, stat: "wins", series: "wins", tier: 2, chest: "silver", item: "frame:medal-silver" },
+  { id: "wins1000",  reward: 1000, goal: 1000, stat: "wins", series: "wins", tier: 3, chest: "gold", item: "frame:medal-gold" },
 ];
 
 export const EMOTES = ["😂", "🔥", "😤", "😎", "🤡", "GG"];

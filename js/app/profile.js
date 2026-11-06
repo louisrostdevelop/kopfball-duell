@@ -135,7 +135,9 @@ export function checkAch(ctx) {
   const got = [];
   for (const id of earnedAchievements(ctx, S, ACHIEVEMENTS)) {
     if (S.ach[id]) continue;
-    S.ach[id] = Date.now(); const a = ACHIEVEMENTS.find(x => x.id === id); addCoins(a.reward); if (a.chest) grantChest(a.chest, "ach", a.id); got.push(a);
+    S.ach[id] = Date.now(); const a = ACHIEVEMENTS.find(x => x.id === id); addCoins(a.reward); if (a.chest) grantChest(a.chest, "ach", a.id);
+    if (a.item && !S.cos.includes(a.item)) S.cos.push(a.item);
+    got.push(a);
   }
   save();
   return got;

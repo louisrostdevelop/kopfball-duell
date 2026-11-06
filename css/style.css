@@ -1321,7 +1321,6 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 .mastery small { font-weight: 800; opacity: .75; font-size: 13px; }
 .titletag { display: inline-block; padding: 3px 10px; border-radius: 10px; background: var(--ink); color: #ffe27a; font-family: var(--display); font-size: 14px; }
 .titletag:empty { display: none; }
-canvas.framed { border-radius: 50%; box-shadow: 0 0 0 5px var(--fc), 0 0 0 8px var(--ink); }
 
 @media (max-height: 520px) and (orientation: landscape) { .mastery { padding: 4px 8px; gap: 2px; } .ms-top b { font-size: 14px; } .ms-dots i { width: 18px; height: 18px; font-size: 10px; } .mastery small { font-size: 11px; } }
 
