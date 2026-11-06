@@ -1,0 +1,39 @@
+# Seite veröffentlichen (headstars.app). Pushes über eine App-Anmeldung starten keinen klassischen Pages-Build,
+# deshalb ein eigener Workflow. Einmalig nötig: Settings → Pages → Source „GitHub Actions“.
+# Veröffentlicht wird nur, was der Browser braucht (keine Tests, Werkzeuge, Server-Dateien, Doku).
+name: Seite
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "tests/**", "supabase/**", "tools/**", ".github/workflows/tests.yml", ".github/workflows/db.yml", ".github/workflows/supabase.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Veröffentlichen
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seite zusammenstellen
+        run: |
+          mkdir _site
+          cp -r index.html sw.js manifest.webmanifest og.jpg CNAME LICENSE js css fonts icons vendor legal audio _site/
+          touch _site/.nojekyll
+          du -sh _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
