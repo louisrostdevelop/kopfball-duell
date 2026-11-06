@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { seedRandom } from "../lib/rng.mjs";
 const P = await import("../../js/core/physics.js");
 const AI = await import("../../js/core/ai.js");
-const { encodeState, decodeState, makeClock } = await import("../../js/app/netcode.js");
+const { encodeState, decodeState, makeClock, pingStats, pingBars, netTooBad, NET_CHECK } = await import("../../js/app/netcode.js");
 const { packState } = await import("../../js/app/online.js");
 
 function near(a, b, path) {
@@ -46,4 +46,17 @@ test("Empfangszeitplan: ruhiges Netz = kleiner Puffer, wackliges Netz = größer
   // Uhrversatz: gezeichnet wird knapp hinter der neuesten Host-Zeit
   const rt = calm.renderTime(199 * 33.3 + 520);
   assert.ok(rt < 199 * 33.3 && rt > 199 * 33.3 - 80, "Zeichenzeit " + rt.toFixed(0));
+});
+
+test("Ping: Median und Schwankung, Balken, Grenze für den Verbindungs-Check", () => {
+  assert.equal(pingStats([]), null);
+  assert.deepEqual(pingStats([40, 42, 300, 41, 43]), { ms: 42, jitter: 52 }, "ein Ausreißer verschiebt den Median nicht");
+  assert.equal(pingBars({ ms: 30, jitter: 5 }), 4);
+  assert.equal(pingBars({ ms: 90, jitter: 5 }), 3);
+  assert.equal(pingBars({ ms: 90, jitter: 40 }), 2, "Schwankung kostet Balken");
+  assert.equal(pingBars({ ms: 220, jitter: 0 }), 1);
+  assert.equal(pingBars(null), 0);
+  assert.equal(netTooBad(null), true, "keine Antwort = zu schlecht");
+  assert.equal(netTooBad({ ms: NET_CHECK.badMs - 20, jitter: 10 }), false);
+  assert.equal(netTooBad({ ms: NET_CHECK.badMs - 20, jitter: 30 }), true);
 });

@@ -1347,3 +1347,14 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   #btnSelLocker { padding: 4px 10px; height: 38px; }
   #btnSelLocker svg { width: 20px; height: 20px; margin: 0; }
 }
+
+/* Ping-Balken im Online-Spiel (neben der Pause); Antippen zeigt die Millisekunden */
+.pingbtn { right: calc(64px + var(--sr)); width: auto; min-width: 46px; padding: 0 9px; gap: 6px; display: flex; align-items: center; --pc: var(--green); }
+.pingbtn[data-bars="2"] { --pc: var(--yellow); }
+.pingbtn[data-bars="1"] { --pc: var(--red); }
+.pingbtn .bars { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+.pingbtn .bars i { width: 4px; border-radius: 2px; background: rgb(255 255 255 / 25%); }
+.pingbtn .bars i:nth-child(1) { height: 25%; } .pingbtn .bars i:nth-child(2) { height: 50%; } .pingbtn .bars i:nth-child(3) { height: 75%; } .pingbtn .bars i:nth-child(4) { height: 100%; }
+.pingbtn[data-bars="1"] .bars i:nth-child(-n+1), .pingbtn[data-bars="2"] .bars i:nth-child(-n+2), .pingbtn[data-bars="3"] .bars i:nth-child(-n+3), .pingbtn[data-bars="4"] .bars i { background: var(--pc); }
+.pingbtn b { display: none; font-size: 13px; font-weight: 900; white-space: nowrap; }
+.pingbtn.ms b { display: inline; }

@@ -11,7 +11,7 @@ import { $, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
 import { lobbyUI, makeQR, netNote, saveName } from "../ui/screens/online.js";
 import { audio as A, input as I, net as Net } from "./services.js";
-import { decodeState, encodeState, makeClock } from "./netcode.js";
+import { decodeState, encodeState, makeClock, pingBars, pingStats } from "./netcode.js";
 import { t } from "../content/i18n.js";
 
 // Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
@@ -37,6 +37,7 @@ export function hostSend(dt) {
   if (App.sendT < 1 / 30) return;
   App.sendT = 0;
   fast({ t: "s", mid: App.mid, ...encodeState(App.st, ++netSeq, performance.now()) });
+  pingTick(1 / 30);
   const ev = App.outEv.splice(0).filter(e => e.t !== "bounce" || e.v > 400);
   if (ev.length) Net.send({ t: "ev", mid: App.mid, ev });
   const sj = JSON.stringify(App.st.stats);
@@ -54,7 +55,7 @@ export function guestFrame(dt, now) {
   App.inT += dt;
   if (key !== App.lastIn) { App.lastIn = key; App.inRep = 3; App.inT = 0; fast({ t: "i", q: ++App.inSeq, i: iv }); }
   else if ((App.inRep > 0 && App.inT >= 0.033) || App.inT >= 0.1) { App.inRep = Math.max(0, App.inRep - 1); App.inT = 0; fast({ t: "i", q: ++App.inSeq, i: iv }); }
-  App.pingT += dt; if (App.pingT > 2) { App.pingT = 0; Net.send({ t: "ping", c: performance.now() }); }
+  pingTick(dt);
   // Zeichnen knapp hinter dem Host: Zeitachse = Sendezeit des Hosts, Puffer passt sich dem Netz an (netcode.js)
   const S2 = App.snaps;
   if (!S2.length) return;
@@ -172,6 +173,24 @@ export function netWaitTick(now) {
 // Verbindung neu aufbaut, verbindet so nicht endlos neu.
 function resumed() { App.netWait = null; App.lastRx = performance.now() - NET_DROP; App.lagWarn = true; App.dropTried = true; toast(t("net.back"), "i-check", true); }
 
+
+// ---------- Ping: beide Seiten messen jede Sekunde (Hin und zurück) ----------
+export function pingTick(dt) { App.pingT += dt; if (App.pingT >= 1) { App.pingT = 0; Net.send({ t: "ping", c: performance.now() }); } }
+function pong(c) {
+  const rtt = performance.now() - c; if (!(rtt >= 0 && rtt < 5000)) return;
+  App.rtt = rtt; App.pings.push(rtt); if (App.pings.length > 8) App.pings.shift();
+}
+/** Ping-Balken im Spiel (nur online). Antippen zeigt die Millisekunden. */
+export function pingHud(dt) {
+  const el = $("netPing"), on = (App.mode === "host" || App.mode === "guest") && Net.isOpen() && App.pings.length > 0;
+  if (el.hidden === on) el.hidden = !on;
+  if (!on || (App.pingUi -= dt) > 0) return;
+  App.pingUi = 0.5;
+  const st = pingStats(App.pings), n = pingBars(st);
+  el.dataset.bars = n; $("netPingMs").textContent = st.ms + " ms";
+  el.setAttribute("aria-label", t("net.ping", { ms: st.ms }));
+}
+
 export function hostData(d) {
   App.lastRx = performance.now();
   switch (d.t) {
@@ -202,6 +221,7 @@ export function hostData(d) {
     }
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "bye": App.netBye = true; break;
+    case "pong": pong(d.c); break;
     case "rematch": toast(t("lobby.wantsRematch", { name: App.opp ? App.opp.name : t("ui.guest") }), "i-swap"); break;
   }
 }
@@ -256,7 +276,7 @@ export function guestData(d) {
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("guest"); } break;
     case "full": Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
     case "start":
-      App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock();
+      App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock();
       App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; if (!App.mm) App.netLost = guestLost;
       if (d.resume) resumed();
       break;
@@ -276,7 +296,8 @@ export function guestData(d) {
       break;
     case "stats": if (App.mode === "guest" && d.mid === App.mid && App.st) App.st.stats = d.stats; break;
     case "lobby": if (!App.mm) backToLobby(); break;
-    case "pong": App.rtt = performance.now() - d.c; break;
+    case "ping": Net.send({ t: "pong", c: d.c }); break;
+    case "pong": pong(d.c); break;
     case "bye": App.netBye = true; break;
   }
 }
