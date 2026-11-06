@@ -9,10 +9,11 @@ import { refreshTop } from "./home.js";
 import { audio as A } from "../../app/services.js";
 import { registerScreen, showScreen } from "../nav.js";
 import { buyWithGems, online as serverOn, shopProducts, startCheckout } from "../../app/account.js";
+import { money, t } from "../../content/i18n.js";
 
 export let shopTab = "chars";
 
-export function setShopTab(t) { shopTab = t; shopScreen(); }
+export function setShopTab(tab) { shopTab = tab; shopScreen(); }
 
 export function shopScreen() {
   $$(".gemOnly").forEach(e => e.hidden = !serverOn());
@@ -26,9 +27,9 @@ export function shopScreen() {
     const av = document.createElement("div"); av.className = "dav";
     if (dl.kind === "chars") av.append(avatarCanvas(dl.id, 90)); else { const cv = ballCanvas(dl.id, 90); av.append(cv); }
     c.append(av);
-    c.insertAdjacentHTML("beforeend", `<div class="dtxt"><small>Angebot des Tages</small><b>${dl.name}</b><em><s>${dl.old}</s>${dl.price} Münzen</em></div><span class="off">-30%</span>`);
+    c.insertAdjacentHTML("beforeend", `<div class="dtxt"><small>${t("shop.deal")}</small><b>${dl.name}</b><em><s>${dl.old}</s>${t("shop.coins", { n: dl.price })}</em></div><span class="off">-30%</span>`);
     const bb = document.createElement("button"); bb.className = "btn yellow"; bb.innerHTML = `<span class="coin"></span>${dl.price}`; bb.disabled = S.coins < dl.price;
-    bb.onclick = () => { if (buyDeal(dl)) { A.sfx("levelup"); if (dl.kind === "chars") { S.char = dl.id; unlockModal(charById(dl.id)); } else { S.ball = dl.id; toast(dl.name + " gekauft!", "i-ball", true); } save(); checkAch({}); refreshTop(); shopScreen(); } };
+    bb.onclick = () => { if (buyDeal(dl)) { A.sfx("levelup"); if (dl.kind === "chars") { S.char = dl.id; unlockModal(charById(dl.id)); } else { S.ball = dl.id; toast(t("shop.bought", { name: dl.name }), "i-ball", true); } save(); checkAch({}); refreshTop(); shopScreen(); } };
     c.append(bb); db.append(c);
   }
   const g = $("shopGrid"); g.innerHTML = "";
@@ -44,12 +45,12 @@ export function shopScreen() {
     else { const c = arenaThumb(it.id, 220, 118); c.className = "wide"; prev.append(c); }
     d.append(prev);
     d.insertAdjacentHTML("beforeend", `<span class="rarity" style="--rc:${RCOL[rar]}">${RARITY[rar]}</span>`);
-    const desc = kind === "chars" ? "Super: " + SUPERS[it.super].name : kind === "arenas" ? it.desc : "Ballmuster";
+    const desc = kind === "chars" ? t("unlock.super", { name: SUPERS[it.super].name }) : kind === "arenas" ? it.desc : t("shop.ballPattern");
     d.insertAdjacentHTML("beforeend", `<b>${it.name}</b><small>${desc}</small>`);
     const btn = document.createElement("button");
     const equip = () => { if (kind === "chars") S.char = it.id; else if (kind === "balls") S.ball = it.id; else S.arena = it.id; save(); };
-    if (eq) { btn.className = "btn ghost small"; btn.innerHTML = svg("i-check") + "Ausgewählt"; btn.disabled = true; }
-    else if (own) { btn.className = "btn green small"; btn.textContent = "Auswählen"; btn.onclick = () => { A.sfx("click"); equip(); shopScreen(); }; }
+    if (eq) { btn.className = "btn ghost small"; btn.innerHTML = svg("i-check") + t("shop.selected"); btn.disabled = true; }
+    else if (own) { btn.className = "btn green small"; btn.textContent = t("ui.select"); btn.onclick = () => { A.sfx("click"); equip(); shopScreen(); }; }
     else if (kind === "chars" && serverOn() && gemPrice(it)) {
       // Seltene Köpfe auch für Juwelen (Euro-Wert daneben)
       const gp = gemPrice(it), row = document.createElement("div"); row.className = "buy2";
@@ -60,45 +61,45 @@ export function shopScreen() {
       bg.onclick = async () => {
         bg.disabled = true;
         try { await buyWithGems(kind, it.id); A.sfx("levelup"); equip(); unlockModal(it); refreshTop(); shopScreen(); }
-        catch (_) { toast("Kauf hat nicht geklappt", "i-close"); bg.disabled = false; }
+        catch (_) { toast(t("shop.buyFailed"), "i-close"); bg.disabled = false; }
       };
       row.append(bc, bg); d.append(row);
       d.insertAdjacentHTML("beforeend", `<small class="euro">≈ ${gemsInEuro(gp)}</small>`);
       g.append(d); return;
     }
-    else { btn.className = "btn yellow small"; btn.innerHTML = `<span class="coin"></span>${it.price}`; btn.disabled = S.coins < it.price; btn.onclick = () => { if (buy(kind, it.id, it.price)) { A.sfx("levelup"); equip(); if (kind === "chars") unlockModal(it); else toast(it.name + " gekauft!", kind === "balls" ? "i-ball" : "i-stadium", true); checkAch({}); refreshTop(); shopScreen(); } }; }
+    else { btn.className = "btn yellow small"; btn.innerHTML = `<span class="coin"></span>${it.price}`; btn.disabled = S.coins < it.price; btn.onclick = () => { if (buy(kind, it.id, it.price)) { A.sfx("levelup"); equip(); if (kind === "chars") unlockModal(it); else toast(t("shop.bought", { name: it.name }), kind === "balls" ? "i-ball" : "i-stadium", true); checkAch({}); refreshTop(); shopScreen(); } }; }
     d.append(btn); g.append(d);
   });
   $$(".coinNum").forEach(e => e.textContent = S.coins);
 }
 
 // Juwelen-Pakete und Starterpaket (Echtgeld, Preise vom Server)
-const euro = c => (c / 100).toFixed(2).replace(".", ",") + " €";
-const PNAME = { premium_pass: "Premium-Pass", starter: "Starterpaket" };
+const euro = c => money(c);
+const PNAME = { premium_pass: "shop.pack.premium", starter: "shop.pack.starter" };
 async function gemShop() {
-  const g = $("shopGrid"); g.innerHTML = '<p class="hint center wide">Lädt…</p>';
+  const g = $("shopGrid"); g.innerHTML = `<p class="hint center wide">${t("ui.loading")}</p>`;
   let list;
-  try { list = await shopProducts(); } catch (_) { g.innerHTML = '<p class="hint center wide">Shop gerade nicht erreichbar.</p>'; return; }
+  try { list = await shopProducts(); } catch (_) { g.innerHTML = `<p class="hint center wide">${t("shop.unreachable")}</p>`; return; }
   if (shopTab !== "gems") return;
   g.innerHTML = "";
   const guest = S.guest !== false;
   $("dealBox").innerHTML = guest
-    ? '<div class="shopnote">Zum Kaufen brauchst du ein Konto, damit nichts verloren geht. <button class="btn small green" id="shopAcc">Konto anlegen</button></div>'
-    : '<div class="shopnote">Bezahlt wird sicher über Stripe. Juwelen gibt es selten auch im Spiel.</div>';
+    ? `<div class="shopnote">${t("shop.needAccount")} <button class="btn small green" id="shopAcc">${t("shop.createAccount")}</button></div>`
+    : `<div class="shopnote">${t("shop.stripeNote")} <a href="legal/terms.html" target="_blank" rel="noopener">${t("legal.terms")}</a></div>`;
   list.filter(p => p.id !== "premium_pass").forEach(p => {
     const d = document.createElement("div"); d.className = "sitem gempack" + (p.id === "starter" ? " starter" : "");
     // Mehr Juwelen pro Euro als im kleinsten Paket?
     const base = list.find(x => x.id === "gems_100"), extra = base ? Math.round((p.gems / p.priceCents) / (base.gems / base.priceCents) * 100 - 100) : 0;
-    const off = p.id === "starter" ? "Einmalig" : extra >= 5 ? `+${extra} %` : "";
-    d.innerHTML = `<div class="prev"><span class="gem big"></span>${off ? `<span class="off">${off}</span>` : ""}</div><b>${PNAME[p.id] || p.gems + " Juwelen"}</b><small>${p.id === "starter" ? p.gems + " Juwelen, nur einmal" : extra >= 5 ? extra + " % mehr pro Euro" : "Einstieg"}</small>`;
+    const off = p.id === "starter" ? t("shop.once") : extra >= 5 ? `+${extra} %` : "";
+    d.innerHTML = `<div class="prev"><span class="gem big"></span>${off ? `<span class="off">${off}</span>` : ""}</div><b>${PNAME[p.id] ? t(PNAME[p.id]) : t("shop.gems", { n: p.gems })}</b><small>${p.id === "starter" ? t("shop.starterSub", { n: p.gems }) : extra >= 5 ? t("shop.morePerEuro", { n: extra }) : t("shop.entry")}</small>`;
     const btn = document.createElement("button"); btn.className = "btn green small";
-    btn.textContent = p.buyable ? euro(p.priceCents) : guest ? euro(p.priceCents) : "Gekauft";
+    btn.textContent = p.buyable || guest ? euro(p.priceCents) : t("shop.owned");
     btn.disabled = !p.buyable && !guest;
     btn.onclick = async () => {
       A.sfx("click");
       if (guest) { showScreen("settings"); return; }
       btn.disabled = true; btn.textContent = "…";
-      try { await startCheckout(p.id); } catch (_) { toast("Bezahlseite gerade nicht erreichbar", "i-close"); btn.disabled = false; btn.textContent = euro(p.priceCents); }
+      try { await startCheckout(p.id); } catch (_) { toast(t("shop.checkoutDown"), "i-close"); btn.disabled = false; btn.textContent = euro(p.priceCents); }
     };
     d.append(btn); g.append(d);
   });

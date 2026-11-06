@@ -11,6 +11,7 @@ import { showScreen } from "../ui/nav.js";
 import { lobbyUI, makeQR, netNote, saveName } from "../ui/screens/online.js";
 import { audio as A, input as I, net as Net } from "./services.js";
 import { decodeState, encodeState, makeClock } from "./netcode.js";
+import { t } from "../content/i18n.js";
 
 // Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
 const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
@@ -91,40 +92,40 @@ export function applySnap(st, a, b, k) {
 }
 
 export function hostGame() {
-  if (!Net.available()) { netNote("Online-Modus konnte nicht geladen werden. Prüf deine Internetverbindung.", true); return; }
+  if (!Net.available()) { netNote(t("net.unavailable"), true); return; }
   saveName($("nameIn").value);
   App.opp = null;
   App.netCfg = { arena: owns("arenas", S.arena) ? S.arena : "stadion", rules: { ...S.rules } };
   $("lobbyCode").textContent = "····"; $("lobbyLink").textContent = ""; $("qrBox").innerHTML = "";
   lobbyUI("host");
-  $("lobbyNote").textContent = "Raum wird geöffnet…";
+  $("lobbyNote").textContent = t("lobby.opening");
   showScreen("lobby");
-  setTimeout(() => { if (App.screen === "lobby" && $("lobbyCode").textContent === "····") $("lobbyNote").textContent = "Der Online-Server antwortet gerade nicht. Prüf deine Verbindung und versuch es nochmal."; }, 9000);
+  setTimeout(() => { if (App.screen === "lobby" && $("lobbyCode").textContent === "····") $("lobbyNote").textContent = t("lobby.noServer"); }, 9000);
   Net.host({
     onReady: code => {
       const link = location.origin + location.pathname + "?join=" + code.toUpperCase();
       $("lobbyCode").textContent = code.toUpperCase(); $("lobbyLink").textContent = link;
-      $("lobbyNote").textContent = "Schick den Link. Sobald dein Kumpel ihn öffnet, ist er hier.";
+      $("lobbyNote").textContent = t("lobby.sendLink");
       makeQR(link);
     },
-    onConn: () => { $("lobbyNote").textContent = "Verbunden. Gleich geht's los…"; },
+    onConn: () => { $("lobbyNote").textContent = t("lobby.connected"); },
     onData: hostData,
     onClose: () => {
       App.opp = null;
-      if (inGame() || App.screen === "end" || App.screen === "pause") { toast("Gegner hat die Verbindung verloren"); backToLobby(); }
-      lobbyUI("host"); $("lobbyNote").textContent = "Gegner ist weg. Schick den Link nochmal.";
+      if (inGame() || App.screen === "end" || App.screen === "pause") { toast(t("net.oppLost")); backToLobby(); }
+      lobbyUI("host"); $("lobbyNote").textContent = t("lobby.oppGone");
     },
-    onError: t => { $("lobbyNote").textContent = "Raum konnte nicht geöffnet werden (" + t + "). Versuch es nochmal."; },
+    onError: type => { $("lobbyNote").textContent = t("net.roomFailed", { type }) + " " + t("ui.tryAgain"); },
   });
 }
 
 export function hostData(d) {
   switch (d.t) {
     case "hello":
-      if (d.v !== VERSION) toast("Dein Kumpel hat eine alte Version. Er soll die Seite neu laden.", "i-close");
-      App.opp = { name: (d.name || "Gast").slice(0, 12), ch: charById(d.ch).id, lv: d.lv }; App.inSeqSeen = -1;
-      Net.send({ t: "welcome", name: S.name || "Gastgeber", ch: S.char, cfg: App.netCfg, v: VERSION });
-      lobbyUI("host"); A.sfx("coin"); toast(App.opp.name + " ist da!", "i-users");
+      if (d.v !== VERSION) toast(t("net.oldVersionGuest"), "i-close");
+      App.opp = { name: (d.name || t("ui.guest")).slice(0, 12), ch: charById(d.ch).id, lv: d.lv }; App.inSeqSeen = -1;
+      Net.send({ t: "welcome", name: S.name || t("ui.host"), ch: S.char, cfg: App.netCfg, v: VERSION });
+      lobbyUI("host"); A.sfx("coin"); toast(t("lobby.joined", { name: App.opp.name }), "i-users");
       break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.lv) App.opp.lv = d.lv; lobbyUI("host"); } break;
     case "i":
@@ -133,7 +134,7 @@ export function hostData(d) {
       App.guestIn = d.i.slice(0, 8); break;
     case "emo": if (App.mode === "host" && App.st && EMOTES.includes(d.e)) emote(App.st, 1, d.e); break;
     case "ping": Net.send({ t: "pong", c: d.c }); break;
-    case "rematch": toast((App.opp ? App.opp.name : "Gast") + " will Revanche!", "i-swap"); break;
+    case "rematch": toast(t("lobby.wantsRematch", { name: App.opp ? App.opp.name : t("ui.guest") }), "i-swap"); break;
   }
 }
 
@@ -142,27 +143,27 @@ export function hostStart() {
   const c = App.netCfg;
   // Kopf-Level: Gegnersuche vom Server (zum Spielbeginn festgehalten), unter Freunden das, was jeder mitbringt
   const sv = App.mm && App.mm.heads, lv = sv && sv.p1 ? [sv.p1.level || 1, (sv.p2 && sv.p2.level) || 1] : [headLevel(S.char), Math.max(1, Math.min(HEAD_MAX_LEVEL, App.opp.lv | 0 || 1))];
-  const cfg = { mode: "host", levels: lv, chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, golden: true, names: [S.name || "Du", App.opp.name], labels: ["DU", null], ball: S.ball };
+  const cfg = { mode: "host", levels: lv, chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, golden: true, names: [S.name || t("ui.you"), App.opp.name], labels: [t("hud.you"), null], ball: S.ball };
   App.mid++;
   const fixed = resolveObs(cfg);
-  Net.send({ t: "start", mid: App.mid, cfg: { ...fixed, mode: "guest", labels: [null, "DU"] } });
+  Net.send({ t: "start", mid: App.mid, cfg: { ...fixed, mode: "guest", labels: [null, t("hud.you")] } });
   beginMatch(fixed);
 }
 
 export function tryJoin(code) {
   code = String(code || $("codeIn").value).trim().toLowerCase();
-  if (!/^[a-z0-9]{4}$/.test(code)) { netNote("Der Code hat 4 Zeichen.", true); return; }
-  if (!Net.available()) { netNote("Online-Modus lädt noch. Versuch es gleich nochmal.", true); return; }
+  if (!/^[a-z0-9]{4}$/.test(code)) { netNote(t("net.codeLength"), true); return; }
+  if (!Net.available()) { netNote(t("net.loading"), true); return; }
   saveName($("nameIn").value);
-  netNote("Verbinde mit " + code.toUpperCase() + "…");
+  netNote(t("net.connecting", { code: code.toUpperCase() }));
   Net.join(code, {
-    onConn: () => Net.send({ t: "hello", name: S.name || "Gast", ch: S.char, lv: headLevel(S.char), v: VERSION }),
+    onConn: () => Net.send({ t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: headLevel(S.char), v: VERSION }),
     onData: guestData,
-    onClose: () => { if (App.mode === "guest" || App.screen === "lobby" || App.screen === "end") { toast("Gastgeber hat das Spiel verlassen"); quitToMenu(); } },
-    onError: (t, wasOk) => {
+    onClose: () => { if (App.mode === "guest" || App.screen === "lobby" || App.screen === "end") { toast(t("net.hostLeft")); quitToMenu(); } },
+    onError: (type, wasOk) => {
       if (wasOk) return;
       Net.close();
-      const msg = t === "peer-unavailable" ? "Kein Raum mit Code " + code.toUpperCase() + " gefunden." : t === "timeout" ? "Verbindung kam nicht zustande. Manche Netze (Schule, Firma) blockieren das. Mobile Daten helfen oft." : "Verbindung fehlgeschlagen (" + t + ").";
+      const msg = type === "peer-unavailable" ? t("net.noRoom", { code: code.toUpperCase() }) : type === "timeout" ? t("net.timeout") : t("net.failed", { type });
       if (App.screen !== "online") showScreen("online");
       netNote(msg, true);
     },
@@ -172,14 +173,14 @@ export function tryJoin(code) {
 export function guestData(d) {
   switch (d.t) {
     case "welcome":
-      if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote("Ihr habt verschiedene Spielversionen. Bitte beide die Seite neu laden.", true); break; }
-      App.opp = { name: (d.name || "Gastgeber").slice(0, 12), ch: charById(d.ch).id }; App.netCfg = d.cfg; lobbyUI("guest");
+      if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote(t("net.versionMismatch"), true); break; }
+      App.opp = { name: (d.name || t("ui.host")).slice(0, 12), ch: charById(d.ch).id }; App.netCfg = d.cfg; lobbyUI("guest");
       if (!App.mm) showScreen("lobby");   // Gegnersuche: keine Lobby, der Host pfeift gleich an
       A.sfx("coin"); break;
     case "cfg": App.netCfg = d.cfg; lobbyUI("guest"); break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; lobbyUI("guest"); } break;
-    case "full": Net.close(); showScreen("online"); netNote("Der Raum ist schon voll.", true); break;
-    case "start": App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, "DU"] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock(); break;
+    case "full": Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
+    case "start": App.mid = d.mid; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock(); break;
     case "s": {
       if (App.mode !== "guest" || d.mid !== App.mid) break; // alte Pakete vom letzten Spiel ignorieren
       if (d.q <= App.lastSeq) break;                        // ungeordneter Kanal: ältere als das neueste verwerfen

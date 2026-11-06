@@ -5,7 +5,7 @@ const impl = {};
 const port = name => new Proxy({}, {
   get(_, key) {
     const o = impl[name];
-    if (!o) throw new Error(`Dienst "${name}" ist nicht eingesteckt`);
+    if (!o) throw new Error(`Dienst "${name}" ist nicht eingesteckt`);   // i18n-ok: Entwicklerfehler
     const v = o[key];
     return typeof v === "function" ? v.bind(o) : v;
   },

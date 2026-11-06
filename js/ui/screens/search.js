@@ -6,27 +6,28 @@ import { S } from "../../app/profile.js";
 import { App } from "../../app/state.js";
 import { cancelSearch, league } from "../../app/matchmaking.js";
 import { serverState } from "../../app/account.js";
+import { t } from "../../content/i18n.js";
 
 let clock = null;
 const mmss = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
 
 export function searchUI(mm) {
   if (!mm) return;
-  $("srTitle").textContent = mm.mode === "ranked" ? "Ranked" : "Casual";
+  $("srTitle").textContent = t(mm.mode === "ranked" ? "mode.ranked.name" : "mode.casual.name");
   const av = $("srAv"); if (!av.firstChild) av.append(avatarCanvas(S.char, 120));
   const rating = serverState() && serverState().season && serverState().season.rating;
-  $("srMe").textContent = (S.name || "Du") + (mm.mode === "ranked" ? " · " + league(rating ? rating.mmr : 1000) + " " + (rating ? rating.mmr : 1000) : "");
+  $("srMe").textContent = (S.name || t("ui.you")) + (mm.mode === "ranked" ? " · " + league(rating ? rating.mmr : 1000) + " " + (rating ? rating.mmr : 1000) : "");
   const st = $("srState"), opp = $("srOpp");
   if (mm.state === "search") {
-    st.textContent = "Suche Gegner…"; opp.textContent = "";
+    st.textContent = t("search.searching"); opp.textContent = "";
     $("scr-search").classList.remove("found");
     clearInterval(clock); clock = setInterval(() => { if (App.mm && App.mm.state === "search") $("srTime").textContent = mmss((Date.now() - App.mm.t0) / 1000); else clearInterval(clock); }, 250);
   } else {
     clearInterval(clock);
     $("scr-search").classList.add("found");
     const o = mm.opp || {};
-    st.textContent = mm.state === "connect" ? "Gegner gefunden! Verbinde…" : "Verbunden. Gleich geht's los…";
-    opp.textContent = (o.name || "Gegner") + " · Level " + (o.level || 1) + (mm.mode === "ranked" && o.mmr ? " · " + league(o.mmr) + " " + o.mmr : "");
+    st.textContent = t(mm.state === "connect" ? "search.found" : "lobby.connected");
+    opp.textContent = (o.name || t("search.opponent")) + " · " + t("level.title", { n: o.level || 1 }) + (mm.mode === "ranked" && o.mmr ? " · " + league(o.mmr) + " " + o.mmr : "");
   }
   $("srCancel").hidden = mm.state !== "search";
 }

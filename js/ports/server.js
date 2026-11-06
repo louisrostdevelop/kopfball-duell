@@ -12,8 +12,9 @@
  * @property {(item: string, currency: "coins"|"gems") => Promise<{ state: object }>} buy
  * @property {() => Promise<{ amount: number, streak: number, state?: object }|null>} claimDaily   null = heute schon abgeholt
  * @property {(profile: object) => Promise<object>} importLocal        einmalig: lokalen Spielstand übernehmen
+ * @property {() => Promise<object>} deleteAccount                   Konto und Spielerdaten löschen (DSGVO)
  * @property {() => Promise<object[]>} shop                             Echtgeld-Produkte
- * @property {(product: string) => Promise<string>} checkout            URL zur Bezahlseite
+ * @property {(product: string, lang?: string) => Promise<string>} checkout  URL zur Bezahlseite (lang: Sprache der Bezahlseite)
  * @property {() => Promise<number>} flush                              noch nicht gesendete Meldungen nachschicken
  * @property {(item: string) => Promise<object>} [upgradeHead]
  * @property {(tier: number, premium: boolean) => Promise<object>} claimPass   Pass-Stufe abholen, gibt vollen Zustand
@@ -23,5 +24,14 @@
  * @property {() => Promise<object>} queueLeave
  * @property {(match: string, r: { score: number[], duration: number }) => Promise<{ status: string, result?: object }>} reportOnline
  * @property {(match: string) => Promise<{ status: string, result?: object }>} matchStatus
+ * @property {(board: "endless") => Promise<object[]>} leaderboard          Bestenliste (Top 50)
+ * @property {(board: "endless") => Promise<{ rank: number|null, score?: number }>} myRank
+ * @property {(board: "endless", score: number) => Promise<object>} submitScore
+ * @property {() => Promise<object[]>} rankedBoard
+ * @property {() => Promise<{ rank: number|null, mmr?: number }>} myRankedRank
+ * @property {() => Promise<{ friends: object[], incoming: string[] }>} friends
+ * @property {(name: string) => Promise<{ status: string }>} friendRequest
+ * @property {(name: string) => Promise<object>} friendRemove
+ * @property {(name: string) => Promise<object>} setName
  */
 export {};

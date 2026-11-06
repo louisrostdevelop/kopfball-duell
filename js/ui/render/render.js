@@ -2,6 +2,7 @@
 import { W, H, G, GOAL_W, BAR_T, SR, FOOT, COL, SUPERS, POWERUPS, charById, clamp, rand } from "../../content/config.js";
 import { drawHead, drawShoe, drawBall, drawPuIcon, shade } from "./art.js";
 import { barY, shoePos, pr, kickPreview } from "../../core/physics.js";
+import { t as trn } from "../../content/i18n.js";
 
 const TAU = Math.PI * 2;
 const INK = COL.ink;
@@ -428,7 +429,7 @@ function boards(st, t) {
   ctx.save(); ctx.beginPath(); ctx.rect(-900, y, W + 1800, h); ctx.clip();
   ctx.fillStyle = st.arena === "eis" ? "#0b2533" : "#08102a"; ctx.fillRect(-900, y, W + 1800, h);
   ctx.font = "17px 'Lilita One', Impact"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
-  const msg = "KOPFBALL DUELL  •  ", off = (t * 50) % 290;
+  const msg = "KOPFBALL DUELL  •  ", /* i18n-ok: Marke */ off = (t * 50) % 290;
   ctx.fillStyle = st.arena === "eis" ? "rgba(140,220,255,.7)" : "rgba(160,190,255,.55)";
   for (let i = -6; i < 12; i++) ctx.fillText(msg, i * 290 - off, y + h / 2 + 1);
   ctx.restore();
@@ -816,7 +817,7 @@ function drawObstacles(st, view, t) {
         ctx.strokeStyle = "rgba(200,210,240,.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0 + 14, y); ctx.lineTo(x0 + 30, -300); ctx.moveTo(x0 + w - 14, y); ctx.lineTo(x0 + w - 30, -300); ctx.stroke();
         ctx.fillStyle = S.plat; roundRect(x0, y, w, h, 5); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
         ctx.fillStyle = S.edge; ctx.font = "13px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        const off = (t * 40) % w; ctx.save(); ctx.beginPath(); ctx.rect(x0 + 3, y, w - 6, h); ctx.clip(); ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off + w / 2, y + h / 2 + 1); ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off - w / 2, y + h / 2 + 1); ctx.restore();
+        const off = (t * 40) % w; ctx.save(); ctx.beginPath(); ctx.rect(x0 + 3, y, w - 6, h); ctx.clip(); /* i18n-ok: Marke */ ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off + w / 2, y + h / 2 + 1); ctx.fillText("KOPFBALL DUELL · KOPFBALL DUELL", x0 + w / 2 - off - w / 2, y + h / 2 + 1); ctx.restore();
       } else if (ar === "strand") { // Surfbrett
         ctx.fillStyle = S.plat; ctx.beginPath(); ctx.ellipse(x, y + h / 2, w / 2, h / 2 + 2, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
         ctx.fillStyle = S.edge; ctx.fillRect(x - w * 0.36, y + h / 2 - 2, w * 0.72, 4); ctx.fillStyle = "#2a7fc0"; ctx.fillRect(x - 4, y + 2, 8, h - 4);
@@ -939,7 +940,7 @@ function hud(st, t, names, opts) {
     }
     if (p.full || p.armed > 0) {
       ctx.font = "12px 'Lilita One', Impact"; ctx.textAlign = i ? "right" : "left"; ctx.fillStyle = COL.gold;
-      ctx.fillText(p.armed > 0 ? "BEREIT!" : "SUPER", i ? mx - 6 : mx + mw + 6, my + 5);
+      ctx.fillText(p.armed > 0 ? trn("hud.ready") : trn("hud.super"), i ? mx - 6 : mx + mw + 6, my + 5);
     }
     }
     // aktive Power-ups als kleine Symbole unter der Leiste
@@ -965,7 +966,7 @@ function hud(st, t, names, opts) {
   ctx.fillStyle = COL.p2; ctx.fillText(st.s[1], cx + 40, y + 25);
   ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.font = "22px 'Lilita One', Impact"; ctx.fillText("–", cx, y + 23);
   let tt;
-  if (st.gold) { tt = "GOLDEN GOAL"; ctx.fillStyle = Math.sin(t * 6) > 0 ? COL.gold : "#fff"; ctx.font = "11px 'Lilita One', Impact"; }
+  if (st.gold) { tt = trn("hud.golden"); ctx.fillStyle = Math.sin(t * 6) > 0 ? COL.gold : "#fff"; ctx.font = "11px 'Lilita One', Impact"; }
   else if (st.train) { tt = "TRAINING"; ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "13px 'Lilita One', Impact"; }
   else if (st.rules && st.rules.win) { tt = "BIS " + st.rules.win; ctx.fillStyle = COL.gold; ctx.font = "15px 'Lilita One', Impact"; }
   else { const sec = Math.ceil(st.t); tt = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); ctx.fillStyle = sec <= 10 && st.ph === "play" ? (Math.sin(t * 10) > 0 ? "#ff6a6a" : "#fff") : "rgba(255,255,255,.85)"; ctx.font = "15px 'Lilita One', Impact"; }
@@ -1103,14 +1104,14 @@ export function render(st, t, opts) {
   if (!opts.noHud && !rep) hud(st, t, opts.names || ["", ""], opts);
   if ((st.ph === "cd" || st.ph === "ko") && !opts.noHud) {
     const n = st.ph === "ko" ? "" : st.pt > 2 ? "3" : st.pt > 1 ? "2" : st.pt > 0.25 ? "1" : "";
-    const lab = st.ph === "ko" ? "WEITER!" : st.gold && st.pt > 0.25 ? "GOLDEN GOAL" : n;
+    const lab = st.ph === "ko" ? trn("hud.go") : st.gold && st.pt > 0.25 ? trn("hud.golden") : n;
     if (lab) {
       const f = st.ph === "ko" ? 1 : (st.pt % 1);
       ctx.save(); ctx.translate(W / 2, visTop() + 220); const sc = 0.8 + f * 0.45; ctx.scale(sc, sc); ctx.transform(1, 0, -0.15, 1, 0, 0);
       ctx.font = (lab.length > 2 ? 66 : 130) + "px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
       ctx.lineWidth = 26; ctx.strokeStyle = "#fff"; ctx.strokeText(lab, 0, 0); ctx.lineWidth = 15; ctx.strokeStyle = INK; ctx.strokeText(lab, 0, 0);
       ctx.fillStyle = st.gold ? COL.gold : "#fff"; ctx.fillText(lab, 0, 0);
-      if (st.gold && st.ph === "cd") { ctx.font = "28px 'Lilita One', Impact"; ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.strokeText("NÄCHSTES TOR GEWINNT", 0, 66); ctx.fillStyle = "#fff"; ctx.fillText("NÄCHSTES TOR GEWINNT", 0, 66); }
+      if (st.gold && st.ph === "cd") { ctx.font = "28px 'Lilita One', Impact"; ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.strokeText(trn("hud.nextGoalWins"), 0, 66); ctx.fillStyle = "#fff"; ctx.fillText(trn("hud.nextGoalWins"), 0, 66); }
       ctx.restore();
     }
   }
@@ -1124,7 +1125,7 @@ export function render(st, t, opts) {
     ctx.fillStyle = Math.sin(t * 6) > 0 ? "#ff3b30" : "#661010"; ctx.beginPath(); ctx.arc(24 + bar * 0.2, bar / 2, bar * 0.16, 0, TAU); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.fillText("WIEDERHOLUNG", 30 + bar * 0.45, bar / 2 + 1);
     ctx.textAlign = "right"; ctx.font = `800 ${Math.round(bar * 0.36)}px Nunito, sans-serif`; ctx.fillStyle = "rgba(255,255,255,.7)";
-    if (opts.canSkip) ctx.fillText("Tippen zum Überspringen", cw - 20, ch - bar / 2);
+    if (opts.canSkip) ctx.fillText(trn("hud.tapToSkip"), cw - 20, ch - bar / 2);
   }
   if (quality === "high") {
     const vg = ctx.createRadialGradient(cw / 2, ch * 0.55, Math.min(cw, ch) * 0.5, cw / 2, ch * 0.55, Math.max(cw, ch) * 0.8);

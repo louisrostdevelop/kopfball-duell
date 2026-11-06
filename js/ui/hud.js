@@ -7,6 +7,7 @@ import { App, inGame } from "../app/state.js";
 import { $ } from "./dom.js";
 import { runScreen } from "./screens/run.js";
 import { audio as A, net as Net } from "../app/services.js";
+import { t } from "../content/i18n.js";
 
 export function initHud() {
   $("btnPause").onclick = () => { A.sfx("click"); pause(true); };
@@ -15,7 +16,7 @@ export function initHud() {
   $("btnQuit").onclick = () => { A.sfx("click"); $("scr-pause").hidden = true; if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); } else if (App.run && !App.run.done && ["cup", "endless"].includes(App.mode)) { App.run.done = true; runScreen(); } else quitToMenu(); };
   $("btnFull").onclick = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else goFullscreen(); };
   const bar = $("emoteBar");
-  EMOTES.forEach((e, n) => { const b = document.createElement("button"); b.textContent = e; b.title = "Taste " + (n + 1); b.onclick = () => sendEmote(e); bar.append(b); });
+  EMOTES.forEach((e, n) => { const b = document.createElement("button"); b.textContent = e; b.title = t("hud.emoteKey", { n: n + 1 }); b.onclick = () => sendEmote(e); bar.append(b); });
   $("btnEmote").onclick = () => { bar.hidden = !bar.hidden; };
   $("cv").addEventListener("pointerdown", () => { if (inGame() && App.st.ph === "goal" && App.mode !== "guest" && App.st.pt < REPLAY_START) skipCelebration(App.st); });
   $("touch").addEventListener("pointerdown", () => { if (inGame() && App.st.ph === "goal" && App.mode !== "guest" && App.st.pt < REPLAY_START - 0.3) skipCelebration(App.st); });

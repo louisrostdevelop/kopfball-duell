@@ -3,6 +3,7 @@
 // Läuft genauso auf einem Server (z. B. in einer Supabase Edge Function), damit Belohnungen dort geprüft werden können.
 import { CHARS, ARENAS, BALLS, CHALLENGE_SETS, RULE_KEYS } from "../content/config.js";
 import { layoutsFor } from "../content/layouts.js";
+import { t as tr } from "../content/i18n.js";
 
 export const PROFILE_VERSION = 2;
 
@@ -43,15 +44,15 @@ export function seeded(str) { let h = 2166136261; for (const c of str) { h ^= c.
 
 // ---------- Tagesaufgaben ----------
 export const TASKS = [
-  { id: "wins", text: n => `Gewinne ${n} Spiele`, n: [2, 3], reward: 80 },
-  { id: "goals", text: n => `Schieß ${n} Tore`, n: [5, 8], reward: 60 },
-  { id: "headGoals", text: n => `Erziele ${n} Kopfballtore`, n: [2, 3], reward: 80 },
-  { id: "supers", text: n => `Setz ${n}-mal deinen Super ein`, n: [3, 5], reward: 60 },
-  { id: "pus", text: n => `Sammle ${n} Power-ups`, n: [3, 5], reward: 60 },
-  { id: "stomps", text: n => `Spring ${n}-mal auf einen Gegnerkopf`, n: [2, 3], reward: 70 },
-  { id: "online", text: () => "Spiel ein Online-Spiel", n: [1], reward: 90 },
-  { id: "hard", text: () => "Gewinn gegen Schwer oder Legende", n: [1], reward: 100 },
-  { id: "cupRound", text: n => `Gewinn ${n} Cup-Spiele`, n: [2], reward: 80 },
+  { id: "wins", text: n => tr("task.wins", { n }), n: [2, 3], reward: 80 },
+  { id: "goals", text: n => tr("task.goals", { n }), n: [5, 8], reward: 60 },
+  { id: "headGoals", text: n => tr("task.headGoals", { n }), n: [2, 3], reward: 80 },
+  { id: "supers", text: n => tr("task.supers", { n }), n: [3, 5], reward: 60 },
+  { id: "pus", text: n => tr("task.pus", { n }), n: [3, 5], reward: 60 },
+  { id: "stomps", text: n => tr("task.stomps", { n }), n: [2, 3], reward: 70 },
+  { id: "online", text: n => tr("task.online", { n }), n: [1], reward: 90 },
+  { id: "hard", text: n => tr("task.hard", { n }), n: [1], reward: 100 },
+  { id: "cupRound", text: n => tr("task.cupRound", { n }), n: [2], reward: 80 },
 ];
 export function dailyTaskList(date) {
   const r = seeded(date), pool = [...TASKS], list = [];

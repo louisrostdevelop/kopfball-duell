@@ -27,6 +27,7 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     importLocal: profile => client.rpc("import_local", { local: profile }),
     setName: name => client.rpc("set_name", { new_name: name }),
     shop: () => client.rpc("shop"),
+    deleteAccount: () => client.rpc("delete_account", { confirm: "DELETE" }),
     claimPass: (tier, premium) => client.rpc("claim_pass", { tier, premium }),
     buyPassWithGems: () => client.rpc("buy_pass_with_gems", { request_key: key() }),
     // Online mit Warteschlange (Casual / Ranked)
@@ -36,6 +37,14 @@ export function supabaseServer(client, storage = globalThis.localStorage) {
     reportOnline: (match, r) => client.rpc("report_match", { match, r }),
     matchStatus: match => client.rpc("match_status", { match }),
     rankedBoard: (n = 50) => client.rpc("ranked_board", { lim: n, offs: 0 }),
-    async checkout(product) { const r = await client.fn("create-checkout", { product }); return r.url; },
+    myRankedRank: () => client.rpc("my_ranked_rank"),
+    leaderboard: (board, n = 50) => client.rpc("leaderboard", { board, period: "all", lim: n, offs: 0 }),
+    myRank: board => client.rpc("my_rank", { board, period: "all" }),
+    around: (board, n = 3) => client.rpc("leaderboard_around", { board, period: "all", n }),
+    submitScore: (board, score) => client.rpc("submit_score", { board, score }),
+    friends: () => client.rpc("friends"),
+    friendRequest: name => client.rpc("friend_request", { friend_name: name }),
+    friendRemove: name => client.rpc("friend_remove", { friend_name: name }),
+    async checkout(product, lang) { const r = await client.fn("create-checkout", { product, lang }); return r.url; },
   };
 }

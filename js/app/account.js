@@ -3,6 +3,7 @@
 // Ohne Server passiert hier nichts, das Spiel läuft lokal wie bisher.
 import { S, save, setHooks } from "./profile.js";
 import { has, server } from "./services.js";
+import { t, lang } from "../content/i18n.js";
 
 const KINDS = { chars: "head", balls: "ball", arenas: "arena" };
 export const itemId = (kind, id) => KINDS[kind] + ":" + id;
@@ -83,7 +84,7 @@ export async function buyWithGems(kind, id) {
 /** Echtgeld-Produkte vom Server (mit "buyable" für diesen Spieler) */
 export const shopProducts = () => server.shop();
 /** Zur Bezahlseite (Stripe). Kommt mit ?kauf=ok oder ?kauf=abgebrochen zurück. */
-export async function startCheckout(product) { location.href = await server.checkout(product); }
+export async function startCheckout(product) { location.href = await server.checkout(product, lang()); }
 /** Nach der Rückkehr von der Bezahlseite: ein paar Mal nachsehen, bis die Juwelen da sind */
 export async function awaitPurchase(before, tries = 10) {
   for (let i = 0; i < tries; i++) {
@@ -114,11 +115,33 @@ const bit = (mask, i) => Math.floor((mask || 0) / 2 ** i) % 2 === 1;
 export function passView() {
   const s = last && last.season; if (!s || !Array.isArray(s.tiers)) return null;
   const pp = s.pass || { points: 0, premium: false, free: 0, premiumClaimed: 0 };
-  const tiers = s.tiers.map((t, i) => ({ i, points: t.points, free: t.free, premium: t.premium, reached: pp.points >= t.points,
+  const tiers = s.tiers.map((x, i) => ({ i, points: x.points, free: x.free, premium: x.premium, reached: pp.points >= x.points,
     freeClaimed: bit(pp.free, i), premiumClaimed: bit(pp.premiumClaimed, i) }));
-  const claimable = tiers.filter(t => t.reached && (!t.freeClaimed || (pp.premium && !t.premiumClaimed))).length;
+  const claimable = tiers.filter(x => x.reached && (!x.freeClaimed || (pp.premium && !x.premiumClaimed))).length;
   return { season: s.id, endsAt: s.endsAt, points: pp.points || 0, premium: !!pp.premium, tiers, claimable };
 }
 export async function claimPass(tier, premium) { applyState(await server.claimPass(tier, premium)); }
 export async function buyPassWithGems() { applyState(await server.buyPassWithGems()); }
 export const PASS_GEMS = 500;   // wie api.buy_pass_with_gems
+
+// ---------- Name, Bestenlisten, Freunde ----------
+const NAME_ERR = ["name_taken", "name_length", "name_chars", "name_blocked", "rate_limited"];
+/** Name auf dem Server setzen (für Bestenlisten und Freunde). Gibt eine Fehlermeldung zurück oder "" */
+export async function setServerName(name) {
+  try { applyState(await server.setName(name)); return ""; } catch (e) { return NAME_ERR.includes(e && e.code) ? t("err.name." + e.code) : t("err.name.other"); }
+}
+/** Endlos-Rekord melden (der Server prüft gegen die gemeldeten Siege) */
+export function submitEndless(streak) { if (online() && streak > 0) server.submitScore("endless", streak).catch(() => {}); }
+export const boards = {
+  endless: async () => ({ top: await server.leaderboard("endless", 50), me: await server.myRank("endless").catch(() => null) }),
+  ranked: async () => ({ top: await server.rankedBoard(50), me: await server.myRankedRank().catch(() => null) }),
+};
+export const friendsList = () => server.friends();
+const FR_ERR = ["unknown_player", "too_many_friends", "rate_limited"];
+export async function addFriend(name) {
+  try { const r = await server.friendRequest(name); return { ok: true, accepted: r.status === "accepted" }; }
+  catch (e) { return { ok: false, msg: FR_ERR.includes(e && e.code) ? t("err.friend." + e.code) : t("err.generic") }; }
+}
+export const removeFriend = name => server.friendRemove(name);
+/** Konto mit allen Spielerdaten löschen (Käufe bleiben ohne Personenbezug für die Buchhaltung) */
+export const deleteAccount = () => server.deleteAccount();

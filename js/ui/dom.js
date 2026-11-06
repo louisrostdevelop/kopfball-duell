@@ -1,5 +1,6 @@
 // Kleine DOM-Helfer: Elemente, Umschalter, Hinweise, Dialoge, Teilen, Fokus für Controller
 import { audio as A, input as I } from "../app/services.js";
+import { t } from "../content/i18n.js";
 
 export const $ = id => document.getElementById(id);
 
@@ -14,7 +15,7 @@ export function shareOrCopy(d) {
   copyText([d.text, d.url].filter(Boolean).join(" "));
 }
 
-export function copyText(s) { try { navigator.clipboard.writeText(s).then(() => toast("Kopiert", "i-check"), () => toast(s)); } catch (_) { toast(s); } }
+export function copyText(s) { try { navigator.clipboard.writeText(s).then(() => toast(t("ui.copied"), "i-check"), () => toast(s)); } catch (_) { toast(s); } }
 
 export function seg(el, opts, cur, on) {
   el.innerHTML = "";
@@ -31,13 +32,13 @@ export function toggle(el, v, on) {
 }
 
 export function toast(text, icon, gold) {
-  const t = document.createElement("div"); t.className = "toast" + (gold ? " gold" : "");
-  t.innerHTML = (icon ? svg(icon) : "") + `<span>${esc(text)}</span>`;
-  $("toasts").append(t); setTimeout(() => t.remove(), 3300);
+  const el = document.createElement("div"); el.className = "toast" + (gold ? " gold" : "");
+  el.innerHTML = (icon ? svg(icon) : "") + `<span>${esc(text)}</span>`;
+  $("toasts").append(el); setTimeout(() => el.remove(), 3300);
   while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
 }
 
-export function modal({ title, icon, body, btn = "Weiter", onOk, cancel, ribbon = "gold" }) {
+export function modal({ title, icon, body, btn = t("ui.next"), onOk, cancel, ribbon = "gold" }) {
   const m = $("modal"), c = $("modalCard");
   c.innerHTML = `<div class="ribbon ${ribbon}">${esc(title)}</div>` + (icon ? `<svg class="bigic"><use href="#${icon}"/></svg>` : "") + body + `<button class="btn yellow big" id="modalOk">${btn}</button>` + (cancel ? `<button class="btn ghost small" id="modalCancel">${cancel}</button>` : "");
   m.hidden = false;
@@ -65,4 +66,12 @@ export function moveFocus(scr, [dx, dy]) {
     if (d < bd) { bd = d; best = e; }
   }
   if (best) { best.focus(); best.scrollIntoView({ block: "nearest" }); A.sfx("tick"); }
+}
+
+/** Feste Texte im HTML übersetzen: data-i18n="schlüssel" (Text) und data-i18n-attr="attr:schlüssel;attr2:schlüssel2" */
+export function applyI18n(root = document) {
+  root.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  root.querySelectorAll("[data-i18n-attr]").forEach(el => {
+    for (const pair of el.dataset.i18nAttr.split(";")) { const [a, k] = pair.split(":"); if (a && k) el.setAttribute(a, t(k)); }
+  });
 }

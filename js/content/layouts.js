@@ -8,49 +8,39 @@
 // Regeln fürs Design: Torraum frei (|dx| ≤ 520), über dem Anstoßpunkt (Mitte, y 200-300) nichts, Startpositionen (dx ±330) frei,
 // über Blöcken und ihrem Anlauf keine Plattform (sonst stößt man beim Hochspringen an und kommt nie drauf).
 import { W, W0, G, GOAL_W } from "./config.js";
+import { t as tr } from "./i18n.js";
 
 export const LAYOUTS = {
   stadion: [
-    { name: "Banden", desc: "Zwei Werbebanden in der Luft lenken hohe Bälle ab.",
-      items: [{ t: "plat", dx: 300, y: 318, w: 210 }] },
-    { name: "Brücke", desc: "Eine hohe Brücke in der Mitte, Stufen vor den Toren.",
-      items: [{ t: "plat", dx: 0, y: 196, w: 340 }, { t: "plat", dx: 470, y: 508, w: 110 }] },
-    { name: "Treppe", desc: "Zwei Stufen nach oben: wer oben steht, köpft besser.",
-      items: [{ t: "plat", dx: 150, y: 560, w: 100 }, { t: "plat", dx: 430, y: 420, w: 120 }] },
+    { items: [{ t: "plat", dx: 300, y: 318, w: 210 }] },
+    { items: [{ t: "plat", dx: 0, y: 196, w: 340 }, { t: "plat", dx: 470, y: 508, w: 110 }] },
+    { items: [{ t: "plat", dx: 150, y: 560, w: 100 }, { t: "plat", dx: 430, y: 420, w: 120 }] },
   ],
   strand: [
-    { name: "Surfbretter", desc: "Zwei Bretter schaukeln langsam auf und ab.",
-      items: [{ t: "plat", dx: 300, y: 350, w: 190, mv: { ay: 42, per: 4, ph: 0 } }] },
-    { name: "Welle", desc: "Zwei Bretter gleiten hoch oben auseinander und wieder zusammen.",
-      items: [{ t: "plat", dx: 250, y: 182, w: 170, mv: { ax: 110, per: 6, ph: 0 } }] },
-    { name: "Wasserbälle", desc: "Drei Wasserbälle als weiche Bumper.",
-      items: [{ t: "bump", dx: 280, y: 332, r: 34, k: 1 }, { t: "bump", dx: 0, y: 168, r: 30, k: 1 }] },
+    { items: [{ t: "plat", dx: 300, y: 350, w: 190, mv: { ay: 42, per: 4, ph: 0 } }] },
+    { items: [{ t: "plat", dx: 250, y: 182, w: 170, mv: { ax: 110, per: 6, ph: 0 } }] },
+    { items: [{ t: "bump", dx: 280, y: 332, r: 34, k: 1 }, { t: "bump", dx: 0, y: 168, r: 30, k: 1 }] },
   ],
   neon: [
-    { name: "Flipper", desc: "Neon-Bumper schießen den Ball extra hart zurück.",
-      items: [{ t: "bump", dx: 230, y: 330, r: 30, k: 1.18 }, { t: "bump", dx: 0, y: 176, r: 28, k: 1.18 }] },
-    { name: "Laser", desc: "Zwei Laserbalken und ein Bumper ganz oben.",
-      items: [{ t: "plat", dx: 360, y: 298, w: 150 }, { t: "bump", dx: 0, y: 180, r: 30, k: 1.18 }] },
-    { name: "Aufzug", desc: "Zwei Plattformen fahren rauf und runter. Draufspringen geht.",
-      items: [{ t: "plat", dx: 290, y: 400, w: 150, mv: { ay: 52, per: 3.6, ph: 0 } }] },
+    { items: [{ t: "bump", dx: 230, y: 330, r: 30, k: 1.18 }, { t: "bump", dx: 0, y: 176, r: 28, k: 1.18 }] },
+    { items: [{ t: "plat", dx: 360, y: 298, w: 150 }, { t: "bump", dx: 0, y: 180, r: 30, k: 1.18 }] },
+    { items: [{ t: "plat", dx: 290, y: 400, w: 150, mv: { ay: 52, per: 3.6, ph: 0 } }] },
   ],
   eis: [
-    { name: "Schollen", desc: "Zwei Eisschollen als Stufen. Achtung, rutschig.",
-      items: [{ t: "plat", dx: 205, y: 512, w: 150, slick: true }] },
-    { name: "Eiszapfen", desc: "Eiszapfen hängen von oben und fangen Lupfer ab.",
-      items: [{ t: "plat", dx: 250, y: 290, w: 120, icicle: true }, { t: "plat", dx: 0, y: 190, w: 200, icicle: true }] },
-    { name: "Gletscher", desc: "Ein Eisberg mitten im Feld. Drüber oder drumherum.",
-      items: [{ t: "plat", dx: 0, y: 506, w: 250, slick: true }] },
+    { items: [{ t: "plat", dx: 205, y: 512, w: 150, slick: true }] },
+    { items: [{ t: "plat", dx: 250, y: 290, w: 120, icicle: true }, { t: "plat", dx: 0, y: 190, w: 200, icicle: true }] },
+    { items: [{ t: "plat", dx: 0, y: 506, w: 250, slick: true }] },
   ],
   mond: [
-    { name: "Asteroiden", desc: "Felsbrocken schweben über dem Feld.",
-      items: [{ t: "bump", dx: 300, y: 340, r: 40, k: 0.92 }, { t: "bump", dx: 0, y: 172, r: 30, k: 0.92 }] },
-    { name: "Krater", desc: "Kraterränder vor den Toren, ein Fels in der Mitte oben.",
-      items: [{ t: "plat", dx: 460, y: 512, w: 140 }, { t: "bump", dx: 0, y: 190, r: 36, k: 0.92 }] },
-    { name: "Umlaufbahn", desc: "Zwei Monde ziehen ihre Kreise über dem Feld.",
-      items: [{ t: "bump", dx: 280, y: 300, r: 30, k: 1, mv: { orbit: 95, per: 7, ph: 0 } }] },
+    { items: [{ t: "bump", dx: 300, y: 340, r: 40, k: 0.92 }, { t: "bump", dx: 0, y: 172, r: 30, k: 0.92 }] },
+    { items: [{ t: "plat", dx: 460, y: 512, w: 140 }, { t: "bump", dx: 0, y: 190, r: 36, k: 0.92 }] },
+    { items: [{ t: "bump", dx: 280, y: 300, r: 30, k: 1, mv: { orbit: 95, per: 7, ph: 0 } }] },
   ],
 };
+// Namen und Beschreibungen aus den Sprachdateien (layout.<arena>.<nr>.name/desc)
+for (const [ar, list] of Object.entries(LAYOUTS)) list.forEach((l, i) => {
+  for (const f of ["name", "desc"]) Object.defineProperty(l, f, { enumerable: true, get: () => tr(`layout.${ar}.${i}.${f}`) });
+});
 export const layoutsFor = arena => LAYOUTS[arena] || [];
 
 // Baut die Hindernisse für ein Spiel (Weltkoordinaten), passend zur aktuellen Feldbreite.

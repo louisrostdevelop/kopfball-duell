@@ -9,27 +9,28 @@ import { selectScreen } from "../ui/screens/select.js";
 import { setupScreen } from "../ui/screens/setup.js";
 import { audio as A } from "./services.js";
 import { online as serverOn } from "./account.js";
-import { errText, findMatch } from "./matchmaking.js";
+import { errText, findMatch, MIN_LEVEL } from "./matchmaking.js";
 import { modeLock } from "../ui/screens/modes.js";
 import { showScreen } from "../ui/nav.js";
 import { toast } from "../ui/dom.js";
+import { t } from "../content/i18n.js";
 
 // Gegnersuche direkt aus der Modus-Auswahl
 function startSearch(id) {
   if (!serverOn()) { openOnline(); return; }
   const lock = modeLock(id);
-  if (lock === "Konto nötig") { toast("Für Ranked brauchst du ein Konto", "i-user"); showScreen("settings"); return; }
-  if (lock) { toast(`${id === "ranked" ? "Ranked" : "Casual"} gibt es ${lock}. Spiel ein paar Runden gegen den Computer.`, "i-lock"); return; }
+  if (lock === "account") { toast(t("lock.rankedAccount"), "i-user"); showScreen("settings"); return; }
+  if (lock) { toast(t("lock.levelHint", { n: MIN_LEVEL[id] }), "i-lock"); return; }
   findMatch(id).catch(e => toast(errText(e), "i-close"));
 }
 
-export function cpuNames(opp) { return [S.name || "Du", charById(opp).name]; }
+export function cpuNames(opp) { return [S.name || t("ui.you"), charById(opp).name]; }
 
 export function startMode(id) {
   A.sfx("click");
   switch (id) {
     case "quick": setupScreen({ mode: "cpu" }); break;
-    case "local": App.local2 = [S.char]; selectScreen({ title: "Spieler 2: Kopf wählen", cur: CHARS.find(c => c.id !== S.char && owns("chars", c.id)).id, p2: true, okText: "Weiter", onDone: id2 => { App.local2[1] = id2; setupScreen({ mode: "local" }); } }); break;
+    case "local": App.local2 = [S.char]; selectScreen({ title: t("local.p2pick"), cur: CHARS.find(c => c.id !== S.char && owns("chars", c.id)).id, p2: true, okText: t("ui.next"), onDone: id2 => { App.local2[1] = id2; setupScreen({ mode: "local" }); } }); break;
     case "online": openOnline(); break;
     case "casual": case "ranked": startSearch(id); break;
     case "cup": startCup(); break;
@@ -61,8 +62,8 @@ export function endlessOpp(n) {
 export function runNext() {
   const r = App.run; A.sfx("click");
   if (!r || r.done) { App.run = null; quitToMenu(); return; }
-  if (r.kind === "cup") { const o = r.ops[r.round]; beginMatch({ mode: "cup", chars: [S.char, o.ch], arena: o.arena, dur: 60, rules: {}, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
-  else { const o = r.next; beginMatch({ mode: "endless", chars: [S.char, o.ch], arena: o.arena, dur: 90, rules: { len: "w3", ...(r.streak >= 2 ? { obs: "rnd" } : {}) }, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: ["DU", null], ball: S.ball }); }
+  if (r.kind === "cup") { const o = r.ops[r.round]; beginMatch({ mode: "cup", chars: [S.char, o.ch], arena: o.arena, dur: 60, rules: {}, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: [t("hud.you"), null], ball: S.ball }); }
+  else { const o = r.next; beginMatch({ mode: "endless", chars: [S.char, o.ch], arena: o.arena, dur: 90, rules: { len: "w3", ...(r.streak >= 2 ? { obs: "rnd" } : {}) }, golden: true, diff: o.diff, names: cpuNames(o.ch), labels: [t("hud.you"), null], ball: S.ball }); }
 }
 
 // Tages-Challenge

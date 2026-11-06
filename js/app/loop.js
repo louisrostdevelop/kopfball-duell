@@ -12,6 +12,7 @@ import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { drawShowcase } from "../ui/screens/home.js";
 import { input as I } from "./services.js";
+import { t } from "../content/i18n.js";
 
 export let lastT = performance.now(), simT = 0;
 export const perf = { t: 0, n: 0, slow: 0 };
@@ -21,7 +22,7 @@ export function loop(now) {
   const dt = Math.min(0.05, raw); lastT = now; simT += dt;
   if (S.quality === "high" && inGame() && raw < 0.5) {
     perf.t += raw; perf.n++;
-    if (perf.t > 3) { if (perf.n / perf.t < 42) { perf.slow++; if (perf.slow >= 2) { S.quality = "low"; save(); setQuality("low"); toast("Grafik auf „Schnell“ gestellt, damit es flüssig läuft"); } } else perf.slow = 0; perf.t = 0; perf.n = 0; }
+    if (perf.t > 3) { if (perf.n / perf.t < 42) { perf.slow++; if (perf.slow >= 2) { S.quality = "low"; save(); setQuality("low"); toast(t("perf.lowQuality")); } } else perf.slow = 0; perf.t = 0; perf.n = 0; }
   }
   I.pollPads();
   const st = App.st;
@@ -39,7 +40,7 @@ export function loop(now) {
   if (st.ph === "ko" || st.ph === "cd") App.rec = [];
   if (App.mode !== "demo") { const me = myIdx(); if (me >= 0) App.maxDef = Math.max(App.maxDef, st.s[1 - me] - st.s[me]); }
   const la = st.ph === "cd" ? 1 : st.ph === "play" && App.goT >= 0 ? clamp(1 - (simT - App.goT - 1.5) / 0.6, 0, 1) : 0;
-  const labels = (App.labels || []).map(t => t ? { t, a: la } : null);
+  const labels = (App.labels || []).map(lb => (lb ? { t: lb, a: la } : null));
   if (App.screen !== "home" || App.mode !== "demo" || !document.hidden) render(st, simT, { dt, names: App.names, labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesText(), modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
   if (App.mode !== "demo") I.touchHud(App.mode === "guest" && App.gp ? { p: [st.p[0], Object.assign({}, st.p[1], { charge: App.gp.charge })] } : st);
   if (st.ph === "end" && !App.endShown) { App.endShown = true; if (App.mode === "demo") setTimeout(startDemo, 1500); else setTimeout(matchEnd, 900); }

@@ -13,6 +13,7 @@ import { audio as A } from "../../app/services.js";
 import { dailyBriefing } from "./run.js";
 import { setShopTab } from "./shop.js";
 import { availableModes } from "./modes.js";
+import { t as tx } from "../../content/i18n.js";
 
 export let showcaseT = 0, showcaseTap = 0;
 export const juggle = { y: 0, vy: 0, a: 0, hits: 0 };
@@ -28,23 +29,23 @@ export function homeScreen() {
   const m = availableModes().find(x => x.id === S.mode) || MODES[0];
   $("mcTitle").textContent = m.name;
   let sub = m.desc;
-  if (m.id === "daily") { const ch = dailyChallenge(); sub = ch.done ? "Heute geschafft" : `Heute: ${charById(ch.opp).name}, ${ch.presetName}`; }
-  if (m.id === "endless" && S.endlessBest) sub = `Rekord: ${S.endlessBest} Siege`;
+  if (m.id === "daily") { const ch = dailyChallenge(); sub = ch.done ? tx("mode.daily.done") : tx("home.dailyToday", { name: charById(ch.opp).name, rules: ch.presetName }); }
+  if (m.id === "endless" && S.endlessBest) sub = tx("home.endlessRecord", { n: S.endlessBest });
   $("mcSub").textContent = sub;
   $("mcIcon").innerHTML = svg(m.icon);
   $("mcIcon").style.background = `linear-gradient(${m.c1}, ${m.c2})`;
   const pf = $("pfAv"); pf.innerHTML = ""; pf.append(avatarCanvas(S.char, 50));
-  $("pfName").textContent = S.name || "Spieler";
+  $("pfName").textContent = S.name || tx("ui.player");
   // Tages-Challenge
   const ch = dailyChallenge();
   $("hsDaily").classList.toggle("done", ch.done);
   $("hdOpp").textContent = charById(ch.opp).name;
-  $("hdRules").textContent = ch.presetName + (matchLen(ch.rules).win ? `, bis ${matchLen(ch.rules).win}` : ", 60 s") + " · " + DIFFS[ch.diff].name;
-  $("hdRw").innerHTML = ch.done ? "✓ Geschafft" : `<span class="coin"></span>+${ch.reward}`;
+  $("hdRules").textContent = ch.presetName + ", " + (matchLen(ch.rules).win ? tx("home.upTo", { n: matchLen(ch.rules).win }) : "60 s") + " · " + DIFFS[ch.diff].name;
+  $("hdRw").innerHTML = ch.done ? "✓ " + tx("home.done") : `<span class="coin"></span>+${ch.reward}`;
   const ha = $("hdAv"); ha.innerHTML = ""; ha.append(avatarCanvas(ch.opp, 60, { dir: -1, mood: "angry" }));
   // Aufgaben
   const tl = tasks();
-  $("htCount").textContent = tl.filter(t => t.done).length + "/" + tl.length;
+  $("htCount").textContent = tl.filter(x => x.done).length + "/" + tl.length;
   $("htList").innerHTML = tl.map(t => `<span class="ht-row${t.done ? " done" : ""}"><span>${esc(t.text)}</span><span class="rw">${t.done ? "✓" : `<span class="coin"></span>${t.reward}`}</span><span class="pb"><i style="width:${Math.round(t.prog / t.n * 100)}%"></i></span></span>`).join("");
   // Nächster Kopf
   const next = CHARS.filter(x => !owns("chars", x.id)).sort((x, y) => x.price - y.price)[0];
@@ -55,8 +56,8 @@ export function homeScreen() {
     $("nuFill").style.width = Math.min(100, Math.round(S.coins / next.price * 100)) + "%";
     const av = $("nuAv"); av.innerHTML = ""; av.style.setProperty("--rc", RCOL[nr]); av.append(avatarCanvas(next.id, 52));
     nu.classList.toggle("ready", S.coins >= next.price);
-    nu.querySelector("small").textContent = S.coins >= next.price ? "Jetzt freischalten!" : "Nächster Kopf";
-    nu.onclick = () => { A.sfx("click"); selectScreen({ title: "Köpfe", cur: next.id, okText: "Auswählen", onDone: id => { S.char = id; save(); goBack(); } }); };
+    nu.querySelector("small").textContent = tx(S.coins >= next.price ? "home.unlockNow" : "home.nextHead");
+    nu.onclick = () => { A.sfx("click"); selectScreen({ title: tx("nav.heads"), cur: next.id, okText: tx("ui.select"), onDone: id => { S.char = id; save(); goBack(); } }); };
   }
 }
 
@@ -68,7 +69,7 @@ export function refreshTop() {
   $("xpFill").style.width = Math.round(S.xp / xpFor(S.level) * 100) + "%";
   $("xpTxt").textContent = S.xp + "/" + xpFor(S.level);
   $("starNum").textContent = Object.keys(S.ach).length;
-  const tl = tasks(), open = tl.filter(t => !t.done).length, ch = challenge();
+  const tl = tasks(), open = tl.filter(x => !x.done).length, ch = challenge();
   const tb = $("taskBadge"); const pv = serverOn() && passView(); const n = open + (ch.done ? 0 : 1) + (pv ? pv.claimable : 0); tb.hidden = !n; tb.textContent = n;
   const dl = deal(); $("shopBadge").hidden = !(dl && S.coins >= dl.price) && !CHARS.some(c => !owns("chars", c.id) && c.price <= S.coins);
 }
@@ -128,7 +129,7 @@ export function initHome() {
   registerScreen("home", { show: homeScreen });
   $("btnPlay").onclick = () => startMode(S.mode);
   $("modeCard").onclick = () => { A.sfx("click"); showScreen("modes"); };
-  $("navHeads").onclick = () => { A.sfx("click"); selectScreen({ title: "Köpfe", okText: "Auswählen", onDone: id => { S.char = id; save(); goBack(); } }); };
+  $("navHeads").onclick = () => { A.sfx("click"); selectScreen({ title: tx("nav.heads"), okText: tx("ui.select"), onDone: id => { S.char = id; save(); goBack(); } }); };
   $("showcase").onclick = tapShowcase;
   $("hsDaily").onclick = () => { A.sfx("click"); dailyBriefing(); };
   $("hsTasks").onclick = () => { A.sfx("click"); showScreen("tasks"); };

@@ -76,139 +76,145 @@
   <!-- Start -->
   <section class="screen home" id="scr-home">
     <header class="hud-top">
-      <button class="profile" id="btnProfile" aria-label="Profil">
+      <button class="profile" id="btnProfile" aria-label="Profil" data-i18n-attr="aria-label:html.attr.profil">
         <span class="pf-av" id="pfAv"></span>
-        <span class="pf-txt"><b id="pfName">Spieler</b><span class="pf-xp"><i id="xpFill"></i><em id="xpTxt">0/120</em></span></span>
+        <span class="pf-txt"><b id="pfName"></b><span class="pf-xp"><i id="xpFill"></i><em id="xpTxt">0/120</em></span></span>
         <span class="pf-lvl"><span id="lvlNum">1</span></span>
       </button>
       <span class="grow"></span>
-      <button class="chip coin-chip" id="homeCoins" aria-label="Münzen, zum Shop"><span class="coin"></span><b class="coinNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
-      <button class="chip gem-chip" id="homeGems" aria-label="Juwelen, zum Shop" hidden><span class="gem"></span><b class="gemNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
-      <button class="chip star-chip" id="homeStars" aria-label="Erfolge"><svg class="ic"><use href="#i-star"/></svg><b id="starNum">0</b></button>
-      <button class="sqbtn" id="btnSettings" aria-label="Einstellungen"><svg><use href="#i-gear"/></svg></button>
+      <button class="chip coin-chip" id="homeCoins" aria-label="Münzen, zum Shop" data-i18n-attr="aria-label:html.attr.muenzenZumShop"><span class="coin"></span><b class="coinNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
+      <button class="chip gem-chip" id="homeGems" aria-label="Juwelen, zum Shop" hidden data-i18n-attr="aria-label:html.attr.juwelenZumShop"><span class="gem"></span><b class="gemNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
+      <button class="chip star-chip" id="homeStars" aria-label="Erfolge" data-i18n-attr="aria-label:html.attr.erfolge"><svg class="ic"><use href="#i-star"/></svg><b id="starNum">0</b></button>
+      <button class="sqbtn" id="btnSettings" aria-label="Einstellungen" data-i18n-attr="aria-label:html.attr.einstellungen"><svg><use href="#i-gear"/></svg></button>
     </header>
 
     <nav class="sidenav">
-      <button class="navbtn blue" id="navHeads"><svg><use href="#i-swap"/></svg><span>Köpfe</span></button>
-      <button class="navbtn pink" id="navShop"><svg><use href="#i-bag"/></svg><span>Shop</span><i class="badge" id="shopBadge" hidden>!</i></button>
-      <button class="navbtn green" id="navTasks"><svg><use href="#i-tasks"/></svg><span>Aufgaben</span><i class="badge" id="taskBadge" hidden></i></button>
-      <button class="navbtn gold" id="navAch"><svg><use href="#i-trophy"/></svg><span>Erfolge</span></button>
+      <button class="navbtn blue" id="navHeads"><svg><use href="#i-swap"/></svg><span data-i18n="html.home.koepfe">Köpfe</span></button>
+      <button class="navbtn pink" id="navShop"><svg><use href="#i-bag"/></svg><span data-i18n="html.home.shop">Shop</span><i class="badge" id="shopBadge" hidden>!</i></button>
+      <button class="navbtn green" id="navTasks"><svg><use href="#i-tasks"/></svg><span data-i18n="html.home.aufgaben">Aufgaben</span><i class="badge" id="taskBadge" hidden></i></button>
+      <button class="navbtn gold" id="navAch"><svg><use href="#i-trophy"/></svg><span data-i18n="html.home.erfolge">Erfolge</span></button>
     </nav>
 
     <div class="stage">
-      <canvas id="showcase" aria-label="Dein Kopf, antippen zum Jonglieren"></canvas>
+      <canvas id="showcase" aria-label="Dein Kopf, antippen zum Jonglieren" data-i18n-attr="aria-label:html.attr.deinKopfAntippenZum"></canvas>
       <div class="plate">
-        <span class="rarity" id="stRarity">Basis</span>
-        <b id="stName">Kalle</b>
-        <span class="superline"><svg><use href="#i-bolt"/></svg><span id="stSuper">Feuerball</span></span>
+        <span class="rarity" id="stRarity"></span>
+        <b id="stName"></b>
+        <span class="superline"><svg><use href="#i-bolt"/></svg><span id="stSuper"></span></span>
       </div>
-      <button class="nextup" id="hsNext" hidden><span class="nu-av" id="nuAv"></span><span class="nu-txt"><small>Nächster Kopf</small><b id="nuName">Rocco</b><span class="nu-bar"><i id="nuFill"></i></span></span><span class="nu-num" id="nuNum">0/200</span></button>
+      <button class="nextup" id="hsNext" hidden><span class="nu-av" id="nuAv"></span><span class="nu-txt"><small data-i18n="html.home.naechsterKopf">Nächster Kopf</small><b id="nuName"></b><span class="nu-bar"><i id="nuFill"></i></span></span><span class="nu-num" id="nuNum">0/200</span></button>
     </div>
 
     <div class="playzone">
       <div class="homeside">
         <button class="hs-daily" id="hsDaily">
           <span class="hd-ic"><svg><use href="#i-cal"/></svg></span>
-          <span class="hd-txt"><small>Tages-Challenge</small><b id="hdOpp">Magnus</b><em id="hdRules">Chaos, bis 3</em></span>
+          <span class="hd-txt"><small data-i18n="html.home.tagesChallenge">Tages-Challenge</small><b id="hdOpp"></b><em id="hdRules"></em></span>
           <span class="hd-av" id="hdAv"></span>
           <span class="hd-rw" id="hdRw"><span class="coin"></span>+150</span>
         </button>
         <button class="hs-tasks" id="hsTasks">
-          <span class="ht-head"><svg><use href="#i-tasks"/></svg><b>Heute</b><span class="grow"></span><em id="htCount">0/3</em></span>
+          <span class="ht-head"><svg><use href="#i-tasks"/></svg><b data-i18n="html.home.heute">Heute</b><span class="grow"></span><em id="htCount">0/3</em></span>
           <span class="ht-list" id="htList"></span>
         </button>
       </div>
       <button class="modecard" id="modeCard">
         <span class="mc-ic" id="mcIcon"><svg><use href="#i-play"/></svg></span>
-        <span class="mc-txt"><small>Modus</small><b id="mcTitle">Schnelles Spiel</b><em id="mcSub">Gegen den Computer</em></span>
-        <span class="mc-chev">Wechseln</span>
+        <span class="mc-txt"><small data-i18n="html.home.modus">Modus</small><b id="mcTitle"></b><em id="mcSub"></em></span>
+        <span class="mc-chev" data-i18n="html.home.wechseln">Wechseln</span>
       </button>
-      <button class="btn-play" id="btnPlay"><span>Spielen</span></button>
+      <button class="btn-play" id="btnPlay"><span data-i18n="html.home.spielen">Spielen</span></button>
     </div>
   </section>
 
   <!-- Modus-Auswahl -->
   <section class="screen sheet" id="scr-modes" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Spielmodus</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.modes.spielmodus">Spielmodus</h2></header>
     <div class="modegrid" id="modeGrid"></div>
   </section>
 
   <!-- Kopf-Auswahl -->
   <section class="screen" id="scr-select" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2 id="selTitle">Köpfe</h2><span class="grow"></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="selTitle"></h2><span class="grow"></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
     <div class="selgrid">
       <div class="cardgrid" id="charGrid"></div>
       <aside class="detail">
-        <div class="det-top" id="detTop"><span class="rarity" id="ciRarity">Basis</span><div class="bigav" id="bigAv"></div></div>
-        <h3 id="ciName">Kalle</h3>
-        <div class="superbox"><svg><use href="#i-bolt"/></svg><div><b id="ciSuper">Feuerball</b><p id="ciDesc"></p></div></div>
+        <div class="det-top" id="detTop"><span class="rarity" id="ciRarity"></span><div class="bigav" id="bigAv"></div></div>
+        <h3 id="ciName"></h3>
+        <div class="superbox"><svg><use href="#i-bolt"/></svg><div><b id="ciSuper"></b><p id="ciDesc"></p></div></div>
         <div class="stats" id="ciStats"></div>
         <div class="headlv" id="ciLevel" hidden></div>
-        <button class="btn green" id="btnSelOk">Auswählen</button>
+        <button class="btn green" id="btnSelOk"></button>
       </aside>
     </div>
   </section>
 
   <!-- Spiel einstellen -->
   <section class="screen" id="scr-setup" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2 id="setupTitle">Spiel einstellen</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="setupTitle"></h2></header>
     <div class="setupgrid">
       <div class="panel">
-        <h4>Arena</h4>
+        <h4 data-i18n="html.setup.arena">Arena</h4>
         <div class="arenas" id="arenaList"></div>
-        <div class="obsopt"><h4>Hindernisse</h4><div class="seg wrap" id="segObs"></div><div class="obsrow"><div class="obsprev" id="obsPrev"></div><p class="hint" id="obsDesc"></p></div></div>
+        <div class="obsopt"><h4 data-i18n="html.setup.hindernisse">Hindernisse</h4><div class="seg wrap" id="segObs"></div><div class="obsrow"><div class="obsprev" id="obsPrev"></div><p class="hint" id="obsDesc"></p></div></div>
       </div>
       <div class="panel opts">
-        <div class="opt" id="optDiff"><h4>Gegner</h4><div class="seg" id="segDiff"></div></div>
-        <div class="opt" id="optRules"><h4>Regeln</h4><button class="rulesbtn" id="btnRules"><svg><use href="#i-sliders"/></svg><span id="rulesSum">Standard</span><em>Anpassen</em></button></div>
-        <button class="btn green big" id="btnKickoff">Anpfiff</button>
+        <div class="opt" id="optDiff"><h4 data-i18n="html.setup.gegner">Gegner</h4><div class="seg" id="segDiff"></div></div>
+        <div class="opt" id="optRules"><h4 data-i18n="html.setup.regeln">Regeln</h4><button class="rulesbtn" id="btnRules"><svg><use href="#i-sliders"/></svg><span id="rulesSum"></span><em data-i18n="html.setup.anpassen">Anpassen</em></button></div>
+        <button class="btn green big" id="btnKickoff" data-i18n="html.setup.anpfiff">Anpfiff</button>
       </div>
     </div>
   </section>
 
   <!-- Regeln -->
   <section class="screen sheet" id="scr-rules" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Regeln</h2><span class="grow"></span><button class="btn small ghost" id="btnRulesReset">Standard</button></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.rules.regeln">Regeln</h2><span class="grow"></span><button class="btn small ghost" id="btnRulesReset" data-i18n="html.rules.standard">Standard</button></header>
     <div class="rulewrap">
       <div class="presets" id="rulePresets"></div>
-      <div class="rtabs" role="tablist"><button id="rtCore" class="on" role="tab">Wichtig</button><button id="btnRulesMore" role="tab">Mehr<em id="moreCount" hidden></em></button></div>
+      <div class="rtabs" role="tablist"><button id="rtCore" class="on" role="tab"></button><button id="btnRulesMore" role="tab"><span data-i18n="html.rules.mehr">Mehr</span><em id="moreCount" hidden></em></button></div>
       <div class="rulelist" id="ruleList"></div>
       <div class="rulelist" id="ruleMore" hidden></div>
     </div>
-    <div class="sheetfoot"><span class="rulesum" id="rulesNow">Standard</span><button class="btn green big" id="btnRulesDone">Fertig</button></div>
+    <div class="sheetfoot"><span class="rulesum" id="rulesNow"></span><button class="btn green big" id="btnRulesDone" data-i18n="html.rules.fertig">Fertig</button></div>
   </section>
 
   <!-- Cup / Endlos -->
   <section class="screen" id="scr-run" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2 id="runTitle">Kopfball-Cup</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="runTitle"></h2></header>
     <div class="runwrap">
       <div class="bracket" id="bracket"></div>
       <p class="runnote" id="runNote"></p>
-      <button class="btn yellow big" id="btnRunNext">Los geht's</button>
+      <button class="btn yellow big" id="btnRunNext"></button>
     </div>
   </section>
 
   <!-- Online -->
   <section class="screen" id="scr-online" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Online</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.online.online">Online</h2></header>
     <div class="onlinegrid">
       <div class="panel mm" id="mmPanel" hidden>
-        <h4>Gegner suchen</h4>
+        <h4 data-i18n="html.online.gegnerSuchen">Gegner suchen</h4>
         <div class="mmrow">
-          <button class="mmbtn casual" id="btnCasual"><svg><use href="#i-globe"/></svg><b>Casual</b><em>ohne Wertung</em></button>
-          <button class="mmbtn ranked" id="btnRanked"><svg><use href="#i-crown"/></svg><b>Ranked</b><em>Bronze · 1000</em></button>
+          <button class="mmbtn casual" id="btnCasual"><svg><use href="#i-globe"/></svg><b data-i18n="html.online.casual">Casual</b><em></em></button>
+          <button class="mmbtn ranked" id="btnRanked"><svg><use href="#i-crown"/></svg><b data-i18n="html.online.ranked">Ranked</b><em></em></button>
         </div>
       </div>
       <div class="panel">
-        <h4>Dein Name</h4>
-        <input id="nameIn" maxlength="12" placeholder="z. B. Louis" autocomplete="nickname">
-        <button class="btn purple big" id="btnHost"><svg><use href="#i-plus"/></svg>Raum erstellen</button>
-        <p class="hint">Du bekommst einen Link, den du deinem Kumpel schickst.</p>
+        <h4 data-i18n="html.online.deinName">Dein Name</h4>
+        <input id="nameIn" maxlength="12" placeholder="z. B. Louis" autocomplete="nickname" data-i18n-attr="placeholder:html.attr.zBLouis">
+        <button class="btn purple big" id="btnHost"><svg><use href="#i-plus"/></svg><span data-i18n="html.online.raumErstellen">Raum erstellen</span></button>
+        <p class="hint" data-i18n="html.online.duBekommstEinenLink">Du bekommst einen Link, den du deinem Kumpel schickst.</p>
+      </div>
+      <div class="panel friends" id="friendsPanel" hidden>
+        <h4 data-i18n="html.online.freunde">Freunde</h4>
+        <div class="fr-add"><input id="frName" maxlength="16" placeholder="Name eines Spielers" autocomplete="off" data-i18n-attr="placeholder:html.attr.nameEinesSpielers"><button class="btn small green" id="frAdd" data-i18n="html.online.hinzufuegen">Hinzufügen</button></div>
+        <p class="hint" id="frMsg"></p>
+        <div class="fr-list" id="frList"></div>
       </div>
       <div class="panel">
-        <h4>Code von deinem Kumpel</h4>
-        <div class="codebox"><input id="codeIn" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Raumcode"></div>
-        <button class="btn yellow big" id="btnJoin">Beitreten</button>
+        <h4 data-i18n="html.online.codeVonDeinemKumpel">Code von deinem Kumpel</h4>
+        <div class="codebox"><input id="codeIn" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Raumcode" data-i18n-attr="aria-label:html.attr.raumcode"></div>
+        <button class="btn yellow big" id="btnJoin" data-i18n="html.online.beitreten">Beitreten</button>
         <p class="hint" id="netNote"></p>
       </div>
     </div>
@@ -216,43 +222,43 @@
 
   <!-- Gegnersuche -->
   <section class="screen" id="scr-search" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2 id="srTitle">Casual</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="srTitle"></h2></header>
     <div class="searchwrap">
-      <div class="sr-me"><div class="sr-av" id="srAv"></div><b id="srMe">Du</b></div>
-      <div class="sr-mid"><div class="sr-ring"><span id="srTime">0:00</span></div><b id="srState">Suche Gegner…</b><small id="srOpp"></small></div>
-      <button class="btn ghost" id="srCancel">Abbrechen</button>
+      <div class="sr-me"><div class="sr-av" id="srAv"></div><b id="srMe"></b></div>
+      <div class="sr-mid"><div class="sr-ring"><span id="srTime">0:00</span></div><b id="srState"></b><small id="srOpp"></small></div>
+      <button class="btn ghost" id="srCancel" data-i18n="html.search.abbrechen">Abbrechen</button>
     </div>
   </section>
 
   <!-- Lobby -->
   <section class="screen" id="scr-lobby" hidden>
-    <header class="bar"><button class="iconback" id="btnLobbyLeave" aria-label="Verlassen"><svg><use href="#i-back"/></svg></button><h2>Lobby</h2></header>
+    <header class="bar"><button class="iconback" id="btnLobbyLeave" aria-label="Verlassen" data-i18n-attr="aria-label:html.attr.verlassen"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.lobby.lobby">Lobby</h2></header>
     <div class="lobbygrid">
       <div class="panel invite" id="inviteBox">
-        <h4>Raumcode</h4>
+        <h4 data-i18n="html.lobby.raumcode">Raumcode</h4>
         <div class="bigcode" id="lobbyCode">····</div>
         <div class="qr" id="qrBox"></div>
         <div class="row">
-          <button class="btn purple" id="btnShare"><svg><use href="#i-share"/></svg>Link teilen</button>
-          <button class="btn ghost" id="btnCopyLink"><svg><use href="#i-copy"/></svg>Kopieren</button>
+          <button class="btn purple" id="btnShare"><svg><use href="#i-share"/></svg><span data-i18n="html.lobby.linkTeilen">Link teilen</span></button>
+          <button class="btn ghost" id="btnCopyLink"><svg><use href="#i-copy"/></svg><span data-i18n="html.lobby.kopieren">Kopieren</span></button>
         </div>
         <div class="linkline" id="lobbyLink"></div>
       </div>
       <div class="panel versus">
         <div class="vsrow">
-          <div class="vsp p1"><div class="vsav" id="vsAv0"></div><b id="vsName0">Du</b><small id="vsCh0"></small></div>
-          <div class="vs">VS</div>
-          <div class="vsp p2"><div class="vsav" id="vsAv1"><span class="wait">?</span></div><b id="vsName1">Warte…</b><small id="vsCh1"></small></div>
+          <div class="vsp p1"><div class="vsav" id="vsAv0"></div><b id="vsName0"></b><small id="vsCh0"></small></div>
+          <div class="vs" data-i18n="html.lobby.vs">VS</div>
+          <div class="vsp p2"><div class="vsav" id="vsAv1"><span class="wait">?</span></div><b id="vsName1"></b><small id="vsCh1"></small></div>
         </div>
-        <p class="hint center" id="lobbyNote">Schick den Link. Sobald dein Kumpel ihn öffnet, ist er hier.</p>
+        <p class="hint center" id="lobbyNote"></p>
         <div class="lobbyopts" id="lobbyOpts">
-          <div class="opt"><h4>Arena</h4><div class="seg wrap" id="segLobbyArena"></div></div>
-          <div class="opt"><h4>Hindernisse</h4><div class="seg wrap" id="segLobbyObs"></div></div>
-          <div class="opt"><h4>Regeln</h4><button class="rulesbtn" id="btnLobbyRules"><svg><use href="#i-sliders"/></svg><span id="lobbyRulesSum">Standard</span><em>Anpassen</em></button></div>
+          <div class="opt"><h4 data-i18n="html.lobby.arena">Arena</h4><div class="seg wrap" id="segLobbyArena"></div></div>
+          <div class="opt"><h4 data-i18n="html.lobby.hindernisse">Hindernisse</h4><div class="seg wrap" id="segLobbyObs"></div></div>
+          <div class="opt"><h4 data-i18n="html.lobby.regeln">Regeln</h4><button class="rulesbtn" id="btnLobbyRules"><svg><use href="#i-sliders"/></svg><span id="lobbyRulesSum"></span><em data-i18n="html.lobby.anpassen">Anpassen</em></button></div>
         </div>
         <div class="row">
-          <button class="btn ghost" id="btnLobbyHead"><svg><use href="#i-swap"/></svg>Kopf</button>
-          <button class="btn green big" id="btnLobbyStart" disabled>Anpfiff</button>
+          <button class="btn ghost" id="btnLobbyHead"><svg><use href="#i-swap"/></svg><span data-i18n="html.lobby.kopf">Kopf</span></button>
+          <button class="btn green big" id="btnLobbyStart" disabled data-i18n="html.lobby.anpfiff">Anpfiff</button>
         </div>
       </div>
     </div>
@@ -260,9 +266,9 @@
 
   <!-- Shop -->
   <section class="screen" id="scr-shop" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Shop</h2><span class="grow"></span><span class="chip gem-chip static gemOnly" hidden><span class="gem"></span><b class="gemNum">0</b></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.shop.shop">Shop</h2><span class="grow"></span><span class="chip gem-chip static gemOnly" hidden><span class="gem"></span><b class="gemNum">0</b></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
     <div class="shoptop">
-      <div class="tabs" id="shopTabs"><button data-tab="chars" class="on">Köpfe</button><button data-tab="balls">Bälle</button><button data-tab="arenas">Arenen</button><button data-tab="gems" class="gemtab gemOnly" hidden><span class="gem"></span>Juwelen</button></div>
+      <div class="tabs" id="shopTabs"><button data-tab="chars" class="on" data-i18n="html.shop.koepfe">Köpfe</button><button data-tab="balls" data-i18n="html.shop.baelle">Bälle</button><button data-tab="arenas" data-i18n="html.shop.arenen">Arenen</button><button data-tab="gems" class="gemtab gemOnly" hidden><span class="gem"></span><span data-i18n="html.shop.juwelen">Juwelen</span></button></div>
       <div class="deal" id="dealBox"></div>
     </div>
     <div class="shopgrid" id="shopGrid"></div>
@@ -270,55 +276,64 @@
 
   <!-- Aufgaben -->
   <section class="screen" id="scr-tasks" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Aufgaben</h2><span class="grow"></span><button class="btn small purple" id="btnPass" hidden><svg><use href="#i-crown"/></svg>Saison-Pass<i class="badge" id="passBadge" hidden></i></button></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.tasks.aufgaben">Aufgaben</h2><span class="grow"></span><button class="btn small purple" id="btnPass" hidden><svg><use href="#i-crown"/></svg><span data-i18n="html.tasks.saisonPass">Saison-Pass</span><i class="badge" id="passBadge" hidden></i></button></header>
     <div class="taskwrap">
       <div class="challenge" id="challengeCard"></div>
-      <div class="panel"><h4>Heute</h4><div class="tasklist" id="taskList"></div><p class="hint">Jeden Tag gibt's drei neue.</p></div>
+      <div class="panel"><h4 data-i18n="html.tasks.heute">Heute</h4><div class="tasklist" id="taskList"></div><p class="hint" data-i18n="html.tasks.jedenTagGibtS">Jeden Tag gibt's drei neue.</p></div>
     </div>
+  </section>
+
+  <!-- Bestenliste -->
+  <section class="screen" id="scr-board" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.board.bestenliste">Bestenliste</h2></header>
+    <div class="tabs" id="boardTabs"><button data-board="endless" class="on" data-i18n="html.board.endlos">Endlos</button><button data-board="ranked" data-i18n="html.board.ranked">Ranked</button></div>
+    <div class="boardwrap"><ol class="board" id="boardList"></ol><div class="boardme" id="boardMe"></div></div>
   </section>
 
   <!-- Saison-Pass -->
   <section class="screen" id="scr-pass" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Saison-Pass</h2><span class="grow"></span><span class="chip gem-chip static"><span class="gem"></span><b class="gemNum">0</b></span></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.pass.saisonPass">Saison-Pass</h2><span class="grow"></span><span class="chip gem-chip static"><span class="gem"></span><b class="gemNum">0</b></span></header>
     <div class="passtop" id="passTop"></div>
     <div class="passtrack" id="passTrack"></div>
   </section>
 
   <!-- Erfolge -->
   <section class="screen" id="scr-ach" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Erfolge</h2><span class="grow"></span><span class="chip static"><svg class="ic"><use href="#i-star"/></svg><b id="achSum">0</b></span></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.ach.erfolge">Erfolge</h2><span class="grow"></span><button class="btn small purple" id="btnBoard" hidden><svg><use href="#i-trophy"/></svg><span data-i18n="html.ach.bestenliste">Bestenliste</span></button><span class="chip static"><svg class="ic"><use href="#i-star"/></svg><b id="achSum">0</b></span></header>
     <div class="profilebox" id="profileBox"></div>
     <div class="achlist" id="achList"></div>
   </section>
 
   <!-- Einstellungen -->
   <section class="screen" id="scr-settings" hidden>
-    <header class="bar"><button class="iconback" data-back aria-label="Zurück"><svg><use href="#i-back"/></svg></button><h2>Einstellungen</h2></header>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.settings.einstellungen">Einstellungen</h2></header>
     <div class="settingsgrid">
       <div class="panel">
-        <h4>Spieler</h4>
-        <input id="setName" maxlength="12" placeholder="Dein Name" autocomplete="nickname">
-        <div class="setrow"><svg><use href="#i-sound"/></svg><span>Soundeffekte</span><button class="toggle" id="tglSfx" aria-label="Soundeffekte"></button></div>
-        <div class="setrow"><svg><use href="#i-music"/></svg><span>Musik im Menü</span><button class="toggle" id="tglMusic" aria-label="Musik"></button></div>
-        <div class="setrow"><svg><use href="#i-vib"/></svg><span>Vibration</span><button class="toggle" id="tglVib" aria-label="Vibration"></button></div>
-        <div class="setrow"><svg><use href="#i-stadium"/></svg><span>Grafik</span><div class="seg" id="segQual"></div></div>
-        <div class="setrow"><svg><use href="#i-expand"/></svg><span>Vollbild</span><button class="btn small ghost" id="btnFull">Umschalten</button></div>
+        <h4 data-i18n="html.settings.spieler">Spieler</h4>
+        <input id="setName" maxlength="12" placeholder="Dein Name" autocomplete="nickname" data-i18n-attr="placeholder:html.attr.deinName">
+        <div class="setrow"><svg><use href="#i-sound"/></svg><span data-i18n="html.settings.soundeffekte">Soundeffekte</span><button class="toggle" id="tglSfx" aria-label="Soundeffekte" data-i18n-attr="aria-label:html.attr.soundeffekte"></button></div>
+        <div class="setrow"><svg><use href="#i-music"/></svg><span data-i18n="html.settings.musikImMenue">Musik im Menü</span><button class="toggle" id="tglMusic" aria-label="Musik" data-i18n-attr="aria-label:html.attr.musik"></button></div>
+        <div class="setrow"><svg><use href="#i-vib"/></svg><span data-i18n="html.settings.vibration">Vibration</span><button class="toggle" id="tglVib" aria-label="Vibration" data-i18n-attr="aria-label:html.attr.vibration"></button></div>
+        <div class="setrow"><svg><use href="#i-stadium"/></svg><span data-i18n="html.settings.grafik">Grafik</span><div class="seg" id="segQual"></div></div>
+        <div class="setrow"><svg><use href="#i-expand"/></svg><span data-i18n="html.settings.vollbild">Vollbild</span><button class="btn small ghost" id="btnFull" data-i18n="html.settings.umschalten">Umschalten</button></div>
       </div>
       <div class="panel account" id="accountPanel" hidden>
-        <h4>Konto</h4>
+        <h4 data-i18n="html.settings.konto">Konto</h4>
         <div id="accBody"></div>
       </div>
       <div class="panel">
-        <h4>Steuerung</h4>
+        <div class="setrow"><svg><use href="#i-globe"/></svg><span data-i18n="set.language">Sprache</span><div class="seg" id="segLang"></div></div>
+        <h4 data-i18n="html.settings.steuerung">Steuerung</h4>
         <table class="keys">
-          <tr><th></th><th>Laufen</th><th>Springen</th><th>Grätsche / Bombe</th><th>Schuss</th><th>Super</th></tr>
-          <tr><td>Spieler 1</td><td><kbd>A</kbd><kbd>D</kbd></td><td><kbd>W</kbd></td><td><kbd>S</kbd></td><td><kbd>Leer</kbd></td><td><kbd>E</kbd></td></tr>
-          <tr><td>Spieler 2</td><td><kbd>←</kbd><kbd>→</kbd></td><td><kbd>↑</kbd></td><td><kbd>↓</kbd></td><td><kbd>Enter</kbd></td><td><kbd>.</kbd></td></tr>
-          <tr><td>Controller</td><td>Stick</td><td>A</td><td>Stick ↓</td><td>X / B</td><td>Y / RB</td></tr>
-          <tr><td>Touch</td><td>links ziehen</td><td>links hoch</td><td>links runter</td><td>rechts tippen</td><td>Blitz-Taste</td></tr>
+          <tr><th></th><th data-i18n="html.settings.laufen">Laufen</th><th data-i18n="html.settings.springen">Springen</th><th data-i18n="html.settings.graetscheBombe">Grätsche / Bombe</th><th data-i18n="html.settings.schuss">Schuss</th><th data-i18n="html.settings.super">Super</th></tr>
+          <tr><td data-i18n="html.settings.spieler1">Spieler 1</td><td><kbd>A</kbd><kbd>D</kbd></td><td><kbd>W</kbd></td><td><kbd>S</kbd></td><td><kbd data-i18n="html.settings.leer">Leer</kbd></td><td><kbd>E</kbd></td></tr>
+          <tr><td data-i18n="html.settings.spieler2">Spieler 2</td><td><kbd>←</kbd><kbd>→</kbd></td><td><kbd>↑</kbd></td><td><kbd>↓</kbd></td><td><kbd>Enter</kbd></td><td><kbd>.</kbd></td></tr>
+          <tr><td data-i18n="html.settings.controller">Controller</td><td data-i18n="html.settings.stick">Stick</td><td>A</td><td data-i18n="html.settings.stick2">Stick ↓</td><td data-i18n="html.settings.xB">X / B</td><td data-i18n="html.settings.yRb">Y / RB</td></tr>
+          <tr><td data-i18n="html.settings.touch">Touch</td><td data-i18n="html.settings.linksZiehen">links ziehen</td><td data-i18n="html.settings.linksHoch">links hoch</td><td data-i18n="html.settings.linksRunter">links runter</td><td data-i18n="html.settings.rechtsTippen">rechts tippen</td><td data-i18n="html.settings.blitzTaste">Blitz-Taste</td></tr>
         </table>
-        <p class="hint">Springen kurz tippen: halb hoch, halten: voll. Runter am Boden: Grätsche, in der Luft: Arschbombe, je höher, desto härter. Schuss: Ball liegt ruhig = Lupfer, Ball rollt = flacher Strahl, Ball in der Luft = Volley. Halten macht härter, der Pfeil zeigt die Richtung. Emotes mit 1 bis 6.</p>
-        <button class="btn small danger" id="btnReset">Fortschritt löschen</button>
+        <p class="hint" data-i18n="html.settings.springenKurzTippenHalb">Springen kurz tippen: halb hoch, halten: voll. Runter am Boden: Grätsche, in der Luft: Arschbombe, je höher, desto härter. Schuss: Ball liegt ruhig = Lupfer, Ball rollt = flacher Strahl, Ball in der Luft = Volley. Halten macht härter, der Pfeil zeigt die Richtung. Emotes mit 1 bis 6.</p>
+        <button class="btn small danger" id="btnReset" data-i18n="html.settings.fortschrittLoeschen">Fortschritt löschen</button>
+        <p class="legal"><a href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legal.privacy">Datenschutz</a><a href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legal.terms">Nutzungsbedingungen</a><a href="legal/imprint.html" target="_blank" rel="noopener" data-i18n="legal.imprint">Impressum</a></p>
       </div>
     </div>
   </section>
@@ -326,19 +341,19 @@
   <!-- Ergebnis -->
   <section class="screen overlay" id="scr-end" hidden>
     <div class="endcard">
-      <div class="ribbon" id="endTitle">Sieg!</div>
+      <div class="ribbon" id="endTitle"></div>
       <div class="endscore">
-        <div class="es p1"><div id="endAv0"></div><b id="endN0">Du</b></div>
+        <div class="es p1"><div id="endAv0"></div><b id="endN0"></b></div>
         <div class="es-num"><span id="endS0">0</span><i>:</i><span id="endS1">0</span></div>
-        <div class="es p2"><div id="endAv1"></div><b id="endN1">CPU</b></div>
+        <div class="es p2"><div id="endAv1"></div><b id="endN1"></b></div>
       </div>
       <div class="endstats" id="endStats"></div>
       <div class="rewards" id="endRewards"></div>
       <p class="hint center" id="endNote"></p>
       <div class="row">
-        <button class="btn ghost" id="btnEndMenu">Menü</button>
-        <button class="btn ghost" id="btnEndShare"><svg><use href="#i-share"/></svg>Teilen</button>
-        <button class="btn yellow big" id="btnEndAgain">Revanche</button>
+        <button class="btn ghost" id="btnEndMenu"></button>
+        <button class="btn ghost" id="btnEndShare"><svg><use href="#i-share"/></svg><span data-i18n="html.end.teilen">Teilen</span></button>
+        <button class="btn yellow big" id="btnEndAgain"></button>
       </div>
     </div>
   </section>
@@ -346,18 +361,18 @@
   <!-- Pause -->
   <section class="screen overlay" id="scr-pause" hidden>
     <div class="pausecard">
-      <div class="ribbon blue">Pause</div>
-      <button class="btn green big" id="btnResume"><svg><use href="#i-play"/></svg>Weiter</button>
-      <button class="btn ghost" id="btnRestart">Neu starten</button>
-      <button class="btn ghost danger" id="btnQuit">Aufgeben</button>
+      <div class="ribbon blue" data-i18n="html.pause.pause">Pause</div>
+      <button class="btn green big" id="btnResume"><svg><use href="#i-play"/></svg><span data-i18n="html.pause.weiter">Weiter</span></button>
+      <button class="btn ghost" id="btnRestart" data-i18n="html.pause.neuStarten">Neu starten</button>
+      <button class="btn ghost danger" id="btnQuit"></button>
     </div>
   </section>
 </main>
 
 <div id="toasts"></div>
 <div id="modal" hidden><div class="modalcard" id="modalCard"></div></div>
-<div id="rotate" hidden><div class="phone"></div><b>Handy drehen</b><span>Quer spielt es sich viel besser.</span></div>
-<div id="loading"><b class="ld-logo">Kopfball<br>Duell</b><div class="ball"></div></div>
+<div id="rotate" hidden><div class="phone"></div><b data-i18n="html.pause.handyDrehen">Handy drehen</b><span data-i18n="html.pause.querSpieltEsSich">Quer spielt es sich viel besser.</span></div>
+<div id="loading"><b class="ld-logo"><span>Kopfball</span><br><span>Duell</span></b><div class="ball"></div></div>
 
 <script type="module" src="js/main.js?v=24"></script>
 </body>

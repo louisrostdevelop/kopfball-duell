@@ -10,7 +10,8 @@ import { tryJoin } from "./app/online.js";
 import { App, inGame } from "./app/state.js";
 import { initRender, resize, setQuality } from "./ui/render/render.js";
 import { onKey, onPad } from "./ui/controls.js";
-import { $, toast } from "./ui/dom.js";
+import { $, applyI18n, toast } from "./ui/dom.js";
+import { detectLang, setLang, t } from "./content/i18n.js";
 import { dailyModal } from "./ui/modals.js";
 import { initNav, showScreen } from "./ui/nav.js";
 import { initHud } from "./ui/hud.js";
@@ -28,6 +29,8 @@ import { initSettings } from "./ui/screens/settings.js";
 import { initEnd } from "./ui/screens/end.js";
 import { initSearch } from "./ui/screens/search.js";
 import { initPass } from "./ui/screens/pass.js";
+import { initBoard } from "./ui/screens/board.js";
+import { initFriends } from "./ui/screens/friends.js";
 // Adapter
 import * as webAudio from "./adapters/audio/webaudio.js";
 import * as domInput from "./adapters/input/dom-input.js";
@@ -55,6 +58,8 @@ async function boot() {
   provide({ audio: webAudio, input: domInput, net: peerjs, auth, ...(client ? { server: supabaseServer(client) } : {}) });
   await auth.init();
   await initProfile(localProfileStore());
+  setLang(S.lang && S.lang !== "auto" ? S.lang : detectLang());   // Sprache vor dem ersten Text
+  applyI18n();
   initAccount();
   const synced = serverOn() ? syncOnStart().catch(() => null) : null;
 
@@ -63,7 +68,7 @@ async function boot() {
   setQuality(S.quality);
   webAudio.setSfx(S.sfx); webAudio.setMusic(S.music); domInput.setVibration(S.vib);
   domInput.initInput({ inGame: () => inGame(), onKey, onPadButton: onPad, onTouch: () => { webAudio.unlock(); updateBand(); } });
-  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initSearch, initPass, initHud].forEach(f => f());
+  [initNav, initHome, initModes, initSelect, initSetup, initRules, initRun, initOnline, initShop, initTasks, initAchievements, initSettings, initEnd, initSearch, initPass, initBoard, initFriends, initHud].forEach(f => f());
 
   // 3. Los geht's
   startDemo();
@@ -77,19 +82,19 @@ async function boot() {
     const d = dailyCheck();
     if (d) setTimeout(() => dailyModal(d), 500);
     if (synced) synced.then(() => { homeScreen(); return claimDaily(); }).then(x => { if (x) { homeScreen(); setTimeout(() => dailyModal(x), 500); } });
-    if (mailBack) toast(mailBack === "ok" ? "Konto gesichert. Du kannst jetzt auf jedem Gerät spielen." : "Link aus der Mail hat nicht geklappt: " + mailBack, mailBack === "ok" ? "i-check" : "i-close", mailBack === "ok");
+    if (mailBack) toast(mailBack === "ok" ? t("acc.linked") : t("acc.linkFailed", { err: mailBack }), mailBack === "ok" ? "i-check" : "i-close", mailBack === "ok");
     // Rückkehr von der Bezahlseite
     const kauf = new URLSearchParams(location.search).get("kauf");
     if (kauf && serverOn()) {
       const q = new URLSearchParams(location.search); q.delete("kauf");
       history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : ""));
       if (kauf === "ok") {
-        toast("Danke! Juwelen kommen gleich.", "i-gem", true);
-        (synced || Promise.resolve()).then(() => awaitPurchase(S.gems || 0)).then(n => { homeScreen(); if (n) toast(`+${n} Juwelen`, "i-gem", true); });
-      } else toast("Kauf abgebrochen", "i-close");
+        toast(t("shop.thanks"), "i-gem", true);
+        (synced || Promise.resolve()).then(() => awaitPurchase(S.gems || 0)).then(n => { homeScreen(); if (n) toast(t("shop.gemsPlus", { n }), "i-gem", true); });
+      } else toast(t("shop.cancelled"), "i-close");
     }
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) && !navigator.standalone;
-    if (ios && !S.iosHint) setTimeout(() => { toast("Tipp: Teilen → „Zum Home-Bildschirm“ für Vollbild"); S.iosHint = true; save(); }, d ? 6000 : 2500);
+    if (ios && !S.iosHint) setTimeout(() => { toast(t("ios.hint")); S.iosHint = true; save(); }, d ? 6000 : 2500);
     // Einladungslink: ?join=CODE (alte Links mit #CODE gehen auch)
     const qs = new URLSearchParams(location.search).get("join") || "";
     const h = /^[A-Za-z0-9]{4}$/.test(qs) ? qs : (location.hash || "").slice(1);

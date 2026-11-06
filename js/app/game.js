@@ -9,6 +9,7 @@ import { App, inGame, vsCpu } from "./state.js";
 import { $, $$, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
 import { audio as A, input as I, net as Net } from "./services.js";
+import { t } from "../content/i18n.js";
 
 export function startDemo() {
   const pool = CHARS.map(c => c.id);
@@ -63,9 +64,9 @@ export function beginMatch(cfg) {
 
 export function tutorial() {
   const lines = I.isTouch
-    ? ["Links ziehen = laufen, nach oben ziehen = springen", "Links nach unten: Grätsche, in der Luft Arschbombe", "Rechts tippen = Schuss, halten und loslassen = Powerschuss"]
-    : ["A/D laufen · W springen (kurz = halb hoch)", "S: Grätsche, in der Luft Arschbombe", "Leertaste halten und loslassen = Powerschuss"];
-  lines.forEach((t, n) => setTimeout(() => toast(t, "i-ball"), 300 + n * 1500));
+    ? [t("tut.touch.0"), t("tut.touch.1"), t("tut.touch.2")]
+    : [t("tut.keys.0"), t("tut.keys.1"), t("tut.keys.2")];
+  lines.forEach((line, n) => setTimeout(() => toast(line, "i-ball"), 300 + n * 1500));
 }
 
 export function goFullscreen() {
@@ -96,7 +97,7 @@ export function pause(on) {
   App.paused = on && !online;
   if (on) {
     $("btnRestart").hidden = online || ["cup", "endless", "daily"].includes(App.mode);
-    $("btnQuit").textContent = online ? "Spiel verlassen" : App.mode === "train" ? "Training beenden" : App.mode === "cup" ? "Cup aufgeben" : "Aufgeben";
+    $("btnQuit").textContent = t(online ? "pause.leave" : App.mode === "train" ? "pause.endTraining" : App.mode === "cup" ? "pause.quitCup" : "pause.quit");
     $$(".screen").forEach(s => s.hidden = s.id !== "scr-pause"); App.screen = "pause"; $("touch").hidden = true;
     A.crowd(0);
   } else { $("scr-pause").hidden = true; App.screen = null; $("touch").hidden = false; A.crowd(0.3); }

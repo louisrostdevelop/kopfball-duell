@@ -5,6 +5,7 @@ import { S, save } from "../../app/profile.js";
 import { $, esc, modal, seg, svg, toast } from "../dom.js";
 import { showScreen, registerScreen, goBack } from "../nav.js";
 import { audio as A } from "../../app/services.js";
+import { t } from "../../content/i18n.js";
 
 // Ein Regelsatz enthält nur Abweichungen vom Standard. Presets setzen alles außer der Spiellänge.
 export let rulesCtx = null, rulesMoreOpen = false;
@@ -24,9 +25,9 @@ export function presetOf(r) {
   return RULE_PRESETS.find(p => sameRules(r, p.rules)) || (S.myPresets || []).find(p => sameRules(r, p.rules)) || null;
 }
 
-export const STD_PRESET = { name: "Standard" };
+export const STD_PRESET = { get name() { return t("rules.standard"); } };
 
-export function lenText(r) { const ml = matchLen(r); return ml.win ? `Erster bis ${ml.win}` : ml.dur + " s"; }
+export function lenText(r) { const ml = matchLen(r); return ml.win ? t("run.firstTo", { n: ml.win }) : ml.dur + " s"; }
 
 export function changedText(r) {
   return RULE_OPTS.filter(o => o.k !== "len" && ruleVal(r, o.k) !== DEFAULT_RULES[o.k]).map(o => { const v = o.opts.find(x => x[0] === r[o.k]); return v ? `${o.name} ${v[1]}` : ""; }).filter(Boolean).join(" · ");
@@ -62,11 +63,11 @@ export function renderRules() {
     const b = document.createElement("button");
     b.className = "preset" + (mine ? " mine" : "") + (cur === p ? " on" : "");
     if (!mine) { b.style.setProperty("--c1", p.c1); b.style.setProperty("--c2", p.c2); }
-    b.innerHTML = `<b>${esc(p.name)}</b><small>${esc(mine ? changedText(p.rules) || "Standard" : p.desc)}</small>` + (cur === p ? `<span class="pchk">${svg("i-check")}</span>` : "");
+    b.innerHTML = `<b>${esc(p.name)}</b><small>${esc(mine ? changedText(p.rules) || t("rules.standard") : p.desc)}</small>` + (cur === p ? `<span class="pchk">${svg("i-check")}</span>` : "");
     b.onclick = () => { A.sfx("click"); setRules(r, p.rules); renderRules(); };
     if (mine) {
-      const x = document.createElement("span"); x.className = "pdel"; x.setAttribute("role", "button"); x.setAttribute("aria-label", p.name + " löschen"); x.innerHTML = svg("i-close");
-      x.onclick = e => { e.stopPropagation(); A.sfx("click"); S.myPresets = S.myPresets.filter(q => q !== p); save(); toast(`„${p.name}“ gelöscht`, "i-close"); renderRules(); };
+      const x = document.createElement("span"); x.className = "pdel"; x.setAttribute("role", "button"); x.setAttribute("aria-label", t("rules.deleteLabel", { name: p.name })); x.innerHTML = svg("i-close");
+      x.onclick = e => { e.stopPropagation(); A.sfx("click"); S.myPresets = S.myPresets.filter(q => q !== p); save(); toast(t("rules.deleted", { name: p.name }), "i-close"); renderRules(); };
       b.append(x);
     }
     pr.append(b);
@@ -76,7 +77,7 @@ export function renderRules() {
   const sv = document.createElement("button"); sv.className = "preset add";
   const full = (S.myPresets || []).length >= MAX_MY_PRESETS;
   sv.disabled = !!cur || full;
-  sv.innerHTML = `<b>${svg("i-plus")}Speichern</b><small>${full ? `Max. ${MAX_MY_PRESETS}, lösch eins` : cur ? "Erst etwas ändern" : "Als eigenes Preset"}</small>`;
+  sv.innerHTML = `<b>${svg("i-plus")}${t("ui.save")}</b><small>${full ? t("rules.maxPresets", { n: MAX_MY_PRESETS }) : cur ? t("rules.changeFirst") : t("rules.asPreset")}</small>`;
   sv.onclick = savePresetDialog;
   pr.append(sv);
   // Einstellungen
@@ -85,7 +86,7 @@ export function renderRules() {
     const changed = ruleVal(r, o.k) !== DEFAULT_RULES[o.k];
     d.className = "rule" + (changed ? " changed" : "");
     d.innerHTML = `<h4>${o.name}<i class="cdot" title="geändert"></i></h4><div class="seg"></div>`;
-    seg(d.querySelector(".seg"), o.opts.map(([v, t]) => ({ v, t })), ruleVal(r, o.k), v => { if (v === DEFAULT_RULES[o.k]) delete r[o.k]; else r[o.k] = v; renderRules(); });
+    seg(d.querySelector(".seg"), o.opts.map(([v, label]) => ({ v, t: label })), ruleVal(r, o.k), v => { if (v === DEFAULT_RULES[o.k]) delete r[o.k]; else r[o.k] = v; renderRules(); });
     return d;
   };
   const list = $("ruleList"), more = $("ruleMore"); list.innerHTML = ""; more.innerHTML = "";
@@ -95,7 +96,7 @@ export function renderRules() {
   more.hidden = !rulesMoreOpen; list.hidden = rulesMoreOpen;
   $("btnRulesMore").classList.toggle("on", rulesMoreOpen); $("rtCore").classList.toggle("on", !rulesMoreOpen);
   const nCore = RULE_OPTS.filter(o => !o.more && o.k !== "len" && ruleVal(r, o.k) !== DEFAULT_RULES[o.k]).length;
-  $("rtCore").innerHTML = "Wichtig" + (nCore ? `<em>${nCore}</em>` : "");
+  $("rtCore").innerHTML = t("rules.core") + (nCore ? `<em>${nCore}</em>` : "");
   $("btnRulesReset").disabled = isStd(r) && ruleVal(r, "len") === DEFAULT_RULES.len;
   $("rulesNow").textContent = rulesSummary(r);
 }
@@ -103,12 +104,12 @@ export function renderRules() {
 export function savePresetDialog() {
   A.sfx("click");
   const n = (S.myPresets || []).length + 1;
-  modal({ title: "Preset speichern", body: `<p style="font-size:15px">So heißt es in der Schnellwahl.</p><input class="txt" id="presetName" maxlength="16" value="Mein Preset ${n}" aria-label="Name">`, btn: "Speichern", cancel: "Abbrechen", ribbon: "",
+  modal({ title: t("rules.savePreset"), body: `<p style="font-size:15px">${t("rules.savePresetHint")}</p><input class="txt" id="presetName" maxlength="16" value="${esc(t("rules.myPreset", { n }))}" aria-label="${esc(t("ui.name"))}">`, btn: t("ui.save"), cancel: t("ui.cancel"), ribbon: "",
     onOk: () => {
-      const name = ($("presetName").value || "").trim().slice(0, 16) || `Mein Preset ${n}`;
+      const name = ($("presetName").value || "").trim().slice(0, 16) || t("rules.myPreset", { n });
       const rules = { ...rulesCtx.target }; delete rules.len;
       S.myPresets = [...(S.myPresets || []), { id: "my" + Date.now(), name, rules }]; save();
-      toast(`„${name}“ gespeichert`, "i-check", true); renderRules();
+      toast(t("rules.saved", { name }), "i-check", true); renderRules();
     } });
   setTimeout(() => { const i = $("presetName"); if (i) { i.focus(); i.select(); i.onkeydown = e => { if (e.key === "Enter") $("modalOk").click(); }; } }, 50);
 }

@@ -3,10 +3,13 @@ import { ACHIEVEMENTS } from "../../content/config.js";
 import { achProgress, S } from "../../app/profile.js";
 import { $, svg } from "../dom.js";
 import { registerScreen } from "../nav.js";
+import { boardButton } from "./board.js";
+import { t } from "../../content/i18n.js";
 
 export function achScreen() {
+  boardButton();
   const st = S.stats;
-  $("profileBox").innerHTML = [["Spiele", st.games], ["Siege", st.wins], ["Tore", st.goals], ["Kopfballtore", st.headGoals], ["Spezialschüsse", st.supers], ["Endlos-Rekord", S.endlessBest]].map(([l, v]) => `<div class="pstat"><b>${v}</b><span>${l}</span></div>`).join("");
+  $("profileBox").innerHTML = [[t("prof.games"), st.games], [t("prof.wins"), st.wins], [t("prof.goals"), st.goals], [t("prof.headGoals"), st.headGoals], [t("stat.supers"), st.supers], [t("prof.endless"), S.endlessBest]].map(([l, v]) => `<div class="pstat"><b>${v}</b><span>${l}</span></div>`).join("");
   const l = $("achList"); l.innerHTML = "";
   ACHIEVEMENTS.forEach(a => {
     const done = !!S.ach[a.id], p = achProgress(a);

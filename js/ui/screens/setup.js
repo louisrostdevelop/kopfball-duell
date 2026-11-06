@@ -12,24 +12,25 @@ import { showScreen, registerScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
 import { rulesSummary, rulesScreen } from "./rules.js";
 import { audio as A } from "../../app/services.js";
+import { t } from "../../content/i18n.js";
 
 export let setupCtx = null;
 
 export function setupScreen(ctx) {
   setupCtx = ctx;
-  $("setupTitle").textContent = ctx.mode === "train" ? "Training" : ctx.mode === "local" ? "Zu zweit" : "Schnelles Spiel";
+  $("setupTitle").textContent = t(ctx.mode === "train" ? "mode.train.name" : ctx.mode === "local" ? "mode.local.name" : "mode.quick.name");
   $("optDiff").hidden = ctx.mode !== "cpu";
   refreshSetup();
   showScreen("setup");
 }
 
 export function obsChoices(arena) {
-  return [{ v: "off", t: "Aus" }, ...layoutsFor(arena).map((l, i) => ({ v: i, t: l.name })), { v: "rnd", t: "Zufall" }];
+  return [{ v: "off", t: t("obs.off") }, ...layoutsFor(arena).map((l, i) => ({ v: i, t: l.name })), { v: "rnd", t: t("obs.random") }];
 }
 
 export function obsInfo(arena, v) {
-  if (v === "off" || v === undefined) return { desc: "Klassisch, freies Feld.", list: [] };
-  if (v === "rnd") return { desc: "Jedes Spiel ein anderes Layout dieser Arena.", list: [] };
+  if (v === "off" || v === undefined) return { desc: t("obs.offDesc"), list: [] };
+  if (v === "rnd") return { desc: t("obs.randomDesc"), list: [] };
   const l = layoutsFor(arena)[v]; if (!l) return { desc: "", list: [] };
   const list = buildObstacles(arena, v); moveObstacles(list, 0, 0);
   return { desc: l.desc, list };
@@ -60,7 +61,7 @@ export function renderArenas() {
     b.append(arenaThumb(a.id, 240, 150));
     b.insertAdjacentHTML("beforeend", `<span class="cap"><b>${a.name}</b><small>${a.desc}</small></span>` + (locked ? `<span class="lock"><span class="coin"></span>${a.price}</span>` : ""));
     b.onclick = () => {
-      if (locked) { if (buy("arenas", a.id, a.price)) { A.sfx("coin"); toast(a.name + " freigeschaltet!", "i-stadium", true); refreshTop(); } else { toast(`Dafür brauchst du ${a.price} Münzen`, "i-lock"); return; } }
+      if (locked) { if (buy("arenas", a.id, a.price)) { A.sfx("coin"); toast(t("setup.unlocked", { name: a.name }), "i-stadium", true); refreshTop(); } else { toast(t("setup.needCoins", { n: a.price }), "i-lock"); return; } }
       A.sfx("click"); S.arena = a.id; save(); renderArenas(); renderObs();
     };
     list.append(b);
@@ -73,13 +74,13 @@ export function kickoffFromSetup() {
   if (setupCtx.mode === "cpu") {
     const pool = CHARS.filter(c => c.id !== S.char);
     const opp = pool[Math.floor(Math.random() * pool.length)].id;
-    beginMatch({ ...base, mode: "cpu", chars: [S.char, opp], diff: S.diff, names: cpuNames(opp), labels: ["DU", null] });
+    beginMatch({ ...base, mode: "cpu", chars: [S.char, opp], diff: S.diff, names: cpuNames(opp), labels: [t("hud.you"), null] });
   } else if (setupCtx.mode === "local") {
-    beginMatch({ ...base, mode: "local", chars: [App.local2[0], App.local2[1]], diff: 1, names: ["Spieler 1", "Spieler 2"], labels: ["P1", "P2"] });
+    beginMatch({ ...base, mode: "local", chars: [App.local2[0], App.local2[1]], diff: 1, names: [t("local.p1"), t("local.p2")], labels: ["P1", "P2"] });
   } else if (setupCtx.mode === "train") {
     const pool = CHARS.filter(c => c.id !== S.char);
     const opp = pool[Math.floor(Math.random() * pool.length)].id;
-    beginMatch({ ...base, mode: "train", train: true, keeper: true, mod: "superfast", rules: { ...S.rules, len: 90, win: 0 }, chars: [S.char, opp], diff: 1, golden: false, names: [S.name || "Du", "Torwart"], labels: ["DU", null] });
+    beginMatch({ ...base, mode: "train", train: true, keeper: true, mod: "superfast", rules: { ...S.rules, len: 90, win: 0 }, chars: [S.char, opp], diff: 1, golden: false, names: [S.name || t("ui.you"), t("train.keeper")], labels: [t("hud.you"), null] });
   }
 }
 

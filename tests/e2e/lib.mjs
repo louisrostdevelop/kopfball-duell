@@ -6,10 +6,11 @@ async function playwright() {
   catch { return await import(process.env.PW_MODULE || "/opt/npm-tools/node_modules/playwright/index.mjs"); }
 }
 
+// Tests prüfen deutsche Texte: Browser auf Deutsch (die Sprache kommt sonst vom Gerät)
 export const VIEW = {
-  desktop: { viewport: { width: 1366, height: 768 } },
-  phone: { viewport: { width: 780, height: 360 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true },
-  portrait: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true },
+  desktop: { viewport: { width: 1366, height: 768 }, locale: "de-DE" },
+  phone: { viewport: { width: 780, height: 360 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, locale: "de-DE" },
+  portrait: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, locale: "de-DE" },
 };
 
 export async function start() {
@@ -24,7 +25,7 @@ export const SAVE_KEY = "kopfball-duell-save-v2";
 
 // Neue Seite mit Spielstand (Tutorial gesehen, Tagesbonus schon abgeholt, damit kein Dialog stört)
 export async function openPage(env, view, { save = {}, init = [], query = "" } = {}) {
-  const ctx = await env.browser.newContext(view);
+  const ctx = await env.browser.newContext({ locale: "de-DE", ...view });
   for (const s of init) await ctx.addInitScript(s);
   await ctx.route("**/vendor/peerjs.min.js", r => r.fulfill({ body: "", contentType: "text/javascript" }));
   await ctx.addInitScript(([key, val]) => { if (!sessionStorage.getItem("seeded")) { localStorage.clear(); localStorage.setItem(key, val); sessionStorage.setItem("seeded", "1"); } },

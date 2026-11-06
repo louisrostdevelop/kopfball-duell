@@ -1,5 +1,6 @@
 // Spielwelt, Charaktere, Arenen, Bälle, Power-ups, Erfolge
 // Feldbreite ist pro Spiel einstellbar (Regel "Feldgröße"). W ist eine Live-Bindung, alle Module sehen den aktuellen Wert.
+import { has, localize, localizeKeys, money, t } from "./i18n.js";
 export const W0 = 1520;
 export let W = W0;
 export function setFieldW(w) { W = Math.round(w); }
@@ -16,18 +17,18 @@ export const COL = {
 
 // Spezialschüsse
 export const SUPERS = {
-  fire:    { name: "Feuerball",     desc: "Brennt durch alles. Wer im Weg steht, fliegt um.", col: "#ff5a1f" },
-  ice:     { name: "Eisschuss",     desc: "Friert den Gegner bei Berührung ein.", col: "#7fe3ff" },
-  thunder: { name: "Donnerkeil",    desc: "Zuckt im Zickzack aufs Tor.", col: "#ffe14d" },
-  rocket:  { name: "Rakete",        desc: "Kurz schweben, dann schnurgerade ins Eck.", col: "#ff3d6e" },
-  banana:  { name: "Bananenflanke", desc: "Krasser Effet, dreht sich ins Tor.", col: "#ffd43b" },
-  ghost:   { name: "Geisterball",   desc: "Wird mitten im Flug unsichtbar.", col: "#c8b6ff" },
-  giant:   { name: "Riesenball",    desc: "Der Ball wird riesig und rollt alles platt.", col: "#ff9f43" },
-  tornado: { name: "Tornado",       desc: "Wirbelt hoch und stürzt sich aufs Tor.", col: "#5effc8" },
-  magnet:  { name: "Magnetschuss",  desc: "Der Ball zieht es magisch ins Netz.", col: "#ff4fd8" },
-  meteor:  { name: "Meteor",        desc: "Ab ins All, dann Einschlag vor dem Tor.", col: "#ff7a1a" },
-  bouncy:  { name: "Flummi",        desc: "Springt wie verrückt und wird immer schneller.", col: "#ff8bd1" },
-  clone:   { name: "Dreifach",      desc: "Drei Bälle fliegen. Nur einer ist echt.", col: "#ffe14d" },
+  fire:    { col: "#ff5a1f" },
+  ice:     { col: "#7fe3ff" },
+  thunder: { col: "#ffe14d" },
+  rocket:  { col: "#ff3d6e" },
+  banana:  { col: "#ffd43b" },
+  ghost:   { col: "#c8b6ff" },
+  giant:   { col: "#ff9f43" },
+  tornado: { col: "#5effc8" },
+  magnet:  { col: "#ff4fd8" },
+  meteor:  { col: "#ff7a1a" },
+  bouncy:  { col: "#ff8bd1" },
+  clone:   { col: "#ffe14d" },
 };
 
 // hair: spikes | bob | mohawk | goggles | puffs | hood | beard | ponytail | slick | helmet | curly | crown
@@ -49,74 +50,74 @@ export const charById = id => CHARS.find(c => c.id === id) || CHARS[0];
 
 // Arenen: g = Schwerkraft-Faktor, bounce = Ballabprall am Boden, grip = Beschleunigung der Spieler
 export const ARENAS = [
-  { id: "stadion", name: "Flutlicht",  desc: "Der Klassiker unter Flutlicht.",        price: 0,   g: 1,    bounce: 0.7,  grip: 1,    roll: 0.97,  spd: 1,    maxB: 1,    ballDrag: 0.12 },
-  { id: "strand",  name: "Strand",     desc: "Sonnenuntergang. Sand bremst den Ball.", price: 0,   g: 1,    bounce: 0.5,  grip: 0.9,  roll: 0.93,  spd: 0.96, maxB: 1,    ballDrag: 0.14 },
-  { id: "neon",    name: "Neon City",  desc: "Dachterrasse über der Stadt. Alles schneller.", price: 300, g: 1.05, bounce: 0.75, grip: 1.1, roll: 0.975, spd: 1.08, maxB: 1.12, ballDrag: 0.1 },
-  { id: "eis",     name: "Eishalle",   desc: "Spiegelglatt. Bremsen ist Glückssache.", price: 400, g: 1,    bounce: 0.72, grip: 0.18, roll: 0.995, spd: 1.05, maxB: 1.05, ballDrag: 0.06 },
-  { id: "mond",    name: "Mond",       desc: "Wenig Schwerkraft, riesige Sprünge.",    price: 600, g: 0.6,  bounce: 0.8,  grip: 0.8,  roll: 0.985, spd: 1,    maxB: 1,    ballDrag: 0.03 },
+  { id: "stadion", price: 0,   g: 1,    bounce: 0.7,  grip: 1,    roll: 0.97,  spd: 1,    maxB: 1,    ballDrag: 0.12 },
+  { id: "strand",  price: 0,   g: 1,    bounce: 0.5,  grip: 0.9,  roll: 0.93,  spd: 0.96, maxB: 1,    ballDrag: 0.14 },
+  { id: "neon",    price: 300, g: 1.05, bounce: 0.75, grip: 1.1, roll: 0.975, spd: 1.08, maxB: 1.12, ballDrag: 0.1 },
+  { id: "eis",     price: 400, g: 1,    bounce: 0.72, grip: 0.18, roll: 0.995, spd: 1.05, maxB: 1.05, ballDrag: 0.06 },
+  { id: "mond",    price: 600, g: 0.6,  bounce: 0.8,  grip: 0.8,  roll: 0.985, spd: 1,    maxB: 1,    ballDrag: 0.03 },
 ];
 export const arenaById = id => ARENAS.find(a => a.id === id) || ARENAS[0];
 
 export const BALLS = [
-  { id: "klassik", name: "Klassik",    price: 0 },
-  { id: "retro",   name: "Leder",      price: 100 },
-  { id: "beach",   name: "Wasserball", price: 150 },
-  { id: "neon",    name: "Neon",       price: 200 },
-  { id: "pixel",   name: "Pixel",      price: 200 },
-  { id: "planet",  name: "Planet",     price: 300 },
-  { id: "disco",   name: "Disco",      price: 350 },
-  { id: "gold",    name: "Gold",       price: 600 },
+  { id: "klassik", price: 0 },
+  { id: "retro",   price: 100 },
+  { id: "beach",   price: 150 },
+  { id: "neon",    price: 200 },
+  { id: "pixel",   price: 200 },
+  { id: "planet",  price: 300 },
+  { id: "disco",   price: 350 },
+  { id: "gold",    price: 600 },
 ];
 
 export const POWERUPS = {
-  bighead: { name: "Riesenkopf",  icon: "big",    col: "#ff9f43", self: true },
-  mini:    { name: "Mini-Gegner", icon: "mini",   col: "#c8b6ff", self: false },
-  freeze:  { name: "Einfrieren",  icon: "freeze", col: "#7fe3ff", self: false },
-  speed:   { name: "Turbo",       icon: "speed",  col: "#ffe14d", self: true },
-  jump:    { name: "Sprungfeder", icon: "jump",   col: "#3ddc84", self: true },
-  fire:    { name: "Feuerschuss", icon: "fire",   col: "#ff5a1f", self: true },
-  wall:    { name: "Torwand",     icon: "wall",   col: "#9aa3b5", self: true },
-  biggoal: { name: "Riesentor",   icon: "goal",   col: "#ff4fd8", self: false },
-  meter:   { name: "Super voll",  icon: "meter",  col: "#ffe14d", self: true },
-  confuse: { name: "Verwirrung",  icon: "confuse", col: "#b28cff", self: false },
-  dbljump: { name: "Doppelsprung",icon: "dbljump", col: "#5effc8", self: true },
-  wind:    { name: "Rückenwind",  icon: "wind",   col: "#9fe8ff", self: true },
+  bighead: { icon: "big",    col: "#ff9f43", self: true },
+  mini:    { icon: "mini",   col: "#c8b6ff", self: false },
+  freeze:  { icon: "freeze", col: "#7fe3ff", self: false },
+  speed:   { icon: "speed",  col: "#ffe14d", self: true },
+  jump:    { icon: "jump",   col: "#3ddc84", self: true },
+  fire:    { icon: "fire",   col: "#ff5a1f", self: true },
+  wall:    { icon: "wall",   col: "#9aa3b5", self: true },
+  biggoal: { icon: "goal",   col: "#ff4fd8", self: false },
+  meter:   { icon: "meter",  col: "#ffe14d", self: true },
+  confuse: { icon: "confuse", col: "#b28cff", self: false },
+  dbljump: { icon: "dbljump", col: "#5effc8", self: true },
+  wind:    { icon: "wind",   col: "#9fe8ff", self: true },
 };
 export const PU_KEYS = Object.keys(POWERUPS);
 
 export const MODS = [
-  { id: "bigball", name: "Riesenball" },
-  { id: "minihead", name: "Mini-Köpfe" },
-  { id: "turbo", name: "Turbo" },
-  { id: "lowgrav", name: "Schwerelos" },
-  { id: "pu2", name: "Power-up-Regen" },
-  { id: "superfast", name: "Super lädt doppelt" },
+  { id: "bigball" },
+  { id: "minihead" },
+  { id: "turbo" },
+  { id: "lowgrav" },
+  { id: "pu2" },
+  { id: "superfast" },
 ];
 
 export const DIFFS = [
-  { id: 0, name: "Locker",  react: 0.22, err: 60, spd: 0.82, jumpSkill: 0.35, kickSkill: 0.5, superUse: 0.3, coins: 1 },
-  { id: 1, name: "Normal",  react: 0.14, err: 32, spd: 0.93, jumpSkill: 0.6,  kickSkill: 0.75, superUse: 0.6, coins: 1.3 },
-  { id: 2, name: "Schwer",  react: 0.08, err: 14, spd: 1.0,  jumpSkill: 0.85, kickSkill: 0.92, superUse: 0.85, coins: 1.7 },
-  { id: 3, name: "Legende", react: 0.04, err: 4,  spd: 1.06, jumpSkill: 1,    kickSkill: 1,    superUse: 1,    coins: 2.4 },
+  { id: 0, react: 0.22, err: 60, spd: 0.82, jumpSkill: 0.35, kickSkill: 0.5, superUse: 0.3, coins: 1 },
+  { id: 1, react: 0.14, err: 32, spd: 0.93, jumpSkill: 0.6,  kickSkill: 0.75, superUse: 0.6, coins: 1.3 },
+  { id: 2, react: 0.08, err: 14, spd: 1.0,  jumpSkill: 0.85, kickSkill: 0.92, superUse: 0.85, coins: 1.7 },
+  { id: 3, react: 0.04, err: 4,  spd: 1.06, jumpSkill: 1,    kickSkill: 1,    superUse: 1,    coins: 2.4 },
 ];
 
 export const ACHIEVEMENTS = [
-  { id: "firstwin",  name: "Erster Sieg",        desc: "Gewinne ein Spiel.",                         reward: 50 },
-  { id: "hattrick",  name: "Hattrick",           desc: "Schieß 3 Tore in einem Spiel.",              reward: 80 },
-  { id: "cleansheet",name: "Zu null",            desc: "Gewinne ohne Gegentor.",                     reward: 80 },
-  { id: "header10",  name: "Kopfballungeheuer",  desc: "Erziele insgesamt 10 Kopfballtore.",         reward: 120, goal: 10, stat: "headGoals" },
-  { id: "supergoal", name: "Super!",             desc: "Triff mit einem Spezialschuss.",             reward: 60 },
-  { id: "lastsec",   name: "Last Second",        desc: "Triff in den letzten 3 Sekunden.",           reward: 100 },
-  { id: "longshot",  name: "Fernschuss",         desc: "Triff aus der eigenen Hälfte.",              reward: 80 },
-  { id: "comeback",  name: "Comeback",           desc: "Gewinne nach 2 Toren Rückstand.",            reward: 150 },
-  { id: "cup",       name: "Pokalheld",          desc: "Gewinne den Cup.",                           reward: 200 },
-  { id: "legend",    name: "Legendenkiller",     desc: "Besiege die KI auf Legende.",                reward: 250 },
-  { id: "online",    name: "Online-König",       desc: "Gewinne ein Online-Spiel.",                  reward: 100 },
-  { id: "collector", name: "Sammler",            desc: "Schalte 6 Köpfe frei.",                      reward: 150 },
-  { id: "powerups",  name: "Power-Spieler",      desc: "Sammle insgesamt 25 Power-ups.",             reward: 100, goal: 25, stat: "pus" },
-  { id: "goals50",   name: "Torjäger",           desc: "Erziele insgesamt 50 Tore.",                 reward: 200, goal: 50, stat: "goals" },
-  { id: "stomp",     name: "Draufgänger",        desc: "Spring 10-mal auf einen Gegnerkopf.",        reward: 80, goal: 10, stat: "stomps" },
-  { id: "wins25",    name: "Seriensieger",       desc: "Gewinne 25 Spiele.",                         reward: 300, goal: 25, stat: "wins" },
+  { id: "firstwin",  reward: 50 },
+  { id: "hattrick",  reward: 80 },
+  { id: "cleansheet",reward: 80 },
+  { id: "header10",  reward: 120, goal: 10, stat: "headGoals" },
+  { id: "supergoal", reward: 60 },
+  { id: "lastsec",   reward: 100 },
+  { id: "longshot",  reward: 80 },
+  { id: "comeback",  reward: 150 },
+  { id: "cup",       reward: 200 },
+  { id: "legend",    reward: 250 },
+  { id: "online",    reward: 100 },
+  { id: "collector", reward: 150 },
+  { id: "powerups",  reward: 100, goal: 25, stat: "pus" },
+  { id: "goals50",   reward: 200, goal: 50, stat: "goals" },
+  { id: "stomp",     reward: 80, goal: 10, stat: "stomps" },
+  { id: "wins25",    reward: 300, goal: 25, stat: "wins" },
 ];
 
 export const EMOTES = ["😂", "🔥", "😤", "😎", "🤡", "GG"];
@@ -124,7 +125,7 @@ export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const rand = (a, b) => a + Math.random() * (b - a);
 
 // Seltenheit nach Preis (für Karten und Shop)
-export const RARITY = { basis: "Basis", selten: "Selten", episch: "Episch", legend: "Legendär" };
+export const RARITY = localizeKeys({ basis: 0, selten: 0, episch: 0, legend: 0 }, "rarity");
 export const rarityOf = c => !c.price ? "basis" : c.price <= 300 ? "selten" : c.price <= 500 ? "episch" : "legend";
 // Juwelen-Preis von Köpfen nach Seltenheit (Basis-Köpfe gibt es nur für Münzen). Gilt auch auf dem Server (catalog.sql).
 // Kopf-Level 1 bis 10 (Server: head_max_level). Stufe 10 = +25 % Schusskraft, +25 % schnellere Super-Ladung, +5 % Tempo.
@@ -139,51 +140,66 @@ export function leveledStats(c, lvl) {
 export const GEM_PRICE = { basis: null, selten: 300, episch: 450, legend: 600 };
 export const gemPrice = c => GEM_PRICE[rarityOf(c)];
 // Euro-Wert von Juwelen, immer neben Juwelen-Preisen angezeigt (Basis: kleinstes Paket, 100 Juwelen = 0,99 €)
-export const gemsInEuro = n => (n * 0.0099).toFixed(2).replace(".", ",") + " €";
+export const gemsInEuro = n => money(Math.round(n * 0.99));
 
 // Spielmodi (Reihenfolge = Reihenfolge der Karten)
 export const MODES = [
-  { id: "quick",   name: "Schnelles Spiel",  desc: "Gegen den Computer. Du stellst alles ein.", icon: "i-play",   c1: "#6b9bff", c2: "#2348d6", tags: ["1 Spieler"] },
-  { id: "cup",     name: "Cup",              desc: "Drei Gegner, drei Siege, ein Pokal.",        icon: "i-trophy", c1: "#ffd84a", c2: "#e88a00", tags: ["+300 Pokal"] },
+  { id: "quick",   icon: "i-play",   c1: "#6b9bff", c2: "#2348d6" },
+  { id: "cup",     icon: "i-trophy", c1: "#ffd84a", c2: "#e88a00" },
   // nur mit Server (Gegnersuche): zufälliger Gegner ohne Wertung / mit Liga und Wertung
-  { id: "casual",  name: "Casual",           desc: "Zufälliger Gegner aus aller Welt, ohne Wertung.", icon: "i-globe", c1: "#5fd0ff", c2: "#1773d6", tags: ["Online", "ohne Wertung"], server: true, isNew: true },
-  { id: "ranked",  name: "Ranked",           desc: "Gleich starke Gegner, Liga und Saison-Wertung.", icon: "i-crown", c1: "#ffd84a", c2: "#d97706", tags: ["Online", "Liga"], server: true, isNew: true },
-  { id: "online",  name: "Mit Freunden",     desc: "Link schicken, Kumpel spielt mit.",          icon: "i-globe",  c1: "#b28cff", c2: "#5f33dc", tags: ["2 Spieler"] },
-  { id: "local",   name: "Zu zweit",         desc: "Ein Gerät, zwei Spieler.",                   icon: "i-users",  c1: "#ffa06b", c2: "#e04d00", tags: ["2 Spieler"] },
-  { id: "daily",   name: "Tages-Challenge",  desc: "Jeden Tag ein fester Gegner mit eigenen Regeln.", icon: "i-cal", c1: "#ff7f8f", c2: "#d61f5a", tags: ["+150 pro Tag"], isNew: true },
-  { id: "endless", name: "Endlos",           desc: "Sieg um Sieg. Die Gegner werden härter.",    icon: "i-inf",    c1: "#6ff094", c2: "#179b45", tags: ["Rekord jagen"], isNew: true },
-  { id: "train",   name: "Training",         desc: "Ohne Zeit gegen einen Torwart. Supers üben.", icon: "i-target", c1: "#5fe3e8", c2: "#0b8fa6", tags: ["Üben"] },
+  { id: "casual",  icon: "i-globe", c1: "#5fd0ff", c2: "#1773d6", server: true, isNew: true },
+  { id: "ranked",  icon: "i-crown", c1: "#ffd84a", c2: "#d97706", server: true, isNew: true },
+  { id: "online",  icon: "i-globe",  c1: "#b28cff", c2: "#5f33dc" },
+  { id: "local",   icon: "i-users",  c1: "#ffa06b", c2: "#e04d00" },
+  { id: "daily",   icon: "i-cal", c1: "#ff7f8f", c2: "#d61f5a", isNew: true },
+  { id: "endless", icon: "i-inf",    c1: "#6ff094", c2: "#179b45", isNew: true },
+  { id: "train",   icon: "i-target", c1: "#5fe3e8", c2: "#0b8fa6" },
 ];
 
 // Eigene Regeln: wenige Einstellungen mit klaren Stufen. "more" = unter „Mehr“ eingeklappt
 export const RULE_OPTS = [
-  { k: "kick",   name: "Schussstärke",   opts: [[0.8, "Sanft"], [1, "Normal"], [1.2, "Hart"], [1.45, "Brutal"]] },
-  { k: "bounce", name: "Abprall",        opts: [[0.7, "Wenig"], [1, "Normal"], [1.2, "Viel"], [1.4, "Flummi"]] },
-  { k: "ball",   name: "Ballgröße",      opts: [[0.75, "Klein"], [1, "Normal"], [1.35, "Groß"], [1.8, "Riesig"]] },
-  { k: "goal",   name: "Tore",           opts: [[0.8, "Klein"], [1, "Normal"], [1.25, "Groß"], [1.5, "Riesig"]] },
-  { k: "speed",  name: "Tempo",          opts: [[0.85, "Gemütlich"], [1, "Normal"], [1.25, "Turbo"]] },
-  { k: "len",    name: "Sieg",           opts: [[60, "60 s"], [90, "90 s"], [120, "120 s"], ["w3", "3 Tore"], ["w5", "5 Tore"]] },
-  { k: "field",  name: "Feldgröße",      opts: [[0.82, "Klein"], [1, "Normal"], [1.18, "Groß"]], more: true },
-  { k: "grav",   name: "Schwerkraft",    opts: [[0.55, "Wenig"], [1, "Normal"], [1.35, "Viel"]], more: true },
-  { k: "floor",  name: "Boden",          opts: [["normal", "Griffig"], ["ice", "Rutschig"]], more: true },
-  { k: "pu",     name: "Power-ups",      opts: [["off", "Aus"], ["normal", "Normal"], ["many", "Viele"]], more: true },
-  { k: "supers", name: "Spezialschüsse", opts: [[true, "An"], [false, "Aus"]], more: true },
+  { k: "kick",   opts: [[0.8], [1], [1.2], [1.45]] },
+  { k: "bounce", opts: [[0.7], [1], [1.2], [1.4]] },
+  { k: "ball",   opts: [[0.75], [1], [1.35], [1.8]] },
+  { k: "goal",   opts: [[0.8], [1], [1.25], [1.5]] },
+  { k: "speed",  opts: [[0.85], [1], [1.25]] },
+  { k: "len",    opts: [[60], [90], [120], ["w3"], ["w5"]] },
+  { k: "field",  opts: [[0.82], [1], [1.18]], more: true },
+  { k: "grav",   opts: [[0.55], [1], [1.35]], more: true },
+  { k: "floor",  opts: [["normal"], ["ice"]], more: true },
+  { k: "pu",     opts: [["off"], ["normal"], ["many"]], more: true },
+  { k: "supers", opts: [[true], [false]], more: true },
 ];
 export const RULE_KEYS = RULE_OPTS.map(o => o.k);
 // Schnellwahl (max. 3). Die Spiellänge bleibt beim Anwenden, wie sie ist.
 export const RULE_PRESETS = [
-  { id: "chaos", name: "Chaos",       desc: "Harte Schüsse, viele Power-ups", c1: "#ff8cc2", c2: "#d9267a", rules: { kick: 1.2, bounce: 1.2, ball: 1.35, pu: "many" } },
-  { id: "moon",  name: "Mondfußball", desc: "Wenig Schwerkraft, viel Abprall", c1: "#9aa0c0", c2: "#4b4f78", rules: { grav: 0.55, bounce: 1.2 } },
-  { id: "ice",   name: "Eisfläche",   desc: "Alles rutscht",                  c1: "#7eeaff", c2: "#0a95c4", rules: { floor: "ice", speed: 1.25 } },
+  { id: "chaos", c1: "#ff8cc2", c2: "#d9267a", rules: { kick: 1.2, bounce: 1.2, ball: 1.35, pu: "many" } },
+  { id: "moon",  c1: "#9aa0c0", c2: "#4b4f78", rules: { grav: 0.55, bounce: 1.2 } },
+  { id: "ice",   c1: "#7eeaff", c2: "#0a95c4", rules: { floor: "ice", speed: 1.25 } },
 ];
 // Feste Regelsätze für die Tages-Challenge (dürfen mehr als der Editor)
 export const CHALLENGE_SETS = [
-  { id: "chaos",  name: "Chaos",       rules: { kick: 1.2, bounce: 1.2, ball: 1.35, pu: "many" } },
-  { id: "moon",   name: "Mondfußball", rules: { grav: 0.55, bounce: 1.2 } },
-  { id: "ice",    name: "Eisfläche",   rules: { floor: "ice", speed: 1.25 } },
-  { id: "giants", name: "Riesenköpfe", rules: { head: 1.3, goal: 1.25 } },
-  { id: "mini",   name: "Mini-Tore",   rules: { goal: 0.8, ball: 0.75 } },
-  { id: "heavy",  name: "Medizinball", rules: { weight: "heavy", goal: 1.25, ball: 1.35 } },
-  { id: "brutal", name: "Brutal",      rules: { kick: 1.45, bounce: 1.2 } },
-  { id: "pure",   name: "Puristen",    rules: { pu: "off", supers: false } },
+  { id: "chaos",  rules: { kick: 1.2, bounce: 1.2, ball: 1.35, pu: "many" } },
+  { id: "moon",   rules: { grav: 0.55, bounce: 1.2 } },
+  { id: "ice",    rules: { floor: "ice", speed: 1.25 } },
+  { id: "giants", rules: { head: 1.3, goal: 1.25 } },
+  { id: "mini",   rules: { goal: 0.8, ball: 0.75 } },
+  { id: "heavy",  rules: { weight: "heavy", goal: 1.25, ball: 1.35 } },
+  { id: "brutal", rules: { kick: 1.45, bounce: 1.2 } },
+  { id: "pure",   rules: { pu: "off", supers: false } },
 ];
+
+// ---------- Texte: kommen aus js/content/i18n/<sprache>.js (Schlüssel = Präfix.id.Feld) ----------
+localize(Object.entries(SUPERS).map(([id, o]) => Object.assign(o, { id })), "super", ["name", "desc"]);
+localize(ARENAS, "arena", ["name", "desc"]);
+localize(BALLS, "ball", ["name"]);
+localize(Object.entries(POWERUPS).map(([id, o]) => Object.assign(o, { id })), "pu", ["name"]);
+localize(MODS, "mod", ["name"]);
+localize(DIFFS, "diff", ["name"]);
+localize(ACHIEVEMENTS, "ach", ["name", "desc"]);
+localize(MODES, "mode", ["name", "desc"]);
+for (const m of MODES) Object.defineProperty(m, "tags", { enumerable: true, get: () => { const out = []; for (let i = 0; has(`mode.${m.id}.tags.${i}`); i++) out.push(t(`mode.${m.id}.tags.${i}`)); return out; } });
+localize(RULE_OPTS, "rule", ["name"], "k");
+for (const r of RULE_OPTS) r.opts.forEach((o, i) => Object.defineProperty(o, 1, { enumerable: true, get: () => t(`rule.${r.k}.opt.${i}`) }));
+localize(RULE_PRESETS, "preset", ["name", "desc"]);
+localize(CHALLENGE_SETS, "chset", ["name"]);

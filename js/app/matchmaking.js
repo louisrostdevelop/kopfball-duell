@@ -11,22 +11,18 @@ import { showScreen, swapScreen } from "../ui/nav.js";
 import { mmPanel, netNote } from "../ui/screens/online.js";
 import { searchUI } from "../ui/screens/search.js";
 import { net as Net, server } from "./services.js";
+import { t } from "../content/i18n.js";
 
 const POLL_MS = 2000, CONNECT_MS = 25000;
 // wie auf dem Server (game.config: casual_min_level, ranked_min_level)
 export const MIN_LEVEL = { casual: 2, ranked: 5 };
-export const LEAGUES = [[2000, "Legende"], [1700, "Diamant"], [1450, "Platin"], [1250, "Gold"], [1100, "Silber"], [0, "Bronze"]];
-export const league = mmr => LEAGUES.find(([m]) => mmr >= m)[1];
+export const LEAGUES = [[2000, "legend"], [1700, "diamond"], [1450, "platinum"], [1250, "gold"], [1100, "silver"], [0, "bronze"]];
+export const league = mmr => t("league." + LEAGUES.find(([m]) => mmr >= m)[1]);
 
 const ERR = {
-  account_required: "Für Ranked brauchst du ein Konto. Sichere deinen Spielstand in den Einstellungen.",
-  level_required: "Dafür brauchst du ein höheres Level.",
-  no_season: "Gerade läuft keine Saison.",
-  head_not_owned: "Diesen Kopf hast du auf dem Server nicht.",
-  rate_limited: "Zu viele Versuche. Warte kurz.",
-  offline: "Keine Verbindung zum Server.",
+  account_required: 1, level_required: 1, no_season: 1, head_not_owned: 1, rate_limited: 1, offline: 1,
 };
-export const errText = e => (e && (ERR[e.code] || (e.code === "level_required" && ERR.level_required))) || "Das hat nicht geklappt. Versuch es nochmal.";
+export const errText = e => t(e && ERR[e.code] ? "err.mm." + e.code : "err.tryAgain");
 
 let timer = null, gen = 0;
 const stop = () => { clearTimeout(timer); timer = null; gen++; };
@@ -69,25 +65,29 @@ function matched(r) {
   // Gleiche Bedingungen für alle: Standardregeln, 90 s, bei Gleichstand Golden Goal. Arena aus der Spiel-ID.
   App.netCfg = { arena: parseInt(r.match.slice(0, 2), 16) % 2 ? "strand" : "stadion", rules: {} };
   const my = gen;
-  timer = setTimeout(() => { if (my === gen && App.mm && App.mm.state === "connect") fail("Verbindung zum Gegner kam nicht zustande."); }, CONNECT_MS);
+  timer = setTimeout(() => { if (my === gen && App.mm && App.mm.state === "connect") fail(t("mm.noConnect")); }, CONNECT_MS);
   const onClose = () => {
     if (!App.mm || App.mm.match !== mm.match) return;
-    if (inGame() || App.screen === "pause") { toast("Gegner hat die Verbindung verloren. Das Spiel wird geprüft.", "i-close"); quitToMenu(); }
-    else if (App.screen !== "end") fail("Gegner ist weg.");
+    if (inGame() || App.screen === "pause") {
+      // Gegner mitten im Spiel weg: als Aufgabe melden. Meldet er nichts, gewinnt man nach ein paar Minuten.
+      const st = App.st; reportResult([st.s[0], st.s[1]], (Date.now() - (App.t0 || Date.now())) / 1000, true);
+      toast(t("mm.oppLeftWin"), "i-close"); quitToMenu();
+    }
+    else if (App.screen !== "end") fail(t("mm.oppGone"));
   };
   if (r.role === "host") {
     Net.host({
       onData: d => { hostData(d); if (d.t === "hello" && App.opp && App.mm && App.mm.state === "connect") { App.mm.state = "play"; clearTimeout(timer); setTimeout(hostStart, 600); } },
       onClose,
-      onError: t => { if (my === gen) fail("Raum konnte nicht geöffnet werden (" + t + ")."); },
+      onError: type => { if (my === gen) fail(t("net.roomFailed", { type })); },
     }, { code: roomOf(r.match) });
   } else {
     let tries = 0;
     const join = () => Net.join(roomOf(r.match), {
-      onConn: () => Net.send({ t: "hello", name: S.name || "Gast", ch: S.char, lv: 1, v: VERSION }),   // Level kommt vom Server
+      onConn: () => Net.send({ t: "hello", name: S.name || t("ui.guest"), ch: S.char, lv: 1, v: VERSION }),   // Level kommt vom Server
       onData: d => { guestData(d); if (d.t === "welcome" && App.mm) { App.mm.state = "play"; clearTimeout(timer); searchUI(App.mm); } },
       onClose,
-      onError: (t, wasOk) => { if (wasOk || my !== gen) return; if (t === "peer-unavailable" && ++tries < 12) setTimeout(() => { if (my === gen) join(); }, 1500); else fail("Verbindung zum Gegner fehlgeschlagen (" + t + ")."); },
+      onError: (type, wasOk) => { if (wasOk || my !== gen) return; if (type === "peer-unavailable" && ++tries < 12) setTimeout(() => { if (my === gen) join(); }, 1500); else fail(t("mm.connectFailed", { type })); },
     });
     setTimeout(join, 800);   // Host braucht einen Moment, bis der Raum offen ist
   }
@@ -100,11 +100,11 @@ function fail(msg) {
 }
 
 /** Ergebnis melden (beide Seiten). Wartet, bis der Server gewertet hat, und gibt das Ergebnis zurück. */
-export async function reportResult(score, duration) {
+export async function reportResult(score, duration, forfeit = false) {
   const mm = App.mm; if (!mm || !mm.match || mm.reported) return null;
   mm.reported = true;
   let res;
-  try { res = await server.reportOnline(mm.match, { score, duration: Math.max(10, Math.min(900, Math.round(duration))) }); }
+  try { res = await server.reportOnline(mm.match, { score, duration: Math.max(10, Math.min(900, Math.round(duration))), ...(forfeit ? { forfeit: true } : {}) }); }
   catch (e) { return { status: "error", error: e }; }
   for (let i = 0; res.status === "waiting" && i < 15; i++) {
     await new Promise(r => { setTimeout(r, 2000); });

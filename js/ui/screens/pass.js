@@ -9,8 +9,9 @@ import { refreshTop } from "./home.js";
 import { $, $$, svg, toast } from "../dom.js";
 import { registerScreen, showScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
+import { money, t } from "../../content/i18n.js";
 
-const euro = c => (c / 100).toFixed(2).replace(".", ",") + " €";
+const euro = c => money(c);
 const daysLeft = iso => Math.max(0, Math.ceil((new Date(iso) - Date.now()) / 864e5));
 
 function rewardEl(rw) {
@@ -30,41 +31,41 @@ function rewardEl(rw) {
 export function passScreen() {
   const v = passView(), top = $("passTop"), track = $("passTrack");
   $$(".gemNum").forEach(e => e.textContent = S.gems || 0);
-  if (!v) { top.innerHTML = '<p class="hint center">Gerade läuft keine Saison.</p>'; track.innerHTML = ""; return; }
-  const next = v.tiers.find(t => !t.reached), prev = [...v.tiers].reverse().find(t => t.reached);
+  if (!v) { top.innerHTML = `<p class="hint center">${t("err.mm.no_season")}</p>`; track.innerHTML = ""; return; }
+  const next = v.tiers.find(x => !x.reached), prev = [...v.tiers].reverse().find(x => x.reached);
   const span = next ? next.points - (prev ? prev.points : 0) : 1, inSpan = next ? v.points - (prev ? prev.points : 0) : 1;
-  top.innerHTML = `<div class="pt-info"><b>Saison ${v.season}</b><small>noch ${daysLeft(v.endsAt)} Tage · ${v.points} Punkte${next ? ` · nächste Stufe bei ${next.points}` : " · alles erreicht"}</small>
-    <span class="pt-bar"><i style="width:${Math.round(Math.min(1, inSpan / span) * 100)}%"></i></span><small class="hint">Punkte gibt es für jedes Spiel, mehr für Siege.</small></div>`;
+  top.innerHTML = `<div class="pt-info"><b>${t("pass.season", { n: v.season })}</b><small>${t("pass.status", { days: daysLeft(v.endsAt), pts: v.points })} · ${next ? t("pass.nextAt", { n: next.points }) : t("pass.allDone")}</small>
+    <span class="pt-bar"><i style="width:${Math.round(Math.min(1, inSpan / span) * 100)}%"></i></span><small class="hint">${t("pass.howPoints")}</small></div>`;
   if (!v.premium) {
     const box = document.createElement("div"); box.className = "pt-premium";
-    box.innerHTML = `<span>${svg("i-crown")}<b>Premium</b><small>Mehr Belohnungen auf jeder Stufe, auch rückwirkend.</small></span>`;
+    box.innerHTML = `<span>${svg("i-crown")}<b>${t("pass.premium")}</b><small>${t("pass.premiumSub")}</small></span>`;
     const bg = document.createElement("button"); bg.className = "btn small pink"; bg.innerHTML = `<span class="gem"></span>${PASS_GEMS}`; bg.title = "≈ " + gemsInEuro(PASS_GEMS);
     bg.disabled = (S.gems || 0) < PASS_GEMS;
-    bg.onclick = async () => { bg.disabled = true; try { await buyPassWithGems(); A.sfx("levelup"); toast("Premium-Pass aktiv", "i-crown", true); refreshTop(); passScreen(); } catch (_) { toast("Kauf hat nicht geklappt", "i-close"); bg.disabled = false; } };
+    bg.onclick = async () => { bg.disabled = true; try { await buyPassWithGems(); A.sfx("levelup"); toast(t("pass.premiumOn"), "i-crown", true); refreshTop(); passScreen(); } catch (_) { toast(t("shop.buyFailed"), "i-close"); bg.disabled = false; } };
     box.append(bg);
     shopProducts().then(list => {
       const p = list.find(x => x.id === "premium_pass"); if (!p || !p.buyable) return;
       const be = document.createElement("button"); be.className = "btn small green"; be.textContent = euro(p.priceCents);
-      be.onclick = () => { be.disabled = true; startCheckout(p.id).catch(() => { toast("Bezahlseite gerade nicht erreichbar", "i-close"); be.disabled = false; }); };
+      be.onclick = () => { be.disabled = true; startCheckout(p.id).catch(() => { toast(t("shop.checkoutDown"), "i-close"); be.disabled = false; }); };
       box.append(be);
     }).catch(() => {});
     top.append(box);
-  } else top.insertAdjacentHTML("beforeend", `<div class="pt-premium on"><span>${svg("i-crown")}<b>Premium aktiv</b></span></div>`);
+  } else top.insertAdjacentHTML("beforeend", `<div class="pt-premium on"><span>${svg("i-crown")}<b>${t("pass.premiumOn")}</b></span></div>`);
 
   track.innerHTML = "";
-  v.tiers.forEach(t => {
-    const col = document.createElement("div"); col.className = "ptier" + (t.reached ? " reached" : "");
-    col.insertAdjacentHTML("beforeend", `<span class="pt-pts">${t.points}</span>`);
+  v.tiers.forEach(tier => {
+    const col = document.createElement("div"); col.className = "ptier" + (tier.reached ? " reached" : "");
+    col.insertAdjacentHTML("beforeend", `<span class="pt-pts">${tier.points}</span>`);
     for (const prem of [false, true]) {
       const cell = document.createElement("div"); cell.className = "pt-cell " + (prem ? "prem" : "free");
-      cell.append(rewardEl(prem ? t.premium : t.free));
-      const claimed = prem ? t.premiumClaimed : t.freeClaimed, canPrem = !prem || v.premium;
+      cell.append(rewardEl(prem ? tier.premium : tier.free));
+      const claimed = prem ? tier.premiumClaimed : tier.freeClaimed, canPrem = !prem || v.premium;
       const b = document.createElement("button");
       if (claimed) { b.className = "btn small ghost"; b.innerHTML = svg("i-check"); b.disabled = true; }
-      else if (!t.reached || !canPrem) { b.className = "btn small ghost"; b.innerHTML = svg("i-lock"); b.disabled = true; }
+      else if (!tier.reached || !canPrem) { b.className = "btn small ghost"; b.innerHTML = svg("i-lock"); b.disabled = true; }
       else {
-        b.className = "btn small yellow"; b.textContent = "Holen";
-        b.onclick = async () => { b.disabled = true; try { await claimPass(t.i, prem); A.sfx("coin"); refreshTop(); passScreen(); } catch (_) { toast("Abholen hat nicht geklappt", "i-close"); b.disabled = false; } };
+        b.className = "btn small yellow"; b.textContent = t("pass.claim");
+        b.onclick = async () => { b.disabled = true; try { await claimPass(tier.i, prem); A.sfx("coin"); refreshTop(); passScreen(); } catch (_) { toast(t("pass.claimFailed"), "i-close"); b.disabled = false; } };
       }
       cell.append(b); col.append(cell);
     }

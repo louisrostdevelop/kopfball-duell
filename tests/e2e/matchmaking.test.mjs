@@ -89,3 +89,40 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   assert.equal((await db("select count(*)::int n from game.match_queue where player_id = $1", [m.p1]))[0].n, 0, "aus der Warteschlange raus");
   assert.deepEqual(errs.filter(e => !/status of 400/.test(e)), []);
 });
+
+test("Name, Freunde und Bestenliste", { skip: !hasPg && "kein Postgres" }, async () => {
+  const q = `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev`;
+  const a = await openPage(env, VIEW, { query: q });
+  const A = a.page; A.__key = "kopfball-duell-session";
+  const ida = await userId(A);
+  const B = await a.ctx.newPage(); B.__key = "kopfball-duell-session-c";
+  await B.goto(env.url + "/index.html" + q + "&as=c"); await B.waitForSelector("#loading.done", { state: "attached" });
+  const idb = await userId(B);
+  await closeModal(A); await closeModal(B);
+  // Namen über die Einstellungen (landen auf dem Server)
+  for (const [p, n] of [[A, "Louis"], [B, "Kumpel"]]) {
+    await p.bringToFront(); await p.click("#btnSettings"); await p.fill("#setName", n); await p.press("#setName", "Tab"); await p.waitForTimeout(600);
+    await p.click("#scr-settings [data-back]");
+  }
+  assert.deepEqual((await db("select name from game.players where id in ($1, $2) order by name", [ida, idb])).map(r => r.name), ["Kumpel", "Louis"]);
+  // Freundschaft: A fragt an, B nimmt an
+  await A.bringToFront(); await A.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await A.waitForTimeout(300);
+  await A.fill("#frName", "kumpel"); await A.click("#frAdd"); await A.waitForTimeout(600);
+  assert.match(await A.textContent("#frMsg"), /Anfrage an kumpel/);
+  await B.bringToFront(); await B.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await B.waitForTimeout(500);
+  await B.click("#frList .fr-row.incoming .btn.green"); await B.waitForTimeout(600);
+  assert.match(await B.textContent("#frList"), /Louis/);
+  await A.evaluate(async () => (await import("/js/ui/screens/friends.js")).friendsPanel()); await A.waitForTimeout(400);
+  assert.match(await A.textContent("#frList"), /Kumpel.*online/s);
+  // Bestenliste Endlos: Rekord melden (Server prüft gegen gewonnene Endlos-Spiele)
+  await db("update game.progress set stats = stats || '{\"endlessWins\": 7}' where player_id = $1", [ida]);
+  await A.evaluate(async () => (await import("/js/app/account.js")).submitEndless(7)); await A.waitForTimeout(500);
+  await A.evaluate(async () => (await import("/js/app/account.js")).submitEndless(99)); await A.waitForTimeout(500);
+  assert.equal((await db("select score from game.scores where player_id = $1 and board = 'endless' and period = 'all'", [ida]))[0].score, 7, "zu hoher Rekord abgelehnt");
+  await A.evaluate(async () => (await import("/js/ui/nav.js")).showScreen("board")); await A.waitForTimeout(800);
+  assert.match(await A.textContent("#boardList"), /Louis\s*7 Siege/);
+  assert.match(await A.textContent("#boardMe"), /Dein Platz\s*1/);
+  await A.click("#boardTabs [data-board=ranked]"); await A.waitForTimeout(600);
+  assert.match(await A.textContent("#boardMe"), /Noch kein Ranked-Spiel/);
+  assert.deepEqual(a.errors.filter(e => !/status of 400/.test(e)), []);
+});
