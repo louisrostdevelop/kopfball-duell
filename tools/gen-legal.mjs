@@ -81,7 +81,7 @@ export function legalPages({ L = LEGAL, payments = PAYMENTS, captcha = !!BACKEND
 <h2>Hosting</h2>
 <p>Die Website liegt bei GitHub Pages (GitHub, Inc., 88 Colin P. Kelly Jr. St, San Francisco, CA 94107, USA). Beim Aufruf sendet dein Browser technische Daten (IP-Adresse, Zeitpunkt, angefragte Datei, Browsertyp) an GitHub, das sie zur Auslieferung und zum Schutz seines Dienstes verarbeitet. Rechtsgrundlage: unser berechtigtes Interesse an der Bereitstellung der Website (Art. 6 Abs. 1 lit. f DSGVO). GitHub kann Daten in den USA verarbeiten und ist nach dem EU-U.S. Data Privacy Framework zertifiziert.</p>
 <h2>Spielkonto und Spielserver</h2>
-<p>Als Spielserver nutzen wir Supabase (Supabase, Inc.; Server in der EU, Frankfurt am Main). Beim ersten Start wird automatisch ein Gastkonto angelegt. Wir verarbeiten:</p>
+<p>Als Spielserver nutzen wir Supabase (Supabase, Inc.; Server in der EU, Irland). Beim ersten Start wird automatisch ein Gastkonto angelegt. Wir verarbeiten:</p>
 <ul>
 <li>Konto: eine zufällige Nutzer-ID; wenn du deinen Fortschritt sicherst, deine E-Mail-Adresse und einen Passwort-Hash (dein Passwort sehen wir nie).</li>
 <li>Spieldaten: Spielername, Level, Münzen und Juwelen, Gegenstände, Kopf-Level, Saison-Pass, Aufgaben, Erfolge, Spielergebnisse, Wertungen, Bestenlisten-Einträge, Freunde und Freundschaftsanfragen, Zeitpunkt der letzten Aktivität.</li>
@@ -96,7 +96,7 @@ ${captcha ? turn.de : ""}
 <h2>Käufe</h2>
 ${pay.de}
 <h2>E-Mails</h2>
-<p>Sicherst du deinen Fortschritt mit einer E-Mail-Adresse, schicken wir dir über Supabase eine Bestätigung und auf Wunsch E-Mails zum Zurücksetzen des Passworts. Newsletter verschicken wir nicht.</p>
+<p>Sicherst du deinen Fortschritt mit einer E-Mail-Adresse, schicken wir dir über Supabase eine Bestätigung und auf Wunsch E-Mails zum Zurücksetzen des Passworts. Newsletter verschicken wir nicht. Schreibst du uns an ${mail}, nimmt Cloudflare Email Routing (Cloudflare, Inc., USA, EU-U.S. Data Privacy Framework) die Mail entgegen und leitet sie an unser Postfach weiter.</p>
 <h2>Empfänger und Übermittlung außerhalb der EU</h2>
 <p>Die genannten Anbieter verarbeiten Daten in unserem Auftrag (Auftragsverarbeitung nach Art. 28 DSGVO) oder als eigene Verantwortliche (${payments ? "Stripe bei Zahlungen, " : ""}der Browser deines Gegners während eines Spiels). Sitzen Anbieter in den USA, stützt sich die Übermittlung auf das EU-U.S. Data Privacy Framework oder Standardvertragsklauseln.</p>
 <h2>Speicherdauer</h2>
@@ -121,7 +121,7 @@ ${payments ? `<tr><td>Kaufbelege</td><td>10 Jahre (gesetzliche Pflicht), nach L�
 <h2>Hosting</h2>
 <p>The website is hosted on GitHub Pages (GitHub, Inc., 88 Colin P. Kelly Jr. St, San Francisco, CA 94107, USA). When you open the page, your browser sends technical data (IP address, time, requested file, browser type) to GitHub, which processes it to deliver the page and protect its service. Legal basis: our legitimate interest in providing the website (Art. 6(1)(f) GDPR). GitHub may process data in the USA and is certified under the EU-U.S. Data Privacy Framework.</p>
 <h2>Player account and game server</h2>
-<p>We use Supabase (Supabase, Inc.; servers in the EU, Frankfurt, Germany) as our game server. When you first start the game, a guest account is created automatically. We process:</p>
+<p>We use Supabase (Supabase, Inc.; servers in the EU, Ireland) as our game server. When you first start the game, a guest account is created automatically. We process:</p>
 <ul>
 <li>Account: a random user ID; if you save your progress, your e-mail address and a password hash (we never see your password).</li>
 <li>Game data: player name, level, coins and gems, items, head levels, season pass, tasks, achievements, match results, ratings, leaderboard entries, friends and friend requests, time of last activity.</li>
@@ -136,7 +136,7 @@ ${captcha ? turn.en : ""}
 <h2>Purchases</h2>
 ${pay.en}
 <h2>E-mails</h2>
-<p>If you save your progress with an e-mail address, we send you a confirmation and, on request, password-reset e-mails through Supabase. We do not send newsletters.</p>
+<p>If you save your progress with an e-mail address, we send you a confirmation and, on request, password-reset e-mails through Supabase. We do not send newsletters. If you write to ${mail}, Cloudflare Email Routing (Cloudflare, Inc., USA, EU-U.S. Data Privacy Framework) receives the e-mail and forwards it to our inbox.</p>
 <h2>Recipients and transfers outside the EU</h2>
 <p>The providers named above process data on our behalf (data processing under Art. 28 GDPR) or as independent controllers (${payments ? "Stripe for payments, " : ""}your opponent's browser during a match). Where providers are located in the USA, transfers rely on the EU-U.S. Data Privacy Framework or standard contractual clauses.</p>
 <h2>Retention</h2>

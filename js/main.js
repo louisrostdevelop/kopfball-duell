@@ -113,6 +113,8 @@ function backendConfig() {
   const q = new URLSearchParams(location.search), u = q.get("backend");
   // as=2: zweites Konto im selben Browser (Tests mit zwei Tabs)
   if (u && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(u)) return { url: u, anonKey: q.get("key") || "dev", sessionKey: q.get("as") ? "kopfball-duell-session-" + q.get("as").replace(/\W/g, "") : undefined };
+  // lokal ohne ?backend=: ohne Server. Tests und Entwicklung reden so nie mit dem Live-Server
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return null;
   return BACKEND.url && BACKEND.anonKey ? BACKEND : null;
 }
 

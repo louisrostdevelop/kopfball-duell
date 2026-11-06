@@ -2,7 +2,7 @@
 
 Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy, Tablet und PC, ohne Download und ohne Account.
 
-**Spielen:** https://louisrostdevelop.github.io/kopfball-duell/
+**Spielen:** https://headstars.app
 
 ## Was drin ist
 

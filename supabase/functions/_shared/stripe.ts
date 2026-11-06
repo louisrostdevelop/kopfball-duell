@@ -7,7 +7,7 @@ export const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
 export const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
 // Erlaubte Herkunft für Aufrufe aus dem Browser (die Spiel-Seite), kommagetrennt
-const ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "https://louisrostdevelop.github.io,http://localhost:8765").split(",");
+const ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "https://headstars.app,https://louisrostdevelop.github.io,http://localhost:8765").split(",");
 export function cors(req: Request): Record<string, string> {
   const o = req.headers.get("origin") ?? "";
   return {

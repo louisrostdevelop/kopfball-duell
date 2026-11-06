@@ -3,7 +3,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { cors, json, stripe } from "../_shared/stripe.ts";
 
-const SITE = Deno.env.get("SITE_URL") ?? "https://louisrostdevelop.github.io/kopfball-duell/";
+const SITE = Deno.env.get("SITE_URL") ?? "https://headstars.app/";
 
 const TERMS = `${SITE}legal/terms.html`;
 const WAIVER: Record<string, string> = {

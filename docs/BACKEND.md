@@ -58,7 +58,7 @@ Die kleinste Supabase-Instanz hat damit viel Luft.
 
 Einmalig: [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) und `psql` installieren.
 
-1. Projekt anlegen auf supabase.com (Region Frankfurt, `eu-central-1`). Datenbank-Passwort notieren.
+1. Projekt anlegen auf supabase.com (Region in der EU; das Live-Projekt `headstars` liegt in Irland, `eu-west-1`). Datenbank-Passwort notieren.
 2. Werte holen:
    - **Projekt-Ref**: steht in der URL `https://<ref>.supabase.co`
    - **Access Token**: supabase.com → Account → Access Tokens
@@ -75,7 +75,7 @@ Einmalig: [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/
    - **Authentication → Sign In / Providers**: *Allow anonymous sign-ins* an, *Allow manual linking* an
    - **Authentication → Attack Protection**: Captcha an (Cloudflare Turnstile, kostenlos). Ohne Captcha kann
      jemand massenhaft Gast-Konten anlegen. Den Site-Key in `js/content/backend.js` unter `captchaSiteKey` eintragen.
-   - **Authentication → URL Configuration**: Site URL `https://louisrostdevelop.github.io/kopfball-duell/`
+   - **Authentication → URL Configuration**: Site URL `https://headstars.app/` (zusätzliche Redirect-URL: die alte GitHub-Adresse)
    - **Realtime → Settings**: *Allow public access* aus (nur private Kanäle, die Regeln stehen in den Migrationen)
    - **Database → Extensions**: `pg_cron` an, dann `bash supabase/ops/deploy.sh <ref>` noch einmal ausführen. Erst
      danach läuft die Wartung alle 10 Minuten.
@@ -199,8 +199,8 @@ in der Datei.
    ```
    STRIPE_SECRET_KEY=sk_live_...
    STRIPE_WEBHOOK_SECRET=whsec_...
-   SITE_URL=https://louisrostdevelop.github.io/kopfball-duell/
-   ALLOWED_ORIGINS=https://louisrostdevelop.github.io
+   SITE_URL=https://headstars.app/
+   ALLOWED_ORIGINS=https://headstars.app,https://louisrostdevelop.github.io
    ```
    Hochladen: `supabase secrets set --env-file supabase/.env.production` (macht auch `deploy.sh`).
 2. In Stripe einen Webhook auf `https://<ref>.supabase.co/functions/v1/stripe-webhook` anlegen, mit den Ereignissen
