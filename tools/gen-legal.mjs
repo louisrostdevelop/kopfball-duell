@@ -12,7 +12,7 @@ export const LEGAL = {
   operator: "Louis-Deniel Rost",
   address: ["c/o flexdienst – #10303", "Kurt-Schumacher-Straße 76", "67663 Kaiserslautern"],
   country: { de: "Deutschland", en: "Germany" },
-  email: "",                // Kontakt, z. B. support@…; leer = gelber Platzhalter
+  email: "support@headstars.app",   // Kontakt; leer = gelber Platzhalter
   updated: "2026-11-06",
   // Datenschutz-Aufsichtsbehörde am Sitz des Anbieters (Rheinland-Pfalz)
   authority: { de: "Der Landesbeauftragte für den Datenschutz und die Informationsfreiheit Rheinland-Pfalz",
