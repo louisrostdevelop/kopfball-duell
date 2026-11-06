@@ -16,3 +16,7 @@ nav { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; font-size: 14
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .ph { background: #ffe27a; color: #1c1838; padding: 0 4px; border-radius: 4px; }
+/* Zwei Sprachen auf einer Seite: das Skript im Kopf wählt eine, ohne Skript stehen beide untereinander */
+html[data-show="de"] [data-l="en"], html[data-show="en"] [data-l="de"] { display: none; }
+section + section { margin-top: 32px; }
+code { font-size: 0.9em; }

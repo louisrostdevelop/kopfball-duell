@@ -1,77 +1,119 @@
 <!doctype html>
-<html lang="en">
+<!-- ERZEUGT von tools/gen-legal.mjs. Nicht von Hand ändern: dort anpassen, dann npm run legal. -->
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Privacy Policy – Kopfball Duell</title>
+<title>Datenschutzerklärung / Privacy Policy – Kopfball Duell</title>
 <link rel="stylesheet" href="style.css">
+<script>
+// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser. Ohne Skript stehen beide Fassungen untereinander.
+(function () {
+  var ok = function (x) { return x === "de" || x === "en"; }, l = null;
+  try { l = new URLSearchParams(location.search).get("lang"); } catch (e) { l = null; }
+  if (!ok(l)) { try { l = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { l = null; } }
+  if (!ok(l)) { var ls = navigator.languages || [navigator.language]; l = "en"; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
+  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l);
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("nav a[href$='.html']").forEach(function (a) { a.href = a.getAttribute("href") + "?lang=" + l; });
+  });
+})();
+</script>
 </head>
 <body>
 <main>
-<nav><a href="../">← Back to the game</a><a href="terms.html">Terms of Use</a><a href="imprint.html">Legal Notice</a></nav>
+<section data-l="de" lang="de">
+<nav data-l="de"><a href="../">← Zurück zum Spiel</a><a href="imprint.html">Impressum</a><a href="terms.html">Nutzungsbedingungen</a><a href="?lang=en" lang="en">English</a></nav>
+<div class="card">
+<h1>Datenschutzerklärung</h1>
+<p class="meta">Kopfball Duell · Stand: 06.11.2026</p><p class="note">Gelb markierte Stellen vor der Veröffentlichung ausfüllen (<code>tools/gen-legal.mjs</code>).</p>
+<h2>Verantwortlicher</h2>
+<p>Louis-Deniel Rost, c/o flexdienst – #10303, Kurt-Schumacher-Straße 76, 67663 Kaiserslautern, Deutschland, E-Mail: <span class="ph">[E-MAIL]</span> („wir“). Siehe auch das <a href="imprint.html">Impressum</a>.</p>
+<h2>Überblick</h2>
+<p>Kopfball Duell ist ein Browserspiel. Du kannst ohne Anmeldung spielen. Wir nutzen keine Analyse-Werkzeuge, keine Werbe-Tracker und keine Social-Media-Plugins. Schriften und Bibliotheken kommen von unserer eigenen Website, nicht von Dritten. Cookies setzen wir nicht.</p>
+<h2>Daten auf deinem Gerät</h2>
+<p>Das Spiel speichert seinen Stand im lokalen Speicher deines Browsers: Fortschritt, freigeschaltete Gegenstände, Einstellungen (Ton, Sprache, Grafik), das Anmelde-Token für den Spielserver und Spielergebnisse, die noch nicht gesendet werden konnten. Das ist für das Spiel nötig (Art. 6 Abs. 1 lit. b DSGVO; § 25 Abs. 2 Nr. 2 TDDDG). Du kannst es jederzeit in den Browser-Einstellungen löschen oder im Spiel unter Einstellungen → Fortschritt löschen.</p>
+<h2>Hosting</h2>
+<p>Die Website liegt bei GitHub Pages (GitHub, Inc., 88 Colin P. Kelly Jr. St, San Francisco, CA 94107, USA). Beim Aufruf sendet dein Browser technische Daten (IP-Adresse, Zeitpunkt, angefragte Datei, Browsertyp) an GitHub, das sie zur Auslieferung und zum Schutz seines Dienstes verarbeitet. Rechtsgrundlage: unser berechtigtes Interesse an der Bereitstellung der Website (Art. 6 Abs. 1 lit. f DSGVO). GitHub kann Daten in den USA verarbeiten und ist nach dem EU-U.S. Data Privacy Framework zertifiziert.</p>
+<h2>Spielkonto und Spielserver</h2>
+<p>Als Spielserver nutzen wir Supabase (Supabase, Inc.; Server in der EU, Frankfurt am Main). Beim ersten Start wird automatisch ein Gastkonto angelegt. Wir verarbeiten:</p>
+<ul>
+<li>Konto: eine zufällige Nutzer-ID; wenn du deinen Fortschritt sicherst, deine E-Mail-Adresse und einen Passwort-Hash (dein Passwort sehen wir nie).</li>
+<li>Spieldaten: Spielername, Level, Münzen und Juwelen, Gegenstände, Kopf-Level, Saison-Pass, Aufgaben, Erfolge, Spielergebnisse, Wertungen, Bestenlisten-Einträge, Freunde und Freundschaftsanfragen, Zeitpunkt der letzten Aktivität.</li>
+<li>Technische Daten: IP-Adresse und Anfrage-Metadaten in den Server-Protokollen von Supabase, kurz aufbewahrt für Sicherheit und Fehlersuche.</li>
+</ul>
+<p>Zweck: das Spiel bereitstellen, Fortschritt geräteübergreifend sichern, faire Gegnersuche, Bestenlisten, Schutz vor Betrug und Missbrauch (z. B. Tageslimits und Plausibilitätsprüfungen). Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) und unser berechtigtes Interesse an einem fairen und sicheren Spiel (Art. 6 Abs. 1 lit. f DSGVO).</p>
+<p>Für andere sichtbar: Spielername, Level, Liga und Wertung sowie Bestenlisten-Einträge. Freunde sehen, wann du zuletzt online warst.</p>
+<p>Gastkonten ohne Käufe werden nach 90 Tagen ohne Aktivität automatisch gelöscht.</p>
+
+<h2>Online-Spiele mit anderen</h2>
+<p>Online-Spiele laufen direkt zwischen den Browsern der beiden Spieler (Peer-to-Peer, WebRTC). Für den Verbindungsaufbau nutzt das Spiel den PeerJS-Vermittlungsserver (0.peerjs.com) und Hilfsserver (STUN von Google und Cloudflare, TURN-Weiterleitung von PeerJS). Während eines Spiels erhält der Browser deines Gegners deine IP-Adresse, wie bei jeder direkten Verbindung. Klappt keine direkte Verbindung, laufen die Daten über den TURN-Server. Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO). Wenn du das nicht möchtest, spiele nicht online.</p>
+<h2>Käufe</h2>
+<p>Im Spiel gibt es derzeit keine Käufe mit echtem Geld. Wir verarbeiten keine Zahlungsdaten.</p>
+<h2>E-Mails</h2>
+<p>Sicherst du deinen Fortschritt mit einer E-Mail-Adresse, schicken wir dir über Supabase eine Bestätigung und auf Wunsch E-Mails zum Zurücksetzen des Passworts. Newsletter verschicken wir nicht.</p>
+<h2>Empfänger und Übermittlung außerhalb der EU</h2>
+<p>Die genannten Anbieter verarbeiten Daten in unserem Auftrag (Auftragsverarbeitung nach Art. 28 DSGVO) oder als eigene Verantwortliche (der Browser deines Gegners während eines Spiels). Sitzen Anbieter in den USA, stützt sich die Übermittlung auf das EU-U.S. Data Privacy Framework oder Standardvertragsklauseln.</p>
+<h2>Speicherdauer</h2>
+<table><tr><th>Daten</th><th>Gespeichert bis</th></tr>
+<tr><td>Gastkonto ohne Käufe</td><td>90 Tage ohne Aktivität</td></tr>
+<tr><td>Gesichertes Konto und Spieldaten</td><td>du löschst dein Konto</td></tr>
+<tr><td>Kurzlebige Sicherheitsdaten (Limits, Schutz vor doppelten Anfragen)</td><td>1–2 Tage</td></tr>
+<tr><td>Sicherungen</td><td>30 Tage; gelöschte Konten bleiben gelöscht, wenn eine Sicherung eingespielt wird</td></tr></table>
+<h2>Deine Rechte</h2>
+<p>Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen aus berechtigtem Interesse (Art. 21 DSGVO). Dein Konto und alle Spieldaten löschst du selbst unter Einstellungen → Konto → Konto und Daten löschen. Für alles andere schreib an <span class="ph">[E-MAIL]</span>. Du kannst dich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, etwa in deinem Land oder bei der für uns zuständigen: Der Landesbeauftragte für den Datenschutz und die Informationsfreiheit Rheinland-Pfalz, Hintere Bleiche 34, 55116 Mainz.</p>
+<h2>Alter</h2>
+<p>Das Spiel richtet sich an Spieler ab 16 Jahren. Jüngere dürfen die Online-Funktionen nur mit Zustimmung der Eltern nutzen.</p>
+<h2>Änderungen</h2>
+<p>Wir passen diese Erklärung an, wenn sich das Spiel oder die Rechtslage ändert. Die aktuelle Fassung steht immer auf dieser Seite.</p>
+</div>
+</section>
+<section data-l="en" lang="en">
+<nav data-l="en"><a href="../">← Back to the game</a><a href="imprint.html">Legal Notice</a><a href="terms.html">Terms of Use</a><a href="?lang=de" lang="de">Deutsch</a></nav>
 <div class="card">
 <h1>Privacy Policy</h1>
-<p class="meta">Kopfball Duell · Last updated: <span class="ph">[DATE]</span></p>
-
-<p class="note">Placeholders in yellow must be filled in before publishing. This text describes what the game actually does as of the date above. It is not legal advice; have it reviewed before taking real payments.</p>
-
-<h2>1. Who is responsible</h2>
-<p><span class="ph">[FULL NAME]</span>, <span class="ph">[STREET, POSTCODE, CITY, COUNTRY]</span>, e-mail: <span class="ph">[E-MAIL]</span> ("we", "us"). See the <a href="imprint.html">Legal Notice</a>.</p>
-
-<h2>2. Overview</h2>
-<p>Kopfball Duell is a browser game. You can play without registering. We do not use analytics, advertising trackers or social-media plugins. Fonts and libraries are served from our own website, not from third parties.</p>
-
-<h2>3. Data stored on your device</h2>
-<p>The game stores its state in your browser's local storage: progress, unlocked items, settings (sound, language, graphics), and, if the online backend is active, a login session token and match reports that could not be sent yet. This is necessary to provide the game (Art. 6(1)(b) GDPR; § 25(2) no. 2 TDDDG). You can delete it at any time in your browser settings or in the game under Settings → Delete progress.</p>
-
-<h2>4. Hosting</h2>
-<p>The website is hosted on GitHub Pages (GitHub, Inc., 88 Colin P. Kelly Jr. St, San Francisco, CA 94107, USA). When you open the page, your browser sends technical data (IP address, time, requested file, browser type) to GitHub's servers, which GitHub processes to deliver the page and protect its service. Legal basis: our legitimate interest in providing the website (Art. 6(1)(f) GDPR). GitHub may process data in the USA; GitHub is certified under the EU-U.S. Data Privacy Framework.</p>
-
-<h2>5. Player account and game server</h2>
-<p>If the online features are active, the game uses Supabase (Supabase, Inc.; servers in the EU, Frankfurt, Germany) as its game server. When you first start the game, a guest account is created automatically. We process:</p>
+<p class="meta">Kopfball Duell · Last updated: 2026-11-06</p><p class="note">Fill in the yellow placeholders before publishing (<code>tools/gen-legal.mjs</code>).</p>
+<h2>Who is responsible</h2>
+<p>Louis-Deniel Rost, c/o flexdienst – #10303, Kurt-Schumacher-Straße 76, 67663 Kaiserslautern, Germany, e-mail: <span class="ph">[E-MAIL]</span> ("we", "us"). See also the <a href="imprint.html">Legal Notice</a>.</p>
+<h2>Overview</h2>
+<p>Kopfball Duell is a browser game. You can play without registering. We do not use analytics, advertising trackers or social-media plugins. Fonts and libraries are served from our own website, not from third parties. We do not set cookies.</p>
+<h2>Data stored on your device</h2>
+<p>The game stores its state in your browser's local storage: progress, unlocked items, settings (sound, language, graphics), the login token for the game server and match results that could not be sent yet. This is necessary to provide the game (Art. 6(1)(b) GDPR; § 25(2) no. 2 TDDDG). You can delete it at any time in your browser settings or in the game under Settings → Delete progress.</p>
+<h2>Hosting</h2>
+<p>The website is hosted on GitHub Pages (GitHub, Inc., 88 Colin P. Kelly Jr. St, San Francisco, CA 94107, USA). When you open the page, your browser sends technical data (IP address, time, requested file, browser type) to GitHub, which processes it to deliver the page and protect its service. Legal basis: our legitimate interest in providing the website (Art. 6(1)(f) GDPR). GitHub may process data in the USA and is certified under the EU-U.S. Data Privacy Framework.</p>
+<h2>Player account and game server</h2>
+<p>We use Supabase (Supabase, Inc.; servers in the EU, Frankfurt, Germany) as our game server. When you first start the game, a guest account is created automatically. We process:</p>
 <ul>
-  <li><b>Account:</b> a random user ID; if you save your progress: your e-mail address and a password hash (we never see your password).</li>
-  <li><b>Game data:</b> player name, level, coins and gems, owned items, head levels, season pass, tasks, achievements, match results, ratings, leaderboard entries, friends list and friend requests, time of last activity.</li>
-  <li><b>Technical data:</b> IP address and request metadata in the server logs of Supabase, kept for a short period for security and troubleshooting.</li>
+<li>Account: a random user ID; if you save your progress, your e-mail address and a password hash (we never see your password).</li>
+<li>Game data: player name, level, coins and gems, items, head levels, season pass, tasks, achievements, match results, ratings, leaderboard entries, friends and friend requests, time of last activity.</li>
+<li>Technical data: IP address and request metadata in Supabase's server logs, kept briefly for security and troubleshooting.</li>
 </ul>
 <p>Purpose: providing the game, saving progress across devices, fair matchmaking, leaderboards, preventing cheating and abuse (for example daily limits and plausibility checks). Legal basis: performance of the contract (Art. 6(1)(b) GDPR) and our legitimate interest in a fair and secure game (Art. 6(1)(f) GDPR).</p>
-<p><b>Visible to others:</b> your player name, level, league and rating, and leaderboard scores are visible to other players. Friends see when you were last online.</p>
-<p><b>Guest accounts</b> without purchases are deleted automatically after 90 days of inactivity.</p>
+<p>Visible to others: player name, level, league and rating, and leaderboard entries. Friends see when you were last online.</p>
+<p>Guest accounts without purchases are deleted automatically after 90 days of inactivity.</p>
 
-<h2>6. Protection against automated sign-ups</h2>
-<p>To prevent bots from creating accounts, we may use Cloudflare Turnstile (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA) when a guest account is created. Turnstile processes your IP address and browser characteristics to tell humans from bots. Legal basis: our legitimate interest in protecting the service (Art. 6(1)(f) GDPR). Cloudflare is certified under the EU-U.S. Data Privacy Framework.</p>
-
-<h2>7. Online matches with other players</h2>
-<p>Online matches run directly between the two players' browsers (peer-to-peer, WebRTC). To establish the connection, the game uses the PeerJS signalling server (0.peerjs.com) and connection-helper servers (STUN by Google and Cloudflare; TURN relay by PeerJS). <b>During a match your opponent's browser receives your IP address</b>, as with any direct connection. If a direct connection is not possible, data is relayed through the TURN server. Legal basis: performance of the contract (Art. 6(1)(b) GDPR). If you do not want this, do not play online matches.</p>
-
-<h2>8. Purchases</h2>
-<p>Payments are processed by Stripe (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Ireland). You enter your payment details directly with Stripe; we never receive your card or bank details. We receive and store the payment ID, product, amount, currency, time, and status (paid, refunded, disputed). Legal basis: performance of the contract (Art. 6(1)(b) GDPR) and legal obligations (Art. 6(1)(c) GDPR). Purchase records are kept for 10 years as required by German commercial and tax law (§ 147 AO, § 257 HGB); if you delete your account, they are kept without any link to your player profile. Stripe's privacy policy: <a href="https://stripe.com/privacy">stripe.com/privacy</a>.</p>
-
-<h2>9. E-mails</h2>
-<p>If you save your progress with an e-mail address, we send you a confirmation e-mail and, on request, password-reset e-mails through Supabase. We do not send newsletters.</p>
-
-<h2>10. Recipients and transfers outside the EU</h2>
-<p>Data is processed by the providers named above on our behalf (data processing agreements under Art. 28 GDPR) or as independent controllers (Stripe for payments, your opponent's browser during a match). Where providers are located in the USA, transfers rely on the EU-U.S. Data Privacy Framework or standard contractual clauses.</p>
-
-<h2>11. Retention</h2>
-<table>
-  <tr><th>Data</th><th>Kept until</th></tr>
-  <tr><td>Guest account without purchases</td><td>90 days without activity</td></tr>
-  <tr><td>Saved account and game data</td><td>you delete your account</td></tr>
-  <tr><td>Purchase records</td><td>10 years (legal obligation), without profile link after account deletion</td></tr>
-  <tr><td>Short-lived security data (rate limits, duplicate-request protection)</td><td>1–2 days</td></tr>
-  <tr><td>Backups</td><td><span class="ph">[e.g. 30 days]</span>; deleted accounts stay deleted when a backup is restored</td></tr>
-</table>
-
-<h2>12. Your rights</h2>
-<p>You have the right to access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20) and to object to processing based on legitimate interests (Art. 21 GDPR). You can delete your account and all game data yourself under Settings → Account → Delete account and data. For everything else, write to <span class="ph">[E-MAIL]</span>. You also have the right to lodge a complaint with a data protection supervisory authority, for example the one in your country of residence or <span class="ph">[RESPONSIBLE AUTHORITY, e.g. the state data protection authority of the operator's federal state]</span>.</p>
-
-<h2>13. Age</h2>
-<p>The game is intended for players aged 16 and over. Players under 16 may only use the online features and make purchases with the consent of a parent or guardian.</p>
-
-<h2>14. Changes</h2>
+<h2>Online matches with other players</h2>
+<p>Online matches run directly between the two players' browsers (peer-to-peer, WebRTC). To establish the connection, the game uses the PeerJS signalling server (0.peerjs.com) and helper servers (STUN by Google and Cloudflare, TURN relay by PeerJS). During a match your opponent's browser receives your IP address, as with any direct connection. If no direct connection is possible, data is relayed through the TURN server. Legal basis: performance of the contract (Art. 6(1)(b) GDPR). If you do not want this, do not play online.</p>
+<h2>Purchases</h2>
+<p>There are currently no purchases with real money in the game. We do not process any payment data.</p>
+<h2>E-mails</h2>
+<p>If you save your progress with an e-mail address, we send you a confirmation and, on request, password-reset e-mails through Supabase. We do not send newsletters.</p>
+<h2>Recipients and transfers outside the EU</h2>
+<p>The providers named above process data on our behalf (data processing under Art. 28 GDPR) or as independent controllers (your opponent's browser during a match). Where providers are located in the USA, transfers rely on the EU-U.S. Data Privacy Framework or standard contractual clauses.</p>
+<h2>Retention</h2>
+<table><tr><th>Data</th><th>Kept until</th></tr>
+<tr><td>Guest account without purchases</td><td>90 days without activity</td></tr>
+<tr><td>Saved account and game data</td><td>you delete your account</td></tr>
+<tr><td>Short-lived security data (limits, duplicate-request protection)</td><td>1–2 days</td></tr>
+<tr><td>Backups</td><td>30 days; deleted accounts stay deleted when a backup is restored</td></tr></table>
+<h2>Your rights</h2>
+<p>You have the right to access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20) and to object to processing based on legitimate interests (Art. 21 GDPR). You can delete your account and all game data yourself under Settings → Account → Delete account and data. For everything else, write to <span class="ph">[E-MAIL]</span>. You can also lodge a complaint with a data protection supervisory authority, for example in your country or the one responsible for us: the State Commissioner for Data Protection and Freedom of Information of Rhineland-Palatinate (LfDI Rheinland-Pfalz), Hintere Bleiche 34, 55116 Mainz, Germany.</p>
+<h2>Age</h2>
+<p>The game is intended for players aged 16 and over. Younger players may only use the online features with a parent's or guardian's consent.</p>
+<h2>Changes</h2>
 <p>We update this policy when the game or the law changes. The current version is always available on this page.</p>
 </div>
+</section>
 </main>
 </body>
 </html>

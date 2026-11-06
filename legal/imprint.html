@@ -1,38 +1,53 @@
 <!doctype html>
-<html lang="en">
+<!-- ERZEUGT von tools/gen-legal.mjs. Nicht von Hand ändern: dort anpassen, dann npm run legal. -->
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Legal Notice – Kopfball Duell</title>
+<title>Impressum / Legal Notice – Kopfball Duell</title>
 <link rel="stylesheet" href="style.css">
+<script>
+// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser. Ohne Skript stehen beide Fassungen untereinander.
+(function () {
+  var ok = function (x) { return x === "de" || x === "en"; }, l = null;
+  try { l = new URLSearchParams(location.search).get("lang"); } catch (e) { l = null; }
+  if (!ok(l)) { try { l = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { l = null; } }
+  if (!ok(l)) { var ls = navigator.languages || [navigator.language]; l = "en"; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
+  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l);
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("nav a[href$='.html']").forEach(function (a) { a.href = a.getAttribute("href") + "?lang=" + l; });
+  });
+})();
+</script>
 </head>
 <body>
 <main>
-<nav><a href="../">← Back to the game</a><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Use</a></nav>
+<section data-l="de" lang="de">
+<nav data-l="de"><a href="../">← Zurück zum Spiel</a><a href="privacy.html">Datenschutzerklärung</a><a href="terms.html">Nutzungsbedingungen</a><a href="?lang=en" lang="en">English</a></nav>
+<div class="card">
+<h1>Impressum</h1>
+<p class="meta">Angaben gemäß § 5 DDG</p><p class="note">Gelb markierte Stellen vor der Veröffentlichung ausfüllen (<code>tools/gen-legal.mjs</code>).</p>
+<h2>Anbieter</h2>
+<p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Deutschland</p>
+<h2>Kontakt</h2>
+<p>E-Mail: <span class="ph">[E-MAIL]</span></p>
+<h2>Verbraucherstreitbeilegung</h2>
+<p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+</div>
+</section>
+<section data-l="en" lang="en">
+<nav data-l="en"><a href="../">← Back to the game</a><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Use</a><a href="?lang=de" lang="de">Deutsch</a></nav>
 <div class="card">
 <h1>Legal Notice</h1>
-<p class="meta">Information pursuant to § 5 DDG (German Digital Services Act)</p>
-<p class="note">Fill in the yellow placeholders before publishing. A legal notice is mandatory for websites offered commercially in Germany (for example with in-game purchases).</p>
-
+<p class="meta">Information pursuant to § 5 DDG (German Digital Services Act)</p><p class="note">Fill in the yellow placeholders before publishing (<code>tools/gen-legal.mjs</code>).</p>
 <h2>Provider</h2>
-<p><span class="ph">[FULL NAME / COMPANY NAME AND LEGAL FORM]</span><br>
-<span class="ph">[STREET AND NUMBER]</span><br>
-<span class="ph">[POSTCODE CITY]</span><br>
-<span class="ph">[COUNTRY]</span></p>
-
+<p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Germany</p>
 <h2>Contact</h2>
-<p>E-mail: <span class="ph">[E-MAIL]</span><br>
-Second fast contact option (e.g. phone or contact form): <span class="ph">[PHONE OR FORM]</span></p>
-
-<h2>VAT ID</h2>
-<p>VAT identification number pursuant to § 27a UStG: <span class="ph">[VAT ID, if any; otherwise remove this section]</span></p>
-
-<h2>Responsible for content</h2>
-<p>Responsible pursuant to § 18(2) MStV: <span class="ph">[FULL NAME, ADDRESS]</span></p>
-
-<h2>Dispute resolution</h2>
-<p>The European Commission provides a platform for online dispute resolution: <a href="https://ec.europa.eu/consumers/odr">ec.europa.eu/consumers/odr</a>. We are not obliged and not willing to participate in dispute resolution proceedings before a consumer arbitration board.</p>
+<p>E-mail: <span class="ph">[E-MAIL]</span></p>
+<h2>Consumer dispute resolution</h2>
+<p>We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board.</p>
 </div>
+</section>
 </main>
 </body>
 </html>

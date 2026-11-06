@@ -10,6 +10,7 @@
     "serve": "node tools/serve.mjs",
     "test:db": "bash supabase/local/run-tests.sh",
     "catalog": "node tools/gen-catalog.mjs",
+    "legal": "node tools/gen-legal.mjs",
     "lint": "eslint --max-warnings 0 . && stylelint --max-warnings 0 \"css/**/*.css\""
   },
   "devDependencies": {
