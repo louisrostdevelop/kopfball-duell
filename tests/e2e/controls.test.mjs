@@ -35,7 +35,7 @@ test("Tastatur allein", async t => {
 
 test("Tastatur zu zweit: S und Pfeil runter getrennt", async () => {
   const { page, errors } = await openPage(env, VIEW.desktop);
-  await click(page, "#modeCard", 200); await click(page, "#modeGrid .mcard:nth-child(4)", 200);
+  await click(page, "#modeCard", 200); await click(page, "#modeGrid [data-mode=local]", 200);
   await click(page, "#btnPlay", 200); await click(page, "#btnSelOk", 200); await click(page, "#btnKickoff", 3400);
   await logEvents(page);
   await tap(page, "ArrowDown"); assert.deepEqual(await takeEvents(page, /^(slide|swing)[01]$/, 200), ["slide1"]);

@@ -14,7 +14,7 @@ const MOCK = { path: fileURLToPath(new URL("./mockpeer.js", import.meta.url)) };
 test("Online: Lobby bis Revanche", async t => {
   const a = await openPage(env, VIEW, { init: [MOCK] });
   const A = a.page;
-  await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid .mcard:nth-child(3)"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
+  await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
   await A.fill("#nameIn", "Louis"); await A.click("#btnHost"); await A.waitForTimeout(500);
   const code = (await A.textContent("#lobbyCode")).trim();
   assert.match(code, /^[A-Z0-9]{4}$/);
@@ -67,7 +67,7 @@ test("Online bei schlechtem Netz", async () => {
   const bad = { lat: 90, jit: 45, loss: 0.06 };
   const a = await openPage(env, VIEW, { init: [MOCK, { content: `window.__mockNet = ${JSON.stringify(bad)};` }] });
   const A = a.page;
-  await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid .mcard:nth-child(3)"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
+  await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
   await A.click("#btnHost"); await A.waitForTimeout(500);
   const code = (await A.textContent("#lobbyCode")).trim();
   const B = await a.ctx.newPage(); const bErr = []; B.on("pageerror", e => bErr.push("Gast: " + e.message));

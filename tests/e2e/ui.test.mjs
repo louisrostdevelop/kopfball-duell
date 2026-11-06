@@ -10,7 +10,7 @@ after(async () => { await env.close(); });
 async function tour(view) {
   const { page, errors } = await openPage(env, view, { save: { coins: 900 } });
   const c = (s, w) => click(page, s, w).catch(e => errors.push("Klick " + s + ": " + e.message.split("\n")[0]));
-  await c("#modeCard"); await c("#modeGrid .mcard:nth-child(1)");
+  await c("#modeCard"); await c("#modeGrid [data-mode=quick]");
   await c("#btnPlay"); await c("#btnRules"); await c("#rulePresets .preset:nth-child(2)"); await c("#btnRulesMore"); await c("#btnRulesDone");
   await c("#scr-setup [data-back]");
   await c("#navHeads"); await c("#charGrid .ccard:nth-child(5)"); await c("#scr-select [data-back]");
@@ -29,18 +29,18 @@ async function tour(view) {
   assert.equal(await page.evaluate(() => window.__kd.screen), "end", "Endbildschirm nach Abpfiff");
   await c("#btnEndAgain", 800); await page.keyboard.press("Escape"); await page.waitForTimeout(200); await c("#btnQuit", 600);
   // Cup, Endlos, Tagesaufgabe, Training, Lokal, Online-Seite
-  await c("#modeCard"); await c("#modeGrid .mcard:nth-child(2)"); await c("#btnPlay", 400);
+  await c("#modeCard"); await c("#modeGrid [data-mode=cup]"); await c("#btnPlay", 400);
   await c("#btnRunNext", 3500); await page.evaluate(() => { const st = window.__kd.st; st.s = [5, 0]; st.t = 0.2; });
   await page.waitForTimeout(3200); await c("#btnEndAgain", 400); await c("#scr-run [data-back]");
-  await c("#modeCard"); await c("#modeGrid .mcard:nth-child(6)"); await c("#btnPlay", 400); await c("#btnRunNext", 3500);
+  await c("#modeCard"); await c("#modeGrid [data-mode=endless]"); await c("#btnPlay", 400); await c("#btnRunNext", 3500);
   await page.keyboard.press("Escape"); await c("#btnQuit", 500); await c("#scr-run [data-back]");
-  await c("#modeCard"); await c("#modeGrid .mcard:nth-child(5)"); await c("#btnPlay", 400); await c("#modalOk", 3500);
+  await c("#modeCard"); await c("#modeGrid [data-mode=daily]"); await c("#btnPlay", 400); await c("#modalOk", 3500);
   await page.keyboard.press("Escape"); await c("#btnQuit", 500);
-  await c("#modeCard"); await c("#modeGrid .mcard:nth-child(7)"); await c("#btnPlay", 300); await c("#btnKickoff", 4000);
+  await c("#modeCard"); await c("#modeGrid [data-mode=train]"); await c("#btnPlay", 300); await c("#btnKickoff", 4000);
   await page.keyboard.press("Escape"); await c("#btnQuit", 500);
-  await c("#modeCard"); await c("#modeGrid .mcard:nth-child(4)"); await c("#btnPlay", 300); await c("#btnSelOk", 300); await c("#btnKickoff", 3500);
+  await c("#modeCard"); await c("#modeGrid [data-mode=local]"); await c("#btnPlay", 300); await c("#btnSelOk", 300); await c("#btnKickoff", 3500);
   await page.keyboard.press("Escape"); await c("#btnQuit", 500);
-  await c("#modeCard"); await c("#modeGrid .mcard:nth-child(3)"); await c("#btnPlay", 300); await c("#scr-online [data-back]");
+  await c("#modeCard"); await c("#modeGrid [data-mode=online]"); await c("#btnPlay", 300); await c("#scr-online [data-back]");
   assert.equal(await page.evaluate(() => window.__kd.screen), "home", "zurück im Hauptmenü");
   assert.deepEqual(errors, []);
 }

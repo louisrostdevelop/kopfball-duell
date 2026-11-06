@@ -8,12 +8,17 @@ export const App = {
   rec: [], replay: null, maxDef: 0, screen: "home", stack: [],
   run: null, local2: null, series: {}, lastCfg: null, jug: { i: -1, n: 0 },
   opp: null, inSeq: 0, inSeqSeen: -1, inRep: 0, lastSeq: -1, clock: null, guestIn: [0, 0, 0, 0, 0, 0, 0, 0], gPend: { j: 0, d: 0 }, gEdge: null, sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, netCfg: null, mid: 0,
+  career: null,   // laufendes Karriere-Spiel: { li, gi }
   mm: null,   // Gegnersuche: { mode, state, match, role, opp } (app/matchmaking.js)
 };
 
-export const inGame = () => ["cpu", "cup", "local", "host", "guest", "endless", "daily", "train"].includes(App.mode) && App.screen === null;
+/** Modi gegen den Computer, alle Modi mit laufendem Spiel */
+export const CPU_MODES = ["cpu", "cup", "career", "endless", "daily", "train"];
+export const PLAY_MODES = [...CPU_MODES, "local", "host", "guest"];
 
-export const vsCpu = () => ["cpu", "cup", "endless", "daily", "train"].includes(App.mode);
+export const inGame = () => PLAY_MODES.includes(App.mode) && App.screen === null;
+
+export const vsCpu = () => CPU_MODES.includes(App.mode);
 
 export function myIdx() { return App.mode === "guest" ? 1 : App.mode === "local" || App.mode === "demo" ? -1 : 0; }
 

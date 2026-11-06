@@ -8,6 +8,7 @@ import { showScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
 import { endAgain, endMenu, shareResult } from "../../app/results.js";
 import { t } from "../../content/i18n.js";
+import { CAREER } from "../../content/career.js";
 
 export function showEnd(r) {
   const st = App.st, [a, b] = st.s, me = r.me;
@@ -30,6 +31,8 @@ export function showEnd(r) {
   r.achs.forEach((ac, n) => setTimeout(() => { toast(t("ach.toast", { name: ac.name, n: ac.reward }), "i-star", true); A.sfx("levelup"); }, 900 + n * 1200));
   if (r.ups.length) setTimeout(() => levelModal(r.ups[r.ups.length - 1]), 1500);
   if (r.runInfo === "record") setTimeout(() => toast(t("end.newRecord"), "i-inf", true), 700);
+  if (r.career && r.career.gained) setTimeout(() => toast(t("career.newStars", { n: r.career.gained }), "i-star", true), 700);
+  if (r.career && r.career.leagueDone) setTimeout(() => toast(r.career.unlocked >= 0 ? t("career.unlocked", { name: CAREER[r.career.unlocked].name }) : t("career.allDone"), "i-trophy", true), 1900);
   const again = $("btnEndAgain"), note = $("endNote"), menu = $("btnEndMenu");
   note.textContent = ""; again.hidden = false; again.disabled = false; again.className = "btn yellow big";
   menu.textContent = t("end.menu");
@@ -38,6 +41,7 @@ export function showEnd(r) {
     case "guest": again.textContent = t("end.rematchAsk"); note.textContent = t("end.hostStarts"); menu.textContent = t("end.leave"); break;
     case "host": again.textContent = t("end.rematch"); menu.textContent = t("end.lobby"); break;
     case "daily": again.textContent = t("end.again"); break;
+    case "career": again.textContent = t("ui.next"); break;
     default: again.textContent = t("end.rematch");
   }
   if (App.mm) { again.textContent = t("end.nextOpp"); menu.textContent = t("end.menu"); note.textContent = t(App.mm.mode === "ranked" ? "end.bookingRating" : "end.bookingResult"); }

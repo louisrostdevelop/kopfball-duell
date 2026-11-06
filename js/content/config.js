@@ -146,6 +146,7 @@ export const gemsInEuro = n => money(Math.round(n * 0.99));
 export const MODES = [
   { id: "quick",   icon: "i-play",   c1: "#6b9bff", c2: "#2348d6" },
   { id: "cup",     icon: "i-trophy", c1: "#ffd84a", c2: "#e88a00" },
+  { id: "career",  icon: "i-star",   c1: "#7fd17f", c2: "#2f8f3a", isNew: true },
   // nur mit Server (Gegnersuche): zufälliger Gegner ohne Wertung / mit Liga und Wertung
   { id: "casual",  icon: "i-globe", c1: "#5fd0ff", c2: "#1773d6", server: true, isNew: true },
   { id: "ranked",  icon: "i-crown", c1: "#ffd84a", c2: "#d97706", server: true, isNew: true },

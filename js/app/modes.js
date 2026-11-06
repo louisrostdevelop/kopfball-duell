@@ -14,6 +14,10 @@ import { modeLock } from "../ui/screens/modes.js";
 import { showScreen } from "../ui/nav.js";
 import { toast } from "../ui/dom.js";
 import { t } from "../content/i18n.js";
+import { CAREER } from "../content/career.js";
+import { gameRules } from "../core/career.js";
+import { matchLen } from "../core/physics.js";
+import { careerScreen } from "../ui/screens/career.js";
 
 // Gegnersuche direkt aus der Modus-Auswahl
 function startSearch(id) {
@@ -34,10 +38,19 @@ export function startMode(id) {
     case "online": openOnline(); break;
     case "casual": case "ranked": startSearch(id); break;
     case "cup": startCup(); break;
+    case "career": careerScreen(); break;
     case "endless": startEndless(); break;
     case "daily": dailyBriefing(); break;
     case "train": setupScreen({ mode: "train" }); break;
   }
+}
+
+// Karriere: festes Spiel aus js/content/career.js
+export function startCareer(li, gi) {
+  const g = CAREER[li].games[gi], rules = gameRules(li, gi);
+  const ch = g.ch !== S.char ? g.ch : CHARS[(CHARS.findIndex(x => x.id === g.ch) + 1) % CHARS.length].id;
+  App.career = { li, gi };
+  beginMatch({ mode: "career", chars: [S.char, ch], arena: g.arena, dur: matchLen(rules).dur, rules, golden: true, diff: g.diff, names: cpuNames(ch), labels: [t("hud.you"), null], ball: S.ball });
 }
 
 // Cup

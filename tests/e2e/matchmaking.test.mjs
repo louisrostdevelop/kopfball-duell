@@ -71,7 +71,8 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   const host = m.p1 === ida ? A : B, guest = host === A ? B : A;
   assert.equal(await host.evaluate(() => window.__kd.mode), "host");
 
-  // Host gewinnt 2:0, Abpfiff
+  // Host gewinnt 2:0, Abpfiff. Der Server wertet nur Spiele, die wirklich so lange liefen: Start zurückdatieren
+  await db("update game.matches set created_at = now() - interval '2 minutes' where id = $1", [m.id]);
   await host.bringToFront();
   await host.evaluate(() => { const K = window.__kd; K.t0 = Date.now() - 60000; K.st.s = [2, 0]; K.st.t = 0.5; });
   await guest.evaluate(() => { window.__kd.t0 = Date.now() - 60000; });
@@ -114,8 +115,8 @@ test("Name, Freunde und Bestenliste", { skip: !hasPg && "kein Postgres" }, async
   assert.match(await B.textContent("#frList"), /Louis/);
   await A.evaluate(async () => (await import("/js/ui/screens/friends.js")).friendsPanel()); await A.waitForTimeout(400);
   assert.match(await A.textContent("#frList"), /Kumpel.*online/s);
-  // Bestenliste Endlos: Rekord melden (Server prüft gegen gewonnene Endlos-Spiele)
-  await db("update game.progress set stats = stats || '{\"endlessWins\": 7}' where player_id = $1", [ida]);
+  // Bestenliste Endlos: Rekord melden (Server prüft gegen die Siegesserie, die er selbst gezählt hat)
+  await db("update game.progress set endless_best = 7 where player_id = $1", [ida]);
   await A.evaluate(async () => (await import("/js/app/account.js")).submitEndless(7)); await A.waitForTimeout(500);
   await A.evaluate(async () => (await import("/js/app/account.js")).submitEndless(99)); await A.waitForTimeout(500);
   assert.equal((await db("select score from game.scores where player_id = $1 and board = 'endless' and period = 'all'", [ida]))[0].score, 7, "zu hoher Rekord abgelehnt");

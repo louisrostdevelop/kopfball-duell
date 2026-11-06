@@ -1130,3 +1130,39 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 /* Rechtliches in den Einstellungen */
 .legal { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; font-size: 13px; font-weight: 800; }
 .legal a, .shopnote a { color: inherit; opacity: .75; }
+
+/* Karriere */
+#careerTabs { flex-wrap: wrap; justify-content: center; margin: 0; }
+#careerTabs button { display: inline-flex; align-items: center; gap: 6px; }
+#careerTabs svg { width: 16px; height: 16px; }
+.cgrid .cstage { cursor: pointer; font: inherit; }
+.cgrid .cstage small { color: var(--c2); opacity: 1; }
+.cgrid .cstage.locked { cursor: default; opacity: .55; filter: grayscale(.6); }
+.cgrid .cstage em + em { opacity: .55; }
+.cslock { width: 70px; height: 70px; display: grid; place-items: center; }
+.cslock svg { width: 34px; height: 34px; opacity: .5; }
+.stars { display: inline-flex; gap: 2px; margin-top: 2px; }
+.stars svg { width: 20px; height: 20px; fill: rgb(28 24 56 / 18%); }
+.stars svg.on { fill: var(--yellow); filter: drop-shadow(0 1px 0 var(--ink)); }
+
+@media (max-height: 520px) {
+  .cgrid { flex-wrap: nowrap; gap: 8px; }
+  .cgrid .cstage { padding: 6px 4px 8px; gap: 2px; }
+  .cgrid .cstage canvas, .cslock { width: 48px !important; height: 48px !important; }
+  .cgrid .cstage b { font-size: 16px; }
+  .cgrid .cstage em { font-size: 11px; }
+  .stars svg { width: 15px; height: 15px; }
+  #careerTabs button { font-size: 15px; padding: 5px 10px 7px; }
+  #scr-career .runwrap { gap: 8px; }
+  #scr-career .runnote { font-size: 16px; }
+}
+
+@media (max-width: 520px) {
+  .cgrid { gap: 8px; }
+  .cgrid .cstage { flex: 1 1 30%; padding: 8px 4px 10px; gap: 2px; }
+  .cgrid .cstage canvas, .cslock { width: 52px !important; height: 52px !important; }
+  .cgrid .cstage b { font-size: 17px; }
+  .cgrid .cstage em { font-size: 11px; }
+  #careerTabs button { font-size: 15px; padding: 6px 10px 8px; }
+  #scr-career .runnote { font-size: 17px; }
+}

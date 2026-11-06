@@ -70,7 +70,7 @@ export async function reportMatch(r) {
 }
 
 /** Lokaler Modus -> Server-Modus. Online-Spiele laufen über die Warteschlange und werden dort gewertet. */
-export const serverMode = mode => ({ cpu: "cpu", cup: "cpu", endless: "endless", daily: "daily", local: "local", train: "train" })[mode] || null;
+export const serverMode = mode => ({ cpu: "cpu", cup: "cpu", career: "career", endless: "endless", daily: "daily", local: "local", train: "train" })[mode] || null;
 
 // ---------- Juwelen und Echtgeld ----------
 /** Kopf mit Juwelen kaufen. Gibt true zurück, wenn der Server gebucht hat. */

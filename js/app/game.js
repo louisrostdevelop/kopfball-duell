@@ -5,7 +5,7 @@ import { makeAI } from "../core/ai.js";
 import { emote, newMatch } from "../core/physics.js";
 import { S, save } from "./profile.js";
 import { fx, setBand } from "../ui/render/render.js";
-import { App, inGame, vsCpu } from "./state.js";
+import { App, inGame, PLAY_MODES, vsCpu } from "./state.js";
 import { $, $$, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
 import { audio as A, input as I, net as Net } from "./services.js";
@@ -75,7 +75,7 @@ export function goFullscreen() {
 }
 
 export function updateBand() {
-  const ig = ["cpu", "cup", "local", "host", "guest", "endless", "daily", "train"].includes(App.mode);
+  const ig = PLAY_MODES.includes(App.mode);
   setBand(I.isTouch && ig ? (App.mode === "local" ? 92 : 104) : 0);
 }
 
@@ -96,8 +96,8 @@ export function pause(on) {
   const online = App.mode === "host" || App.mode === "guest";
   App.paused = on && !online;
   if (on) {
-    $("btnRestart").hidden = online || ["cup", "endless", "daily"].includes(App.mode);
-    $("btnQuit").textContent = t(online ? "pause.leave" : App.mode === "train" ? "pause.endTraining" : App.mode === "cup" ? "pause.quitCup" : "pause.quit");
+    $("btnRestart").hidden = online || ["cup", "career", "endless", "daily"].includes(App.mode);
+    $("btnQuit").textContent = t(online ? "pause.leave" : App.mode === "train" ? "pause.endTraining" : App.mode === "cup" ? "pause.quitCup" : App.mode === "career" ? "pause.quitCareer" : "pause.quit");
     $$(".screen").forEach(s => s.hidden = s.id !== "scr-pause"); App.screen = "pause"; $("touch").hidden = true;
     A.crowd(0);
   } else { $("scr-pause").hidden = true; App.screen = null; $("touch").hidden = false; A.crowd(0.3); }

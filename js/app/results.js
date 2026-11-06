@@ -10,6 +10,8 @@ import { $, shareOrCopy, toast } from "../ui/dom.js";
 import { trophyModal } from "../ui/modals.js";
 import { showEnd } from "../ui/screens/end.js";
 import { runScreen } from "../ui/screens/run.js";
+import { careerScreen } from "../ui/screens/career.js";
+import { recordResult } from "../core/career.js";
 import { audio as A, net as Net } from "./services.js";
 import { online as serverOn, reportMatch, serverMode, submitEndless } from "./account.js";
 import { refreshTop } from "../ui/screens/home.js";
@@ -42,6 +44,7 @@ export function matchEnd() {
   switch (App.mode) {
     case "cpu": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(40 * m) : 12); break;
     case "cup": add(t(win ? "rw.cupWin" : "rw.out"), win ? Math.round(50 * m) : 15); break;
+    case "career": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(40 * m) : 12); break;
     case "endless": add(t(win ? "rw.win" : "rw.played"), win ? Math.round(35 * m) : 10); break;
     case "daily": { const c = challenge(); if (win && !c.done) { add(t("rw.daily"), c.reward); challengeDone(); } else add(t(win ? "rw.win" : "rw.played"), win ? 30 : 10); break; }
     case "host": case "guest": add(t(win ? "rw.onlineWin" : "rw.online"), win ? 70 : 25); break;
@@ -59,6 +62,12 @@ export function matchEnd() {
     const r = App.run;
     if (win) { r.streak++; r.next = endlessOpp(r.streak); } else { r.done = true; add(t("rw.endlessRun"), r.streak * 25); if (r.streak > S.endlessBest) { S.endlessBest = r.streak; runInfo = "record"; } }
   }
+  // Karriere: Sterne eintragen (nie weniger als vorher)
+  let career = null;
+  if (App.mode === "career" && App.career && me >= 0) {
+    career = recordResult(S.career, App.career.li, App.career.gi, st.s[me], st.s[op]);
+    S.career = career.prog;
+  }
   addCoins(coins);
   const ups = addXP(Math.round(coins * 1.2) + 15);
   S.stats.games++;
@@ -67,9 +76,9 @@ export function matchEnd() {
   const online = App.mode === "guest" || App.mode === "host";
   const inc = myS ? { wins: win ? 1 : 0, goals: myS.goals, headGoals: myS.headGoals, supers: myS.supers, pus: myS.pus, stomps: myS.stomps, online: online ? 1 : 0, hard: win && vsCpu() && (App.cfg.diff ?? 1) >= 2 ? 1 : 0, cupRound: win && App.mode === "cup" ? 1 : 0 } : { pus: st.stats[0].pus + st.stats[1].pus, stomps: st.stats[0].stomps + st.stats[1].stomps };
   taskProgress(inc).forEach((task, n) => setTimeout(() => { toast(t("task.done", { text: task.text, n: task.reward }), "i-tasks", true); A.sfx("coin"); }, 600 + n * 1300));
-  const achs = me >= 0 ? checkAch({ win, myGoals: myS.goals, conceded: st.s[op], superGoals: myS.superGoals, lastSec: myS.lastSecGoals, longGoals: myS.longGoals, maxDeficit: App.maxDef, cupWon: runInfo === "cup", diff: App.cfg.diff, mode: online ? "online" : App.mode === "cup" || App.mode === "endless" || App.mode === "daily" ? "cpu" : App.mode }) : checkAch({});
+  const achs = me >= 0 ? checkAch({ win, myGoals: myS.goals, conceded: st.s[op], superGoals: myS.superGoals, lastSec: myS.lastSecGoals, longGoals: myS.longGoals, maxDeficit: App.maxDef, cupWon: runInfo === "cup", diff: App.cfg.diff, mode: online ? "online" : ["cup", "career", "endless", "daily"].includes(App.mode) ? "cpu" : App.mode }) : checkAch({});
   save();
-  showEnd({ win, me, lines, ups, achs, runInfo });
+  showEnd({ win, me, lines, ups, achs, runInfo, career });
   if (App.mm && online) {
     const mm = App.mm;
     reportResult([a, b], (Date.now() - (App.t0 || Date.now())) / 1000).then(res => {
@@ -107,6 +116,7 @@ export function matchEnd() {
 export function endAgain() {
   A.sfx("click");
   if (App.mm) { mmAgain().catch(() => mmLeave()); return; }
+  if (App.mode === "career") { careerScreen(); return; }
   if (App.mode === "cup" || App.mode === "endless") { if (App.run && App.run.done && App.run.kind === "cup" && App.run.round >= 3) trophyModal(); runScreen(); return; }
   if (App.mode === "guest") { Net.send({ t: "rematch" }); $("endNote").textContent = t("end.rematchSent"); $("btnEndAgain").disabled = true; return; }
   if (App.mode === "host") { hostStart(); return; }

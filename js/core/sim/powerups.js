@@ -6,16 +6,21 @@ import { ev } from "./base.js";
 export function powerups(st, dt) {
   if (!st.pus) return;
   st.puT -= dt;
-  if (st.puT <= 0 && st.pu.length < 2) {
+  // Ranked (st.fair): immer ein Paar, spiegelbildlich zur Mitte, damit keine Seite Glück hat
+  if (st.puT <= 0 && (st.fair ? st.pu.length === 0 : st.pu.length < 2)) {
     st.puT = st.mod === "pu2" || st.rules.pu === "many" ? rand(3, 5) : rand(7, 11);
     const k = PU_KEYS[Math.floor(Math.random() * PU_KEYS.length)];
     let x = 0, y = 0;
     let ok = false;
     for (let tries = 0; tries < 24 && !ok; tries++) {
-      x = rand(360, W - 360); y = rand(260, 370);
-      ok = !(st.obs || []).some(o => o.t === "plat" ? x > o.x - o.w / 2 - 50 && x < o.x + o.w / 2 + 50 && y > o.y - 50 && y < o.y + o.h + 50 : Math.hypot(x - o.x, y - o.y) < o.r + 60);
+      x = st.fair ? rand(360, W / 2 - 90) : rand(360, W - 360); y = rand(260, 370);
+      ok = free(st, x, y) && (!st.fair || free(st, W - x, y));
     }
-    if (ok) { st.pu.push({ id: st.puId++, k, x, y, t: 0 }); ev(st, { t: "puSpawn" }); }
+    if (ok) {
+      st.pu.push({ id: st.puId++, k, x, y, t: 0 });
+      if (st.fair) st.pu.push({ id: st.puId++, k, x: W - x, y, t: 0 });
+      ev(st, { t: "puSpawn" });
+    }
   }
   const b = st.b;
   for (let n = st.pu.length - 1; n >= 0; n--) {
@@ -26,6 +31,9 @@ export function powerups(st, dt) {
     }
   }
 }
+
+// Platz frei von Hindernissen?
+const free = (st, x, y) => !(st.obs || []).some(o => o.t === "plat" ? x > o.x - o.w / 2 - 50 && x < o.x + o.w / 2 + 50 && y > o.y - 50 && y < o.y + o.h + 50 : Math.hypot(x - o.x, y - o.y) < o.r + 60);
 
 export function applyPu(st, i, k, x, y) {
   const me = st.p[i], op = st.p[1 - i];

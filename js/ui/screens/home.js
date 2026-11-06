@@ -1,5 +1,6 @@
 // Startseite mit Bühne (jonglierender Kopf), Tageskarten und Kopfzeile
 import { charById, CHARS, DIFFS, MODES, RARITY, rarityOf, SUPERS } from "../../content/config.js";
+import { MAX_STARS, totalStars } from "../../core/career.js";
 import { online as serverOn, passView } from "../../app/account.js";
 import { matchLen } from "../../core/physics.js";
 import { challenge, deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
@@ -31,6 +32,7 @@ export function homeScreen() {
   let sub = m.desc;
   if (m.id === "daily") { const ch = dailyChallenge(); sub = ch.done ? tx("mode.daily.done") : tx("home.dailyToday", { name: charById(ch.opp).name, rules: ch.presetName }); }
   if (m.id === "endless" && S.endlessBest) sub = tx("home.endlessRecord", { n: S.endlessBest });
+  if (m.id === "career" && totalStars(S.career)) sub = tx("career.stars", { n: totalStars(S.career), max: MAX_STARS });
   $("mcSub").textContent = sub;
   $("mcIcon").innerHTML = svg(m.icon);
   $("mcIcon").style.background = `linear-gradient(${m.c1}, ${m.c2})`;
