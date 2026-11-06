@@ -85,6 +85,6 @@ export function initOnline() {
   $("btnLobbyStart").onclick = () => { A.sfx("click"); hostStart(); };
   $("btnLobbyRules").onclick = () => { A.sfx("click"); App.netCfg.rules = App.netCfg.rules || {}; rulesScreen(App.netCfg.rules, () => { S.rules = { ...App.netCfg.rules }; save(); Net.send({ t: "cfg", cfg: App.netCfg }); }); };
   $("btnLobbyHead").onclick = () => { A.sfx("click"); selectScreen({ title: t("lobby.changeHead"), okText: t("ui.apply"), onDone: id => { S.char = id; save(); Net.send({ t: "pick", ch: id, lv: headLevel(id), cos: myCos() }); goBack(); } }); };
-  $("btnShare").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) shareOrCopy({ title: "Kopfball Duell", text: t("lobby.shareText", { link }) }); };   // i18n-ok: Marke
+  $("btnShare").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) shareOrCopy({ title: "Headstars", text: t("lobby.shareText", { link }) }); };   // i18n-ok: Marke
   $("btnCopyLink").onclick = () => { A.sfx("click"); const link = $("lobbyLink").textContent; if (link) copyText(link); };
 }

@@ -403,7 +403,7 @@ function bgNeon(b, R) {
     }
   });
   b.font = "34px 'Lilita One', Impact"; b.textAlign = "center";
-  [["KOPFBALL", 260, 200, "#22d3ee"], ["DUELL", W - 260, 180, "#ff4fd8"]].forEach(([t, x, y, c]) => { b.shadowColor = c; b.shadowBlur = 24; b.fillStyle = c; b.fillText(t, x, y); });
+  [["HEAD", 260, 200, "#22d3ee"], ["STARS", W - 260, 180, "#ff4fd8"]].forEach(([t, x, y, c]) => { b.shadowColor = c; b.shadowBlur = 24; b.fillStyle = c; b.fillText(t, x, y); });
   b.shadowBlur = 0;
   b.fillStyle = "#120828"; b.fillRect(R.x0, FT - 10, R.x1 - R.x0, G - FT + 10);
   b.strokeStyle = "rgba(255,79,216,.45)"; b.lineWidth = 2;
@@ -479,9 +479,9 @@ function boards(st, t) {
   ctx.save(); ctx.beginPath(); ctx.rect(-900, y, W + 1800, h); ctx.clip();
   ctx.fillStyle = st.arena === "eis" ? "#0b2533" : "#08102a"; ctx.fillRect(-900, y, W + 1800, h);
   ctx.font = "17px 'Lilita One', Impact"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
-  const msg = "KOPFBALL DUELL  •  ", /* i18n-ok: Marke */ off = (t * 50) % 290;
+  const msg = "HEADSTARS  •  ", /* i18n-ok: Marke */ sp = ctx.measureText(msg).width + 24, off = (t * 50) % sp;
   ctx.fillStyle = st.arena === "eis" ? "rgba(140,220,255,.7)" : "rgba(160,190,255,.55)";
-  for (let i = -6; i < 12; i++) ctx.fillText(msg, i * 290 - off, y + h / 2 + 1);
+  for (let i = -9; i < 18; i++) ctx.fillText(msg, i * sp - off, y + h / 2 + 1);
   ctx.restore();
 }
 

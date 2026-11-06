@@ -8,7 +8,7 @@ import { PAYMENTS } from "../js/content/config.js";
 import { BACKEND } from "../js/content/backend.js";
 
 export const LEGAL = {
-  game: "Kopfball Duell",   // Spielname, noch nicht endgültig
+  game: "Headstars",        // Spielname (Domain headstars.app)
   operator: "Louis-Deniel Rost",
   address: ["c/o flexdienst – #10303", "Kurt-Schumacher-Straße 76", "67663 Kaiserslautern"],
   country: { de: "Deutschland", en: "Germany" },

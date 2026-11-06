@@ -1,6 +1,6 @@
 {
-  "name": "Kopfball Duell",
-  "short_name": "Kopfball",
+  "name": "Headstars",
+  "short_name": "Headstars",
   "description": "Head Soccer im Browser: Spezialschüsse, Power-ups, Cup und online gegen Kumpels per Link.",
   "lang": "de",
   "start_url": "./",

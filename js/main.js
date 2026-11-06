@@ -1,4 +1,4 @@
-// Kopfball Duell: Einstiegspunkt (Composition Root).
+// Headstars: Einstiegspunkt (Composition Root).
 // Hier und nur hier wird entschieden, welche Adapter das Spiel benutzt. Alles andere kennt nur die
 // Schnittstellen aus js/ports/. Für einen Server (Konto, Profil-Sync) werden hier andere Adapter eingesteckt.
 import { fireSuper } from "./core/physics.js";

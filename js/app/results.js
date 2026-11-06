@@ -149,5 +149,5 @@ export function shareResult() {
   let text;
   if (me >= 0) { const w = st.s[me] > st.s[1 - me]; text = t(w ? "share.won" : "share.lost", { a: st.s[me], b: st.s[1 - me], opp: App.names[1 - me], url }); }
   else text = t("share.local", { p1: App.names[0], a: st.s[0], b: st.s[1], p2: App.names[1], url });
-  shareOrCopy({ title: "Kopfball Duell", text });   // i18n-ok: Marke
+  shareOrCopy({ title: "Headstars", text });   // i18n-ok: Marke
 }

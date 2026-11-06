@@ -1,4 +1,4 @@
-# Kopfball Duell
+# Headstars
 
 Head Soccer im Browser. 1 gegen 1, große Köpfe, kleine Tore. Läuft auf Handy, Tablet und PC, ohne Download und ohne Account.
 

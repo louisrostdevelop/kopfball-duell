@@ -48,7 +48,7 @@ test("index.html: alle sichtbaren Texte und Beschriftungen laufen über data-i18
   const bad = [];
   for (const m of body.matchAll(/(<[^<>]*>)([^<>]*[A-Za-zÄÖÜäöüß]{2,}[^<>]*)</g)) {
     const [, tag, text] = m;
-    if (/data-i18n="[^"]+"/.test(tag) || /^\s*(Enter|Kopfball|Duell)\s*$/.test(text) || tag.startsWith("<kbd")) continue;
+    if (/data-i18n="[^"]+"/.test(tag) || /^\s*(Enter|Head|stars)\s*$/.test(text) || tag.startsWith("<kbd")) continue;
     bad.push(text.trim());
   }
   for (const m of body.matchAll(/<[a-zA-Z][^<>]*\b(placeholder|aria-label|title|alt)="([^"]*[a-zäöüß]{2,}[^"]*)"[^<>]*>/g)) {

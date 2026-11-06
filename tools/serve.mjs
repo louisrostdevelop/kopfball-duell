@@ -23,5 +23,5 @@ export function serve(port = 0) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { url } = await serve(+(process.argv[2] || 8765));
-  console.log("Kopfball Duell läuft auf " + url);
+  console.log("Headstars läuft auf " + url);
 }
