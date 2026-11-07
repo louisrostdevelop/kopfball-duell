@@ -128,7 +128,7 @@ test("Name, Freunde und Bestenliste", { skip: !hasPg && "kein Postgres" }, async
   await closeModal(A); await closeModal(B);
   // Namen über die Einstellungen (landen auf dem Server)
   for (const [p, n] of [[A, "Louis"], [B, "Kumpel"]]) {
-    await p.bringToFront(); await p.click("#btnProfile"); await p.fill("#setName", n); await p.press("#setName", "Tab"); await p.waitForTimeout(600);
+    await p.bringToFront(); await p.click("#btnProfile"); await p.click("#pcEdit"); await p.fill("#pcNameIn", n); await p.press("#pcNameIn", "Enter"); await p.waitForTimeout(600);
     await p.click("#scr-profile [data-back]");
   }
   assert.deepEqual((await db("select name from game.players where id in ($1, $2) order by name", [ida, idb])).map(r => r.name), ["Kumpel", "Louis"]);

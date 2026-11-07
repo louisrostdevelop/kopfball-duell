@@ -7,7 +7,7 @@ import { App } from "../../app/state.js";
 import { avatarCanvas, shoeCanvas } from "../render/art.js";
 import { chestSvg } from "../render/chest-art.js";
 import { refreshTop } from "./home.js";
-import { $, esc, modal, toast } from "../dom.js";
+import { $, esc, modal, RCOL, toast } from "../dom.js";
 import { registerScreen, showScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
 import { num, t } from "../../content/i18n.js";
@@ -127,13 +127,16 @@ export async function openChestOverlay(c) {
 }
 
 function oddsModal() {
-  const rows = CHEST_TIERS.map(k => {
-    const c = CHESTS[k], cos = Object.entries(c.cos.rar).map(([r, p]) => `${RARITY[r]} ${pct(p * c.cos.p)}`).join(", ");
-    const head = Object.entries(c.head).map(([r, p]) => `${RARITY[r]} ${pct(p)}`).join(", ");
-    return `<tr><th>${t("chest." + k)}</th><td>${c.coins[1] ? `${c.coins[0]}–${c.coins[1]}` : "–"}${c.gems ? ` + ${t("chest.gems", { n: c.gems })}` : ""}</td><td>${cos}</td><td>${head}</td></tr>`;
+  const chip = (r, p) => `<span class="ochip" style="--rc:${RCOL[r]}">${RARITY[r]} ${pct(p)}</span>`;
+  const cards = CHEST_TIERS.map(k => {
+    const c = CHESTS[k], coins = (c.coins[1] ? (c.coins[0] === c.coins[1] ? `${c.coins[0]}` : `${c.coins[0]}–${c.coins[1]}`) : "") + (c.gems ? (c.coins[1] ? " + " : "") + t("chest.gems", { n: c.gems }) : "");
+    return `<div class="ocard" data-k="${k}"><div class="ohead"><span class="oic"></span><b>${t("chest." + k)}</b></div>
+      <div class="orow"><small>${t("chest.oddsCoins")}</small><span>${coins || "–"}</span></div>
+      <div class="orow"><small>${t("chest.oddsCos")}</small><span>${Object.entries(c.cos.rar).map(([r, p]) => chip(r, p * c.cos.p)).join("")}</span></div>
+      <div class="orow"><small>${t("chest.oddsHead")}</small><span>${Object.entries(c.head).map(([r, p]) => chip(r, p)).join("")}</span></div></div>`;
   }).join("");
-  modal({ title: t("chest.odds"), body: `<table class="oddtab"><tr><th></th><th>${t("chest.oddsCoins")}</th><th>${t("chest.oddsCos")}</th><th>${t("chest.oddsHead")}</th></tr>${rows}</table>
-    <p class="hint">${t("chest.oddsNote", { epic: PITY.epic, legend: PITY.legend, head: PITY.head, lhead: PITY.legendHead })}</p>`, ribbon: "" });
+  modal({ title: t("chest.odds"), cls: "wide", body: `<div class="odds">${cards}<p class="hint onote">${t("chest.oddsNote", { epic: PITY.epic, legend: PITY.legend, head: PITY.head, lhead: PITY.legendHead })}</p></div>`, btn: t("ui.done"), ribbon: "blue" });
+  document.querySelectorAll(".ocard").forEach(el => el.querySelector(".oic").append(chestEl(el.dataset.k, 34)));
 }
 
 export function initChests() {

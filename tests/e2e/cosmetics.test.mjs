@@ -70,7 +70,7 @@ test("Meisterschaft und Kosmetik-Shop (ohne Server)", async () => {
   // Shop: Kosmetik-Wochenangebot, kaufen mit Münzen
   await page.evaluate(async () => { (await import("/js/ui/nav.js")).showScreen("shop"); (await import("/js/ui/screens/shop.js")).setShopTab("cos"); });
   await page.waitForTimeout(300);
-  assert.equal(await page.locator("#shopGrid .sitem").count(), 6);
+  assert.equal(await page.locator("#shopGrid .sitem:not(.sinfo)").count(), 6);
   const first = await page.getAttribute("#shopGrid .sitem .buy2 .btn.yellow >> xpath=../..", "data-id");
   await click(page, "#shopGrid .sitem .buy2 .btn.yellow", 400);
   assert.ok((await S(page)).cos.includes(first), "gekauft: " + first);

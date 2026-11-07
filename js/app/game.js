@@ -83,6 +83,7 @@ export function tutorial() {
 // (nur für Videos); dort hilft nur „Zum Home-Bildschirm“, dann startet das Spiel als App ohne Browserleisten.
 export const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 export const canFullscreen = () => { const el = document.documentElement; return !!(el.requestFullscreen || el.webkitRequestFullscreen); };
+export function toggleFullscreen() { if (fullscreenElement()) exitFullscreen(); else goFullscreen(); }
 export function goFullscreen() {
   const el = document.documentElement;
   if (fullscreenElement()) return;

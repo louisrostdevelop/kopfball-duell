@@ -1,9 +1,10 @@
 // Startseite mit Bühne (jonglierender Kopf), Tageskarten und Kopfzeile
 import { charById, CHARS, DIFFS, MODES, PAYMENTS, RARITY, rarityOf, SUPERS } from "../../content/config.js";
 import { MAX_STARS, totalStars } from "../../core/career.js";
+import { today } from "../../core/economy.js";
 import { online as serverOn, passView } from "../../app/account.js";
 import { matchLen } from "../../core/physics.js";
-import { challenge, deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
+import { deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
 import { avatarCanvas, drawBall, drawHead } from "../render/art.js";
 import { dailyChallenge, startMode } from "../../app/modes.js";
 import { App } from "../../app/state.js";
@@ -14,6 +15,7 @@ import { audio as A } from "../../app/services.js";
 import { dailyBriefing } from "./run.js";
 import { setShopTab } from "./shop.js";
 import { availableModes } from "./modes.js";
+import { accountState } from "./profile.js";
 import { t as tx } from "../../content/i18n.js";
 import { canInstall, installAsk } from "../install.js";
 import { canFullscreen } from "../../app/game.js";
@@ -47,6 +49,7 @@ export function homeScreen() {
   $("mcIcon").style.background = `linear-gradient(${m.c1}, ${m.c2})`;
   const pf = $("pfAv"); pf.innerHTML = ""; pf.append(avatarCanvas(S.char, 50, { fill: true }));
   $("pfName").textContent = S.name || tx("ui.player");
+  $("pfGuest").hidden = accountState().kind !== "guest" && accountState().kind !== "pending";   // Gast mit Server: sichtbar, dass der Spielstand nicht gesichert ist
   // Tages-Challenge
   const ch = dailyChallenge();
   $("hsDaily").classList.toggle("done", ch.done);
@@ -80,10 +83,11 @@ export function refreshTop() {
   $("xpFill").style.width = Math.round(S.xp / xpFor(S.level) * 100) + "%";
   $("xpTxt").textContent = S.xp + "/" + xpFor(S.level);
   $("starNum").textContent = Object.keys(S.ach).length;
-  const tl = tasks(), open = tl.filter(x => !x.done).length, ch = challenge();
-  const tb = $("taskBadge"); const pv = serverOn() && passView(); const n = open + (ch.done ? 0 : 1) + (pv ? pv.claimable : 0); tb.hidden = !n; tb.textContent = n;
+  tasks();   // Tagesaufgaben für heute anlegen, falls neu
+  // Zahl = was man wirklich abholen kann (Aufgaben werden automatisch gutgeschrieben, nur Pass-Stufen warten)
+  const tb = $("taskBadge"); const pv = serverOn() && passView(); const n = pv ? pv.claimable : 0; tb.hidden = !n; tb.textContent = n;
   const cb = $("chestBadge"); cb.hidden = !S.chests.length; cb.textContent = S.chests.length;
-  const dl = deal(); $("shopBadge").hidden = !(dl && S.coins >= dl.price) && !CHARS.some(c => !owns("chars", c.id) && c.price <= S.coins);
+  const dl = deal(); $("shopBadge").hidden = !(dl && S.coins >= dl.price && !owns(dl.kind, dl.id) && S.shopSeen !== today());
 }
 
 // Bühne hinter dem Kopf: weicher Schein in der Farbe der Seltenheit, klares Podest mit Lichtringen, wenige weiche Lichtpunkte
@@ -96,19 +100,19 @@ function stageFx(x, w, cx, baseY, r, t) {
   x.save();
   x.globalCompositeOperation = "lighter";
   // großer, weicher Schein hinter dem Kopf
-  const pulse = 0.88 + 0.12 * Math.sin(t * 1.6), ag = x.createRadialGradient(cx, headY - r * 0.1, r * 0.2, cx, headY - r * 0.1, r * 2.6);
-  ag.addColorStop(0, col(0.5 * pulse)); ag.addColorStop(0.45, col(0.18 * pulse)); ag.addColorStop(1, col(0));
-  x.fillStyle = ag; x.fillRect(cx - r * 2.7, headY - r * 2.8, r * 5.4, r * 5.4);
+  const pulse = 0.9 + 0.1 * Math.sin(t * 1.2), AR = Math.min(r * 2.1, w / 2 - 2), ag = x.createRadialGradient(cx, headY, r * 0.3, cx, headY, AR);
+  ag.addColorStop(0, col(0.32 * pulse)); ag.addColorStop(0.5, col(0.1 * pulse)); ag.addColorStop(1, col(0));
+  x.fillStyle = ag; x.beginPath(); x.arc(cx, headY, AR, 0, TAU); x.fill();
   // wenige große Lichtpunkte (Bokeh), steigen langsam
-  for (let i = 0; i < 7; i++) {
-    const u = (t * (0.035 + hash(i) * 0.03) + hash(i * 7)) % 1, px = cx + (hash(i * 3) - 0.5) * r * 4.4, py = baseY - u * r * 3.4;
+  for (let i = 0; i < 5; i++) {
+    const u = (t * (0.035 + hash(i) * 0.03) + hash(i * 7)) % 1, px = cx + (hash(i * 3) - 0.5) * Math.min(r * 4, w - r * 0.6), py = baseY - u * r * 3.4;
     const z = r * (0.1 + hash(i * 5) * 0.16), al = Math.sin(u * Math.PI) * (0.16 + hash(i * 9) * 0.14);
     const bg = x.createRadialGradient(px, py, 0, px, py, z); bg.addColorStop(0, i % 3 ? col(al) : `rgba(255,255,255,${al})`); bg.addColorStop(0.7, i % 3 ? col(al * 0.6) : `rgba(255,255,255,${al * 0.6})`); bg.addColorStop(1, "rgba(0,0,0,0)");
     x.fillStyle = bg; x.beginPath(); x.arc(px, py, z, 0, TAU); x.fill();
   }
   // Lichtringe auf dem Boden, laufen langsam nach außen
   for (let k = 0; k < 2; k++) {
-    const u = (t * 0.32 + k / 2) % 1, s = 1 + u * 0.75;
+    const u = (t * 0.32 + k / 2) % 1, s = 1 + u * Math.min(0.75, Math.max(0, (w / 2 - 2) / pw - 1));
     x.beginPath(); x.ellipse(cx, baseY + depth, pw * s, ph * s, 0, 0, TAU);
     x.strokeStyle = col(0.5 * (1 - u)); x.lineWidth = Math.max(1.5, r * 0.025); x.stroke();
   }
@@ -151,7 +155,7 @@ export function drawShowcase(dt) {
   const plate = document.querySelector("#scr-home .plate"), nu = $("hsNext");
   const reserve = (plate ? plate.offsetHeight : 90) + (nu && !nu.hidden && nu.offsetParent ? nu.offsetHeight + 12 : 0) + 24;
   const avail = h - reserve;
-  const r = Math.max(30, Math.min(w * 0.2, avail * 0.3));
+  const r = Math.max(30, Math.min(w * 0.2, avail * 0.27, 150));   // auf großen Bildschirmen nicht riesig
   const baseY = avail - r * 0.15; // Boden der Bühne
   const cx = w / 2;
   stageFx(x, w, cx, baseY, r, t);
@@ -172,12 +176,11 @@ export function drawShowcase(dt) {
   const look = -Math.PI / 2 + Math.sin(t * 2) * 0.3;
   // Kopf mit Lichtkante in der Farbe der Seltenheit
   const [gr, gg, gb] = RC[rarityOf(charById(S.char))] || RC.basis;
-  const hopt = { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t }, hy = headY - bump * r * 0.4, far = 10000;
+  const hopt = { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t }, hy = headY - bump * r * 0.4;
   // nur der Schatten landet im Bild (Kopf selbst weit außerhalb), sonst färbt der Schein das Gesicht ein
-  // Schattenversatz gilt in Gerätepixeln und ignoriert die Skalierung beim Nicken: aus der aktuellen Matrix rechnen,
-  // sonst springt der Schein bei jedem Kopfball zur Seite
-  x.save(); x.shadowColor = `rgba(${gr},${gg},${gb},.95)`; x.shadowBlur = r * 0.5 * dpr; x.shadowOffsetX = far * x.getTransform().a; x.translate(-far, 0);
-  drawHead(x, S.char, cx, hy, r, hopt); x.restore();
+  const gl = x.createRadialGradient(cx, hy, r * 0.85, cx, hy, r * 1.32);
+  gl.addColorStop(0, `rgba(${gr},${gg},${gb},.5)`); gl.addColorStop(1, `rgba(${gr},${gg},${gb},0)`);
+  x.fillStyle = gl; x.beginPath(); x.arc(cx, hy, r * 1.32, 0, Math.PI * 2); x.fill();
   drawHead(x, S.char, cx, hy, r, hopt);
   x.restore();
   drawBall(x, S.ball, bx, j.y, br, j.a, 1, null, { t, vy: j.vy });
