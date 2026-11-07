@@ -54,7 +54,7 @@ test("Rollback: Verbindung reißt ab und kommt zurück (ohne Neustart)", async (
   await A.waitForFunction(() => !!window.__kd.netWait, null, { timeout: 5000 });
   await playing(A); await playing(B);
   const [sa, sb] = [await stats(A), await stats(B)];
-  assert.notEqual(sa.ep, ep0, "neue Sitzung"); assert.equal(sa.ep, sb.ep, "beide in derselben neuen Sitzung");
+  assert.equal(sa.ep, ep0, "dieselbe Sitzung läuft weiter (nichts zurückgedreht)"); assert.equal(sb.ep, ep0);
   for (const p of [A, B]) assert.deepEqual(await p.evaluate(() => window.__kd.st.s), [2, 1], "Stand erhalten");
   assert.ok(await same(A, B), "beide rechnen wieder gleich");
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);

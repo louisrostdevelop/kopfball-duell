@@ -84,7 +84,7 @@ for (const mode of ["rollback", "classic"]) test(`Ranked (${mode}): suchen, gepa
   // gepaart und verbunden: beide im Spiel
   const playing = await until(async () => (await Promise.all([A, B].map(p => p.evaluate(() => ["host", "guest"].includes(window.__kd.mode) && window.__kd.screen === null)))).every(Boolean), 20000);
   assert.ok(playing, "beide im Spiel: " + JSON.stringify(await Promise.all([A, B].map(p => p.evaluate(() => [window.__kd.mode, window.__kd.screen, window.__kd.mm && window.__kd.mm.state])))));
-  const m = (await db("select id, p1, p2, mode, status from game.matches"))[0];
+  const m = (await db("select id, p1, p2, mode, status from game.matches where p1 in ($1, $2) order by created_at desc limit 1", [ida, idb]))[0];   // (Datenbank teilen sich beide Durchläufe)
   assert.equal(m.mode, "ranked");
   const host = m.p1 === ida ? A : B;
   let guest = host === A ? B : A;
@@ -117,7 +117,7 @@ for (const mode of ["rollback", "classic"]) test(`Ranked (${mode}): suchen, gepa
   await guest.evaluate(() => { window.__kd.t0 = Date.now() - 60000; });
   const settled = await until(async () => (await db("select status, result from game.matches where id = $1", [m.id]))[0].status === "settled", 20000);
   assert.ok(settled, "gewertet: " + JSON.stringify(await db("select status, report1, report2 from game.matches where id = $1", [m.id])));
-  const r = await db("select player_id, mmr from game.ratings where season_id = 1 order by mmr desc");
+  const r = await db("select player_id, mmr from game.ratings where season_id = 1 and player_id in ($1, $2) order by mmr desc", [m.p1, m.p2]);
   assert.deepEqual(r.map(x => x.player_id), [m.p1, m.p2], "Sieger vorne");
   assert.equal(r[0].mmr + r[1].mmr, 2000, "Elo: was einer gewinnt, verliert der andere");
   assert.match(await until(async () => { const t = await host.textContent("#endNote"); return /Wertung \+/.test(t) && t; }), /Wertung \+16/);
