@@ -223,7 +223,9 @@ test("Konto: sichern und auf anderem Gerät anmelden, beides mit Code", { skip: 
   const A = a.page;
   const sess = await until(() => A.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null")));
   const id = sess.user.id;
-  const settle = async p => { await p.waitForTimeout(600); if (await p.locator("#modalOk").isVisible()) await click(p, "#modalOk", 300); };
+  // Start-Dialoge (Tagesbonus) direkt schließen: unter Volllast meldete Playwright den Knopf zeitweise als verdeckt,
+  // um den Dialog geht es hier nicht
+  const settle = async p => { await p.waitForTimeout(600); for (let k = 0; k < 3 && await p.locator("#modalOk").isVisible(); k++) { await p.evaluate(() => document.getElementById("modalOk").click()); await p.waitForTimeout(300); } };
   await settle(A);
   await click(A, "#btnProfile", 400);
   await A.fill("#accMail", "spieler@example.org"); await click(A, "#accLink", 600);
