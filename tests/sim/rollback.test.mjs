@@ -35,7 +35,7 @@ function player(seed, emotes = true) {
 function network(o, r) {
   const q = [];
   const deliverAt = (now, safe) => now + o.lat + (o.jit ? r() * o.jit : 0) + (safe ? 2 : 0);
-  let lastSafe = [0, 0];
+  const lastSafe = [0, 0];
   return {
     send(from, msg, now, safe) {
       const dead = (o.outages || []).some(([a, b]) => now >= a && now < b);
@@ -67,7 +67,7 @@ function simulate(o) {
       return ev;
     };
     peers.push(createPeer({
-      me, state: init, delay: o.delay ?? 2, maxPred: o.maxPred ?? 8, step: stepFn, mid: 1,
+      me, state: init, delay: o.delay ?? 2, maxPred: o.maxPred ?? 8, step: stepFn, mid: 1, ring: 1e6,   // alles behalten: Einzelrechnung von Takt 0 an
       send: m => net.send(me, m, now, false), sendSafe: m => net.send(me, m, now, true),
       onSpec: (e, f) => spec[me].push(e.t + "@" + f),
       onFinal: (evs, f, after) => { fin[me].set(f, RB.hashState(after)); for (const e of evs) finEv[me].push(e.t + "@" + f); },
@@ -102,15 +102,16 @@ function checkSame(res, label) {
 function checkReference(res, label) {
   const s = res.peers[0].session, st = RB.clone(res.init);
   const last = Math.max(...res.fin[0].keys());
-  let bad = -1;
+  let bad = -1, n = 0;
   for (let f = 0; f <= last; f++) {
     const inputs = s.inputsAt(f);
-    if (inputs[0] === undefined || inputs[1] === undefined) break;   // aus dem Speicher gefallen: Rest nicht prüfbar
+    if (inputs[0] === undefined || inputs[1] === undefined) break;
     gameTick(st, inputs);
     const want = res.fin[0].get(f);
-    if (want && want !== RB.hashState(st)) { bad = f; break; }
+    if (want) { n++; if (want !== RB.hashState(st)) { bad = f; break; } }
   }
   assert.equal(bad, -1, `${label}: Rollback-Ergebnis = Einzelrechnung (Abweichung bei ${bad})`);
+  assert.ok(n > 300 && n >= res.fin[0].size - 2, `${label}: Einzelrechnung über alle endgültigen Takte verglichen (${n} von ${res.fin[0].size})`);
 }
 
 test("Bausteine: Bits hin und zurück, Kopie exakt, Prüfsumme unabhängig von der Feldreihenfolge", () => {
@@ -188,4 +189,20 @@ test("Stau statt Davonlaufen: ohne Eingaben der Gegenseite höchstens maxPred Ta
   for (let i = 0; i < 120; i++) peer.update(1 / 60, () => 0);
   assert.ok(peer.frame <= 2 + 8 + 1, `bleibt stehen (${peer.frame})`);
   assert.ok(peer.metrics.stalls > 0);
+});
+
+test("Zufallsprüfung: 24 Spiele mit zufälligem Netz, Köpfen, Arenen und Regeln", () => {
+  const r = prng(2026), pick = a => a[Math.floor(r() * a.length)];
+  const heads = ["kalle", "yuki", "bolt", "tank", "flummi", "tina", "magnus", "emo", "sigma", "crypto", "moai", "rapper"];
+  const arenas = ["stadion", "strand", "neon", "eis", "mond", "vulkan", "skate", "backrooms"];
+  const rules = [{}, { obs: 0 }, { obs: 1 }, { obs: 2, field: 1.18 }, { pu: "many" }, { grav: 0.55 }, { floor: "ice" }, { kick: 1.45, bounce: 1.4 }];
+  for (let k = 0; k < 24; k++) {
+    const n = { lat: 5 + Math.floor(r() * 150), jit: Math.floor(r() * 80), loss: r() < 0.5 ? 0 : r() * 0.15, delay: 1 + Math.floor(r() * 5), maxPred: 8 + Math.floor(r() * 4) };
+    const o = { secs: 9, ...n, seed: 100 + k, chars: [pick(heads), pick(heads)], arena: pick(arenas), rules: pick(rules), ph: r() < 0.5 ? "play" : undefined };
+    const label = `#${k} ${JSON.stringify(n)} ${o.arena} ${o.chars.join("/")} ${JSON.stringify(o.rules)}`;
+    const res = simulate(o);
+    checkSame(res, label);
+    checkReference(res, label);
+    assert.equal(res.peers[0].metrics.desyncs + res.peers[1].metrics.desyncs, 0, label);
+  }
 });

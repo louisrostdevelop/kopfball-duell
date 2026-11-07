@@ -17,7 +17,7 @@ const stats = p => p.evaluate(async () => (await import("/js/app/rbnet.js")).rbS
 async function sameAt(A, B) {
   const sa = await stats(A), sb = await stats(B);
   const f = Math.min(sa.sync, sb.sync) - 1;
-  const h = p => p.evaluate(async f => { const R = await import("/js/core/rollback.js"); const st = window.__kd.rb.peer.session.stateAt(f); return st ? R.hashState(st) : null; }, f);
+  const h = p => p.evaluate(async fr => { const R = await import("/js/core/rollback.js"); const st = window.__kd.rb.peer.session.stateAt(fr); return st ? R.hashState(st) : null; }, f);
   return { f, a: await h(A), b: await h(B) };
 }
 
@@ -31,6 +31,7 @@ async function pair(net, patch) {
   B.on("pageerror", e => bErr.push("Gast: " + e.message));
   await B.goto(env.url + "/index.html?join=" + code); await B.waitForTimeout(2500);
   if (await B.locator("#modalOk").isVisible()) await B.click("#modalOk");
+  // eslint-disable-next-line no-new-func -- Test: Startzustand im Browser vorgeben
   if (patch) await A.evaluate(src => { window.__kd.testPatch = new Function("st", src); }, patch);
   await A.click("#btnLobbyStart"); await A.waitForTimeout(800);
   return { a, A, B, bErr };
@@ -46,7 +47,10 @@ test("Rollback: gleiches Spiel, Gast-Eingaben, Emote, Tor endgültig auf beiden 
 
   // Gast springt 5-mal kurz und grätscht: kommt im gemeinsamen Spiel an (endgültige Ereignisse beim Host)
   await B.bringToFront();
-  for (let n = 0; n < 5; n++) { await B.keyboard.down("ArrowUp"); await B.waitForTimeout(40); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(650); }
+  // (jeweils erst springen, wenn er wieder steht: zwei Seiten auf einem Rechenkern laufen langsamer als echt)
+  const grounded = () => B.waitForFunction(() => window.__kd.st.p[1].onG, null, { timeout: 5000 });
+  for (let n = 0; n < 5; n++) { await grounded(); await B.waitForTimeout(150); await B.keyboard.down("ArrowUp"); await B.waitForTimeout(40); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(300); }
+  await grounded();
   await B.keyboard.down("ArrowDown"); await B.waitForTimeout(60); await B.keyboard.up("ArrowDown"); await B.waitForTimeout(800);
   const ca = (await stats(A)).counts, cb = (await stats(B)).counts;
   assert.ok((ca.jump1 || 0) >= 5, `Sprünge des Gasts beim Host: ${ca.jump1}`);
@@ -71,7 +75,7 @@ test("Rollback: gleiches Spiel, Gast-Eingaben, Emote, Tor endgültig auf beiden 
 
 test("Rollback: Tor aus festem Startzustand, Wiederholung, Spielende mit gleichem Ergebnis", async () => {
   // Ball fliegt sofort ins rechte Tor, Spiel auf ein Tor (endet danach)
-  const patch = "st.ph = 'play'; st.pt = 0; st.b.x = 1500; st.b.y = 560; st.b.vx = 900; st.b.vy = 0; st.rules.win = 1;";
+  const patch = "st.ph = 'play'; st.pt = 0; st.b.x = 1200; st.b.y = 560; st.b.vx = 700; st.b.vy = 0; st.rules.win = 1;";
   const { a, A, B, bErr } = await pair({ lat: 80, jit: 30, loss: 0.05 }, patch);
   let ca = {};
   for (let i = 0; i < 40 && !ca.goal0; i++) { await A.waitForTimeout(100); ca = (await stats(A)).counts; }
@@ -94,6 +98,8 @@ test("Rollback: Tor aus festem Startzustand, Wiederholung, Spielende mit gleiche
 test("Rollback: Netz bricht kurz ab (2 s): beide stehen, dann geht es gemeinsam weiter", async () => {
   const { a, A, B, bErr } = await pair({ lat: 40, jit: 10 });
   await A.waitForTimeout(3500);
+  // Takte pro Sekunde vor dem Ausfall (zwei Seiten auf einem Rechenkern: langsamer als 60)
+  const r0 = (await stats(A)).frame; await A.waitForTimeout(2000); const rate = ((await stats(A)).frame - r0) / 2;
   const f0 = (await stats(A)).frame;
   await A.evaluate(() => { window.__mockNet = { lat: 40, jit: 10, loss: 1 }; });
   await B.evaluate(() => { window.__mockNet = { lat: 40, jit: 10, loss: 1 }; });
@@ -102,9 +108,9 @@ test("Rollback: Netz bricht kurz ab (2 s): beide stehen, dann geht es gemeinsam 
   assert.ok(f1 - f0 < 40, `steht, statt davonzulaufen (${f1 - f0} Takte in 2 s)`);
   await A.evaluate(() => { window.__mockNet = { lat: 40, jit: 10, loss: 0 }; });
   await B.evaluate(() => { window.__mockNet = { lat: 40, jit: 10, loss: 0 }; });
-  await A.waitForTimeout(2500);
-  const f2 = (await stats(A)).frame;
-  assert.ok(f2 - f1 > 90, `läuft wieder (${f2 - f1} Takte)`);
+  await A.waitForTimeout(1000);   // aufholen
+  const f2 = (await stats(A)).frame; await A.waitForTimeout(2000); const f3 = (await stats(A)).frame;
+  assert.ok(f3 - f2 > rate * 2 * 0.6, `läuft wieder (${f3 - f2} Takte in 2 s, vorher ${rate}/s)`);
   const s = await sameAt(A, B);
   assert.ok(s.a && s.a === s.b, "danach gleicher Zustand");
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);

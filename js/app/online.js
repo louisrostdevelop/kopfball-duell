@@ -366,7 +366,7 @@ export function hostStart() {
 }
 /** Host: Rollback-Sitzung starten; liefert, was der Gast dafür braucht (Sitzungs-Nr., Startzustand, Verzögerung) */
 function rbStart(st, delay) {
-  if (App.testPatch) App.testPatch(st);   // nur Tests: Startzustand vorgeben (z. B. Ball vor dem Tor)
+  const tp = App.testPatch; App.testPatch = null; if (tp) tp(st);   // nur Tests: Startzustand einmal vorgeben (z. B. Ball vor dem Tor)
   const ep = (Date.now() % 1e9) + 1, s0 = netState(st);
   startRb({ ep, st: s0, delay });
   return { ep, st: s0, d: delay };

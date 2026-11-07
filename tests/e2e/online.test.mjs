@@ -10,10 +10,12 @@ after(async () => { await env.close(); });
 
 const VIEW = { viewport: { width: 1100, height: 620 } };
 const MOCK = { path: fileURLToPath(new URL("./mockpeer.js", import.meta.url)) };
+// altes Verfahren (Host rechnet, Gast bekommt Zustände); Rollback prüfen rollback.test.mjs und rbresume.test.mjs
+const CLASSIC = { content: "window.__netcode = \"classic\";" };
 
 const pingOf = p => p.evaluate(() => { const e = document.getElementById("netPing"); return { vis: !e.hidden && !!e.offsetParent, bars: +e.dataset.bars || 0, ms: document.getElementById("netPingMs").textContent }; });
 test("Online: Lobby bis Revanche", async t => {
-  const a = await openPage(env, VIEW, { init: [MOCK] });
+  const a = await openPage(env, VIEW, { init: [CLASSIC, MOCK] });
   const A = a.page;
   // Host trägt Schuhe und eine Torexplosion
   await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.cos = ["shoes:2", "goalfx:3", "emoji:5"]; p.S.equip = { shoes: "shoes:2", goalfx: "goalfx:3", title: null, frame: null, emotes: ["emoji:5", null, null, null] }; });
@@ -90,7 +92,7 @@ test("Online: Lobby bis Revanche", async t => {
 // verloren (Eingaben mehrfach + Zähler), Ereignisse und Statistik kommen zuverlässig, Puffer wächst mit dem Netz.
 test("Online bei schlechtem Netz", async () => {
   const bad = { lat: 90, jit: 45, loss: 0.06 };
-  const a = await openPage(env, VIEW, { init: [MOCK, { content: `window.__mockNet = ${JSON.stringify(bad)};` }] });
+  const a = await openPage(env, VIEW, { init: [CLASSIC, MOCK, { content: `window.__mockNet = ${JSON.stringify(bad)};` }] });
   const A = a.page;
   await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
   await A.click("#btnHost"); await A.waitForTimeout(500);
@@ -121,7 +123,7 @@ test("Online bei schlechtem Netz", async () => {
 // Gast friert ein (Tab im Hintergrund, Absturz), ohne dass die Verbindung schließt: festgehaltene Taste wirkt nicht
 // weiter, nach 4 s ein Hinweis, nach 8 s Trennung, kommt danach nichts: zurück in die Lobby (Review 06.11.2026)
 test("Online: Gast friert ein", async () => {
-  const a = await openPage(env, VIEW, { init: [MOCK] });
+  const a = await openPage(env, VIEW, { init: [CLASSIC, MOCK] });
   const A = a.page;
   await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
   await A.click("#btnHost"); await A.waitForTimeout(500);
@@ -145,7 +147,7 @@ test("Online: Gast friert ein", async () => {
 // Netz reißt mitten im Spiel ab: Spiel steht, der Gast tritt demselben Raum wieder bei, Spielstand bleibt erhalten.
 // Kommt er nicht zurück, geht der Host nach 10 s in die Lobby. (Review 06.11.2026)
 async function friendMatch() {
-  const a = await openPage(env, VIEW, { init: [MOCK] });
+  const a = await openPage(env, VIEW, { init: [CLASSIC, MOCK] });
   const A = a.page;
   await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
   await A.click("#btnHost"); await A.waitForTimeout(500);

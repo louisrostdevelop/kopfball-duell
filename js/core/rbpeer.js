@@ -32,7 +32,7 @@ export function createPeer(o) {
     return out;
   };
   const s = createSession({ me, state: o.state, frame0: o.frame0, delay: o.delay, maxPred: o.maxPred, ring: o.ring, tick: step, onRollback: o.onRollback });
-  let acc = 0, ackByRemote = (o.frame0 | 0) + s.delay - 1, lastRemoteFrame = (o.frame0 | 0), remoteAdv = 0, cool = 0, finalDone = o.frame0 | 0;
+  let acc = 0, sendT = 0, lastFix = -1, ackByRemote = (o.frame0 | 0) + s.delay - 1, lastRemoteFrame = (o.frame0 | 0), remoteAdv = 0, cool = 0, finalDone = o.frame0 | 0;
   const advHist = [];
   const myHash = new Map(), theirHash = new Map();
   const m = Object.assign(s.metrics, { resyncs: 0, slowdowns: 0, packetsIn: 0, packetsOut: 0, desyncs: 0, mid: 0 });
@@ -56,7 +56,8 @@ export function createPeer(o) {
   }
   function compare(f) {
     if (!myHash.has(f) || !theirHash.has(f)) return;
-    if (myHash.get(f) !== theirHash.get(f)) {
+    // Abweichungen bis zur letzten Korrektur sind schon behoben (die Gegenseite hatte sie vor der Korrektur gerechnet)
+    if (f > lastFix && myHash.get(f) !== theirHash.get(f)) {
       m.desyncs++;
       if (me === 0) correct();
     }
@@ -67,7 +68,7 @@ export function createPeer(o) {
     if (!st) return;
     const n = norm(st);
     sendSafe({ t: "rs", mid, f, st: n });
-    s.resync(f, n); m.resyncs++;
+    s.resync(f, n); m.resyncs++; lastFix = f;
   }
 
   return {
@@ -94,7 +95,9 @@ export function createPeer(o) {
       }
       if (n === 0) s.reconcile();
       flushFinal();
-      send(packet()); m.packetsOut++;
+      // senden: nach jedem Takt, sonst (Stau, schnelle Bildschirme) höchstens 30-mal pro Sekunde
+      sendT += dt;
+      if (n > 0 || sendT >= 1 / 30) { sendT = 0; send(packet()); m.packetsOut++; }
       return n;
     },
     /** Nachricht der Gegenseite (nur rollback-eigene Typen; true, wenn verarbeitet) */
@@ -102,7 +105,7 @@ export function createPeer(o) {
       if (!d || d.mid !== mid) return false;
       if (d.t === "ri") {
         m.packetsIn++;
-        if (Array.isArray(d.v) && Number.isInteger(d.f)) s.addRemote(d.f, d.v);
+        if (Array.isArray(d.v) && Number.isInteger(d.f)) s.addRemote(d.f, d.v.slice(0, 64));
         if (Number.isInteger(d.k) && d.k > ackByRemote) ackByRemote = Math.min(d.k, s.localTop);
         if (Number.isInteger(d.fr) && d.fr > lastRemoteFrame) lastRemoteFrame = d.fr;
         if (typeof d.ad === "number") remoteAdv = d.ad;
@@ -111,8 +114,18 @@ export function createPeer(o) {
         return true;
       }
       if (d.t === "rh") { if (Number.isInteger(d.f) && typeof d.h === "string") { theirHash.set(d.f, d.h); compare(d.f); } return true; }
-      if (d.t === "rs") { if (me !== 0 && Number.isInteger(d.f) && d.st && typeof d.st === "object") { s.resync(d.f, d.st); m.resyncs++; } return true; }
+      if (d.t === "rs") { if (me !== 0 && Number.isInteger(d.f) && d.st && typeof d.st === "object") { s.resync(d.f, d.st); m.resyncs++; lastFix = d.f; } return true; }
       return false;
+    },
+    /** Host: Zustand ab dem letzten endgültigen Takt vorgeben (wie eine Korrektur; Tests, Fehlersuche). fn(st) ändert ihn */
+    force(fn) {
+      if (me !== 0) return false;
+      const f = s.sync, st = s.stateAt(f);
+      if (!st) return false;
+      const n = norm(st); fn(n);
+      sendSafe({ t: "rs", mid, f, st: n });
+      s.resync(f, n); lastFix = f;
+      return true;
     },
     /** Kopie des aktuellen Zustands (z. B. zum Sichern) */
     snapshot: () => clone(s.state()),

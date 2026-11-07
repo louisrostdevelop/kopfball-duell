@@ -13,6 +13,8 @@ import { start, openPage } from "./lib.mjs";
 const hasPg = existsSync("/usr/lib/postgresql") && readdirSync("/usr/lib/postgresql").length > 0;
 const DB_SCRIPT = new URL("../../supabase/local/start-db.sh", import.meta.url).pathname;
 const MOCK = { path: fileURLToPath(new URL("./mockpeer.js", import.meta.url)) };
+// altes Verfahren (Host rechnet, Gast bekommt Zustände); Rollback prüfen rollback.test.mjs und rbresume.test.mjs
+const CLASSIC = { content: "window.__netcode = \"classic\";" };
 const VIEW = { viewport: { width: 1100, height: 620 } };
 let env, be, dir;
 
@@ -37,9 +39,17 @@ async function closeModal(p) { for (let i = 0; i < 3; i++) { await p.waitForTime
 // Server-Stand neu holen (nach Änderungen direkt in der Datenbank)
 const resync = p => p.evaluate(async () => { const a = await import("/js/app/account.js"); const s = await import("/js/app/services.js"); a.applyState(await s.server.state()); });
 
-test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postgres" }, async () => {
+// Spielstand beim Host ändern: klassisch direkt (der Gast bekommt ihn mit dem nächsten Zustand), mit Rollback als
+// Korrektur, die beide Seiten übernehmen
+const setState = (p, src) => p.evaluate(async code => {
+  const f = new Function("st", "K", code);   // eslint-disable-line no-new-func -- Test
+  if (window.__kd.rb) (await import("/js/app/rbnet.js")).rbForce(st => f(st, window.__kd)); else f(window.__kd.st, window.__kd);
+}, src);
+const inGame = () => window.__kd.mode === "guest" && !window.__kd.netWait && (window.__kd.rb ? window.__kd.rb.peer.frame > 20 : window.__kd.snaps.length > 0) && window.__kd.mm && window.__kd.mm.match;
+
+for (const mode of ["rollback", "classic"]) test(`Ranked (${mode}): suchen, gepaart, spielen, gewertet`, { skip: !hasPg && "kein Postgres" }, async () => {
   const q = `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev`;
-  const a = await openPage(env, VIEW, { init: [MOCK], query: q });
+  const a = await openPage(env, VIEW, { init: mode === "classic" ? [CLASSIC, MOCK] : [MOCK], query: q });
   const A = a.page; A.__key = "kopfball-duell-session";
   const ida = await userId(A);
   const B = await a.ctx.newPage(); B.__key = "kopfball-duell-session-b";
@@ -87,20 +97,22 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   for (const p of [A, B]) assert.deepEqual(await p.evaluate(i => [window.__kd.cfg.cos[i].shoes, window.__kd.cfg.cos[i].goalfx], ia), ["shoes:4", null]);
 
   // Gast schließt die App mitten im gewerteten Spiel und öffnet sie wieder: zurück im selben Spiel, keine Aufgabe gemeldet
-  await host.evaluate(() => { window.__kd.st.s = [1, 0]; });
-  await guest.waitForTimeout(600);
+  await setState(host, "st.s = [1, 0];");
+  await guest.waitForTimeout(1300);   // Host sichert jede Sekunde
   const gq = q + (guest === B ? "&as=b" : "");
   await guest.close();
   guest = await a.ctx.newPage(); guest.on("pageerror", e => errs.push("Gast neu: " + e.message));
   await guest.goto(env.url + "/index.html" + gq);
-  assert.ok(await until(() => guest.evaluate(() => window.__kd.mode === "guest" && !window.__kd.netWait && window.__kd.snaps.length > 0 && window.__kd.mm && window.__kd.mm.match), 25000), "Gast wieder im Spiel");
+  assert.ok(await until(() => guest.evaluate(inGame), 25000), "Gast wieder im Spiel");
+  assert.equal(await guest.evaluate(() => !!window.__kd.rb), mode === "rollback", "Verfahren wie beim Anpfiff");
   assert.deepEqual(await guest.evaluate(() => window.__kd.st.s), [1, 0]);
   assert.equal((await db("select status from game.matches where id = $1", [m.id]))[0].status, "open", "nicht als Aufgabe gewertet");
 
   // Host gewinnt 2:0, Abpfiff. Der Server wertet nur Spiele, die wirklich so lange liefen: Start zurückdatieren
   await db("update game.matches set created_at = now() - interval '2 minutes' where id = $1", [m.id]);
   await host.bringToFront();
-  await host.evaluate(() => { const K = window.__kd; K.t0 = Date.now() - 60000; K.st.s = [2, 0]; K.st.t = 0.5; });
+  await host.evaluate(() => { window.__kd.t0 = Date.now() - 60000; });
+  await setState(host, "st.s = [2, 0]; st.t = 0.5;");
   await guest.evaluate(() => { window.__kd.t0 = Date.now() - 60000; });
   const settled = await until(async () => (await db("select status, result from game.matches where id = $1", [m.id]))[0].status === "settled", 20000);
   assert.ok(settled, "gewertet: " + JSON.stringify(await db("select status, report1, report2 from game.matches where id = $1", [m.id])));

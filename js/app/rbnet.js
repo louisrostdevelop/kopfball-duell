@@ -12,8 +12,8 @@ import { validEmote } from "./cosmetics.js";
 import { App } from "./state.js";
 import { input as I, net as Net } from "./services.js";
 
-/** Rollback an? Zum Vergleichen/Notfall: ?netcode=classic schaltet beim Host das alte Verfahren ein */
-export const rollbackWanted = () => { try { return !/[?&]netcode=classic\b/.test(location.search); } catch (_) { return true; } };
+/** Rollback an? Zum Vergleichen/Notfall: ?netcode=classic (oder window.__netcode = "classic", Tests) schaltet beim Host das alte Verfahren ein */
+export const rollbackWanted = () => { try { return globalThis.__netcode !== "classic" && !/[?&]netcode=classic\b/.test(location.search); } catch (_) { return true; } };
 
 /** Eingabeverzögerung aus der Laufzeit (Hin und zurück, ms): kurze Wege 2 Takte, sehr lange höchstens 6 */
 export function pickDelay(rtt) {
@@ -139,6 +139,9 @@ export function rbBestState() {
   const s = rb.peer.session;
   return s.stateAt(s.sync) || rb.peer.state();
 }
+
+/** Host: Spielzustand auf beiden Seiten ändern (Tests): als Korrektur ab dem letzten endgültigen Takt */
+export const rbForce = fn => !!(App.rb && !App.rb.ended && App.rb.peer.force(fn));
 
 /** Kennzahlen für Tests und Fehlersuche (window.__kd.rb) */
 export const rbStats = () => (App.rb ? { ...App.rb.peer.metrics, frame: App.rb.peer.frame, sync: App.rb.peer.session.sync, delay: App.rb.delay, ep: App.rb.ep, counts: { ...App.rb.counts }, ended: !!App.rb.ended } : null);

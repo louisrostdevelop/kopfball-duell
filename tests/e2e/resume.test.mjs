@@ -11,10 +11,12 @@ after(async () => { await env.close(); });
 
 const VIEW = { viewport: { width: 1100, height: 620 } };
 const MOCK = { path: fileURLToPath(new URL("./mockpeer.js", import.meta.url)) };
+// altes Verfahren (Host rechnet, Gast bekommt Zustände); Rollback prüfen rollback.test.mjs und rbresume.test.mjs
+const CLASSIC = { content: "window.__netcode = \"classic\";" };
 const kd = (p, f) => p.evaluate(f);
 
 async function lobby() {
-  const a = await openPage(env, VIEW, { init: [MOCK] });
+  const a = await openPage(env, VIEW, { init: [CLASSIC, MOCK] });
   const A = a.page;
   await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
   await A.click("#btnHost"); await A.waitForTimeout(500);

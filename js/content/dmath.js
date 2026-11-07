@@ -97,7 +97,7 @@ export const dhypot = (x, y) => Math.sqrt(x * x + y * y);
 
 // ---------- Zufall im Spielzustand (mulberry32, nur Ganzzahl-Operationen) ----------
 /** neuer Startwert aus dem Gerätezufall (nur außerhalb der Physik benutzen) */
-export const newSeed = () => (Math.random() * 4294967296) >>> 0;
+export const newSeed = () => (Math.random() * 4294967296) >>> 0;   // det-ok: nur beim Anlegen, der Wert reist im Zustand
 /** Zahl in [0, 1) aus st.rng; schreibt den Zustand fort */
 export function rnd(st) {
   let t = (st.rng = (st.rng + 0x6D2B79F5) >>> 0);
