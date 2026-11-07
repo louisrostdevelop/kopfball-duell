@@ -36,7 +36,7 @@ const $hideCpu = () => { const b = document.getElementById("srCpu"); if (b) b.hi
 
 /** Suche starten. Wirft bei Fehlern (z. B. Ranked ohne Konto) eine Meldung für die Oberfläche. */
 export async function findMatch(mode) {
-  stop(); Net.close();
+  stop(); Net.close(); App.netBye = false;
   await server.queueJoin(mode, "head:" + S.char, myCos());
   App.mm = { mode, state: "search", t0: Date.now() };
   searchUI(App.mm); showScreen("search");

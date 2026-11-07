@@ -118,7 +118,7 @@ export function applySnap(st, a, b, k) {
 export function hostGame(resume = null) {
   if (!Net.available()) { netNote(t("net.unavailable"), true); return; }
   if (!resume) saveName($("nameIn").value);
-  App.opp = null;
+  App.opp = null; App.netBye = false;
   App.netCfg = resume && resume.netCfg ? resume.netCfg : { arena: owns("arenas", S.arena) ? S.arena : "stadion", rules: { ...S.rules } };
   $("lobbyCode").textContent = "····"; $("lobbyLink").textContent = ""; $("qrBox").innerHTML = "";
   lobbyUI("host");
@@ -409,7 +409,7 @@ export function tryJoin(code) {
   if (!Net.available()) { netNote(t("net.loading"), true); return; }
   saveName($("nameIn").value);
   netNote(t("net.connecting", { code: code.toUpperCase() }));
-  App.roomCode = code;
+  App.roomCode = code; App.netBye = false;
   Net.join(code, App.joinH = guestHandlers(code));
 }
 function guestHandlers(code) {
