@@ -137,6 +137,8 @@ test("Rollback: Host pfeift ab, der Gast (dem die letzten Pakete fehlen) startet
 
 test("Rollback: Host pfeift ab und startet sofort neu, der Gast (ohne letzte Pakete) bekommt das Ergebnis", async () => {
   const { a, A, B, bErr } = await match("st.s = [3, 1]; st.t = 3;");
+  const games = p => p.evaluate(async () => (await import("/js/app/profile.js")).S.stats.games);
+  const h0 = await games(A);
   await A.waitForFunction(() => window.__kd.st.ph === "play" && window.__kd.st.t < 0.1, null, { polling: 5, timeout: 20000 });
   await B.evaluate(() => { window.__mockNet = { lat: 30, jit: 10, loss: 1 }; });
   await A.waitForFunction(() => window.__kd.rb && window.__kd.rb.ended, null, { timeout: 20000 });
@@ -148,5 +150,6 @@ test("Rollback: Host pfeift ab und startet sofort neu, der Gast (ohne letzte Pak
   assert.deepEqual(await B.evaluate(() => window.__kd.st.s), [3, 1], "Gast sieht das Ergebnis");
   await D.waitForFunction(() => window.__kd.screen === "end" && !window.__kd.netWait, null, { timeout: 20000 });
   assert.equal(await D.evaluate(() => window.__kd.rb.remoteDone), true, "Host weiß, dass der Gast den Endstand hat");
+  assert.equal(await games(D), h0 + 1, "Host hat das Spiel genau einmal gewertet (vor oder nach dem Neustart)");
   assert.deepEqual([...err, ...bErr], []);
 });

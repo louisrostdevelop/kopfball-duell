@@ -84,6 +84,7 @@ function finalFrame(rb, evs, after, f) {
     if (e.t === "end" && !rb.ended) {
       onEvent(e, false); rb.ended = clone(after); rb.endAt = performance.now(); rb.endF = f;
       if (App.mode === "host" && sessionRole()) touchSession({ st: rb.ended });   // Endstand sofort sichern (Neustart)
+      Net.send({ t: "rbok", mid: App.mid });   // Gegenseite: ich bin durch (sie muss nicht auf mich warten)
     }
   }
 }
@@ -153,7 +154,10 @@ export function afterRemote(fn) {
   const go = () => {
     // Verbindung weg (die Warte-Leiste regelt das) oder inzwischen ein anderes Spiel/ein anderer Bildschirm: nichts tun
     if (App.netWait || App.matchKey !== key || App.screen !== "end") { App.leaving = null; return; }
-    if (rbRemoteDone() || performance.now() - t0 > 3000) fn(); else setTimeout(go, 100);   // (App.leaving bleibt bis zum nächsten Spiel)
+    if (rbRemoteDone() || performance.now() - t0 > 3000) {
+      if (App.rb && App.rb.ended) Net.send({ t: "rbok", mid: App.mid });   // vor dem Gehen: „bin durch“ (falls verloren)
+      fn();   // (App.leaving bleibt bis zum nächsten Spiel)
+    } else setTimeout(go, 100);
   };
   go();
 }

@@ -7,7 +7,7 @@ import { applyState } from "./account.js";
 import { quitToMenu } from "./game.js";
 import { rbBestState } from "./rbnet.js";
 import { settlePending } from "./results.js";
-import { hello, hostData, guestData, hostStart, knock, netDropped, restoreGuest, restoreHostGame } from "./online.js";
+import { hello, netEnded, hostData, guestData, hostStart, knock, netDropped, restoreGuest, restoreHostGame } from "./online.js";
 import { clearSession } from "./session.js";
 import { NET_CHECK, netTooBad, pingStats } from "./netcode.js";
 import { App, inGame } from "./state.js";
@@ -163,6 +163,7 @@ export function resumeMatch(s) {
   const onClose = self => {
     if (!App.resumePending) { gone(); return; }
     App.resumePending = false; App.netLost = null; clearSession();
+    if (netEnded()) return;   // Spiel war schon abgepfiffen und gewertet: auf dem Ergebnis bleiben
     if (!self) toast(t("net.resumeFailed"), "i-close");   // selbst „Verlassen“ gedrückt: keine Fehlermeldung
     quitToMenu();
   };

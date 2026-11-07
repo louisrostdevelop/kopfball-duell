@@ -331,7 +331,8 @@ export function hostData(d) {
   switch (d.t) {
     case "hello":
       // Rückkehr nach Abbruch: nur derselbe Gast (Merker), dann Spiel mit dem vollen Stand fortsetzen
-      if ((App.netWait || liveOnline()) && App.mode === "host") {
+      // (auch nach dem eigenen Abpfiff, solange der Gast ihn noch nicht hat: er bekommt dann den Endstand bzw. „weiter so“)
+      if ((App.netWait || liveOnline() || !rbRemoteDone()) && App.mode === "host") {
         if (App.opp && d.tok && d.tok === App.opp.tok && d.resume === App.mid && App.guestCfg) {
           lastStats = ""; App.inSeqSeen = -1; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0];
           App.gPend = { j: 0, d: 0 };   // Druck-Zähler des Gastes neu übernehmen (nach seinem Neustart beginnt er bei 0), kein Geistersprung
@@ -364,7 +365,7 @@ export function hostData(d) {
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "bye": App.netBye = true; break;
     case "pong": pong(d.c); break;
-    case "rbok": if (App.rb && App.rb.endSent && d.mid === App.mid) App.rb.remoteDone = true; break;   // Gast hat den Endstand
+    case "rbok": rbOk(d); break;
     case "rematch":
       // Gast will Revanche: Hinweis bleibt auf dem Ergebnis-Bildschirm stehen (auch wenn er erst danach aufgeht)
       App.rematchWanted = true; rematchHint();
@@ -444,7 +445,9 @@ export function guestData(d) {
     case "start":
       // Rollback-Sitzung läuft weiter (Verbindung war nur kurz weg): nichts neu anlegen
       if (d.resume && d.rb && d.rb.keep && App.mode === "guest" && App.rb && App.rb.ep === d.rb.ep && d.mid === App.mid) {
-        App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; resumed(); break;
+        App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; resumed();
+        if (App.rb.ended) Net.send({ t: "rbok", mid: App.mid });   // schon abgepfiffen: Host muss nicht mehr warten
+        break;
       }
       // „weiter so“, aber die Sitzung gibt es hier nicht (mehr): neu melden, ohne Sitzung, dann schickt der Host einen Stand
       if (d.rb && d.rb.keep) { Net.send(hello({ resume: App.mid, ...(App.mm ? { lv: 1 } : {}) })); break; }
@@ -486,8 +489,11 @@ export function guestData(d) {
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "pong": pong(d.c); break;
     case "bye": App.netBye = true; break;
+    case "rbok": rbOk(d); break;
   }
 }
+/** Gegenseite hat endgültig abgepfiffen (Rollback): hier muss niemand mehr auf sie warten */
+function rbOk(d) { if (App.rb && App.rb.ended && d.mid === App.mid) App.rb.remoteDone = true; }
 
 export function backToLobby() {
   settlePending();
