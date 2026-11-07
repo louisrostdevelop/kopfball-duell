@@ -44,7 +44,7 @@ export const headLevel = id => (S.heads && S.heads[id] && S.heads[id].level) || 
 
 export function beginMatch(cfg) {
   settlePending();   // altes Online-Spiel noch werten (neues Spiel kam in den 900 ms nach dem Abpfiff)
-  App.leaving = null;
+  App.leaving = null; App.endPend = null;
   const orig = cfg; cfg = resolveObs(cfg);
   // Gegen den Computer zählt nur das eigene Level, zu zweit beide; online bringt der Host die Level mit
   if (!cfg.levels && cfg.mode !== "guest" && cfg.mode !== "host") cfg = { ...cfg, levels: [headLevel(cfg.chars[0]), cfg.mode === "local" ? headLevel(cfg.chars[1]) : 1] };

@@ -149,7 +149,7 @@ export function afterRemote(fn) {
   const go = () => {
     // Verbindung weg (die Warte-Leiste regelt das) oder inzwischen ein anderes Spiel/ein anderer Bildschirm: nichts tun
     if (App.netWait || App.matchKey !== key || App.screen !== "end") { App.leaving = null; return; }
-    if (rbRemoteDone() || performance.now() - t0 > 3000) { App.leaving = null; fn(); } else setTimeout(go, 100);
+    if (rbRemoteDone() || performance.now() - t0 > 3000) fn(); else setTimeout(go, 100);   // (App.leaving bleibt bis zum nächsten Spiel)
   };
   go();
 }
@@ -160,7 +160,9 @@ export function afterRemote(fn) {
  */
 export function rbEndedStart() {
   const rb = App.rb;
-  if (!rb || !rb.ended) return null;
+  // Host nach einem Neustart, gesicherter Stand ist schon der endgültige Abpfiff (online.js afterWhistle hält ihn so lange)
+  if (!rb) return App.rbOn && App.st && App.st.ph === "end" ? { ep: (Date.now() % 1e9) + 1, st: netState(App.st), d: 3, ended: true } : null;
+  if (!rb.ended) return null;
   rb.endSent = true;   // erledigt, sobald der Gast „rbok“ schickt (online.js)
   return { ep: rb.ep, st: netState(rb.ended), d: rb.delay, ended: true };
 }

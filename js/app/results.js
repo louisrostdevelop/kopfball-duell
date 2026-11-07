@@ -8,6 +8,7 @@ import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
 import { backToLobby, hostStart, netEnded } from "./online.js";
 import { afterRemote } from "./rbnet.js";
+import { sessionRole, touchSession } from "./session.js";
 import { App, myIdx, vsCpu } from "./state.js";
 import { $, copyText, shareOrCopy, toast } from "../ui/dom.js";
 import { shareCard } from "../ui/sharecard.js";
@@ -48,18 +49,23 @@ export function seriesText() {
  * verloren oder würde in der Gegnersuche als Aufgabe gemeldet.
  */
 export function settlePending() {
-  if ((App.mode === "host" || App.mode === "guest") && App.endShown && App.matchKey && App.endedKey !== App.matchKey && netEnded()) matchEnd();
+  const p = App.endPend;
+  if (!p || (App.mode !== "host" && App.mode !== "guest") || (App.rb || App.st) !== p.s0 || !netEnded()) return;
+  App.endPend = null;
+  matchEnd(p.key);
 }
 
-export function matchEnd() {
+/** key: Kennung des Spiels, das gewertet wird (online; vom Planen festgehalten, App.matchKey kann schon neu sein) */
+export function matchEnd(key = App.matchKey) {
   // online je Spiel nur einmal werten (nach einer Wiederaufnahme kann der Abpfiff ein zweites Mal kommen)
   // (Kennung je Spiel vom Host; die Spiel-Nr. allein kann nach einem Host-Neustart wiederkommen)
   // Schon gewertet: nur das Ergebnis zeigen, nichts ein zweites Mal buchen
   const st = App.st, me = myIdx(), op = me >= 0 ? 1 - me : -1;
   if (App.mode === "host" || App.mode === "guest") {
-    const key = App.matchKey || "";
+    key = key || "";
     if (key && App.endedKey === key) { showEnd({ win: me >= 0 && st.s[me] > st.s[op], me, lines: [], ups: [], achs: [], runInfo: null, career: null }); if (App.mm) $("endNote").textContent = ""; return; }
     App.endedKey = key;
+    if (key && sessionRole()) touchSession({ endedKey: key });   // auch über einen Neustart: nie doppelt buchen
   }
   const [a, b] = st.s, k = seriesKey();
   if (k) { App.series[k] = App.series[k] || [0, 0]; if (a > b) App.series[k][0]++; else if (b > a) App.series[k][1]++; }

@@ -243,12 +243,15 @@ export function sessionTick(dt) {
   if (!afterWhistle()) touchSession(hostState());
 }
 // Spielstand, den der Host sichert (nicht, während er selbst auf den Gast wartet: der Stand steht dann ohnehin)
-const hostState = () => (App.mode === "host" && liveOnline() && !App.netWait ? { st: rbBestState() } : undefined);
+// (Rollback: auch nach dem eigenen Abpfiff, solange die Gegenseite ihn noch nicht hat, dann mit dem Endstand)
+const hostState = () => (App.mode === "host" && (liveOnline() || !rbRemoteDone()) && !App.netWait ? { st: rbBestState() } : undefined);
 // Abgepfiffen: ein Neustart führt nicht zurück ins beendete Spiel (keine doppelte Wertung oder Belohnung).
 // Gegnersuche: Sitzung vorbei; Freunde: zurück in dieselbe Lobby.
 function afterWhistle() {
   const ended = (App.mode === "host" || App.mode === "guest") && App.st && netEnded();
   if (!ended) return false;
+  // Rollback: Gegenseite hat den Abpfiff noch nicht: Sitzung (mit Endstand) behalten, damit ein Neustart ihn ihr schicken kann
+  if (!rbRemoteDone()) return false;
   if (App.mm) clearSession(); else saveSession(sessionRole(), { phase: "lobby", st: null, mid: 0 });
   return true;
 }
@@ -267,7 +270,7 @@ const mmInfo = () => (App.mm ? { mode: App.mm.mode, match: App.mm.match, role: A
  * h: Verbindungs-Handler (Freunde oder Gegnersuche), lost: was passiert, wenn der Gast nicht zurückkommt.
  */
 export function restoreHostGame(s, h, lost) {
-  App.opp = s.opp; App.netCfg = s.netCfg || App.netCfg; App.mid = s.mid; App.matchKey = s.key || ""; App.guestCfg = s.guestCfg; App.roomCode = s.code;
+  App.opp = s.opp; App.netCfg = s.netCfg || App.netCfg; App.mid = s.mid; App.matchKey = s.key || ""; App.endedKey = s.endedKey || ""; App.guestCfg = s.guestCfg; App.roomCode = s.code;
   beginMatch(s.cfg);
   App.st = s.st; App.st.ev = []; App.t0 = s.t0 || Date.now(); App.rbOn = !!s.rb;   // Rollback: Sitzung startet, wenn der Gast zurück ist
   App.netLost = lost; App.lastRx = 0;
@@ -277,7 +280,7 @@ export function restoreHostGame(s, h, lost) {
 }
 /** Nach einem App-Neustart: Gast tritt dem Raum wieder bei (im Spiel mit Merker und Spiel-Nr., in der Lobby als neuer Gast) */
 export function restoreGuest(s, h, lost) {
-  App.netTok = s.tok || ""; App.roomCode = s.code; App.opp = s.opp || null; App.mid = s.phase === "play" ? s.mid : 0; App.resumeT0 = s.t0 || 0;
+  App.netTok = s.tok || ""; App.endedKey = s.endedKey || ""; App.roomCode = s.code; App.opp = s.opp || null; App.mid = s.phase === "play" ? s.mid : 0; App.resumeT0 = s.t0 || 0;
   App.joinH = h;
   saveSession("guest", { ...s });
   waitFor(lost);

@@ -92,9 +92,14 @@ test("Rollback: Host startet die App neu, Stand und Zeit bleiben", async () => {
   assert.deepEqual([...err, ...bErr], []);
 });
 
-test("Rollback: Abpfiff, Revanche (neues Spiel, neue Sitzung)", async () => {
+test("Rollback: Abpfiff, Revanche (neues Spiel, neue Sitzung), beide Spiele genau einmal gewertet", async () => {
   const { a, A, B, bErr } = await match("st.s = [1, 0]; st.t = 1.5;");   // mit Führung: kein Golden Goal
+  const games = p => p.evaluate(async () => { const pr = await import("/js/app/profile.js"); return [pr.S.stats.games, pr.S.stats.wins]; });
+  const g0 = [await games(A), await games(B)];
   await Promise.all([A, B].map(p => p.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 30000 })));
+  await A.waitForTimeout(500);
+  const g1 = [await games(A), await games(B)];
+  assert.deepEqual(g1, [[g0[0][0] + 1, g0[0][1] + 1], [g0[1][0] + 1, g0[1][1]]], "Spiel 1 einmal gewertet (Host gewinnt)");
   const ep0 = (await stats(A)).ep;
   await B.click("#btnEndAgain");   // Gast fragt an
   await A.waitForFunction(() => document.getElementById("btnEndAgain").classList.contains("wants"), null, { timeout: 5000 });
@@ -103,7 +108,14 @@ test("Rollback: Abpfiff, Revanche (neues Spiel, neue Sitzung)", async () => {
   const [sa, sb] = [await stats(A), await stats(B)];
   assert.notEqual(sa.ep, ep0); assert.equal(sa.ep, sb.ep);
   for (const p of [A, B]) assert.deepEqual(await p.evaluate(() => [window.__kd.screen, window.__kd.st.s]), [null, [0, 0]]);
+  assert.deepEqual([await games(A), await games(B)], g1, "Anpfiff der Revanche wertet nichts nach");
   assert.ok(await same(A, B));
+  // Revanche: Gast gewinnt, kurz vor Schluss vorgegeben (als Korrektur auf beiden Seiten)
+  await A.evaluate(async () => (await import("/js/app/rbnet.js")).rbForce(st => { st.s = [0, 1]; st.t = 0.5; st.ph = "play"; }));
+  await Promise.all([A, B].map(p => p.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 30000 })));
+  await A.waitForTimeout(500);
+  assert.deepEqual([await games(A), await games(B)], [[g1[0][0] + 1, g1[0][1]], [g1[1][0] + 1, g1[1][1] + 1]], "Spiel 2 einmal gewertet (Gast gewinnt)");
+  for (const p of [A, B]) assert.deepEqual(await p.evaluate(() => window.__kd.st.s), [0, 1]);
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
 });
 

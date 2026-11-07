@@ -68,9 +68,10 @@ function frame(now) {
   // (an genau dieses Spiel gebunden: wer in den 900 ms ins Menü geht oder ein neues Spiel bekommt, wird nicht gewertet)
   if (st.ph === "end" && !App.endShown && App.mode !== "demo" && (!App.rb || App.rb.ended)) {
     App.endShown = true;
-    // (Rollback: an die Sitzung gebunden, der angezeigte Zustand wechselt dort zum endgültigen)
-    const s0 = App.rb || App.st, mode = App.mode, key = App.matchKey;
-    setTimeout(() => { if ((App.rb || App.st) === s0 && App.mode === mode && App.matchKey === key) matchEnd(); }, 900);
+    // offene Wertung mit eigenem Merkzeichen: läuft genau einmal, entweder hier nach 900 ms oder vorher beim Verlassen
+    // (settlePending). Rollback: an die Sitzung gebunden, der angezeigte Zustand wechselt dort zum endgültigen.
+    const pend = App.endPend = { s0: App.rb || App.st, mode: App.mode, key: App.matchKey };
+    setTimeout(() => { if (App.endPend === pend && (App.rb || App.st) === pend.s0 && App.mode === pend.mode) { App.endPend = null; matchEnd(pend.key); } }, 900);
   }
   if (App.screen === "home") drawShowcase(dt);
 }
