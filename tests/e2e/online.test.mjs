@@ -106,7 +106,11 @@ test("Online bei schlechtem Netz", async () => {
   await B.bringToFront();
   // 6 kurze Sprünge des Gasts: alle kommen beim Host an
   await A.evaluate(() => { window.__j = 0; const st = window.__kd.st, push = st.ev.push.bind(st.ev); st.ev.push = e => { if (e.t === "jump" && e.i === 1 && !e.dbl) window.__j++; return push(e); }; });
-  for (let n = 0; n < 6; n++) { await B.keyboard.down("ArrowUp"); await B.waitForTimeout(50); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(700); }
+  // (jeweils erst, wenn er beim Host wieder steht: auf einem langsamen Rechner ist er nach 700 ms noch in der Luft)
+  for (let n = 0; n < 6; n++) {
+    await A.waitForFunction(() => window.__kd.st.p[1].onG, null, { timeout: 5000 }).catch(() => {}); await B.waitForTimeout(120);
+    await B.keyboard.down("ArrowUp"); await B.waitForTimeout(50); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(400);
+  }
   await A.waitForTimeout(600);
   const j = await A.evaluate(() => window.__j);
   assert.ok(j >= 6, `Sprünge angekommen: ${j} von 6`);
