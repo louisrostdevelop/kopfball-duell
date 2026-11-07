@@ -83,6 +83,8 @@ export function createSession(o) {
     /** Zustand S_f (Kopie aus dem Speicher) oder null */
     stateAt: f => (S.has(f) ? S.get(f) : null),
     eventsAt: f => evs.get(f) || [],
+    /** Eingaben beider Spieler für Takt f (endgültig, wenn f < sync) */
+    inputsAt: f => [IN[0].get(f), IN[1].get(f)],
     /** wird eine neue eigene Eingabe gebraucht? (für Takt frame + delay; bei Stau nicht) */
     needLocal: () => localTop < frame + D,
     /** eigene Eingabe für Takt frame + delay eintragen; liefert den Takt (-1: schon belegt) */

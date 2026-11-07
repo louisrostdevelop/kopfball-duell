@@ -35,7 +35,6 @@ export function createPeer(o) {
   let acc = 0, ackByRemote = (o.frame0 | 0) + s.delay - 1, lastRemoteFrame = (o.frame0 | 0), remoteAdv = 0, cool = 0, finalDone = o.frame0 | 0;
   const advHist = [];
   const myHash = new Map(), theirHash = new Map();
-  let nextHash = Math.ceil((o.frame0 | 0) / HASH_EVERY) * HASH_EVERY;
   const m = Object.assign(s.metrics, { resyncs: 0, slowdowns: 0, packetsIn: 0, packetsOut: 0, desyncs: 0, mid: 0 });
   const mid = o.mid ?? 0;
 
@@ -47,10 +46,10 @@ export function createPeer(o) {
     while (finalDone < s.sync) {
       const f = finalDone++;
       if (o.onFinal) o.onFinal(s.eventsAt(f), f, s.stateAt(f + 1));
-      if (f + 1 === nextHash) {
-        const st = s.stateAt(nextHash);
-        if (st) { const h = hashState(st); myHash.set(nextHash, h); sendSafe({ t: "rh", mid, f: nextHash, h }); compare(nextHash); }
-        nextHash += HASH_EVERY;
+      const g = f + 1;   // Prüfsumme über S_g, alle HASH_EVERY Takte (beide Seiten dieselben Takte)
+      if (g % HASH_EVERY === 0) {
+        const st = s.stateAt(g);
+        if (st) { const h = hashState(st); myHash.set(g, h); sendSafe({ t: "rh", mid, f: g, h }); compare(g); }
       }
     }
     for (const k of myHash.keys()) { if (k < s.sync - 1200) { myHash.delete(k); theirHash.delete(k); } else break; }
