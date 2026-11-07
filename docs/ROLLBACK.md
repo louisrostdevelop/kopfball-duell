@@ -1,6 +1,6 @@
 # Rollback-Netcode
 
-Stand: 07.11.2026, Zweig `rollback`. Ersetzt online das bisherige Verfahren „Host rechnet, Gast bekommt Zustände“.
+Stand: 07.11.2026 (morgens), Zweig `rollback`, sieben Review-Runden. Ersetzt online das bisherige Verfahren „Host rechnet, Gast bekommt Zustände“.
 Das alte Verfahren bleibt als Rückfall erhalten (`?netcode=classic` beim Host).
 
 ## Idee
@@ -81,6 +81,13 @@ Ball-Befreiung) kommt aus dem Zustand statt aus `Math.random`.
 - **Protokollversion 10:** Ein alter Client trifft keinen neuen. Die Versionsprüfung beim Beitritt greift wie bisher.
 
 ## Grenzen und Nachteile
+
+- **Spielende bei schlechtem Netz** (bewusst offen, selten):
+  - Wer nach dem eigenen Abpfiff geht (Lobby, Revanche, „Nochmal“), wartet höchstens 3 s auf die Gegenseite. Hat sie
+    bis dahin nicht abgepfiffen, bleibt ihr Spiel ohne Wertung. In der Gegnersuche kann es strittig werden.
+  - Ein Gast mit Lobby-Sitzung bekommt „Raum voll“, wenn der Host noch auf ihn wartet.
+  - Startet der Host neu, nachdem der Gast schon abgepfiffen hat, kann aus dem gesicherten Stand (höchstens 0,25 s alt)
+    ein anderes Ergebnis entstehen. In der Gegnersuche wäre das strittig.
 
 - **Eingabeverzögerung** für den eigenen Spieler: 33–100 ms je nach Laufzeit. Bisher hatte der Host keine, der Gast
   sagte sich selbst voraus.
