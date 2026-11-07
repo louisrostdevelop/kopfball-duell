@@ -2,9 +2,9 @@
 // Eingaben. Hier die Anbindung an die App: Eingaben sammeln, Ereignisse (Ton, Effekte, Wiederholung) verteilen,
 // Korrekturen weich zeichnen, Spielende aus dem endgültigen Stand. Der Host entscheidet beim Anpfiff, ob Rollback läuft
 // (Nachricht „start“ mit rb), sonst gilt das alte Verfahren (Host rechnet, Gast bekommt Zustände).
-import { clamp } from "../content/config.js";
+import { clamp, setFieldW, W0 } from "../content/config.js";
 import { advance } from "../core/physics.js";
-import { gameTick } from "../core/rbgame.js";
+import { cleanInput, gameTick } from "../core/rbgame.js";
 import { createPeer } from "../core/rbpeer.js";
 import { BITS, clone, packInput } from "../core/rollback.js";
 import { CELEB, onEvent } from "./effects.js";
@@ -26,10 +26,7 @@ const MAX_PRED = 10;
 // Torjubel des Schützen (effects.js onGoal); erst beim ersten Gebrauch, die Module laden sich gegenseitig
 let celebs = null;
 const okEmote = e => typeof e === "string" && (validEmote(e) || (celebs ||= new Set(Object.values(CELEB))).has(e));
-const clean = v => {
-  if (v !== null && typeof v === "object") { const b = (v.b | 0) & 127; return okEmote(v.e) ? { b, e: v.e } : b; }
-  return (v | 0) & 127;
-};
+const clean = v => cleanInput(v, okEmote);
 const step = (st, inputs) => gameTick(st, [clean(inputs[0]), clean(inputs[1])]);
 
 /** Zustand so, wie er übers Netz geht (JSON): beide Seiten starten von exakt demselben Stand */
@@ -41,6 +38,7 @@ export const netState = st => JSON.parse(JSON.stringify(st));
  */
 export function startRb({ ep, st, delay }) {
   const me = App.mode === "guest" ? 1 : 0;
+  setFieldW(W0 * ((st.rules && st.rules.field) || 1));   // Feldbreite ist global (config.js): fest zum Startzustand
   const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
   const rb = {
     me, ep, delay, ended: null, endAt: 0, pend: 0, emo: "", skip: false,
@@ -65,6 +63,7 @@ export function stopRb() { App.rb = null; }
 // Endgültige Takte: Wiederholung aus sicheren Zuständen, Tor/Ende/Anstoß erst jetzt (keine Phantom-Tore)
 function finalFrame(rb, evs, after) {
   if (!after) return;
+  const me = rb.me; App.maxDef = Math.max(App.maxDef, after.s[1 - me] - after.s[me]);   // höchster Rückstand (Erfolg „Comeback“)
   if (after.ph === "play") { App.rec.push(snapFor(after)); if (App.rec.length > 200) App.rec.shift(); }
   if (after.ph === "ko" || after.ph === "cd") App.rec = [];
   for (const e of evs) {

@@ -116,3 +116,34 @@ test("Rollback: Netz bricht kurz ab (2 s): beide stehen, dann geht es gemeinsam 
   assert.ok(s.a && s.a === s.b, "danach gleicher Zustand");
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
 });
+
+test("Rollback bei schlechtem Netz (120 ms, starke Schwankung, 10 % Verlust): gleich, Eingaben kommen an", async () => {
+  const { a, A, B, bErr } = await pair({ lat: 120, jit: 60, loss: 0.1 });
+  await A.waitForTimeout(3500);
+  await B.bringToFront();
+  const grounded = () => B.waitForFunction(() => window.__kd.st.p[1].onG, null, { timeout: 5000 });
+  for (let n = 0; n < 4; n++) { await grounded(); await B.waitForTimeout(150); await B.keyboard.down("ArrowUp"); await B.waitForTimeout(40); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(300); }
+  await grounded(); await A.waitForTimeout(1200);
+  const [ca, cb] = [(await stats(A)).counts, (await stats(B)).counts];
+  assert.ok((ca.jump1 || 0) >= 4, `Sprünge beim Host: ${ca.jump1}`); assert.equal(ca.jump1, cb.jump1);
+  const s = await sameAt(A, B);
+  assert.ok(s.a && s.a === s.b, `gleicher Zustand bei Takt ${s.f}`);
+  const [ma, mb] = [await stats(A), await stats(B)];
+  assert.equal(ma.desyncs + mb.desyncs, 0);
+  assert.ok(ma.delay >= 3, "längere Verzögerung bei langer Laufzeit: " + ma.delay);
+  assert.ok(ma.rollbacks + mb.rollbacks > 0, "Rollbacks passieren");
+  assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
+});
+
+test("Rollback: Gast friert ein (Verbindung bleibt offen): Host steht, Hinweis, dann zurück in die Lobby", async () => {
+  const { a, A, B } = await pair({ lat: 30, jit: 10 });
+  await A.waitForTimeout(3600);
+  await B.evaluate(() => { window.requestAnimationFrame = () => 0; });   // Gast-Schleife steht
+  await A.waitForTimeout(1500);
+  const f0 = (await stats(A)).frame; await A.waitForTimeout(1500); const f1 = (await stats(A)).frame;
+  assert.equal(f1, f0, "Host wartet auf die Eingaben des Gasts (läuft nicht allein weiter)");
+  await A.waitForTimeout(2500);
+  assert.match(await A.textContent("#toasts"), /hakt/);
+  await A.waitForFunction(() => window.__kd.screen === "lobby" && window.__kd.mode === "demo", null, { timeout: 30000 });
+  assert.deepEqual(a.errors.filter(e => !e.includes("TUNNEL")), []);
+});

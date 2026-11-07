@@ -21,10 +21,14 @@ export function clone(v) {
 /** Prüfsumme über den Zustand, unabhängig von der Reihenfolge der Felder; skip: rein optische Felder */
 export function hashState(st, skip = SKIP) {
   let h1 = 0x811c9dc5, h2 = 0x01000193;
-  const add = s => { for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 0x01000193); h2 = Math.imul(h2 ^ c, 0x5bd1e995) ^ (h2 >>> 13); } };
+  const mix = c => { h1 = Math.imul(h1 ^ c, 0x01000193); h2 = Math.imul(h2 ^ c, 0x5bd1e995) ^ (h2 >>> 13); };
+  const add = s => { for (let i = 0; i < s.length; i++) mix(s.charCodeAt(i)); };
+  // Zahlen über ihre 64 Bits (exakt, unabhängig von der Textdarstellung); -0 wie 0, alle NaN gleich
+  const num = x => { DV.setFloat64(0, x === 0 ? 0 : x); mix(35); mix(DV.getUint32(0)); mix(DV.getUint32(4)); };
   const walk = v => {
     if (v === undefined) { add("u"); return; }
-    if (v === null || typeof v !== "object") { add(typeof v === "number" ? (v === 0 ? "0" : String(v)) : typeof v === "string" ? "'" + v : String(v)); add(","); return; }
+    if (typeof v === "number") { num(v); return; }
+    if (v === null || typeof v !== "object") { add(typeof v === "string" ? "'" + v : String(v)); add(","); return; }
     if (Array.isArray(v)) { add("["); v.forEach(walk); add("]"); return; }
     add("{");
     for (const k of Object.keys(v).sort()) { if (v[k] === undefined || skip.has(k)) continue; add(k); add(":"); walk(v[k]); }
@@ -33,6 +37,7 @@ export function hashState(st, skip = SKIP) {
   walk(st);
   return ((h1 >>> 0).toString(16).padStart(8, "0") + (h2 >>> 0).toString(16).padStart(8, "0"));
 }
+const DV = new DataView(new ArrayBuffer(8));
 // Ereignisse (st.ev) und Felder, die nur die Anzeige setzt (Aufleuchten von Hindernissen), zählen nicht
 const SKIP = new Set(["ev", "hitT"]);
 
@@ -92,7 +97,7 @@ export function createSession(o) {
     setLocal(inp) {
       const f = frame + D;
       if (localTop >= f) return -1;
-      for (let g = localTop + 1; g < f; g++) IN[me].set(g, IN[me].get(localTop) ?? 0);   // Lücke (nach einer Korrektur)
+      for (let g = localTop + 1; g < f; g++) IN[me].set(g, predictIn(IN[me].get(localTop)));   // Lücke (nach einer Korrektur), ohne Emote
       IN[me].set(f, inp); localTop = f;
       return f;
     },
@@ -143,6 +148,8 @@ export function createSession(o) {
     },
     /** Zustand für Takt f hart setzen (Korrektur vom Host, Wiederaufnahme) und bis zum aktuellen Takt neu rechnen */
     resync(f, state) {
+      // zu alt (eigene Eingaben dafür schon verworfen): nicht nachrechenbar, ablehnen statt stehenzubleiben
+      if (!Number.isInteger(f) || (f < frame && !IN[me].has(f)) || f > frame + RING) return false;
       S.set(f, clone(state));
       for (const k of [...S.keys()]) if (k > f) S.delete(k);
       cur = clone(state);
@@ -155,6 +162,7 @@ export function createSession(o) {
       for (let g = f; g < to && IN[me].has(g); g++) { runTick(g); frame = g + 1; }
       sync = Math.max(Math.min(sync, f), Math.min(remoteTop + 1, localTop + 1, frame));
       dirty = Infinity;
+      return true;
     },
   };
   return api;

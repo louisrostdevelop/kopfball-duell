@@ -42,6 +42,8 @@ export function seriesText() {
 }
 
 export function matchEnd() {
+  // online je Spiel nur einmal werten (nach einer Wiederaufnahme kann der Abpfiff ein zweites Mal kommen)
+  if (App.mode === "host" || App.mode === "guest") { if (App.endedMid === App.mid) return; App.endedMid = App.mid; }
   const st = App.st, me = myIdx(), op = me >= 0 ? 1 - me : -1;
   const [a, b] = st.s, k = seriesKey();
   if (k) { App.series[k] = App.series[k] || [0, 0]; if (a > b) App.series[k][0]++; else if (b > a) App.series[k][1]++; }

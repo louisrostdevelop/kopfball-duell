@@ -65,9 +65,15 @@ Ball-Befreiung) kommt aus dem Zustand statt aus `Math.random`.
   nachgezogen statt sofort gezeigt.
 - **Spielende:** Der Ergebnis-Bildschirm kommt erst mit dem endgültigen Abpfiff, mit dem endgültigen Stand. Danach
   werden noch 10 s Eingaben geschickt, damit auch die Gegenseite sicher bis zum Abpfiff kommt.
-- **Wiederverbinden und App-Neustart** (Sitzung aus PR 8): Der Host startet eine neue Sitzung ab seinem letzten
-  endgültigen Stand. Den sichert er auch jede Sekunde für einen App-Neustart. Der Gast übernimmt ihn. Ohne Neustart
-  verlieren beide höchstens die vorhergesagten Takte.
+- **Wiederverbinden ohne Neustart:** Reißt nur die Verbindung ab, läuft die Sitzung einfach weiter. Der Gast nennt im
+  `hello` seine Sitzung (`ep`), der Host bestätigt mit `rb.keep`. Unbestätigte Eingaben kommen erneut, nichts
+  Endgültiges wird zurückgenommen.
+- **App-Neustart** (Sitzung aus PR 8): Der Host sichert seinen letzten endgültigen Stand alle 0,25 s. Nach einem
+  Neustart startet er davon eine neue Sitzung, der Gast übernimmt sie. Startet der Host neu, kann der Gast bis zu etwa
+  0,3 s zurückgedreht werden. Ein Abpfiff wird je Spiel trotzdem nur einmal gewertet (`App.endedMid`).
+- **Spielende online** (Wächter, Sitzung sichern, Aufgabe-Meldung) richtet sich nach dem endgültigen Abpfiff
+  (`netEnded()`), nicht nach einer Vorhersage.
+- **Protokollversion 10:** Ein alter Client trifft keinen neuen. Die Versionsprüfung beim Beitritt greift wie bisher.
 
 ## Grenzen und Nachteile
 
@@ -81,6 +87,10 @@ Ball-Befreiung) kommt aus dem Zustand statt aus `Math.random`.
   Möglich wäre später ein Zwischenbild beim Zeichnen.
 - **Schummeln:** Wie bei jedem Peer-to-Peer-Spiel kann ein manipulierter Client eigene Eingaben fälschen. Er kann aber
   nicht mehr wie ein Host den Spielstand diktieren. Bei abweichender Prüfsumme gilt der Host-Stand.
+- **Dauerhafte Abweichung** (wäre ein Determinismus-Fehler): Der Host korrigiert dann etwa jede Sekunde mit einem vollen
+  Zustand von rund 4 KB. Zwischen zwei Korrekturen kann der Gast kurz Falsches sehen.
+- **Feldbreite:** Sie liegt global in `config.js` (`W`), nicht im Zustand. Sie wird beim Sitzungsstart aus
+  `rules.field` gesetzt. Wer künftig mitten im Spiel ein zweites Spiel anlegt, muss das beachten.
 
 ## Tests
 

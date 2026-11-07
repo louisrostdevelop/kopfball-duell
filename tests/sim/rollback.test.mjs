@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 const P = await import("../../js/core/physics.js");
 const RB = await import("../../js/core/rollback.js");
 const { createPeer } = await import("../../js/core/rbpeer.js");
-const { gameTick } = await import("../../js/core/rbgame.js");
+const { gameTick, cleanInput } = await import("../../js/core/rbgame.js");
 
 // kleiner Zufallsgenerator (unabhängig von Math.random)
 function prng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -56,6 +56,7 @@ function simulate(o) {
   const r = prng(o.seed || 1);
   const st0 = P.newMatch({ chars: o.chars || ["kalle", "tank"], arena: o.arena || "stadion", dur: o.dur || 60, pus: true, golden: true, rules: o.rules || {}, seed: 4242 });
   st0.ph = o.ph || st0.ph;
+  if (o.setup) o.setup(st0);
   const init = JSON.parse(JSON.stringify(st0));
   const net = network(o, r);
   const fin = [new Map(), new Map()], finEv = [[], []], spec = [[], []], peers = [];
@@ -67,7 +68,7 @@ function simulate(o) {
       return ev;
     };
     peers.push(createPeer({
-      me, state: init, delay: o.delay ?? 2, maxPred: o.maxPred ?? 8, step: stepFn, mid: 1, ring: 1e6,   // alles behalten: Einzelrechnung von Takt 0 an
+      me, state: init, delay: o.delay ?? 2, maxPred: o.maxPred ?? 8, step: stepFn, mid: 1, ring: o.ring ?? 1e6,   // Standard alles behalten: Einzelrechnung von Takt 0 an
       send: m => net.send(me, m, now, false), sendSafe: m => net.send(me, m, now, true),
       onSpec: (e, f) => spec[me].push(e.t + "@" + f),
       onFinal: (evs, f, after) => { fin[me].set(f, RB.hashState(after)); for (const e of evs) finEv[me].push(e.t + "@" + f); },
@@ -124,7 +125,32 @@ test("Bausteine: Bits hin und zurück, Kopie exakt, Prüfsumme unabhängig von d
   assert.equal(RB.hashState({ x: 1, hitT: 5, ev: [1] }), RB.hashState({ x: 1 }), "Anzeige-Felder zählen nicht");
 });
 
-test("Takt-Funktion: festes Raster, Hit-Stop und Zeitlupe in Takten, deterministisch", () => {
+test("Takt-Funktion: Hit-Stop und Zeitlupe zählen in Takten, Schritte ganzzahlig", () => {
+  const st = P.newMatch({ chars: ["kalle", "yuki"], arena: "stadion", dur: 60, seed: 3 }); st.ph = "play"; st.pt = 0;
+  let steps = 0; const el = () => st.el;
+  // normal: 2 Physikschritte je Takt
+  let e0 = el(); P.tick(st, [{}, {}]); assert.equal(Math.round((el() - e0) * 120), 2); steps += 2;
+  // Hit-Stop 0,1 s: 6 Takte ohne Schritt, dann geht es weiter
+  st.hs = 0.1; e0 = el(); for (let k = 0; k < 6; k++) P.tick(st, [{}, {}]);
+  assert.equal(el(), e0, "Hit-Stop: steht"); assert.ok(st.hs <= 1e-9, "Hit-Stop (fast) abgelaufen: " + st.hs);
+  let n = 6; while (el() === e0 && n < 10) { P.tick(st, [{}, {}]); n++; }
+  assert.ok(n <= 8, `nach 0,1 s (6 Takte, mit Rundung höchstens 8) geht es weiter (${n})`); assert.equal(Math.round((el() - e0) * 120), 2, "danach wieder 2 Schritte");
+  // Zeitlupe 0,5 s = 30 Takte: je Takt 0,56 Schritte, zusammen 16 (Rest bleibt ganzzahlig in st.tq)
+  st.slow = 0.5; st.tq = 0; e0 = el();
+  for (let k = 0; k < 30; k++) P.tick(st, [{}, {}]);
+  assert.equal(Math.round((el() - e0) * 120), 16, "Zeitlupe: 30 × 0,56 = 16 Schritte"); assert.equal(st.tq, 80);
+  void steps;
+});
+
+test("Eingaben säubern: nur 7 Bits, unbekannte Emotes weg, kaputte Typen werden gültig", () => {
+  const ok = e => e === "GG";
+  assert.equal(cleanInput(255, ok), 127); assert.equal(cleanInput(-1, ok), 127); assert.equal(cleanInput("x", ok), 0);
+  assert.equal(cleanInput(null, ok), 0); assert.equal(cleanInput(undefined, ok), 0); assert.equal(cleanInput(3.7, ok), 3);
+  assert.deepEqual(cleanInput({ b: 5, e: "GG", z: 1 }, ok), { b: 5, e: "GG" });
+  assert.equal(cleanInput({ b: 5, e: "<img>" }, ok), 5); assert.equal(cleanInput({ b: 999 }, ok), 999 & 127); assert.equal(cleanInput([], ok), 0);
+});
+
+test("Takt-Funktion: festes Raster, deterministisch, auch nach Übertragung", () => {
   const mk = () => { const st = P.newMatch({ chars: ["kalle", "yuki"], arena: "stadion", dur: 60, seed: 7 }); return st; };
   const a = mk(), b = mk(), pl = player(3, false);
   for (let f = 0; f < 3000; f++) { const v = pl(); gameTick(a, [v, 0]); gameTick(b, [v, 0]); }
@@ -205,4 +231,33 @@ test("Zufallsprüfung: 24 Spiele mit zufälligem Netz, Köpfen, Arenen und Regel
     checkReference(res, label);
     assert.equal(res.peers[0].metrics.desyncs + res.peers[1].metrics.desyncs, 0, label);
   }
+});
+
+test("kleiner Speicher (Ringpuffer 24 Takte) mit Ausfall: trotzdem gleich", () => {
+  const res = simulate({ secs: 20, lat: 70, jit: 40, loss: 0.1, outages: [[6000, 12000]], ring: 24, delay: 2, maxPred: 8, seed: 77 });
+  checkSame(res, "Ring 24");
+  assert.equal(res.peers[0].metrics.desyncs + res.peers[1].metrics.desyncs, 0);
+  assert.ok(res.peers[0].session.stateAt(0) === null, "alte Zustände wirklich verworfen");
+});
+
+test("Spielende: genau ein endgültiger Abpfiff je Seite, im selben Takt, mit gleichem Ergebnis", () => {
+  const res = simulate({ secs: 20, lat: 100, jit: 60, loss: 0.08, dur: 8, seed: 5, ph: "play", setup: st => { st.s = [1, 0]; } });   // mit Führung: kein Golden Goal
+  const ends = res.finEv.map(l => l.filter(x => x.startsWith("end@")));
+  assert.equal(ends[0].length, 1, "Host: " + ends[0]); assert.deepEqual(ends[1], ends[0], "Gast gleich");
+  const f = +ends[0][0].split("@")[1];
+  assert.equal(res.fin[0].get(f), res.fin[1].get(f), "gleicher Zustand beim Abpfiff");
+});
+
+test("Korrektur: zu alter Takt wird abgelehnt (kein Stillstand), Takt in der Zukunft springt vor", () => {
+  const init = P.newMatch({ chars: ["kalle", "tank"], arena: "stadion", seed: 2 });
+  const s = RB.createSession({ me: 1, state: init, delay: 2, maxPred: 8, ring: 16, tick: (st, i) => gameTick(st, i) });
+  for (let f = 0; f < 100; f++) { s.setLocal(0); s.addRemote(f + 2, [0]); s.advance(); }
+  assert.equal(s.frame, 100);
+  assert.equal(s.resync(40, RB.clone(init)), false, "Takt 40 liegt vor dem Speicher");
+  s.setLocal(0); assert.notEqual(s.advance(), null, "läuft weiter");
+  const st = RB.clone(s.state());
+  assert.equal(s.resync(s.frame + 3, st), true, "Zukunft: übernimmt");
+  assert.ok(s.frame >= 101 && s.needLocal() !== undefined);
+  s.setLocal(0); s.addRemote(s.remoteTop + 1, [0, 0, 0, 0, 0, 0]);
+  assert.notEqual(s.advance(), null, "läuft nach dem Sprung weiter");
 });

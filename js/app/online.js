@@ -165,9 +165,11 @@ export const NET_WARN = 4000, NET_DROP = 8000, NET_LOST = 15000, RECONNECT_MS = 
 /** Raum mit festem Code wieder öffnen: Versuche alle 1,5 s, solange die Gegenseite wartet */
 const REOPEN_TRIES = Math.floor((RECONNECT_MS - 2000) / 1500);
 /** Online-Spiel läuft (auch mit offenem Pausemenü): Abbruch heißt warten statt beenden */
-export const liveOnline = () => (App.mode === "host" || App.mode === "guest") && !!App.st && App.st.ph !== "end" && (App.screen === null || App.screen === "pause");
+export const liveOnline = () => (App.mode === "host" || App.mode === "guest") && !!App.st && !netEnded() && (App.screen === null || App.screen === "pause");
+/** Spiel vorbei? Rollback: erst, wenn der Abpfiff endgültig ist (eine Vorhersage kann ein spätes Tor noch ändern) */
+export const netEnded = () => (App.rb ? !!App.rb.ended : !!App.st && App.st.ph === "end");
 export function watchNet(now) {
-  if ((App.mode !== "host" && App.mode !== "guest") || !App.st || App.st.ph === "end" || !App.lastRx || App.netWait) return;
+  if ((App.mode !== "host" && App.mode !== "guest") || !App.st || netEnded() || !App.lastRx || App.netWait) return;
   const gap = now - App.lastRx;
   if (gap > NET_WARN && !App.lagWarn) { App.lagWarn = true; toast(t("net.lagging"), "i-close"); }
   else if (gap < 1000) { App.lagWarn = false; App.dropTried = false; }   // es kommt wieder etwas an
@@ -200,7 +202,8 @@ function rejoin() {
   if (!App.netWait || !App.roomCode || !App.joinH) return;
   const h = App.joinH;
   Net.join(App.roomCode, { ...h,
-    onConn: () => Net.send(hello({ resume: App.mid, ...(App.mm ? { lv: 1 } : {}) })),   // mid 0 = Lobby: Host nimmt als neuen Gast an
+    // mid 0 = Lobby: Host nimmt als neuen Gast an. rb: eigene Rollback-Sitzung, die der Host ohne Neustart fortsetzt
+    onConn: () => Net.send(hello({ resume: App.mid, ...(App.mm ? { lv: 1 } : {}), ...(App.rb ? { rb: { ep: App.rb.ep } } : {}) })),
     onClose: () => { if (App.netWait) setTimeout(rejoin, 800); else h.onClose(); },
     onError: () => { if (App.netWait) setTimeout(rejoin, 1000); },
   });
@@ -224,7 +227,7 @@ function resumed() { App.netWait = null; App.resumePending = false; App.lastRx =
 let sessT = 0;
 /** Jeden Frame: jede Sekunde Lebenszeichen, Host mit Spielstand; nach dem Abpfiff Lobby (Freunde) bzw. Ende (Gegnersuche) */
 export function sessionTick(dt) {
-  if (!sessionRole() || (sessT += dt) < 1) return;
+  if (!sessionRole() || (sessT += dt) < (App.rb ? 0.25 : 1)) return;   // Rollback: öfter, damit ein Host-Neustart wenig zurückdreht
   sessT = 0;
   if (!afterWhistle()) touchSession(hostState());
 }
@@ -233,7 +236,7 @@ const hostState = () => (App.mode === "host" && liveOnline() && !App.netWait ? {
 // Abgepfiffen: ein Neustart führt nicht zurück ins beendete Spiel (keine doppelte Wertung oder Belohnung).
 // Gegnersuche: Sitzung vorbei; Freunde: zurück in dieselbe Lobby.
 function afterWhistle() {
-  const ended = (App.mode === "host" || App.mode === "guest") && App.st && App.st.ph === "end";
+  const ended = (App.mode === "host" || App.mode === "guest") && App.st && netEnded();
   if (!ended) return false;
   if (App.mm) clearSession(); else saveSession(sessionRole(), { phase: "lobby", st: null, mid: 0 });
   return true;
@@ -288,6 +291,8 @@ export function pingTick(dt) { App.pingT += dt; if (App.pingT >= 1) { App.pingT 
 function pong(c) {
   const rtt = performance.now() - c; if (!(rtt >= 0 && rtt < 5000)) return;
   App.rtt = rtt; App.pings.push(rtt); if (App.pings.length > 8) App.pings.shift();
+  // vor dem Anpfiff ein paar Messungen sammeln (Eingabeverzögerung beim Rollback aus dem Mittel, nicht aus einer)
+  if (App.pings.length < 5 && !liveOnline() && Net.isOpen()) setTimeout(() => { if (Net.isOpen()) Net.send({ t: "ping", c: performance.now() }); }, 200);
 }
 /** Ping-Balken im Spiel (nur online). Antippen zeigt die Millisekunden. */
 export function pingHud(dt) {
@@ -312,8 +317,10 @@ export function hostData(d) {
           lastStats = ""; App.inSeqSeen = -1; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0];
           App.gPend = { j: 0, d: 0 };   // Druck-Zähler des Gastes neu übernehmen (nach seinem Neustart beginnt er bei 0), kein Geistersprung
           App.outEv = [];   // Ereignisse von vor dem Abriss nicht verspätet laut nachschicken
-          // Rollback: neue Sitzung ab dem letzten sicheren Stand, beide frisch (alte Eingaben gelten nicht mehr)
-          const rb = App.rbOn ? rbStart(rbBestState(), App.rb ? App.rb.delay : pickDelay(App.rtt)) : undefined;
+          // Rollback: haben beide ihre Sitzung noch (kein Neustart), geht sie einfach weiter: unbestätigte Eingaben kommen
+          // erneut, nichts Endgültiges wird zurückgenommen. Sonst neue Sitzung ab dem letzten sicheren Stand des Hosts.
+          const keep = App.rbOn && App.rb && d.rb && d.rb.ep === App.rb.ep;
+          const rb = !App.rbOn ? undefined : keep ? { ep: App.rb.ep, keep: true } : rbStart(rbBestState(), App.rb ? App.rb.delay : pickDelay(App.rtt));
           Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true, rb }); resumed();
         } else Net.send({ t: "full" });
         break;
@@ -332,7 +339,7 @@ export function hostData(d) {
     case "emo": {
       // Gegner-Emote: gültig, aus seinen Plätzen, höchstens eins alle 3 Sekunden
       const now = performance.now() / 1000, slots = (App.cfg && App.cfg.cos && App.cfg.cos[1] && App.cfg.cos[1].emotes) || EMOTES;
-      if (App.mode === "host" && App.st && validEmote(d.e) && (slots.includes(d.e) || EMOTES.includes(d.e)) && now - (App.oppEmoT || 0) >= EMOTE_GAP - 0.2) { App.oppEmoT = now; emote(App.st, 1, d.e); }
+      if (App.mode === "host" && App.st && !App.rb && validEmote(d.e) && (slots.includes(d.e) || EMOTES.includes(d.e)) && now - (App.oppEmoT || 0) >= EMOTE_GAP - 0.2) { App.oppEmoT = now; emote(App.st, 1, d.e); }
       break;
     }
     case "ping": Net.send({ t: "pong", c: d.c }); break;
@@ -414,6 +421,10 @@ export function guestData(d) {
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("guest"); } break;
     case "full": App.netWait = null; App.mm = null; App.netLost = null; App.resumePending = false; clearSession(); Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
     case "start":
+      // Rollback-Sitzung läuft weiter (Verbindung war nur kurz weg): nichts neu anlegen
+      if (d.resume && d.rb && d.rb.keep && App.mode === "guest" && App.rb && App.rb.ep === d.rb.ep && d.mid === App.mid) {
+        App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; resumed(); break;
+      }
       // Wiederaufnahme: Ereignisse von vor dem Abriss sind inzwischen Sekunden alt und fallen bewusst weg (Ton und Jubel
       // zum falschen Zeitpunkt wären schlimmer), der Spielstand kommt mit dem nächsten Zustand
       App.gEdge = null;   // Druck-Zähler neu ab 0 (der Host übernimmt beim Anpfiff/Zurückkommen den ersten Wert als Grundstand)

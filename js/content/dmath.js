@@ -53,6 +53,7 @@ function atanSmall(x) {
 }
 export function datan(x) {
   if (Number.isNaN(x)) return NaN;
+  if (x === 0) return x;   // ±0 bleibt ±0 (wie Math.atan)
   if (x > 1) return HALF_PI - atanSmall(1 / x);
   if (x < -1) return -HALF_PI - atanSmall(1 / x);
   return atanSmall(x);
@@ -60,9 +61,15 @@ export function datan(x) {
 export function datan2(y, x) {
   if (Number.isNaN(y) || Number.isNaN(x)) return NaN;
   if (x === 0) return y > 0 ? HALF_PI : y < 0 ? -HALF_PI : (1 / x < 0 ? (1 / y < 0 ? -PI : PI) : y);
+  const up = y > 0 || (y === 0 && 1 / y > 0);   // Vorzeichen von y, auch für -0
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {   // Sonderfälle mit Unendlich wie Math.atan2
+    if (!Number.isFinite(x) && !Number.isFinite(y)) return (x > 0 ? PI / 4 : 3 * PI / 4) * (up ? 1 : -1);
+    if (!Number.isFinite(y)) return up ? HALF_PI : -HALF_PI;
+    return x > 0 ? (up ? 0 : -0) : (up ? PI : -PI);
+  }
   const a = datan(y / x);
   if (x > 0) return a;
-  return y >= 0 ? a + PI : a - PI;
+  return up ? a + PI : a - PI;
 }
 
 export function dexp(x) {

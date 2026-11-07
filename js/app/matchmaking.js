@@ -5,6 +5,7 @@ import { S } from "./profile.js";
 import { myCos } from "./cosmetics.js";
 import { applyState } from "./account.js";
 import { quitToMenu } from "./game.js";
+import { rbBestState } from "./rbnet.js";
 import { hello, hostData, guestData, hostStart, knock, netDropped, restoreGuest, restoreHostGame } from "./online.js";
 import { clearSession } from "./session.js";
 import { NET_CHECK, netTooBad, pingStats } from "./netcode.js";
@@ -142,7 +143,7 @@ function lostFor(mm) {
     App.netLost = null; clearSession();
     if (inGame() || App.screen === "pause") {
       // Gegner mitten im Spiel weg: als Aufgabe melden. Meldet er nichts, gewinnt man nach ein paar Minuten.
-      const st = App.st; reportResult([st.s[0], st.s[1]], (Date.now() - (App.t0 || Date.now())) / 1000, true);
+      const st = rbBestState(); reportResult([st.s[0], st.s[1]], (Date.now() - (App.t0 || Date.now())) / 1000, true);   // Rollback: endgültiger Stand
       toast(t("mm.oppLeftWin"), "i-close"); quitToMenu();
     }
     else if (App.screen !== "end") fail(t("mm.oppGone"));

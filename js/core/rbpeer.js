@@ -35,7 +35,7 @@ export function createPeer(o) {
   let acc = 0, sendT = 0, lastFix = -1, ackByRemote = (o.frame0 | 0) + s.delay - 1, lastRemoteFrame = (o.frame0 | 0), remoteAdv = 0, cool = 0, finalDone = o.frame0 | 0;
   const advHist = [];
   const myHash = new Map(), theirHash = new Map();
-  const m = Object.assign(s.metrics, { resyncs: 0, slowdowns: 0, packetsIn: 0, packetsOut: 0, desyncs: 0, mid: 0 });
+  const m = Object.assign(s.metrics, { badResyncs: 0, resyncs: 0, slowdowns: 0, packetsIn: 0, packetsOut: 0, desyncs: 0, mid: 0 });
   const mid = o.mid ?? 0;
 
   function packet() {
@@ -52,7 +52,7 @@ export function createPeer(o) {
         if (st) { const h = hashState(st); myHash.set(g, h); sendSafe({ t: "rh", mid, f: g, h }); compare(g); }
       }
     }
-    for (const k of myHash.keys()) { if (k < s.sync - 1200) { myHash.delete(k); theirHash.delete(k); } else break; }
+    for (const map of [myHash, theirHash]) for (const k of [...map.keys()]) if (k < s.sync - 1200) map.delete(k);
   }
   function compare(f) {
     if (!myHash.has(f) || !theirHash.has(f)) return;
@@ -113,8 +113,9 @@ export function createPeer(o) {
         advHist.push(((s.frame - lastRemoteFrame) - remoteAdv) / 2); if (advHist.length > 24) advHist.shift();
         return true;
       }
-      if (d.t === "rh") { if (Number.isInteger(d.f) && typeof d.h === "string") { theirHash.set(d.f, d.h); compare(d.f); } return true; }
-      if (d.t === "rs") { if (me !== 0 && Number.isInteger(d.f) && d.st && typeof d.st === "object") { s.resync(d.f, d.st); m.resyncs++; lastFix = d.f; } return true; }
+      // Prüfsumme nur in einem sinnvollen Fenster annehmen (sonst wüchse die Liste mit beliebigen Takten)
+      if (d.t === "rh") { if (Number.isInteger(d.f) && typeof d.h === "string" && d.h.length <= 32 && d.f > s.sync - 1200 && d.f < s.frame + 1200) { theirHash.set(d.f, d.h); compare(d.f); } return true; }
+      if (d.t === "rs") { if (me !== 0 && Number.isInteger(d.f) && d.st && typeof d.st === "object") { if (s.resync(d.f, d.st)) { m.resyncs++; lastFix = d.f; } else m.badResyncs++; } return true; }
       return false;
     },
     /** Host: Zustand ab dem letzten endgültigen Takt vorgeben (wie eine Korrektur; Tests, Fehlersuche). fn(st) ändert ihn */

@@ -38,7 +38,8 @@ function frame(now) {
   watchNet(now);
   const netWait = netWaitTick(now);   // Verbindung weg: Spiel steht, bis der andere zurück ist oder die Zeit um ist
   if (netWait) { /* nur zeichnen */ }
-  else if (App.rb && (App.mode === "host" || App.mode === "guest")) { rbFrame(dt); pingTick(dt); st = App.st; }   // Rollback: beide rechnen
+  // Rollback: beide rechnen. Echte Zeit (bis 0,25 s): nach einem Hänger holt diese Seite auf, statt dauerhaft hinterherzulaufen
+  else if (App.rb && (App.mode === "host" || App.mode === "guest")) { rbFrame(Math.min(0.25, raw)); pingTick(dt); st = App.st; }
   else if (App.mode === "guest") guestFrame(dt, now);
   else if (App.mode === "demo") { /* Menü: kein Spiel im Hintergrund, nur ein Standbild der Arena */ }
   else if (!App.paused && !(rotated && App.mode !== "host")) {
@@ -54,7 +55,7 @@ function frame(now) {
   let replay = null, frac = 0;
   if (st.ph === "goal" && App.replay && st.pt < REPLAY_START && st.pt > REPLAY_END) { replay = App.replay; frac = (REPLAY_START - st.pt) / (REPLAY_START - REPLAY_END); }
   if ((st.ph === "ko" || st.ph === "cd") && !App.rb) App.rec = [];
-  if (App.mode !== "demo") { const me = myIdx(); if (me >= 0) App.maxDef = Math.max(App.maxDef, st.s[1 - me] - st.s[me]); }
+  if (App.mode !== "demo" && !App.rb) { const me = myIdx(); if (me >= 0) App.maxDef = Math.max(App.maxDef, st.s[1 - me] - st.s[me]); }   // Rollback: rbnet.js (endgültig)
   const la = st.ph === "cd" ? 1 : st.ph === "play" && App.goT >= 0 ? clamp(1 - (simT - App.goT - 1.5) / 0.6, 0, 1) : 0;
   const labels = (App.labels || []).map(lb => (lb ? { t: lb, a: la } : null));
   if (App.mode === "demo") {

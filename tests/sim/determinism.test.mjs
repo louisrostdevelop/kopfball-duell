@@ -12,7 +12,9 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SIM = [...readdirSync(ROOT + "js/core/sim").map(f => "js/core/sim/" + f), "js/content/layouts.js", "js/content/dmath.js", "js/core/rbgame.js", "js/core/rollback.js"];
 
 test("Physik nutzt nur deterministische Rechenarten", () => {
-  const bad = /\bMath\.(sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|exp|expm1|log|log1p|log2|log10|pow|cbrt|hypot|random|fround)\b|\bDate\b|\bperformance\b|\*\*|crypto\./;
+  const F = "sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|asinh|acosh|atanh|exp|expm1|log|log1p|log2|log10|pow|cbrt|hypot|random|fround";
+  // auch über Umwege: Math["sin"], const { sin } = Math, Math als Wert weitergereicht
+  const bad = new RegExp(`\\bMath\\.(${F})\\b|\\bMath\\s*\\[|=\\s*Math\\s*[;,)]|\\bDate\\b|\\bperformance\\b|\\*\\*|crypto\\.`);
   const hits = [];
   for (const f of SIM) readFileSync(ROOT + f, "utf8").split("\n").forEach((l, i) => {
     if (/^\s*\*/.test(l)) return;   // Zeile in einem Doku-Kommentar
@@ -34,7 +36,8 @@ test("eigene Mathe-Funktionen: genau, Sonderfälle wie Math", () => {
     assert.ok(Math.abs(D.dtanh(z / 10) - Math.tanh(z / 10)) < 1e-14, "tanh " + z);
     assert.ok(Math.abs(D.dhypot(x, y) - Math.hypot(x, y)) < 1e-12, "hypot");
   }
-  for (const [a, b] of [[0, 0], [0, -0], [-0, 0], [-0, -0], [1, 0], [-1, 0], [0, 1], [0, -1], [5, -3], [-5, -3]]) assert.ok(Object.is(D.datan2(a, b), Math.atan2(a, b)), `atan2(${a}, ${b})`);
+  const I = Infinity;
+  for (const [a, b] of [[0, 0], [0, -0], [-0, 0], [-0, -0], [1, 0], [-1, 0], [0, 1], [0, -1], [5, -3], [-5, -3], [-0, -1], [0, -1], [-0, 1], [I, I], [I, -I], [-I, I], [-I, -I], [I, 3], [-I, 3], [3, I], [-3, I], [3, -I], [-3, -I], [0, -I], [-0, -I]]) assert.ok(Object.is(D.datan2(a, b), Math.atan2(a, b)), `atan2(${a}, ${b}) = ${D.datan2(a, b)}, Math: ${Math.atan2(a, b)}`);
   assert.ok(Number.isNaN(D.dsin(Infinity)) && Number.isNaN(D.dcos(NaN)) && Number.isNaN(D.datan2(NaN, 1)));
   assert.equal(D.dexp(800), Infinity); assert.equal(D.dexp(-800), 0); assert.equal(D.dtanh(50), 1); assert.equal(D.dtanh(-50), -1);
   // Zufall im Zustand: gleicher Start, gleiche Folge; Bereich [0, 1)
