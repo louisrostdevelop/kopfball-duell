@@ -67,7 +67,8 @@ Ball-Befreiung) kommt aus dem Zustand statt aus `Math.random`.
   wird noch 30 s weiter gesendet, ab dem Abpfiff bzw. dem Wiederverbinden. So kommt auch die Gegenseite sicher bis zum
   Abpfiff. Wer danach geht (Lobby, Menü, Revanche, nächster Gegner), wartet bis zu 3 s, bis die Gegenseite alle
   Eingaben bis zum Abpfiff hat. Meldet sich ein Gast ohne Sitzung zurück, nachdem der Host schon abgepfiffen hat,
-  bekommt er den Endstand (`rb.ended`).
+  bekommt er den Endstand (`rb.ended`). Jede Seite meldet ihren endgültigen Abpfiff mit `rbok`; damit endet das Warten
+  der Gegenseite sofort.
 - **Wiederverbinden ohne Neustart:** Reißt nur die Verbindung ab, läuft die Sitzung einfach weiter. Der Gast nennt im
   `hello` seine Sitzung (`ep`), der Host bestätigt mit `rb.keep`. Unbestätigte Eingaben kommen erneut, nichts
   Endgültiges wird zurückgenommen.

@@ -195,5 +195,6 @@ export async function reportResult(score, duration, forfeit = false) {
 }
 
 /** Nach dem Spiel: Verbindung trennen, nochmal suchen oder ins Menü */
-export function again() { const mode = App.mm && App.mm.mode; Net.close(); return findMatch(mode); }
+// („bye“ und kurz offen lassen: die letzte Nachricht, z. B. „bin abgepfiffen“, kommt sonst nicht sicher an)
+export function again() { const mode = App.mm && App.mm.mode; Net.send({ t: "bye" }); Net.close(250); return findMatch(mode); }
 export function leave() { stop(); App.mm = null; quitToMenu(); }

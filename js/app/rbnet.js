@@ -154,7 +154,7 @@ export function afterRemote(fn) {
   const go = () => {
     // Verbindung weg (die Warte-Leiste regelt das) oder inzwischen ein anderes Spiel/ein anderer Bildschirm: nichts tun
     if (App.netWait || App.matchKey !== key || App.screen !== "end") { App.leaving = null; return; }
-    if (rbRemoteDone() || performance.now() - t0 > 3000) {
+    if (rbRemoteDone() || !Net.isOpen() || performance.now() - t0 > 3000) {   // (ohne Verbindung wartet man umsonst)
       if (App.rb && App.rb.ended) Net.send({ t: "rbok", mid: App.mid });   // vor dem Gehen: „bin durch“ (falls verloren)
       fn();   // (App.leaving bleibt bis zum nächsten Spiel)
     } else setTimeout(go, 100);
@@ -169,7 +169,6 @@ export function afterRemote(fn) {
 export function rbEndedStart() {
   const rb = App.rb;
   if (!rb || !rb.ended) return null;   // (Host nach einem Neustart mit Endstand: beendete Sitzung aus restoreHostGame)
-  rb.endSent = true;   // erledigt, sobald der Gast „rbok“ schickt (online.js)
   return { ep: rb.ep, st: netState(rb.ended), d: rb.delay, ended: true };
 }
 
