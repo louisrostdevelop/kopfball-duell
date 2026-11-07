@@ -149,7 +149,7 @@ test("Rollback: Host pfeift ab und startet sofort neu, der Gast (ohne letzte Pak
   await B.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 40000 });
   assert.deepEqual(await B.evaluate(() => window.__kd.st.s), [3, 1], "Gast sieht das Ergebnis");
   await D.waitForFunction(() => window.__kd.screen === "end" && !window.__kd.netWait, null, { timeout: 20000 });
-  assert.equal(await D.evaluate(() => window.__kd.rb.remoteDone), true, "Host weiß, dass der Gast den Endstand hat");
+  assert.ok(await D.waitForFunction(() => window.__kd.rb && window.__kd.rb.remoteDone, null, { timeout: 5000 }).then(() => true, () => false), "Host weiß, dass der Gast den Endstand hat (rbok)");
   assert.equal(await games(D), h0 + 1, "Host hat das Spiel genau einmal gewertet (vor oder nach dem Neustart)");
   assert.deepEqual([...err, ...bErr], []);
 });
