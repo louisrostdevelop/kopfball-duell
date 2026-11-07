@@ -52,7 +52,7 @@ export function beginMatch(cfg) {
   if (vsCpu()) App.ai[1] = makeAI(1, cfg.diff ?? 1, !!cfg.keeper);
   App.names = cfg.names; App.labels = cfg.labels; App.ball = cfg.ball || S.ball;
   App.acc = 0; App.paused = false; App.endShown = false; App.rec = []; App.replay = null; App.maxDef = 0; App.goT = -1; App.t0 = Date.now();
-  App.snaps = []; App.evQ = []; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0]; App.gPend = { j: 0, d: 0 }; App.jug = { i: -1, n: 0 };
+  App.snaps = []; App.evQ = []; App.rematchWanted = false; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0]; App.gPend = { j: 0, d: 0 }; App.jug = { i: -1, n: 0 };
   fx.clear();
   const me = cfg.mode === "guest" ? 1 : 0;
   setMatchCos(cfg.cos, [0, 1].map(i => i !== me && cfg.mode !== "local" && !!S.muteOpp));

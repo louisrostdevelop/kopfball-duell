@@ -10,6 +10,7 @@ import { endAgain, endMenu, prepareShare, shareResult } from "../../app/results.
 import { t } from "../../content/i18n.js";
 import { CAREER } from "../../content/career.js";
 import { ARENAS } from "../../content/config.js";
+import { rematchHint } from "../../app/online.js";
 
 export function showEnd(r) {
   const st = App.st, [a, b] = st.s, me = r.me;
@@ -51,6 +52,7 @@ export function showEnd(r) {
   }
   if (App.mm) { again.textContent = t("end.nextOpp"); menu.textContent = t("end.menu"); note.textContent = t(App.mm.mode === "ranked" ? "end.bookingRating" : "end.bookingResult"); }
   showScreen("end");
+  rematchHint();
 }
 
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)

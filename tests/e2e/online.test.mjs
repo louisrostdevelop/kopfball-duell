@@ -72,7 +72,11 @@ test("Online: Lobby bis Revanche", async t => {
   await t.test("Abpfiff und Revanche", async () => {
     await A.evaluate(() => { window.__kd.st.t = 0.5; window.__kd.st.s = [2, 1]; }); await A.waitForTimeout(2500);
     for (const p of [A, B]) if (await p.locator("#modal").isVisible()) await p.click("#modalOk");
-    await B.click("#btnEndAgain"); await A.waitForTimeout(400); await A.click("#btnEndAgain"); await A.waitForTimeout(1500);
+    await B.click("#btnEndAgain"); await A.waitForTimeout(400);
+    // Host sieht dauerhaft, dass der Gast Revanche will
+    assert.match(await A.textContent("#endNote"), /will eine Revanche/);
+    assert.ok(await A.evaluate(() => document.getElementById("btnEndAgain").classList.contains("wants")), "Knopf hervorgehoben");
+    await A.click("#btnEndAgain"); await A.waitForTimeout(1500);
     assert.deepEqual(await B.evaluate(() => [window.__kd.mode, ["cd", "play"].includes(window.__kd.st.ph)]), ["guest", true]);
   });
   await t.test("Host verlässt: beide zurück", async () => {

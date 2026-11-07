@@ -482,6 +482,7 @@ export default {
   "end.nextOpp": "Next opponent",
   "end.rematch": "Rematch",
   "end.rematchAsk": "Rematch!",
+  "end.rematchWanted": "{name} wants a rematch. Tap Rematch to start.",
   "end.rematchSent": "Request sent. Waiting for the host…",
   "end.series": "Series {a} : {b}",
   "end.win": "Victory!",

@@ -1485,3 +1485,10 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 .mmhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .mmhead .tag.live { color: var(--ink2); background: rgb(21 17 46 / 8%); }
 .mmhead .tag.live::before { background: rgb(21 17 46 / 30%); }
+
+/* Revanche angefragt: Knopf pulsiert dezent */
+.btn.wants { animation: wants 1.2s ease-in-out infinite; }
+
+@keyframes wants { 50% { transform: scale(1.06); box-shadow: 0 0 0 6px rgb(255 214 74 / 35%), 0 5px 0 var(--ink); } }
+
+@media (prefers-reduced-motion: reduce) { .btn.wants { animation: none; outline: 3px solid rgb(255 214 74 / 70%); } }

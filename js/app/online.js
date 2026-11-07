@@ -85,6 +85,12 @@ export function guestFrame(dt, now) {
   Object.assign(st.p[1], { x: gp.x, y: gp.y, kick: Math.max(gp.kick, sp.kick), kHeld: gp.kHeld, charge: gp.charge, onG: gp.onG, slide: gp.slide, slideDir: gp.slideDir, bomb: gp.bomb, vx: gp.vx, vy: gp.vy });
 }
 
+/** Ergebnis-Bildschirm beim Host: Gast hat Revanche angefragt */
+export function rematchHint() {
+  if (App.mode !== "host" || !App.rematchWanted || App.screen !== "end") return;
+  $("endNote").textContent = t("end.rematchWanted", { name: App.opp ? App.opp.name : t("ui.guest") });
+  $("btnEndAgain").classList.add("wants");
+}
 function playEvents(ev) { ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); onEvent(e, true); }); }
 function flushEvents(rt) {
   const q = App.evQ || [];
@@ -234,7 +240,10 @@ export function hostData(d) {
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "bye": App.netBye = true; break;
     case "pong": pong(d.c); break;
-    case "rematch": toast(t("lobby.wantsRematch", { name: App.opp ? App.opp.name : t("ui.guest") }), "i-swap"); break;
+    case "rematch":
+      // Gast will Revanche: Hinweis bleibt auf dem Ergebnis-Bildschirm stehen (auch wenn er erst danach aufgeht)
+      App.rematchWanted = true; rematchHint();
+      toast(t("lobby.wantsRematch", { name: App.opp ? App.opp.name : t("ui.guest") }), "i-swap"); A.sfx("emote"); break;
   }
 }
 

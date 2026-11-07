@@ -483,6 +483,7 @@ export default {
   "end.nextOpp": "Nächster Gegner",
   "end.rematch": "Revanche",
   "end.rematchAsk": "Revanche!",
+  "end.rematchWanted": "{name} will eine Revanche. Tippe auf Revanche, um zu starten.",
   "end.rematchSent": "Anfrage gesendet. Warte auf den Gastgeber…",
   "end.series": "Serie {a} : {b}",
   "end.win": "Sieg!",
