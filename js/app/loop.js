@@ -41,12 +41,13 @@ function frame(now) {
   else if (App.mode === "demo") { /* Menü: kein Spiel im Hintergrund, nur ein Standbild der Arena */ }
   else if (!App.paused && !(rotated && App.mode !== "host")) {
     App.acc = advance(st, dt, gatherInputs(dt), App.acc);
+    takeEvents(st);   // vor dem Senden: Ereignisse gehen mit dem Zustand raus, zu dem sie gehören
     if (App.mode === "host") hostSend(dt);
   }
   pingHud(dt);
   sessionTick(dt);
-  if (st.ev.length) for (const e of st.ev.splice(0)) { onEvent(e, false); if (App.mode === "host") App.outEv.push(e); }
-  if (st.ph === "play") { App.rec.push(snap(st)); if (App.rec.length > 200) App.rec.shift(); }
+  takeEvents(st);
+  if (st.ph === "play" && App.mode !== "demo") { App.rec.push(snap(st)); if (App.rec.length > 200) App.rec.shift(); }
   let replay = null, frac = 0;
   if (st.ph === "goal" && App.replay && st.pt < REPLAY_START && st.pt > REPLAY_END) { replay = App.replay; frac = (REPLAY_START - st.pt) / (REPLAY_START - REPLAY_END); }
   if (st.ph === "ko" || st.ph === "cd") App.rec = [];
@@ -62,6 +63,8 @@ function frame(now) {
   if (st.ph === "end" && !App.endShown && App.mode !== "demo") { App.endShown = true; setTimeout(matchEnd, 900); }
   if (App.screen === "home") drawShowcase(dt);
 }
+
+function takeEvents(st) { if (st.ev.length) for (const e of st.ev.splice(0)) { onEvent(e, false); if (App.mode === "host") App.outEv.push(e); } }
 
 export function gatherInputs(dt) {
   const st = App.st;

@@ -1518,16 +1518,6 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   .orow { grid-template-columns: 64px 1fr; }
 }
 
-/* Schmale Handys hochkant: Raster mit 3 Spalten, Kopfzeile kompakter */
-@media (max-width: 400px) and (orientation: portrait) {
-  .cardgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .chip { height: 38px; padding-inline: 9px 11px; font-size: 16px; gap: 5px; }
-  .chip .coin, .chip .gem { width: 22px; height: 22px; }
-  .iconback, .sqbtn { width: 38px; height: 38px; }
-  .hud-top { gap: 5px; }
-  .profile .pf-xp { width: 52px; }
-}
-
 /* Profil */
 .pf-row { display: flex; align-items: center; gap: 6px; }
 .pf-guest { padding: 1px 7px 2px; border-radius: 8px; background: var(--yellow); color: var(--ink); font-style: normal; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
@@ -1545,17 +1535,6 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 .pc-xp { flex: 1; height: 14px; border-radius: 8px; background: #e6d6b3; border: 2.5px solid var(--ink); overflow: hidden; }
 .pc-xp i { display: block; height: 100%; background: linear-gradient(#7af0ff, #19a9e0); }
 .pc-lvl small { flex: none; font-size: 12px; font-weight: 900; opacity: .65; }
-.acccard { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; border: 3px solid var(--ink); background: rgb(8 14 50 / 60%); color: #fff; }
-.acccard > div:not(.ac-btns) { flex: 1; min-width: 0; }
-.acccard b { font-family: var(--display); font-weight: 400; font-size: 19px; }
-.acccard p { margin: 2px 0 0; font-size: 14px; font-weight: 700; opacity: .9; line-height: 1.35; }
-.ac-ic { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid var(--ink); background: #8a93ad; }
-.ac-ic svg { width: 24px; height: 24px; fill: #fff; }
-.acccard.guest, .acccard.pending { background: linear-gradient(120deg, rgb(255 197 49 / 28%), rgb(8 14 50 / 70%)); border-color: var(--yellow-d); }
-.acccard.guest .ac-ic, .acccard.pending .ac-ic { background: var(--yellow); } .acccard.guest .ac-ic svg, .acccard.pending .ac-ic svg { fill: var(--ink); }
-.acccard.signed .ac-ic { background: var(--green); }
-.ac-btns { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.ac-btns .linkbtn { color: #fff; font-size: 13px; }
 .pc-links { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .pc-links .btn { justify-content: center; }
 #scr-profile .profilebox { margin: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1565,21 +1544,18 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   .pc-av { width: 84px; height: 84px; }
   .pc-av canvas { width: 80px !important; height: 80px !important; }
   .pc-name b { font-size: 24px; }
-  .acccard { flex-wrap: wrap; }
-  .ac-btns { flex: 1 1 100%; flex-direction: row; justify-content: space-between; }
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
   .pcard { padding: 8px 12px; } .pc-av { width: 72px; height: 72px; } .pc-av canvas { width: 68px !important; height: 68px !important; }
   .pc-name b { font-size: 22px; }
-  .acccard { padding: 8px 10px; } .acccard p { font-size: 12.5px; }
   #scr-profile .profilebox { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .profmain { gap: 8px; }
   #scr-profile .pstat { padding: 6px 8px; } #scr-profile .pstat b { font-size: 20px; } #scr-profile .pstat span { font-size: 11px; }
   .pc-links .btn { padding: 6px 10px 8px; font-size: 15px; }
 }
 
-/* Schmale Handys hochkant: Kopfzeile passt, Navigation und Profil-Knöpfe laufen nicht über */
+/* Schmale Handys hochkant: Kopfzeile passt, Navigation und Profil-Knöpfe laufen nicht über, Raster mit 3 Spalten */
 @media (max-width: 400px) and (orientation: portrait) {
   .screen { padding-left: calc(12px + var(--sl)); padding-right: calc(12px + var(--sr)); }
   .profile .pf-xp, .home .coin-chip .chip-plus { display: none; }
@@ -1591,6 +1567,11 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   .navbtn span { font-size: 11px; }
   .pc-links .btn { font-size: 17px; padding-inline: 8px; }
   #scr-profile .pstat { padding: 8px; } #scr-profile .pstat b { font-size: 22px; } #scr-profile .pstat span { font-size: 11.5px; hyphens: auto; overflow-wrap: anywhere; }
+  .cardgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .chip { height: 38px; padding-inline: 9px 11px; font-size: 16px; gap: 5px; }
+  .chip .coin, .chip .gem { width: 22px; height: 22px; }
+  .iconback, .sqbtn { width: 38px; height: 38px; }
+  .hud-top { gap: 5px; }
 }
 
 /* Sehr schmale Handys (320–340 px): Name auf der Startseite nur im Profil, Kopfzeilen enger */

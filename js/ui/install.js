@@ -2,6 +2,7 @@
 // kurze Anleitung (Teilen → Zum Home-Bildschirm). Wer die App schon nutzt, sieht nichts davon.
 import { esc, modal, toast } from "./dom.js";
 import { t } from "../content/i18n.js";
+import { canFullscreen } from "../app/game.js";
 
 let deferred = null, onChange = () => {};
 
@@ -36,6 +37,6 @@ function iosGuide() {
 
 /** Einmaliger Hinweis (nach ein paar Spielen, aufgerufen von der Startseite) */
 export function installAsk() {
-  const el = document.documentElement, noFs = !(el.requestFullscreen || el.webkitRequestFullscreen);
+  const noFs = !canFullscreen();
   modal({ title: t("install.title"), icon: "i-download", body: `<p>${esc(t(noFs ? "install.askFs" : "install.ask"))}</p>`, btn: t("install.btn"), cancel: t("install.later"), onOk: install });
 }

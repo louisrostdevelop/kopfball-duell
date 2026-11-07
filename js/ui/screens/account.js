@@ -24,6 +24,14 @@ const legalNote = () => `<p class="hint accnote">${t("legal.acceptSecure", { ter
 /** Nach Anmelden auf einem anderen Konto: lokalen Stand verwerfen und neu laden */
 async function switched() { await resetProfile(); location.reload(); }
 
+// Konto löschen (DSGVO): auch als Gast, die Daten liegen ja schon auf dem Server. Danach startet das Spiel frisch.
+function wireDelete() {
+  $("accDelete").onclick = async () => {
+    if (!confirm(t("acc.confirmDelete"))) return;
+    try { await deleteAccount(); await auth.signOut(); await resetProfile(); location.reload(); } catch (e) { msg(errText(e), true); }
+  };
+}
+
 export function accountUI() {
   const box = $("accountPanel"); box.hidden = !serverOn(); if (box.hidden) return;
   const u = auth.user() || { guest: true }, b = $("accBody");
@@ -57,7 +65,9 @@ export function accountUI() {
         <div class="row"><button class="linkbtn" id="accResend">${t("acc.resend")}</button><button class="linkbtn" id="accOther">${t("acc.otherMail")}</button></div>`
       : `<p class="hint">${t("acc.secureHint")}</p><input id="accMail" type="email" placeholder="${t("acc.email")}" autocomplete="email"><button class="btn green" id="accLink">${t("acc.secure")}</button>${legalNote()}`}
       <p class="hint" id="accMsg"></p>
-      <button class="linkbtn" id="accToLogin">${t("acc.haveAccount")}</button>`;
+      <button class="linkbtn" id="accToLogin">${t("acc.haveAccount")}</button>
+      <button class="linkbtn danger" id="accDelete">${t("acc.delete")}</button>`;
+    wireDelete();
     const send = async email => {
       if (!okMail(email)) { msg(t("acc.badEmail"), true); return; }
       try { await auth.upgrade({ email }); otherMail = false; accountUI(); msg(t("acc.mailSent")); toast(t("acc.mailSentToast"), "i-check"); }
@@ -80,10 +90,7 @@ export function accountUI() {
     <div class="row"><button class="btn small ghost danger" id="accOut">${t("acc.signOut")}</button></div>
     <p class="hint" id="accMsg"></p>
     <button class="linkbtn danger" id="accDelete">${t("acc.delete")}</button>`;
-  $("accDelete").onclick = async () => {
-    if (!confirm(t("acc.confirmDelete"))) return;
-    try { await deleteAccount(); await auth.signOut(); await resetProfile(); location.reload(); } catch (e) { msg(errText(e), true); }
-  };
+  wireDelete();
   $("accOut").onclick = async () => {
     if (!confirm(t("acc.confirmLogout"))) return;
     await auth.signOut(); await resetProfile(); location.reload();

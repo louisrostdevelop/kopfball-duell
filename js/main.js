@@ -82,9 +82,11 @@ async function boot() {
   startDemo();
   showScreen("home", true);
   requestAnimationFrame(loop);
-  window.addEventListener("pagehide", () => sessionHide(true));
+  let netClosed = false;
+  window.addEventListener("pagehide", () => { netClosed = sessionHide(true); });
   // aus dem Zurück-Speicher des Browsers wiederhergestellt: Verbindung ist weg, Neustart setzt das Online-Spiel fort
-  window.addEventListener("pageshow", e => { if (e.persisted && sessionRole()) location.reload(); });
+  // (auch ohne Sitzung, z. B. mitten in der Gegnersuche: sonst hängt die Seite ohne Verbindung)
+  window.addEventListener("pageshow", e => { if (e.persisted && (sessionRole() || netClosed)) location.reload(); });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") sessionHide(false); });
   $("netWaitLeave").onclick = giveUpWaiting;
   const unlockOnce = () => { webAudio.unlock(); if (!inGame()) webAudio.music(true, "menu"); window.removeEventListener("pointerdown", unlockOnce); window.removeEventListener("keydown", unlockOnce); };
@@ -104,9 +106,13 @@ async function boot() {
     if (back && invite && invite.toLowerCase() !== String(back.code).toLowerCase()) { clearSession(); back = null; }
     if (back && (back.mm ? resumeMatch : resumeFriends)(back)) toast(t("net.resuming"), "i-swap");
     else back = null;
-    const d = !back && dailyCheck();
-    if (d) setTimeout(() => dailyModal(d), 500);
-    if (synced) synced.then(() => { homeScreen(); return back ? null : claimDaily(); }).then(x => { if (x) { homeScreen(); setTimeout(() => dailyModal(x), 500); } });
+    // Tagesbelohnung: nicht mitten ins zurückgeholte Online-Spiel, sondern beim nächsten Weg ins Menü (quitToMenu)
+    const daily = () => {
+      const d = dailyCheck();
+      if (d) setTimeout(() => dailyModal(d), 500);
+      return (synced || Promise.resolve()).then(() => { homeScreen(); return serverOn() ? claimDaily() : null; }).then(x => { if (x) { homeScreen(); setTimeout(() => dailyModal(x), 500); } });
+    };
+    if (back) { App.dailyLater = daily; if (synced) synced.then(() => homeScreen()); } else daily();
     if (mailBack) toast(mailBack === "ok" ? t("acc.linked") : t("acc.linkFailed", { err: mailBack }), mailBack === "ok" ? "i-check" : "i-close", mailBack === "ok");
     // Rückkehr von der Bezahlseite
     const kauf = new URLSearchParams(location.search).get("kauf");

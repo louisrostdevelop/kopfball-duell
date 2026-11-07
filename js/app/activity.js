@@ -3,12 +3,13 @@
 import { server } from "./services.js";
 import { online as serverOn } from "./account.js";
 
-let last = null, at = 0, pending = null;
+let last = null, at = 0, failAt = 0, pending = null;
 
 /** @returns {Promise<{ active: number, casual: number, ranked: number, playing: number } | null>} */
 export function activity(maxAge = 10000) {
   if (!serverOn() || !server || !server.activity) return Promise.resolve(null);
   if (last && Date.now() - at < maxAge) return Promise.resolve(last);
-  pending ??= server.activity().then(r => { last = r; at = Date.now(); return r; }).catch(() => null).finally(() => { pending = null; });
+  if (Date.now() - failAt < 60000) return Promise.resolve(null);   // Server kennt die Abfrage (noch) nicht: nicht alle 2 s fragen
+  pending ??= server.activity().then(r => { last = r; at = Date.now(); return r; }).catch(() => { failAt = Date.now(); return null; }).finally(() => { pending = null; });
   return pending;
 }

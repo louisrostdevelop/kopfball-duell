@@ -235,7 +235,7 @@ export function makeArenaArt({ srand, FT, front, pitch }) {
     }
     // Vignette
     const vg = b.createRadialGradient(vx, 360, 320, vx, 360, 1150); vg.addColorStop(0, "rgba(40,32,5,0)"); vg.addColorStop(1, "rgba(40,32,5,.32)");
-    b.fillStyle = vg; b.fillRect(R.x0, R.y0, R.x1 - R.x0, G - R.y0);
+    b.fillStyle = vg; b.fillRect(R.x0, R.y0, R.x1 - R.x0, R.y1 - R.y0);
     front(b, R, "#a8964a", "#2f2a12", "rgba(255,250,200,.45)", true);
   }
 

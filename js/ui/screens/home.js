@@ -177,7 +177,7 @@ export function drawShowcase(dt) {
   // Kopf mit Lichtkante in der Farbe der Seltenheit
   const [gr, gg, gb] = RC[rarityOf(charById(S.char))] || RC.basis;
   const hopt = { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t }, hy = headY - bump * r * 0.4;
-  // nur der Schatten landet im Bild (Kopf selbst weit außerhalb), sonst färbt der Schein das Gesicht ein
+  // Schein als Ring-Verlauf hinter dem Kopf (innen ab 0,85 r, damit er das Gesicht nicht einfärbt)
   const gl = x.createRadialGradient(cx, hy, r * 0.85, cx, hy, r * 1.32);
   gl.addColorStop(0, `rgba(${gr},${gg},${gb},.5)`); gl.addColorStop(1, `rgba(${gr},${gg},${gb},0)`);
   x.fillStyle = gl; x.beginPath(); x.arc(cx, hy, r * 1.32, 0, Math.PI * 2); x.fill();
