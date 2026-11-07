@@ -7,6 +7,7 @@ import { fx } from "../ui/render/render.js";
 import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
 import { backToLobby, hostStart } from "./online.js";
+import { afterRemote } from "./rbnet.js";
 import { App, myIdx, vsCpu } from "./state.js";
 import { $, copyText, shareOrCopy, toast } from "../ui/dom.js";
 import { shareCard } from "../ui/sharecard.js";
@@ -48,7 +49,7 @@ export function matchEnd() {
   const st = App.st, me = myIdx(), op = me >= 0 ? 1 - me : -1;
   if (App.mode === "host" || App.mode === "guest") {
     const key = App.matchKey || "";
-    if (key && App.endedKey === key) { showEnd({ win: me >= 0 && st.s[me] > st.s[op], me, lines: [], ups: [], achs: [], runInfo: null, career: null }); return; }
+    if (key && App.endedKey === key) { showEnd({ win: me >= 0 && st.s[me] > st.s[op], me, lines: [], ups: [], achs: [], runInfo: null, career: null }); $("endNote").textContent = ""; return; }
     App.endedKey = key;
   }
   const [a, b] = st.s, k = seriesKey();
@@ -143,15 +144,16 @@ export function matchEnd() {
 
 export function endAgain() {
   A.sfx("click");
-  if (App.mm) { mmAgain().catch(() => mmLeave()); return; }
+  if (App.mm) { afterRemote(() => mmAgain().catch(() => mmLeave())); return; }
   if (App.mode === "career") { careerScreen(); return; }
   if (App.mode === "cup" || App.mode === "endless") { if (App.run && App.run.done && App.run.kind === "cup" && App.run.round >= 3) trophyModal(); runScreen(); return; }
   if (App.mode === "guest") { Net.send({ t: "rematch" }); $("endNote").textContent = t("end.rematchSent"); $("btnEndAgain").disabled = true; return; }
-  if (App.mode === "host") { hostStart(); return; }
+  if (App.mode === "host") { afterRemote(hostStart); return; }
   beginMatch({ ...App.lastCfg, chars: [...App.lastCfg.chars] });
 }
 
-export function endMenu() { A.sfx("click"); if (App.mm) { mmLeave(); return; } if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); return; } quitToMenu(); }
+// Rollback: erst gehen, wenn die Gegenseite auch abpfeifen kann (afterRemote, höchstens 3 s), sonst bliebe sie ohne Ergebnis
+export function endMenu() { A.sfx("click"); afterRemote(() => { if (App.mm) { mmLeave(); return; } if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); return; } quitToMenu(); }); }
 
 function shareText() {
   const st = App.st, me = myIdx(), url = location.origin + location.pathname;

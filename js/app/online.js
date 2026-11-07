@@ -14,7 +14,7 @@ import { audio as A, input as I, net as Net } from "./services.js";
 import { decodeState, encodeState, makeClock, pingBars, pingStats } from "./netcode.js";
 import { t } from "../content/i18n.js";
 import { clearSession, markClosing, saveSession, sessionRole, touchSession } from "./session.js";
-import { netState, pickDelay, rbBestState, rbMessage, rbRemoteDone, rollbackWanted, startRb, stopRb } from "./rbnet.js";
+import { netState, pickDelay, rbBestState, rbEndedStart, rbMessage, rbRemoteDone, rollbackWanted, startRb, stopRb } from "./rbnet.js";
 
 // Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
 const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
@@ -223,7 +223,8 @@ export function netWaitTick(now) {
 }
 // Nach dem Wiederverbinden noch NET_LOST − NET_DROP ms Zeit, bis etwas ankommt. Ein eingefrorener Gegner, der nur die
 // Verbindung neu aufbaut, verbindet so nicht endlos neu.
-function resumed() { App.netWait = null; App.resumePending = false; App.lastRx = performance.now() - NET_DROP; App.lagWarn = true; App.dropTried = true; toast(t("net.back"), "i-check", true); }
+function resumed() { if (App.rb && App.rb.ended) App.rb.endAt = performance.now();   // nach dem Abpfiff: wieder 30 s senden
+  App.netWait = null; App.resumePending = false; App.lastRx = performance.now() - NET_DROP; App.lagWarn = true; App.dropTried = true; toast(t("net.back"), "i-check", true); }
 
 
 // ---------- Sitzung über einen App-Neustart (session.js) ----------
@@ -235,7 +236,7 @@ let sessT = 0, sessSync = -1;
 export function sessionTick(dt) {
   if (!sessionRole()) return;
   sessT += dt;
-  const fresh = App.rb && App.mode === "host" && App.rb.peer.session.sync !== sessSync;
+  const fresh = App.rb && !App.rb.ended && App.mode === "host" && App.rb.peer.session.sync !== sessSync;
   if (sessT < 1 && !(fresh && sessT >= 0.25)) return;
   sessT = 0; if (App.rb) sessSync = App.rb.peer.session.sync;
   if (!afterWhistle()) touchSession(hostState());
@@ -329,7 +330,7 @@ export function hostData(d) {
           // Rollback: haben beide ihre Sitzung noch (kein Neustart), geht sie einfach weiter: unbestätigte Eingaben kommen
           // erneut, nichts Endgültiges wird zurückgenommen. Sonst neue Sitzung ab dem letzten sicheren Stand des Hosts.
           const keep = App.rbOn && App.rb && d.rb && d.rb.ep === App.rb.ep;
-          const rb = !App.rbOn ? undefined : keep ? { ep: App.rb.ep, keep: true } : rbStart(rbBestState(), App.rb ? App.rb.delay : pickDelay(App.rtt));
+          const rb = !App.rbOn ? undefined : keep ? { ep: App.rb.ep, keep: true } : rbEndedStart() || rbStart(rbBestState(), App.rb ? App.rb.delay : pickDelay(App.rtt));
           Net.send({ t: "start", mid: App.mid, key: App.matchKey, cfg: App.guestCfg, resume: true, rb }); resumed();
         } else Net.send({ t: "full" });
         break;
@@ -443,7 +444,7 @@ export function guestData(d) {
       App.gEdge = null;   // Druck-Zähler neu ab 0 (der Host übernimmt beim Anpfiff/Zurückkommen den ersten Wert als Grundstand)
       App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.lastSeq = -1; App.clock = makeClock();
       // Rollback: vom Host vorgegebener Startzustand und Verzögerung; ohne rb das alte Verfahren (Host rechnet)
-      if (d.rb && d.rb.st && typeof d.rb.st === "object") startRb({ ep: d.rb.ep, st: d.rb.st, delay: clamp(d.rb.d | 0, 0, 8) });
+      if (d.rb && d.rb.st && typeof d.rb.st === "object") startRb({ ep: d.rb.ep, st: d.rb.st, delay: clamp(d.rb.d | 0, 0, 8), ended: d.rb.ended === true });
       else { stopRb(); App.st.ph = "cd"; }
       App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; if (!App.mm) App.netLost = guestLost;
       if (d.resume) { resumed(); if (App.resumeT0) App.t0 = App.resumeT0; }

@@ -153,7 +153,9 @@ export function sendEmote(e) {
 /** Emote-Leiste aus den 4 ausgerüsteten Plätzen, dazu Gegner stummschalten */
 export function buildEmoteBar() {
   const bar = $("emoteBar"); bar.innerHTML = "";
-  emoteSlots().forEach((e, n) => {
+  // online die Plätze, die beim Anpfiff mitgingen (nur die erkennt die Gegenseite an), sonst die eigenen
+  const mi = App.mode === "guest" ? 1 : 0, sent = (App.mode === "host" || App.mode === "guest") && App.cfg && App.cfg.cos && App.cfg.cos[mi] && App.cfg.cos[mi].emotes;
+  (sent && sent.length ? sent : emoteSlots()).forEach((e, n) => {
     const b = document.createElement("button"), c = cosById(e);
     b.textContent = c ? (c.kind === "emoji" ? c.glyph : c.ic) : e; b.title = t("hud.emoteKey", { n: n + 1 }); b.onclick = () => sendEmote(e);
     bar.append(b);

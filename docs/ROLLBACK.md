@@ -24,7 +24,7 @@ Host ist nicht mehr der einzige, der rechnen muss. Die Wiederholung beim Gast is
 | --- | --- |
 | `js/content/dmath.js` | Deterministische Mathematik und Zufall im Zustand (`st.rng`, mulberry32) |
 | `js/core/sim/match.js` `tick()` | Fester Takt 1/60 s = 2 Physikschritte. Hit-Stop und Zeitlupe zählen in Takten, der Rest liegt ganzzahlig in `st.tq` |
-| `js/core/rbgame.js` | Ein Spieltakt aus Eingaben: Emotes und „Jubel überspringen“ (Bit x, nur Host) sind Teil der Eingaben |
+| `js/core/rbgame.js` | Ein Spieltakt aus Eingaben: Emotes und „Jubel überspringen“ (Bit x, nur Host) sind Teil der Eingaben. Emotes gelten nur, wenn sie Standard, Torjubel oder in den beim Anpfiff mitgeschickten Plätzen des Spielers sind (`cleanInput`, auf beiden Seiten gleich) |
 | `js/core/rollback.js` | Sitzung: Eingabepuffer, Vorhersage, Zustände je Takt, Neurechnen, `sync` (ab hier endgültig), Korrektur |
 | `js/core/rbpeer.js` | Gegenstelle: Takt aus echter Zeit, Pakete, Bestätigungen, Zeitabgleich, Prüfsummen, Korrektur durch den Host |
 | `js/app/rbnet.js` | Anbindung an die App: Eingaben, Ereignisse, Wiederholung, weiches Zeichnen, Spielende |
@@ -64,7 +64,10 @@ Ball-Befreiung) kommt aus dem Zustand statt aus `Math.random`.
 - **Weich zeichnen:** Korrigiert ein Rollback die Position von Ball oder Spielern, wird der Sprung in etwa 70 ms
   nachgezogen statt sofort gezeigt.
 - **Spielende:** Der Ergebnis-Bildschirm kommt erst mit dem endgültigen Abpfiff, mit dem endgültigen Stand. Danach
-  werden noch 10 s Eingaben geschickt, damit auch die Gegenseite sicher bis zum Abpfiff kommt.
+  wird noch 30 s weiter gesendet, ab dem Abpfiff bzw. dem Wiederverbinden. So kommt auch die Gegenseite sicher bis zum
+  Abpfiff. Wer danach geht (Lobby, Menü, Revanche, nächster Gegner), wartet bis zu 3 s, bis die Gegenseite alle
+  Eingaben bis zum Abpfiff hat. Meldet sich ein Gast ohne Sitzung zurück, nachdem der Host schon abgepfiffen hat,
+  bekommt er den Endstand (`rb.ended`).
 - **Wiederverbinden ohne Neustart:** Reißt nur die Verbindung ab, läuft die Sitzung einfach weiter. Der Gast nennt im
   `hello` seine Sitzung (`ep`), der Host bestätigt mit `rb.keep`. Unbestätigte Eingaben kommen erneut, nichts
   Endgültiges wird zurückgenommen.

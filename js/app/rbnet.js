@@ -44,7 +44,7 @@ export const netState = st => JSON.parse(JSON.stringify(st));
  * Sitzung starten (Anpfiff, Wiederaufnahme, Revanche). ep: Nummer der Sitzung innerhalb des Spiels (Pakete älterer
  * Sitzungen werden ignoriert), st: Startzustand (schon netState), delay: vom Host festgelegt.
  */
-export function startRb({ ep, st, delay }) {
+export function startRb({ ep, st, delay, ended = false }) {
   const me = App.mode === "guest" ? 1 : 0;
   setFieldW(W0 * ((st.rules && st.rules.field) || 1));   // Feldbreite ist global (config.js): fest zum Startzustand
   const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
@@ -63,6 +63,7 @@ export function startRb({ ep, st, delay }) {
   });
   App.rb = rb;
   App.st = rb.peer.state();
+  if (ended) { rb.ended = rb.peer.state(); rb.endAt = performance.now(); rb.remoteDone = true; App.st = rb.ended; }   // Endstand vom Host
   App.rec = []; App.replay = null;
   return rb;
 }
@@ -99,14 +100,12 @@ export function rbSkip() { if (App.rb && App.rb.me === 0) App.rb.skip = true; }
 /** Jedes Bild (statt advance/guestFrame): Eingaben sammeln, Takte rechnen, Pakete senden */
 export function rbFrame(dt) {
   const rb = App.rb;
-  // Spiel vorbei: endgültigen Stand zeigen (Figuren bewegen sich weiter), noch 10 s Eingaben senden, damit die
-  // Gegenseite sicher auch bis zum Abpfiff kommt
+  // Spiel vorbei: endgültigen Stand zeigen (Figuren bewegen sich weiter) und noch 30 s weiter senden (ab dem Abpfiff
+  // bzw. dem Wiederverbinden): die Gegenseite kommt so sicher bis zum Abpfiff und erfährt, dass ihre Eingaben da sind
   if (rb.ended) {
     if (App.st !== rb.ended) { App.st = rb.ended; App.st.ev = []; App.acc = 0; }
     App.acc = advance(App.st, dt, [{}, {}], App.acc);
-    // weiter senden, bis die Gegenseite die Eingaben bis zum Abpfiff hat (höchstens 30 s), mindestens 3 s
-    const age = performance.now() - rb.endAt;
-    if (age < 3000 || (!rbRemoteDone() && age < 30000)) rb.peer.update(dt, () => 0);
+    if (performance.now() - rb.endAt < 30000) rb.peer.update(dt, () => 0);
     return;
   }
   // Eingabe einmal pro Bild lesen (holt auch kurze Tipps ab); was zwischen zwei Takten gedrückt war, zählt im nächsten
@@ -120,7 +119,7 @@ export function rbFrame(dt) {
     if (rb.emo) { const e = rb.emo; rb.emo = ""; return { b, e }; }
     return b;
   });
-  const st = rb.peer.state();
+  const st = rb.ended || rb.peer.state();   // gerade endgültig abgepfiffen: gleich den endgültigen Stand zeigen
   // Aufleuchten von Hindernissen (nur Anzeige) über das Neurechnen retten
   if (st !== App.st && obs && st.obs) st.obs.forEach((o, i) => { if (obs[i] && obs[i].hitT !== undefined) o.hitT = obs[i].hitT; });
   App.st = st;
@@ -139,7 +138,25 @@ export function rbView(st) {
 }
 
 /** Abgepfiffen und hat die Gegenseite alle eigenen Eingaben bis zum Abpfiff? (dann kann sie auch abpfeifen) */
-export function rbRemoteDone() { const rb = App.rb; return !rb || !rb.ended || rb.peer.acked >= rb.endF; }
+export function rbRemoteDone() { const rb = App.rb; return !rb || !rb.ended || rb.remoteDone || rb.peer.acked >= rb.endF; }
+
+/** Nach dem eigenen Abpfiff gehen (Lobby, Menü, Revanche, nächster Gegner): kurz warten, bis die Gegenseite alles hat */
+export function afterRemote(fn) {
+  const t0 = performance.now();
+  const go = () => { if (rbRemoteDone() || performance.now() - t0 > 3000) fn(); else setTimeout(go, 100); };
+  go();
+}
+
+/**
+ * Gast meldet sich zurück, der Host hat aber schon endgültig abgepfiffen (Gast ohne Sitzung, z. B. nach einem
+ * Neustart): ihm den Endstand schicken statt einer neuen Sitzung (aus „Ende“ heraus gäbe es nie einen Abpfiff)
+ */
+export function rbEndedStart() {
+  const rb = App.rb;
+  if (!rb || !rb.ended) return null;
+  rb.remoteDone = true;
+  return { ep: rb.ep, st: netState(rb.ended), d: rb.delay, ended: true };
+}
 
 /** Rollback-Nachricht? (dann verarbeitet) */
 export const rbMessage = d => !!(App.rb && d && (d.t === "ri" || d.t === "rh" || d.t === "rs") && App.rb.peer.onMessage(d));

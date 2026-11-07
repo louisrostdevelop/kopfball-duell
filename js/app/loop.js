@@ -68,8 +68,9 @@ function frame(now) {
   // (an genau dieses Spiel gebunden: wer in den 900 ms ins Menü geht oder ein neues Spiel bekommt, wird nicht gewertet)
   if (st.ph === "end" && !App.endShown && App.mode !== "demo" && (!App.rb || App.rb.ended)) {
     App.endShown = true;
-    const s0 = App.st, mode = App.mode, key = App.matchKey;
-    setTimeout(() => { if (App.st === s0 && App.mode === mode && App.matchKey === key) matchEnd(); }, 900);
+    // (Rollback: an die Sitzung gebunden, der angezeigte Zustand wechselt dort zum endgültigen)
+    const s0 = App.rb || App.st, mode = App.mode, key = App.matchKey;
+    setTimeout(() => { if ((App.rb || App.st) === s0 && App.mode === mode && App.matchKey === key) matchEnd(); }, 900);
   }
   if (App.screen === "home") drawShowcase(dt);
 }

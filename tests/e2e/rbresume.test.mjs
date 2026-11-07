@@ -106,3 +106,17 @@ test("Rollback: Abpfiff, Revanche (neues Spiel, neue Sitzung)", async () => {
   assert.ok(await same(A, B));
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
 });
+
+test("Rollback: Host pfeift ab, der Gast (dem die letzten Pakete fehlen) startet neu und bekommt das Ergebnis", async () => {
+  const { a, A, B } = await match("st.s = [2, 0]; st.t = 3;");
+  // Gast bekommt nichts mehr vom Host (einseitiger Verlust), der Host aber alles vom Gast: nur der Host pfeift ab
+  await B.evaluate(() => { window.__mockNet = { lat: 30, jit: 10, loss: 1 }; });
+  await A.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 30000 });
+  assert.equal(await B.evaluate(() => !!(window.__kd.rb && window.__kd.rb.ended)), false, "Gast noch nicht abgepfiffen");
+  await B.close();
+  const { P: C, err } = await reopen(a.ctx);
+  await C.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 30000 });
+  assert.deepEqual(await C.evaluate(() => window.__kd.st.s), [2, 0], "Gast sieht das Ergebnis");
+  assert.equal(await A.evaluate(() => window.__kd.screen), "end", "Host bleibt auf dem Ergebnis");
+  assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...err], []);
+});
