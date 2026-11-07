@@ -26,7 +26,6 @@ angeglichen, ausgeblendet, mono 48 kHz (`crowd` Stereo, als Loop überblendet).
 | `slide_2` | https://freesound.org/people/alegemaate/sounds/364712/ | alegemaate | CC0 1.0 |
 | `whistle` | https://freesound.org/people/Chaos-Kid/sounds/817398/ | Chaos-Kid | CC0 1.0 |
 | `whistle1` | https://freesound.org/people/Rosa-Orenes256/sounds/538422/ | Rosa-Orenes256 | CC0 1.0 |
-| `goal` | https://freesound.org/people/mcpable/sounds/131930/ | mcpable | CC0 1.0 |
 | `crowd` | https://freesound.org/people/itmightgetloud/sounds/829454/ | itmightgetloud (Philipp Feit) | CC0 1.0 |
 | `roar` | https://freesound.org/people/itmightgetloud/sounds/829455/ | itmightgetloud (Philipp Feit) | CC0 1.0 |
 | `ohh` | https://freesound.org/people/itmightgetloud/sounds/829452/ | itmightgetloud (Philipp Feit) | CC0 1.0 |

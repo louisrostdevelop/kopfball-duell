@@ -68,7 +68,7 @@ jeder Datei selbst prüfen, die ändern sich.
 
 ## Was voneinander abhängt
 
-- **Tor:** Torhupe (`goal`), dazu der Jubel aus dem Publikums-Loop, darüber die Torexplosion des Schützen (`gfx-*`).
+- **Tor:** kurzes Netzrauschen mit hellem Akkord (`goal`, Synth), dazu der Jubel (`roar`), darüber die Torexplosion des Schützen (`gfx-*`). Die frühere Torhupe ist raus, sie nervte auf Dauer.
   Alle drei laufen gleichzeitig. Die Torexplosion sollte deshalb eher mittel und hoch klingen und nicht wieder eine
   tiefe Hupe sein.
 - **Super:** Ein gemeinsamer Auslöser für alle (`super`), danach die eigene Signatur des Kopfes (`super-<name>`), beim
@@ -153,7 +153,7 @@ Preis fürs Abwehren (werden geteilt):
 | `whistle` | Abpfiff, Golden Goal | Schiri-Pfiff, dreimal |
 | `whistle1` | Anpfiff im Golden Goal | ein Pfiff |
 | `tick` | letzte 10 Sekunden | leise, Stufe 1 |
-| `goal` | Tor | Torhupe, Stufe 4 |
+| `goal` | Tor | Netzrauschen + heller Akkord (Synth), Stufe 4 |
 | `crowd` | Publikum im Spiel | **Loop**, Lautstärke folgt dem Spiel |
 | `roar` | Jubel nach Tor | aus derselben Aufnahme wie `crowd` |
 | `ohh` | Pfosten, knapp vorbei | Raunen |

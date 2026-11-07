@@ -2,12 +2,12 @@
 import { ARENAS, CHARS, DIFFS } from "../../content/config.js";
 import { buildObstacles, layoutsFor, moveObstacles } from "../../content/layouts.js";
 import { matchLen } from "../../core/physics.js";
-import { buy, owns, S, save } from "../../app/profile.js";
+import { arenaInShop, buy, owns, S, save, seasonNow, shopLevel } from "../../app/profile.js";
 import { arenaThumb, layoutPreview } from "../render/render.js";
 import { beginMatch } from "../../app/game.js";
 import { cpuNames } from "../../app/modes.js";
 import { App } from "../../app/state.js";
-import { $, seg, toast } from "../dom.js";
+import { $, seg, svg, toast } from "../dom.js";
 import { showScreen, registerScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
 import { rulesSummary, rulesScreen } from "./rules.js";
@@ -59,8 +59,13 @@ export function renderArenas() {
     const b = document.createElement("button"); b.className = "atile"; const locked = !owns("arenas", a.id);
     b.classList.toggle("locked", locked); b.classList.toggle("on", S.arena === a.id);
     b.append(arenaThumb(a.id, 240, 150));
-    b.insertAdjacentHTML("beforeend", `<span class="cap"><b>${a.name}</b><small>${a.desc}</small></span>` + (locked ? `<span class="lock"><span class="coin"></span>${a.price}</span>` : ""));
+    // gesperrt: wie im Shop erst Level, dann Saison, sonst Preis (Level-Arenen kosten nichts, sie werden frei)
+    const need = shopLevel("arenas", a.id);
+    const why = !locked ? "" : a.season && !arenaInShop(a) ? (seasonNow() === a.season ? t("shop.inPass") : t("shop.fromSeason", { n: a.season }))
+      : S.level < need ? t("shop.fromLevel", { n: need }) : "";
+    b.insertAdjacentHTML("beforeend", `<span class="cap"><b>${a.name}</b><small>${a.desc}</small></span>` + (!locked ? "" : why ? `<span class="lock">${svg("i-lock")}${why}</span>` : `<span class="lock"><span class="coin"></span>${a.price}</span>`));
     b.onclick = () => {
+      if (locked && why) { A.sfx("click"); toast(why, "i-lock"); return; }
       if (locked) { if (buy("arenas", a.id, a.price)) { A.sfx("coin"); toast(t("setup.unlocked", { name: a.name }), "i-stadium", true); refreshTop(); } else { if (S.coins < a.price) toast(t("setup.needCoins", { n: a.price }), "i-lock"); return; } }
       A.sfx("click"); S.arena = a.id; save(); renderArenas(); renderObs();
     };

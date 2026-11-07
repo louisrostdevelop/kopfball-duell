@@ -109,12 +109,14 @@ export async function openChestOverlay(c) {
     el.insertAdjacentHTML("beforeend", `<b>${esc(itemName(it.id))}</b><small>${RARITY[it.rarity]}${kind === "head" ? " · " + t("chest.head") : ""}</small><em class="${it.dup ? "dup" : "new"}">${sub}</em>`);
     list.push({ el, cls: it.rarity + (kind === "head" && !it.dup ? " newhead" : ""), snd: it.dup && it.shards ? "shards" : "chest-item" });
   }
+  // Alle Karten gleich anlegen (unsichtbar) und nacheinander einblenden: so springt nichts, wenn eine dazukommt
   const t0 = q(480), gap = q(360);
-  list.forEach((x, i) => setTimeout(() => {
-    const d = document.createElement("div"); d.className = "cocard r-" + x.cls;
+  const slots = list.map(x => {
+    const d = document.createElement("div"); d.className = "cocard wait r-" + x.cls;
     if (x.el) d.append(...x.el.childNodes); else d.innerHTML = x.html;
-    cards.append(d); A.sfx(x.snd);
-  }, t0 + i * gap));
+    cards.append(d); return d;
+  });
+  list.forEach((x, i) => setTimeout(() => { slots[i].classList.remove("wait"); A.sfx(x.snd); }, t0 + i * gap));
   setTimeout(() => {
     busy = false; refreshTop();
     const more = S.chests.some(x => x.tier === tier);

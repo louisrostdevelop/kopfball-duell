@@ -37,3 +37,19 @@ for (const [name, view] of [["Desktop", VIEW.desktop], ["Handy quer", VIEW.phone
   }
   assert.deepEqual(errors, []);
 });
+
+test("Arenen-Auswahl vor dem Spiel: Level- und Saison-Arenen ohne Preis", async () => {
+  const { page, errors } = await openPage(env, VIEW.desktop, { save: { coins: 3000, level: 6 } });
+  const lock = await page.evaluate(async () => {
+    const { ARENAS } = await import("/js/content/config.js");
+    (await import("/js/ui/screens/setup.js")).renderArenas();
+    const tiles = [...document.querySelectorAll("#arenaList .atile")];
+    return Object.fromEntries(ARENAS.map((a, i) => [a.id, (tiles[i].querySelector(".lock") || { textContent: "" }).textContent.trim()]));
+  });
+  assert.equal(lock.neon, "", "Neon ab Level 5 frei");
+  assert.match(lock.eis, /10/);
+  assert.match(lock.mond, /15/);
+  assert.equal(lock.vulkan, "2500", "ohne Server: neue Arena gleich kaufbar");
+  assert.ok(!Object.values(lock).includes("0"), "nirgends Preis 0: " + JSON.stringify(lock));
+  assert.deepEqual(errors, []);
+});

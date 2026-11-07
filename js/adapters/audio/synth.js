@@ -257,9 +257,10 @@ function recipe(kind, v) {
     case "go": [C.C6, C.E6, C.G6].forEach(m => bell(0, m, 0.1, { d: 0.6 })); return true;
     case "whistle": [[0, 0.13], [0.2, 0.13], [0.42, 0.6]].forEach(([t, d]) => whistle(t, d)); return true;
     case "whistle1": whistle(0, 0.38); return true;
-    case "goal": // Stadion-Hupe: verstimmte Blechbläser mit leichtem Vibrato
-      [C.C4 - 12, C.G4 - 12, C.C4, C.E4].forEach((m, i) => brass(0, m, i < 2 ? 0.1 : 0.07, 1.25, { cat: "big", lp: 700, lp1: 2400 }));
-      hiss(0, { type: "bandpass", f0: 900, f1: 1400, q: 0.5, vol: 0.25, a: 0.05, d: 2, cat: "big", send: 0.3 });
+    case "goal": // Netz rauscht, kurzer heller Akkord. Den Rest trägt der Jubel (roar). Keine Hupe: nervte auf Dauer
+      hiss(0, { type: "highpass", f0: 3200, f1: 1400, q: 0.7, vol: 0.2, a: 0.004, d: 0.32, cat: "big", send: 0.25 });
+      [C.C5, C.E5, C.G5].forEach((m, i) => mallet(0.03 + i * 0.055, m, 0.12, { d: 0.45 }));
+      bell(0.2, C.C6, 0.08, { d: 0.9 }); sparkle(0.22, 3, 0.03);
       return true;
     case "ohh": // Publikum raunt: Formant „ooh“, Tonhöhe sinkt
       [[420, 520], [780, 640]].forEach(([f0, f1]) => hiss(0, { type: "bandpass", f0, f1, q: 4, vol: 0.28, a: 0.15, d: 0.95, cat: "big", send: 0.4 }));

@@ -363,7 +363,10 @@ function bgStrand(b, R) {
   const sg = b.createRadialGradient(W / 2, sy, 10, W / 2, sy, 300); sg.addColorStop(0, "rgba(255,240,160,.85)"); sg.addColorStop(1, "rgba(255,200,120,0)");
   b.fillStyle = sg; b.fillRect(W / 2 - 300, 0, 600, sy + 10);
   b.fillStyle = "#ffe98a"; b.beginPath(); b.arc(W / 2, sy, 120, Math.PI, TAU); b.fill();
-  b.fillStyle = "rgba(255,120,150,.55)"; for (let i = 0; i < 5; i++) b.fillRect(W / 2 - 130, sy - 70 + i * 15, 260, 4 + i);
+  // Streifen nur innerhalb der Sonne, nach unten breiter (Retro-Sonnenuntergang)
+  b.save(); b.beginPath(); b.arc(W / 2, sy, 120, Math.PI, TAU); b.closePath(); b.clip();
+  b.fillStyle = "rgba(255,120,150,.6)"; for (let i = 0; i < 5; i++) b.fillRect(W / 2 - 130, sy - 70 + i * 15, 260, 4 + i);
+  b.restore();
   const sea = b.createLinearGradient(0, sy, 0, FT); sea.addColorStop(0, "#5e3fa0"); sea.addColorStop(1, "#2a7fc0");
   b.fillStyle = sea; b.fillRect(R.x0, sy, R.x1 - R.x0, FT - sy);
   b.strokeStyle = "rgba(255,220,150,.5)"; b.lineWidth = 3;
