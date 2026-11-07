@@ -4,6 +4,7 @@ import { layoutsFor } from "../content/layouts.js";
 import { makeAI } from "../core/ai.js";
 import { emote, newMatch, skipCelebration } from "../core/physics.js";
 import { rbEmote, rbSkip, stopRb } from "./rbnet.js";
+import { settlePending } from "./results.js";
 import { S, save } from "./profile.js";
 import { fx, setBand, setMatchCos, setMuted } from "../ui/render/render.js";
 import { cosById } from "../content/cosmetics.js";
@@ -42,6 +43,8 @@ export function resolveObs(cfg) {
 export const headLevel = id => (S.heads && S.heads[id] && S.heads[id].level) || 1;
 
 export function beginMatch(cfg) {
+  settlePending();   // altes Online-Spiel noch werten (neues Spiel kam in den 900 ms nach dem Abpfiff)
+  App.leaving = null;
   const orig = cfg; cfg = resolveObs(cfg);
   // Gegen den Computer zählt nur das eigene Level, zu zweit beide; online bringt der Host die Level mit
   if (!cfg.levels && cfg.mode !== "guest" && cfg.mode !== "host") cfg = { ...cfg, levels: [headLevel(cfg.chars[0]), cfg.mode === "local" ? headLevel(cfg.chars[1]) : 1] };
@@ -112,6 +115,7 @@ export function updateBand() {
 export function skipGoal() { if (App.rb) rbSkip(); else skipCelebration(App.st); }
 
 export function quitToMenu() {
+  settlePending();
   stopRb();
   if (App.mode === "host" || App.mode === "guest") { Net.send({ t: "bye" }); Net.close(250); }   // „bye“: die andere Seite wartet nicht aufs Wiederverbinden
   clearSession();   // bewusst verlassen: beim nächsten Start nicht zurückverbinden
@@ -155,7 +159,7 @@ export function buildEmoteBar() {
   const bar = $("emoteBar"); bar.innerHTML = "";
   // online die Plätze, die beim Anpfiff mitgingen (nur die erkennt die Gegenseite an), sonst die eigenen
   const mi = App.mode === "guest" ? 1 : 0, sent = (App.mode === "host" || App.mode === "guest") && App.cfg && App.cfg.cos && App.cfg.cos[mi] && App.cfg.cos[mi].emotes;
-  (sent && sent.length ? sent : emoteSlots()).forEach((e, n) => {
+  (Array.isArray(sent) ? sent : emoteSlots()).forEach((e, n) => {
     const b = document.createElement("button"), c = cosById(e);
     b.textContent = c ? (c.kind === "emoji" ? c.glyph : c.ic) : e; b.title = t("hud.emoteKey", { n: n + 1 }); b.onclick = () => sendEmote(e);
     bar.append(b);

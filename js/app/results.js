@@ -6,7 +6,7 @@ import { cosById } from "../content/cosmetics.js";
 import { fx } from "../ui/render/render.js";
 import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
-import { backToLobby, hostStart } from "./online.js";
+import { backToLobby, hostStart, netEnded } from "./online.js";
 import { afterRemote } from "./rbnet.js";
 import { App, myIdx, vsCpu } from "./state.js";
 import { $, copyText, shareOrCopy, toast } from "../ui/dom.js";
@@ -42,6 +42,15 @@ export function seriesText() {
   return t("end.series", { a: s[0], b: s[1] });
 }
 
+/**
+ * Online-Spiel ist endgültig abgepfiffen, die Wertung aber noch nicht gelaufen (loop.js wartet 900 ms aufs Ergebnis):
+ * jetzt werten, bevor das Spiel verlassen wird (Gegenseite weg, Lobby, Revanche, Menü). Sonst ginge das Ergebnis
+ * verloren oder würde in der Gegnersuche als Aufgabe gemeldet.
+ */
+export function settlePending() {
+  if ((App.mode === "host" || App.mode === "guest") && App.endShown && App.matchKey && App.endedKey !== App.matchKey && netEnded()) matchEnd();
+}
+
 export function matchEnd() {
   // online je Spiel nur einmal werten (nach einer Wiederaufnahme kann der Abpfiff ein zweites Mal kommen)
   // (Kennung je Spiel vom Host; die Spiel-Nr. allein kann nach einem Host-Neustart wiederkommen)
@@ -49,7 +58,7 @@ export function matchEnd() {
   const st = App.st, me = myIdx(), op = me >= 0 ? 1 - me : -1;
   if (App.mode === "host" || App.mode === "guest") {
     const key = App.matchKey || "";
-    if (key && App.endedKey === key) { showEnd({ win: me >= 0 && st.s[me] > st.s[op], me, lines: [], ups: [], achs: [], runInfo: null, career: null }); $("endNote").textContent = ""; return; }
+    if (key && App.endedKey === key) { showEnd({ win: me >= 0 && st.s[me] > st.s[op], me, lines: [], ups: [], achs: [], runInfo: null, career: null }); if (App.mm) $("endNote").textContent = ""; return; }
     App.endedKey = key;
   }
   const [a, b] = st.s, k = seriesKey();

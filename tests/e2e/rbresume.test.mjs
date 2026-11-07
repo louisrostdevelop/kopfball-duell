@@ -109,7 +109,9 @@ test("Rollback: Abpfiff, Revanche (neues Spiel, neue Sitzung)", async () => {
 
 test("Rollback: Host pfeift ab, der Gast (dem die letzten Pakete fehlen) startet neu und bekommt das Ergebnis", async () => {
   const { a, A, B } = await match("st.s = [2, 0]; st.t = 3;");
-  // Gast bekommt nichts mehr vom Host (einseitiger Verlust), der Host aber alles vom Gast: nur der Host pfeift ab
+  // Kurz vor Schluss bekommt der Gast nichts mehr vom Host (einseitiger Verlust), der Host aber alles vom Gast: nur der
+  // Host pfeift ab (der Gast bleibt in seiner Vorhersage stehen, der Host darf ihm höchstens ~12 Takte voraus sein)
+  await A.waitForFunction(() => window.__kd.st.ph === "play" && window.__kd.st.t < 0.1, null, { polling: 5, timeout: 20000 });
   await B.evaluate(() => { window.__mockNet = { lat: 30, jit: 10, loss: 1 }; });
   await A.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 30000 });
   assert.equal(await B.evaluate(() => !!(window.__kd.rb && window.__kd.rb.ended)), false, "Gast noch nicht abgepfiffen");

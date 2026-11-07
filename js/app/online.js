@@ -14,6 +14,7 @@ import { audio as A, input as I, net as Net } from "./services.js";
 import { decodeState, encodeState, makeClock, pingBars, pingStats } from "./netcode.js";
 import { t } from "../content/i18n.js";
 import { clearSession, markClosing, saveSession, sessionRole, touchSession } from "./session.js";
+import { settlePending } from "./results.js";
 import { netState, pickDelay, rbBestState, rbEndedStart, rbMessage, rbRemoteDone, rollbackWanted, startRb, stopRb } from "./rbnet.js";
 
 // Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
@@ -355,6 +356,7 @@ export function hostData(d) {
     case "ping": Net.send({ t: "pong", c: d.c }); break;
     case "bye": App.netBye = true; break;
     case "pong": pong(d.c); break;
+    case "rbok": if (App.rb && App.rb.endSent && d.mid === App.mid) App.rb.remoteDone = true; break;   // Gast hat den Endstand
     case "rematch":
       // Gast will Revanche: Hinweis bleibt auf dem Ergebnis-Bildschirm stehen (auch wenn er erst danach aufgeht)
       App.rematchWanted = true; rematchHint();
@@ -444,7 +446,10 @@ export function guestData(d) {
       App.gEdge = null;   // Druck-Zähler neu ab 0 (der Host übernimmt beim Anpfiff/Zurückkommen den ersten Wert als Grundstand)
       App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.lastSeq = -1; App.clock = makeClock();
       // Rollback: vom Host vorgegebener Startzustand und Verzögerung; ohne rb das alte Verfahren (Host rechnet)
-      if (d.rb && d.rb.st && typeof d.rb.st === "object") startRb({ ep: d.rb.ep, st: d.rb.st, delay: clamp(d.rb.d | 0, 0, 8), ended: d.rb.ended === true });
+      if (d.rb && d.rb.st && typeof d.rb.st === "object") {
+        startRb({ ep: d.rb.ep, st: d.rb.st, delay: clamp(d.rb.d | 0, 0, 8), ended: d.rb.ended === true });
+        if (d.rb.ended === true) Net.send({ t: "rbok", mid: d.mid });   // Endstand angekommen: der Host muss nicht weiter warten
+      }
       else { stopRb(); App.st.ph = "cd"; }
       App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; if (!App.mm) App.netLost = guestLost;
       if (d.resume) { resumed(); if (App.resumeT0) App.t0 = App.resumeT0; }
@@ -477,6 +482,7 @@ export function guestData(d) {
 }
 
 export function backToLobby() {
+  settlePending();
   stopRb();
   document.body.classList.remove("ingame");
   $("gameBtns").hidden = true;

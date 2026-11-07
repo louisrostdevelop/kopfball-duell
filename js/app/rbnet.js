@@ -63,7 +63,8 @@ export function startRb({ ep, st, delay, ended = false }) {
   });
   App.rb = rb;
   App.st = rb.peer.state();
-  if (ended) { rb.ended = rb.peer.state(); rb.endAt = performance.now(); rb.remoteDone = true; App.st = rb.ended; }   // Endstand vom Host
+  // Endstand vom Host: nichts mehr zu rechnen oder zu senden
+  if (ended) { rb.ended = rb.peer.state(); rb.endAt = performance.now(); rb.remoteDone = true; rb.quiet = true; App.st = rb.ended; }
   App.rec = []; App.replay = null;
   return rb;
 }
@@ -105,7 +106,7 @@ export function rbFrame(dt) {
   if (rb.ended) {
     if (App.st !== rb.ended) { App.st = rb.ended; App.st.ev = []; App.acc = 0; }
     App.acc = advance(App.st, dt, [{}, {}], App.acc);
-    if (performance.now() - rb.endAt < 30000) rb.peer.update(dt, () => 0);
+    if (!rb.quiet && performance.now() - rb.endAt < 30000) rb.peer.update(dt, () => 0);
     return;
   }
   // Eingabe einmal pro Bild lesen (holt auch kurze Tipps ab); was zwischen zwei Takten gedrückt war, zählt im nächsten
@@ -142,8 +143,14 @@ export function rbRemoteDone() { const rb = App.rb; return !rb || !rb.ended || r
 
 /** Nach dem eigenen Abpfiff gehen (Lobby, Menü, Revanche, nächster Gegner): kurz warten, bis die Gegenseite alles hat */
 export function afterRemote(fn) {
-  const t0 = performance.now();
-  const go = () => { if (rbRemoteDone() || performance.now() - t0 > 3000) fn(); else setTimeout(go, 100); };
+  const key = App.matchKey, t0 = performance.now();
+  if (key && App.leaving === key) return;   // schon unterwegs (Doppelklick, zweiter Knopf)
+  App.leaving = key;
+  const go = () => {
+    // Verbindung weg (die Warte-Leiste regelt das) oder inzwischen ein anderes Spiel/ein anderer Bildschirm: nichts tun
+    if (App.netWait || App.matchKey !== key || App.screen !== "end") { App.leaving = null; return; }
+    if (rbRemoteDone() || performance.now() - t0 > 3000) { App.leaving = null; fn(); } else setTimeout(go, 100);
+  };
   go();
 }
 
@@ -154,7 +161,7 @@ export function afterRemote(fn) {
 export function rbEndedStart() {
   const rb = App.rb;
   if (!rb || !rb.ended) return null;
-  rb.remoteDone = true;
+  rb.endSent = true;   // erledigt, sobald der Gast „rbok“ schickt (online.js)
   return { ep: rb.ep, st: netState(rb.ended), d: rb.delay, ended: true };
 }
 

@@ -6,6 +6,7 @@ import { myCos } from "./cosmetics.js";
 import { applyState } from "./account.js";
 import { quitToMenu } from "./game.js";
 import { rbBestState } from "./rbnet.js";
+import { settlePending } from "./results.js";
 import { hello, hostData, guestData, hostStart, knock, netDropped, restoreGuest, restoreHostGame } from "./online.js";
 import { clearSession } from "./session.js";
 import { NET_CHECK, netTooBad, pingStats } from "./netcode.js";
@@ -141,6 +142,7 @@ function lostFor(mm) {
   return () => {
     if (!App.mm || App.mm.match !== mm.match) return;
     App.netLost = null; clearSession();
+    settlePending();   // schon endgültig abgepfiffen: normal werten statt Aufgabe
     if (inGame() || App.screen === "pause") {
       // Gegner mitten im Spiel weg: als Aufgabe melden. Meldet er nichts, gewinnt man nach ein paar Minuten.
       const st = rbBestState(); reportResult([st.s[0], st.s[1]], (Date.now() - (App.t0 || Date.now())) / 1000, true);   // Rollback: endgültiger Stand
