@@ -317,6 +317,13 @@ input::placeholder { color: #b3a68a; }
 .superbox svg { width: 26px; height: 26px; flex: none; color: var(--yellow-d); }
 .superbox b { font-family: var(--display); font-weight: 400; font-size: 19px; }
 .superbox p { margin: 2px 0 0; font-size: 14px; line-height: 1.3; }
+
+/* Kopf-Details: Superattacke klein oben rechts im Kopfbild (spart Höhe, Kaufen-Knopf bleibt sichtbar) */
+.det-top .superbox { position: absolute; top: 10px; right: 10px; margin: 0; max-width: 42%; padding: 5px 9px 6px; gap: 5px; border-radius: 12px; align-items: center; text-align: left; box-shadow: 0 3px 0 var(--ink); }
+.det-top .superbox svg { width: 16px; height: 16px; align-self: flex-start; margin-top: 2px; }
+.det-top .superbox b { display: block; font-size: 14px; line-height: 1.1; }
+.det-top .superbox p { font-size: 11px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.det-top .bigav { margin-right: 40%; }   /* Kopf nach links, rechts steht die Superattacke */
 .stats { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; font-size: 14px; font-weight: 900; margin: 0 14px; }
 .stats .bar { height: 12px; background: #e6d6b3; border-radius: 8px; border: 2px solid var(--ink); overflow: hidden; min-height: 0; margin: 0; }
 .stats .bar i { display: block; height: 100%; background: linear-gradient(#7af0ff, #19a9e0); }
@@ -853,8 +860,9 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   .det-top .rarity { font-size: 10px; padding: 2px 7px; top: 6px; left: 6px; }
   .bigav canvas { max-height: 86px; }
   .detail h3 { font-size: 20px; }
-  .superbox { margin: 0 8px; padding: 5px 8px; gap: 6px; border-radius: 10px; }
-  .superbox svg { width: 18px; height: 18px; } .superbox b { font-size: 14px; } .superbox p { font-size: 11px; }
+  .det-top .superbox { top: 6px; right: 6px; max-width: 52%; padding: 3px 7px 4px; border-radius: 9px; box-shadow: 0 2px 0 var(--ink); }
+  .det-top .superbox svg { width: 13px; height: 13px; } .det-top .superbox b { font-size: 12px; } .det-top .superbox p { font-size: 9.5px; -webkit-line-clamp: 4; }
+  .det-top .bigav { margin-right: 44%; margin-top: 14px; } .det-top .bigav canvas { max-height: 74px; }
   .stats { margin: 0 8px; gap: 3px 8px; font-size: 11px; } .stats .bar { height: 8px; }
   .detail .btn { margin: 2px 8px 0; padding: 7px 12px 9px; font-size: 16px; }
 
@@ -954,7 +962,6 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   .sitem b { font-size: 14px; } .sitem small { font-size: 10px; }
   .sitem .prev { height: 84px !important; } .sitem .prev canvas { max-height: 78px; width: auto !important; }
   .sitem .btn.small { font-size: 12px; padding: 4px 8px 6px; }
-  .superbox { padding: 6px 8px; } .superbox p { font-size: 12px; }
   .detail { gap: 6px; padding-bottom: 10px; }
   .detail h3 { font-size: 24px; }
 }
@@ -1152,7 +1159,6 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
-  .detail:has(.headlv:not([hidden])) .superbox p { display: none; }
   .detail:has(.headlv:not([hidden])) .stats { gap: 2px 8px; }
 }
 
