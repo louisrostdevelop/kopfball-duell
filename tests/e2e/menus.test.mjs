@@ -1,11 +1,12 @@
 // Menüs: Profil mit Konto-Stand, Hinweis-Zahlen nur für Abholbares, Shop springt beim Tab-Wechsel nicht,
 // Kisten-Chancen scrollen nur in der Liste, Vollbild-Knopf, Hintergrund in allen Menüs wie auf der Startseite
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { start, openPage, click, VIEW } from "./lib.mjs";
+import { start, openPage, click, VIEW, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 for (const [name, view] of [["Desktop", VIEW.desktop], ["Handy quer", VIEW.phone], ["Handy hoch", VIEW.portrait]]) test(`Menüs (${name})`, async () => {

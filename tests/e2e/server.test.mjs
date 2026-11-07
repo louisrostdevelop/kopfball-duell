@@ -1,13 +1,13 @@
 // Spiel mit Server: Gast-Konto auf dem Server, Übernahme des lokalen Spielstands, Tagesbonus, Kauf (bestätigt und
 // abgelehnt), Spielmeldung. Läuft gegen tools/dev-backend.mjs auf einer lokalen Postgres-Datenbank mit den echten
 // Migrationen. Ohne Postgres auf dem Rechner wird der Test übersprungen.
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, rmSync, readdirSync, chmodSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { start, openPage, click, VIEW } from "./lib.mjs";
+import { start, openPage, click, VIEW, closeAll } from "./lib.mjs";
 
 const hasPg = existsSync("/usr/lib/postgresql") && readdirSync("/usr/lib/postgresql").length > 0;
 const DB_SCRIPT = new URL("../../supabase/local/start-db.sh", import.meta.url).pathname;
@@ -21,6 +21,7 @@ before(async () => {
   be = await startDevBackend({ dbUrl, port: 0 });
   env = await start();
 });
+afterEach(t => closeAll(env, t));
 after(async () => {
   if (!hasPg) return;
   await env.close(); await be.close();

@@ -1,10 +1,11 @@
 // Karriere im Browser: Liga-Übersicht, Spiel gewinnen, Sterne, nächstes Spiel frei, nächste Liga erst nach allen fünf
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { start, openPage, click, VIEW } from "./lib.mjs";
+import { start, openPage, click, VIEW, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 const finish = async (page, s) => { await page.evaluate(sc => { const st = window.__kd.st; st.s = sc; st.t = 0.2; st.rules.win = 0; }, s); await page.waitForTimeout(3300); };
