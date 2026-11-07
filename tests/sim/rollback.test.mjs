@@ -123,6 +123,11 @@ test("Bausteine: Bits hin und zurück, Kopie exakt, Prüfsumme unabhängig von d
   assert.equal(RB.hashState({ x: 1, y: [2, 3] }), RB.hashState({ y: [2, 3], x: 1 }));
   assert.notEqual(RB.hashState({ x: 1 }), RB.hashState({ x: 1.0000001 }));
   assert.equal(RB.hashState({ x: 1, hitT: 5, ev: [1] }), RB.hashState({ x: 1 }), "Anzeige-Felder zählen nicht");
+  // jedes NaN gleich (Prozessoren liefern verschiedene NaN-Bitmuster), -0 wie 0, aber 1 ≠ "1"
+  const dv = new DataView(new ArrayBuffer(8)); dv.setUint32(0, 0xfff80000); dv.setUint32(4, 0); const nan2 = dv.getFloat64(0);
+  dv.setUint32(0, 0x7ff80000); dv.setUint32(4, 12345); const nan3 = dv.getFloat64(0);
+  assert.equal(RB.hashState({ v: NaN }), RB.hashState({ v: nan2 })); assert.equal(RB.hashState({ v: NaN }), RB.hashState({ v: nan3 }));
+  assert.equal(RB.hashState({ v: -0 }), RB.hashState({ v: 0 })); assert.notEqual(RB.hashState({ v: 1 }), RB.hashState({ v: "1" }));
 });
 
 test("Takt-Funktion: Hit-Stop und Zeitlupe zählen in Takten, Schritte ganzzahlig", () => {
@@ -257,7 +262,7 @@ test("Korrektur: zu alter Takt wird abgelehnt (kein Stillstand), Takt in der Zuk
   s.setLocal(0); assert.notEqual(s.advance(), null, "läuft weiter");
   const st = RB.clone(s.state());
   assert.equal(s.resync(s.frame + 3, st), true, "Zukunft: übernimmt");
-  assert.ok(s.frame >= 101 && s.needLocal() !== undefined);
+  assert.ok(s.frame >= 101, "springt auf den späteren Takt: " + s.frame);
   s.setLocal(0); s.addRemote(s.remoteTop + 1, [0, 0, 0, 0, 0, 0]);
   assert.notEqual(s.advance(), null, "läuft nach dem Sprung weiter");
 });

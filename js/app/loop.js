@@ -65,7 +65,12 @@ function frame(now) {
   } else render(App.rb ? rbView(st) : st, simT, { dt, names: App.names, labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesText(), modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
   if (App.mode !== "demo") I.touchHud(App.mode === "guest" && App.gp ? { p: [st.p[0], Object.assign({}, st.p[1], { charge: App.gp.charge })] } : st);
   // Spielende (Rollback: erst wenn es endgültig ist, nicht schon nach einer Vorhersage)
-  if (st.ph === "end" && !App.endShown && App.mode !== "demo" && (!App.rb || App.rb.ended)) { App.endShown = true; setTimeout(matchEnd, 900); }
+  // (an genau dieses Spiel gebunden: wer in den 900 ms ins Menü geht oder ein neues Spiel bekommt, wird nicht gewertet)
+  if (st.ph === "end" && !App.endShown && App.mode !== "demo" && (!App.rb || App.rb.ended)) {
+    App.endShown = true;
+    const s0 = App.st, mode = App.mode, key = App.matchKey;
+    setTimeout(() => { if (App.st === s0 && App.mode === mode && App.matchKey === key) matchEnd(); }, 900);
+  }
   if (App.screen === "home") drawShowcase(dt);
 }
 

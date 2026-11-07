@@ -2,7 +2,7 @@
 // Eingaben. Hier die Anbindung an die App: Eingaben sammeln, Ereignisse (Ton, Effekte, Wiederholung) verteilen,
 // Korrekturen weich zeichnen, Spielende aus dem endgültigen Stand. Der Host entscheidet beim Anpfiff, ob Rollback läuft
 // (Nachricht „start“ mit rb), sonst gilt das alte Verfahren (Host rechnet, Gast bekommt Zustände).
-import { clamp, setFieldW, W0 } from "../content/config.js";
+import { clamp, EMOTES, setFieldW, W0 } from "../content/config.js";
 import { advance } from "../core/physics.js";
 import { cleanInput, gameTick } from "../core/rbgame.js";
 import { createPeer } from "../core/rbpeer.js";
@@ -25,9 +25,17 @@ const MAX_PRED = 10;
 // Eingaben der Gegenseite deterministisch säubern (auf beiden Seiten gleich, sonst rechnen sie verschieden)
 // Torjubel des Schützen (effects.js onGoal); erst beim ersten Gebrauch, die Module laden sich gegenseitig
 let celebs = null;
-const okEmote = e => typeof e === "string" && (validEmote(e) || (celebs ||= new Set(Object.values(CELEB))).has(e));
-const clean = v => cleanInput(v, okEmote);
-const step = (st, inputs) => gameTick(st, [clean(inputs[0]), clean(inputs[1])]);
+const isCeleb = e => (celebs ||= new Set(Object.values(CELEB))).has(e);
+const okEmote = e => typeof e === "string" && (validEmote(e) || isCeleb(e));
+// je Spieler: Standard-Emotes, seine ausgerüsteten Plätze (aus der Kosmetik beim Anpfiff, auf beiden Seiten gleich), Torjubel
+const okFor = i => e => {
+  if (typeof e !== "string") return false;
+  if (EMOTES.includes(e) || isCeleb(e)) return true;
+  const slots = (App.cfg && App.cfg.cos && App.cfg.cos[i] && App.cfg.cos[i].emotes) || [];
+  return slots.includes(e) && validEmote(e);
+};
+const clean = (v, i) => cleanInput(v, okFor(i));
+const step = (st, inputs) => gameTick(st, [clean(inputs[0], 0), clean(inputs[1], 1)]);
 
 /** Zustand so, wie er übers Netz geht (JSON): beide Seiten starten von exakt demselben Stand */
 export const netState = st => JSON.parse(JSON.stringify(st));
@@ -41,7 +49,7 @@ export function startRb({ ep, st, delay }) {
   setFieldW(W0 * ((st.rules && st.rules.field) || 1));   // Feldbreite ist global (config.js): fest zum Startzustand
   const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
   const rb = {
-    me, ep, delay, ended: null, endAt: 0, pend: 0, emo: "", skip: false,
+    me, ep, delay, ended: null, endAt: 0, endF: 0, lastFinal: null, pend: 0, emo: "", skip: false,
     counts: {},   // endgültige Ereignisse je Art und Spieler (Fehlersuche, Tests)
     off: { b: [0, 0], p: [[0, 0], [0, 0]] },   // Versatz zum weichen Zeichnen nach Korrekturen
     peer: null,
@@ -50,7 +58,7 @@ export function startRb({ ep, st, delay }) {
     me, state: st, delay, maxPred: MAX_PRED, mid: App.mid + ":" + ep, step,
     send: fast, sendSafe: m => Net.send(m),
     onSpec: e => onEvent(e, false),
-    onFinal: (evs, f, after) => finalFrame(rb, evs, after),
+    onFinal: (evs, f, after) => finalFrame(rb, evs, after, f),
     onRollback: (old, neu) => smooth(rb, old, neu),
   });
   App.rb = rb;
@@ -61,15 +69,16 @@ export function startRb({ ep, st, delay }) {
 export function stopRb() { App.rb = null; }
 
 // Endgültige Takte: Wiederholung aus sicheren Zuständen, Tor/Ende/Anstoß erst jetzt (keine Phantom-Tore)
-function finalFrame(rb, evs, after) {
+function finalFrame(rb, evs, after, f) {
   if (!after) return;
+  rb.lastFinal = after;
   const me = rb.me; App.maxDef = Math.max(App.maxDef, after.s[1 - me] - after.s[me]);   // höchster Rückstand (Erfolg „Comeback“)
   if (after.ph === "play") { App.rec.push(snapFor(after)); if (App.rec.length > 200) App.rec.shift(); }
   if (after.ph === "ko" || after.ph === "cd") App.rec = [];
   for (const e of evs) {
     const k = e.t + (e.i ?? ""); rb.counts[k] = (rb.counts[k] || 0) + 1;
     if (e.t === "goal" || e.t === "ko") onEvent(e, false);
-    if (e.t === "end" && !rb.ended) { onEvent(e, false); rb.ended = clone(after); rb.endAt = performance.now(); }
+    if (e.t === "end" && !rb.ended) { onEvent(e, false); rb.ended = clone(after); rb.endAt = performance.now(); rb.endF = f; }
   }
 }
 // wie loop.js snap(): nur was die Wiederholung zeichnet
@@ -95,7 +104,9 @@ export function rbFrame(dt) {
   if (rb.ended) {
     if (App.st !== rb.ended) { App.st = rb.ended; App.st.ev = []; App.acc = 0; }
     App.acc = advance(App.st, dt, [{}, {}], App.acc);
-    if (performance.now() - rb.endAt < 10000) rb.peer.update(dt, () => 0);
+    // weiter senden, bis die Gegenseite die Eingaben bis zum Abpfiff hat (höchstens 30 s), mindestens 3 s
+    const age = performance.now() - rb.endAt;
+    if (age < 3000 || (!rbRemoteDone() && age < 30000)) rb.peer.update(dt, () => 0);
     return;
   }
   // Eingabe einmal pro Bild lesen (holt auch kurze Tipps ab); was zwischen zwei Takten gedrückt war, zählt im nächsten
@@ -127,6 +138,9 @@ export function rbView(st) {
   return { ...st, b: { ...st.b, x: st.b.x + o.b[0], y: st.b.y + o.b[1] }, p: st.p.map((p, i) => ({ ...p, x: p.x + o.p[i][0], y: p.y + o.p[i][1] })) };
 }
 
+/** Abgepfiffen und hat die Gegenseite alle eigenen Eingaben bis zum Abpfiff? (dann kann sie auch abpfeifen) */
+export function rbRemoteDone() { const rb = App.rb; return !rb || !rb.ended || rb.peer.acked >= rb.endF; }
+
 /** Rollback-Nachricht? (dann verarbeitet) */
 export const rbMessage = d => !!(App.rb && d && (d.t === "ri" || d.t === "rh" || d.t === "rs") && App.rb.peer.onMessage(d));
 
@@ -136,7 +150,7 @@ export function rbBestState() {
   if (!rb) return App.st;
   if (rb.ended) return rb.ended;
   const s = rb.peer.session;
-  return s.stateAt(s.sync) || rb.peer.state();
+  return s.stateAt(s.sync) || rb.lastFinal || rb.peer.state();
 }
 
 /** Host: Spielzustand auf beiden Seiten ändern (Tests): als Korrektur ab dem letzten endgültigen Takt */

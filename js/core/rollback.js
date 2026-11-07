@@ -24,7 +24,7 @@ export function hashState(st, skip = SKIP) {
   const mix = c => { h1 = Math.imul(h1 ^ c, 0x01000193); h2 = Math.imul(h2 ^ c, 0x5bd1e995) ^ (h2 >>> 13); };
   const add = s => { for (let i = 0; i < s.length; i++) mix(s.charCodeAt(i)); };
   // Zahlen über ihre 64 Bits (exakt, unabhängig von der Textdarstellung); -0 wie 0, alle NaN gleich
-  const num = x => { DV.setFloat64(0, x === 0 ? 0 : x); mix(35); mix(DV.getUint32(0)); mix(DV.getUint32(4)); };
+  const num = x => { if (Number.isNaN(x)) { mix(78); return; } DV.setFloat64(0, x === 0 ? 0 : x); mix(35); mix(DV.getUint32(0)); mix(DV.getUint32(4)); };
   const walk = v => {
     if (v === undefined) { add("u"); return; }
     if (typeof v === "number") { num(v); return; }

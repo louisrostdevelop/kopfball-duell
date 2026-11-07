@@ -70,7 +70,9 @@ Ball-Befreiung) kommt aus dem Zustand statt aus `Math.random`.
   Endgültiges wird zurückgenommen.
 - **App-Neustart** (Sitzung aus PR 8): Der Host sichert seinen letzten endgültigen Stand alle 0,25 s. Nach einem
   Neustart startet er davon eine neue Sitzung, der Gast übernimmt sie. Startet der Host neu, kann der Gast bis zu etwa
-  0,3 s zurückgedreht werden. Ein Abpfiff wird je Spiel trotzdem nur einmal gewertet (`App.endedMid`).
+  0,3 s zurückgedreht werden. Ein Abpfiff wird je Spiel trotzdem nur einmal gewertet (`App.endedKey`, eindeutige
+  Kennung je Spiel vom Host); ein zweiter zeigt nur das Ergebnis. Wer abgepfiffen hat, wartet bei einem Abriss auf die
+  Gegenseite, bis sie alle Eingaben bis zum Abpfiff hat, und schickt so lange weiter.
 - **Spielende online** (Wächter, Sitzung sichern, Aufgabe-Meldung) richtet sich nach dem endgültigen Abpfiff
   (`netEnded()`), nicht nach einer Vorhersage.
 - **Protokollversion 10:** Ein alter Client trifft keinen neuen. Die Versionsprüfung beim Beitritt greift wie bisher.

@@ -74,6 +74,8 @@ export function createPeer(o) {
   return {
     session: s, metrics: m,
     get frame() { return s.frame; },
+    /** höchster eigener Takt, dessen Eingabe die Gegenseite lückenlos hat */
+    get acked() { return ackByRemote; },
     state: () => s.state(),
     /**
      * Pro Bild: echte Zeit dt (s) aufholen, je Takt eigene Eingabe holen (sample()), rechnen, senden.

@@ -49,12 +49,17 @@ async function reopen(ctx) {
 
 test("Rollback: Verbindung reißt ab und kommt zurück (ohne Neustart)", async () => {
   const { a, A, B, bErr } = await match();
-  const ep0 = (await stats(A)).ep;
+  const pre = [await stats(A), await stats(B)];
+  const ep0 = pre[0].ep;
   await B.evaluate(() => window.__mockDrop());
   await A.waitForFunction(() => !!window.__kd.netWait, null, { timeout: 5000 });
   await playing(A); await playing(B);
   const [sa, sb] = [await stats(A), await stats(B)];
-  assert.equal(sa.ep, ep0, "dieselbe Sitzung läuft weiter (nichts zurückgedreht)"); assert.equal(sb.ep, ep0);
+  assert.equal(sa.ep, ep0, "dieselbe Sitzung läuft weiter"); assert.equal(sb.ep, ep0);
+  for (const [i, s] of [sa, sb].entries()) {
+    assert.ok(s.sync >= pre[i].sync, `nichts Endgültiges zurückgedreht (${pre[i].sync} -> ${s.sync})`);
+    for (const k of Object.keys(pre[i].counts)) assert.ok((s.counts[k] || 0) >= pre[i].counts[k], "Ereignis-Zähler " + k);
+  }
   for (const p of [A, B]) assert.deepEqual(await p.evaluate(() => window.__kd.st.s), [2, 1], "Stand erhalten");
   assert.ok(await same(A, B), "beide rechnen wieder gleich");
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...bErr], []);
@@ -74,7 +79,7 @@ test("Rollback: Gast startet die App neu und ist wieder im selben Spiel", async 
 
 test("Rollback: Host startet die App neu, Stand und Zeit bleiben", async () => {
   const { a, A, B, bErr } = await match("st.s = [3, 2]; st.t = 50;");
-  await A.waitForTimeout(1300);   // Host sichert jede Sekunde
+  await A.waitForTimeout(1300);   // Host sichert (alle 0,25 s, wenn sich der endgültige Stand geändert hat)
   const t0 = await A.evaluate(() => window.__kd.st.t);
   await A.close();
   const { P: D, err } = await reopen(a.ctx);

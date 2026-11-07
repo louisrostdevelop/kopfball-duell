@@ -44,8 +44,13 @@ export function seriesText() {
 export function matchEnd() {
   // online je Spiel nur einmal werten (nach einer Wiederaufnahme kann der Abpfiff ein zweites Mal kommen)
   // (Kennung je Spiel vom Host; die Spiel-Nr. allein kann nach einem Host-Neustart wiederkommen)
-  if (App.mode === "host" || App.mode === "guest") { const k = App.matchKey || ""; if (k && App.endedKey === k) return; App.endedKey = k; }
+  // Schon gewertet: nur das Ergebnis zeigen, nichts ein zweites Mal buchen
   const st = App.st, me = myIdx(), op = me >= 0 ? 1 - me : -1;
+  if (App.mode === "host" || App.mode === "guest") {
+    const key = App.matchKey || "";
+    if (key && App.endedKey === key) { showEnd({ win: me >= 0 && st.s[me] > st.s[op], me, lines: [], ups: [], achs: [], runInfo: null, career: null }); return; }
+    App.endedKey = key;
+  }
   const [a, b] = st.s, k = seriesKey();
   if (k) { App.series[k] = App.series[k] || [0, 0]; if (a > b) App.series[k][0]++; else if (b > a) App.series[k][1]++; }
   const win = me >= 0 && st.s[me] > st.s[op];

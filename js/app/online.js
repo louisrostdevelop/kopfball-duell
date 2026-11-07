@@ -14,7 +14,7 @@ import { audio as A, input as I, net as Net } from "./services.js";
 import { decodeState, encodeState, makeClock, pingBars, pingStats } from "./netcode.js";
 import { t } from "../content/i18n.js";
 import { clearSession, markClosing, saveSession, sessionRole, touchSession } from "./session.js";
-import { netState, pickDelay, rbBestState, rbMessage, rollbackWanted, startRb, stopRb } from "./rbnet.js";
+import { netState, pickDelay, rbBestState, rbMessage, rbRemoteDone, rollbackWanted, startRb, stopRb } from "./rbnet.js";
 
 // Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
 const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
@@ -190,7 +190,10 @@ export function netDropped(lost) {
   // Gast in der Lobby oder auf dem Endbildschirm (Freunde): Host ist kurz weg (z. B. App neu gestartet) – wieder
   // beitreten statt rauszufliegen, der Host öffnet dieselbe Lobby
   const lobbyGuest = !liveOnline() && Net.role() === "guest" && (App.screen === "lobby" || App.screen === "end") && !App.mm;
-  if (!lobbyGuest && !liveOnline()) { lost(); return; }
+  // Rollback: selbst abgepfiffen, die Gegenseite hat aber noch nicht alle Eingaben bis zum Abpfiff: auf sie warten
+  // (sonst bleibt sie ohne Ergebnis, in der Gegnersuche würde sie eine Aufgabe melden)
+  const endPending = !rbRemoteDone();
+  if (!lobbyGuest && !liveOnline() && !endPending) { lost(); return; }
   waitFor(lost);
   if (App.mode === "guest" || lobbyGuest) rejoin();
 }
@@ -224,11 +227,17 @@ function resumed() { App.netWait = null; App.resumePending = false; App.lastRx =
 
 
 // ---------- Sitzung über einen App-Neustart (session.js) ----------
-let sessT = 0;
-/** Jeden Frame: jede Sekunde Lebenszeichen, Host mit Spielstand; nach dem Abpfiff Lobby (Freunde) bzw. Ende (Gegnersuche) */
+let sessT = 0, sessSync = -1;
+/**
+ * Jeden Frame: Lebenszeichen jede Sekunde, Host mit Spielstand (Rollback: alle 0,25 s, damit ein Host-Neustart wenig
+ * zurückdreht, aber nur, wenn der endgültige Stand weiter ist); nach dem Abpfiff Lobby (Freunde) bzw. Ende (Gegnersuche)
+ */
 export function sessionTick(dt) {
-  if (!sessionRole() || (sessT += dt) < (App.rb ? 0.25 : 1)) return;   // Rollback: öfter, damit ein Host-Neustart wenig zurückdreht
-  sessT = 0;
+  if (!sessionRole()) return;
+  sessT += dt;
+  const fresh = App.rb && App.mode === "host" && App.rb.peer.session.sync !== sessSync;
+  if (sessT < 1 && !(fresh && sessT >= 0.25)) return;
+  sessT = 0; if (App.rb) sessSync = App.rb.peer.session.sync;
   if (!afterWhistle()) touchSession(hostState());
 }
 // Spielstand, den der Host sichert (nicht, während er selbst auf den Gast wartet: der Stand steht dann ohnehin)
@@ -426,6 +435,8 @@ export function guestData(d) {
       if (d.resume && d.rb && d.rb.keep && App.mode === "guest" && App.rb && App.rb.ep === d.rb.ep && d.mid === App.mid) {
         App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; resumed(); break;
       }
+      // „weiter so“, aber die Sitzung gibt es hier nicht (mehr): neu melden, ohne Sitzung, dann schickt der Host einen Stand
+      if (d.rb && d.rb.keep) { Net.send(hello({ resume: App.mid, ...(App.mm ? { lv: 1 } : {}) })); break; }
       // Wiederaufnahme: Ereignisse von vor dem Abriss sind inzwischen Sekunden alt und fallen bewusst weg (Ton und Jubel
       // zum falschen Zeitpunkt wären schlimmer), der Spielstand kommt mit dem nächsten Zustand
       App.matchKey = typeof d.key === "string" ? d.key.slice(0, 24) : "";
