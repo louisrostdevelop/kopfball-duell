@@ -77,6 +77,8 @@ export function tutorial() {
   lines.forEach((line, n) => setTimeout(() => toast(line, "i-ball"), 300 + n * 1500));
 }
 
+export const canFullscreen = () => !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+export function toggleFullscreen() { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else goFullscreen(); }
 export function goFullscreen() {
   const el = document.documentElement;
   if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).then(() => { try { screen.orientation.lock("landscape").catch(() => {}); } catch (_) {} }).catch(() => {});

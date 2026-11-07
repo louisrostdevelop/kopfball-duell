@@ -15,7 +15,7 @@ export const defaultProfile = () => ({
   name: "", diff: 1, dur: 90, pus: true, chaos: false,
   sfx: true, music: true, vib: true, quality: "high",
   stats: { games: 0, wins: 0, goals: 0, headGoals: 0, pus: 0, stomps: 0, supers: 0 },
-  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, myPresets: [], chDone: "", endlessBest: 0, dealBought: "", career: {},
+  ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, myPresets: [], chDone: "", endlessBest: 0, dealBought: "", shopSeen: "", career: {},
   // Kisten und Kosmetik (docs/PROGRESSION.md): Besitz als volle IDs ("shoes:3"), ausgerüstet, ungeöffnete Kisten, Splitter, Garantie-Zähler
   cos: [], equip: { shoes: null, goalfx: null, title: null, frame: null, emotes: [null, null, null, null] }, chests: [], shards: 0, pity: {},
 });

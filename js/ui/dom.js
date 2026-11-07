@@ -40,8 +40,9 @@ export function toast(text, icon, gold) {
   while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
 }
 
-export function modal({ title, icon, body, btn = t("ui.next"), onOk, cancel, ribbon = "gold" }) {
+export function modal({ title, icon, body, btn = t("ui.next"), onOk, cancel, ribbon = "gold", cls = "" }) {
   const m = $("modal"), c = $("modalCard");
+  c.className = "modalcard" + (cls ? " " + cls : "");
   c.innerHTML = `<div class="ribbon ${ribbon}">${esc(title)}</div>` + (icon ? `<svg class="bigic"><use href="#${icon}"/></svg>` : "") + body + `<button class="btn yellow big" id="modalOk">${btn}</button>` + (cancel ? `<button class="btn ghost small" id="modalCancel">${cancel}</button>` : "");
   m.hidden = false;
   $("modalOk").onclick = () => { A.sfx("click"); m.hidden = true; onOk && onOk(); };

@@ -22,6 +22,9 @@ const code = () => ($("accCode").value || "").replace(/\D/g, "");
 /** Nach Anmelden auf einem anderen Konto: lokalen Stand verwerfen und neu laden */
 async function switched() { await resetProfile(); location.reload(); }
 
+/** Einstellungen direkt mit der Anmeldung öffnen (aus dem Profil) */
+export function showLogin() { view = "login"; accountUI(); }
+
 export function accountUI() {
   const box = $("accountPanel"); box.hidden = !serverOn(); if (box.hidden) return;
   const u = auth.user() || { guest: true }, b = $("accBody");

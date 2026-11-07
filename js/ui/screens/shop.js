@@ -12,6 +12,7 @@ import { audio as A } from "../../app/services.js";
 import { registerScreen, showScreen } from "../nav.js";
 import { buyCos, buyWithGems, cosOfferNow, online as serverOn, shopProducts, startCheckout } from "../../app/account.js";
 import { money, t } from "../../content/i18n.js";
+import { today } from "../../core/economy.js";
 
 export let shopTab = "chars";
 
@@ -23,8 +24,15 @@ export function shopScreen() {
   if (shopTab === "gems" && (!serverOn() || !PAYMENTS)) shopTab = "chars";
   $$("#shopTabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === shopTab));
   $$(".gemNum").forEach(e => e.textContent = S.gems || 0);
+  if (S.shopSeen !== today()) { S.shopSeen = today(); save(); refreshTop(); }
+  // Tagesangebot steht auf jedem Tab gleich: so springen Tabs und Raster beim Wechsel nicht
+  renderDeal();
   if (shopTab === "gems") { gemShop(); return; }
   if (shopTab === "cos") { cosShop(); return; }
+  shopGrid();
+}
+
+function renderDeal() {
   const dl = deal(), db = $("dealBox"); db.innerHTML = "";
   if (dl) {
     const c = document.createElement("div"); c.className = "dealcard";
@@ -36,6 +44,9 @@ export function shopScreen() {
     bb.onclick = () => { if (buyDeal(dl)) { A.sfx("levelup"); if (dl.kind === "chars") { S.char = dl.id; unlockModal(charById(dl.id)); } else { S.ball = dl.id; toast(t("shop.bought", { name: dl.name }), "i-ball", true); } save(); checkAch({}); refreshTop(); shopScreen(); } };
     c.append(bb); db.append(c);
   }
+}
+
+function shopGrid() {
   const g = $("shopGrid"); g.innerHTML = "";
   const RANK = { basis: 0, selten: 1, episch: 2, legend: 3 };
   const kind = shopTab, items = kind === "chars" ? [...CHARS].sort((p, q) => RANK[rarityOf(p)] - RANK[rarityOf(q)] || p.price - q.price) : kind === "balls" ? BALLS : ARENAS;
@@ -128,8 +139,8 @@ export function initShop() {
 
 // Kosmetik: 6 Angebote pro Woche, für Münzen oder Juwelen (Kisten gibt es hier nie)
 function cosShop() {
-  $("dealBox").innerHTML = `<p class="hint">${svg("i-cal")}${t("shop.cosWeek")}</p>`;
   const g = $("shopGrid"); g.innerHTML = "";
+  g.insertAdjacentHTML("beforeend", `<div class="sitem sinfo">${svg("i-cal")}<b>${t("shop.cosWeek")}</b></div>`);
   for (const id of cosOfferNow()) {
     const c = cosById(id); if (!c) continue;
     const d = document.createElement("div"); d.className = "sitem"; d.style.setProperty("--rc", RCOL[c.rarity]); d.dataset.id = id;

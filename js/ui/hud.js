@@ -1,6 +1,6 @@
 // Knöpfe im Spiel: Pause, Fortsetzen, Neustart, Aufgeben, Vollbild, Emotes, Jubel überspringen
 import { REPLAY_START, skipCelebration } from "../core/physics.js";
-import { beginMatch, goFullscreen, pause, quitToMenu } from "../app/game.js";
+import { beginMatch, canFullscreen, pause, quitToMenu, toggleFullscreen } from "../app/game.js";
 import { backToLobby } from "../app/online.js";
 import { App, inGame } from "../app/state.js";
 import { $ } from "./dom.js";
@@ -13,7 +13,11 @@ export function initHud() {
   $("btnResume").onclick = () => { A.sfx("click"); pause(false); };
   $("btnRestart").onclick = () => { A.sfx("click"); $("scr-pause").hidden = true; beginMatch({ ...App.lastCfg }); };
   $("btnQuit").onclick = () => { A.sfx("click"); $("scr-pause").hidden = true; if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); } else if (App.run && !App.run.done && ["cup", "endless"].includes(App.mode)) { App.run.done = true; runScreen(); } else if (App.mode === "career") careerScreen(); else quitToMenu(); };
-  $("btnFull").onclick = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else goFullscreen(); };
+  $("btnFull").onclick = toggleFullscreen;
+  // Vollbild-Knöpfe: oben rechts auf der Startseite und im Pausenmenü; Symbol zeigt, was ein Tipp bewirkt
+  const fsIcon = () => document.querySelectorAll(".fsbtn use").forEach(u => u.setAttribute("href", document.fullscreenElement ? "#i-shrink" : "#i-expand"));
+  document.querySelectorAll(".fsbtn").forEach(b => { b.hidden = !canFullscreen(); b.onclick = () => { A.sfx("click"); toggleFullscreen(); }; });
+  document.addEventListener("fullscreenchange", fsIcon);
   const bar = $("emoteBar");
   $("btnEmote").onclick = () => { bar.hidden = !bar.hidden; };
   $("netPing").onclick = () => $("netPing").classList.toggle("ms");

@@ -24,9 +24,10 @@ const CORE = [
   "js/ui/screens/achievements.js", "js/ui/screens/board.js", "js/ui/screens/career.js",
   "js/ui/screens/chests.js", "js/ui/screens/end.js", "js/ui/screens/friends.js", "js/ui/screens/home.js",
   "js/ui/screens/locker.js", "js/ui/screens/modes.js", "js/ui/screens/online.js", "js/ui/screens/pass.js",
-  "js/ui/screens/rules.js", "js/ui/screens/run.js", "js/ui/screens/search.js", "js/ui/screens/select.js",
-  "js/ui/screens/settings.js", "js/ui/screens/setup.js", "js/ui/screens/shop.js", "js/ui/screens/tasks.js",
-  "js/ui/sharecard.js", "manifest.webmanifest", "vendor/peerjs.min.js", "vendor/qrcode.js"
+  "js/ui/screens/player.js", "js/ui/screens/rules.js", "js/ui/screens/run.js", "js/ui/screens/search.js",
+  "js/ui/screens/select.js", "js/ui/screens/settings.js", "js/ui/screens/setup.js", "js/ui/screens/shop.js",
+  "js/ui/screens/tasks.js", "js/ui/sharecard.js", "manifest.webmanifest", "vendor/peerjs.min.js",
+  "vendor/qrcode.js"
 ];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
