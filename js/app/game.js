@@ -82,7 +82,12 @@ export function tutorial() {
 // Vollbild: Standard-API, auf älteren iPads mit webkit-Präfix. Das iPhone kann im Browser kein Vollbild für Seiten
 // (nur für Videos); dort hilft nur „Zum Home-Bildschirm“, dann startet das Spiel als App ohne Browserleisten.
 export const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
-export const canFullscreen = () => { const el = document.documentElement; return !!(el.requestFullscreen || el.webkitRequestFullscreen); };
+export const canFullscreen = () => {
+  const d = document, el = d.documentElement;
+  if (!(el.requestFullscreen || el.webkitRequestFullscreen)) return false;
+  // erlaubt der Browser es überhaupt? (iPhone: Methode vorhanden, aber nur für Videos; ohne Angabe: Methode zählt)
+  return d.fullscreenEnabled === undefined && d.webkitFullscreenEnabled === undefined ? true : !!(d.fullscreenEnabled || d.webkitFullscreenEnabled);
+};
 export function toggleFullscreen() { if (fullscreenElement()) exitFullscreen(); else goFullscreen(); }
 export function goFullscreen() {
   const el = document.documentElement;
@@ -113,6 +118,7 @@ export function quitToMenu() {
   updateBand();
   App.stack = [];
   showScreen("home", true);
+  if (App.dailyLater) { const f = App.dailyLater; App.dailyLater = null; f(); }   // nach einem zurückgeholten Online-Spiel
 }
 
 export function pause(on) {

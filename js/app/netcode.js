@@ -28,7 +28,7 @@ function dec(c, schema) {
 /** Zustand für den schnellen Kanal. seq: laufende Nummer (ältere verwirft der Gast), ht: Sendezeit des Hosts (ms) */
 export function encodeState(st, seq, ht) {
   const o = { q: seq, h: Math.round(ht), s: st.s, tm: q(st.t, 10), e: q(st.el, 1000), ph: st.ph, b: enc(st.b, BF), p: st.p.map(p => enc(p, PF)) };
-  if (st.pt) o.pt = q(st.pt, 10);
+  if (st.pt) o.pt = q(st.pt, 1000);   // fein: steuert die Wiederholung beim Gast (0,1 s ruckelte)
   if (st.gold) o.g = 1;
   if (st.wall[0] || st.wall[1]) o.w = st.wall.map(v => q(v, 10));
   if (st.bigGoal[0] || st.bigGoal[1]) o.bg = st.bigGoal.map(v => q(v, 10));
@@ -40,7 +40,7 @@ export function encodeState(st, seq, ht) {
 /** Zurück in die volle Form (wie packState), ohne Statistik */
 export function decodeState(o) {
   return {
-    seq: o.q, ht: o.h, s: o.s, t: o.tm / 10, el: o.e / 1000, ph: o.ph, pt: (o.pt || 0) / 10, gold: !!o.g,
+    seq: o.q, ht: o.h, s: o.s, t: o.tm / 10, el: o.e / 1000, ph: o.ph, pt: (o.pt || 0) / 1000, gold: !!o.g,
     wall: o.w ? o.w.map(v => v / 10) : [0, 0], bigGoal: o.bg ? o.bg.map(v => v / 10) : [0, 0],
     wind: o.wd ? { t: o.wd[0] / 10, dir: o.wd[1] } : { t: 0, dir: 1 },
     pu: (o.pu || []).map(([id, k, x, y, t]) => ({ id, k, x: x / 10, y: y / 10, t: t / 10 })),

@@ -313,7 +313,7 @@ function pitch(b, R, c1, c2, lines = "rgba(255,255,255,.6)") {
   b.fillStyle = g; b.fillRect(R.x0, FT, R.x1 - R.x0, R.y1 - FT);   // unter G bleibt der helle Ton, sonst Kante
   const rg = b.createRadialGradient(W / 2, FT + 60, 40, W / 2, FT + 60, W * 0.6);
   rg.addColorStop(0, "rgba(255,255,230,.10)"); rg.addColorStop(1, "rgba(255,255,230,0)");
-  b.fillStyle = rg; b.fillRect(R.x0, FT, R.x1 - R.x0, G - FT);
+  b.fillStyle = rg; b.fillRect(R.x0, FT, R.x1 - R.x0, R.y1 - FT);   // bis zum Bildrand, sonst Kante an der Bodenlinie
   if (!lines) return;
   fieldLines(b, lines, R);
 }

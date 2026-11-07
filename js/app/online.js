@@ -92,11 +92,12 @@ export function rematchHint() {
   $("endNote").textContent = t("end.rematchWanted", { name: App.opp ? App.opp.name : t("ui.guest") });
   $("btnEndAgain").classList.add("wants");
 }
-function playEvents(ev) { ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); onEvent(e, true); }); }
+// quiet: veraltet (Tab war im Hintergrund): nur noch die Wiederholung merken, keine Töne und Effekte an alten Stellen
+function playEvents(ev, quiet = false) { ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); if (!quiet) onEvent(e, true); }); }
 function flushEvents(rt) {
   const q = App.evQ || [];
   const n = rt === null ? q.length : q.findIndex(x => x.ht > rt);
-  q.splice(0, n < 0 ? q.length : n).forEach(x => playEvents(x.ev));
+  q.splice(0, n < 0 ? q.length : n).forEach(x => playEvents(x.ev, rt !== null && x.ht < rt - 300));
 }
 
 export function applySnap(st, a, b, k) {
@@ -236,12 +237,13 @@ function afterWhistle() {
   if (App.mm) clearSession(); else saveSession(sessionRole(), { phase: "lobby", st: null, mid: 0 });
   return true;
 }
-/** Seite wird versteckt (closing false: lebt evtl. weiter) oder geschlossen: Stand sofort sichern (danach kommt evtl. nichts mehr) */
+/** Seite wird versteckt (closing false: lebt evtl. weiter) oder geschlossen: Stand sofort sichern (danach kommt evtl. nichts mehr). true: Verbindung geschlossen */
 export function sessionHide(closing) {
   if (sessionRole() && !afterWhistle()) (closing ? markClosing : touchSession)(hostState());
   // Seite geht wirklich zu: Verbindung sauber beenden (ohne „bye“), damit die Gegenseite sofort aufs Zurückkommen
   // wartet und der Server den Raumcode für den Neustart gleich freigibt
-  if (closing && Net.role()) Net.close();
+  if (closing && Net.role()) { Net.close(); return true; }
+  return false;
 }
 const mmInfo = () => (App.mm ? { mode: App.mm.mode, match: App.mm.match, role: App.mm.role, opp: App.mm.opp, heads: App.mm.heads } : null);
 
@@ -306,6 +308,7 @@ export function hostData(d) {
       if ((App.netWait || liveOnline()) && App.mode === "host") {
         if (App.opp && d.tok && d.tok === App.opp.tok && d.resume === App.mid && App.guestCfg) {
           lastStats = ""; App.inSeqSeen = -1; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0];
+          App.gPend = { j: 0, d: 0 };   // Druck-Zähler des Gastes neu übernehmen (nach seinem Neustart beginnt er bei 0), kein Geistersprung
           Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true }); resumed();
         } else Net.send({ t: "full" });
         break;
@@ -393,6 +396,8 @@ export function guestData(d) {
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("guest"); } break;
     case "full": App.netWait = null; App.mm = null; App.netLost = null; App.resumePending = false; clearSession(); Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
     case "start":
+      // Wiederaufnahme: Ereignisse von vor dem Abriss sind inzwischen Sekunden alt und fallen bewusst weg (Ton und Jubel
+      // zum falschen Zeitpunkt wären schlimmer), der Spielstand kommt mit dem nächsten Zustand
       App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock();
       App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; if (!App.mm) App.netLost = guestLost;
       if (d.resume) { resumed(); if (App.resumeT0) App.t0 = App.resumeT0; }
