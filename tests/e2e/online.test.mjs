@@ -44,7 +44,10 @@ test("Online: Lobby bis Revanche", async t => {
     await B.bringToFront();
     for (let n = 0; n < 8; n++) { const k = ["ArrowLeft", "ArrowRight"][n % 2]; await B.keyboard.down(k); await B.waitForTimeout(100); await B.keyboard.up(k); }
     await B.keyboard.down("ArrowDown"); await B.waitForTimeout(60); await B.keyboard.up("ArrowDown"); await B.waitForTimeout(500);
-    await B.keyboard.down("ArrowUp"); await B.waitForTimeout(300); await B.keyboard.down("ArrowDown"); await B.waitForTimeout(60); await B.keyboard.up("ArrowDown"); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(600);
+    // Bombe erst oben im Sprung (beim Host gesehen; auf einem langsamen Kern dauert das länger als 300 ms)
+    await B.keyboard.down("ArrowUp");
+    await A.waitForFunction(() => { const p = window.__kd.st.p[1]; return !p.onG && p.vy > -250; }, null, { timeout: 4000 }).catch(() => {});
+    await B.keyboard.down("ArrowDown"); await B.waitForTimeout(60); await B.keyboard.up("ArrowDown"); await B.keyboard.up("ArrowUp"); await B.waitForTimeout(600);
     const s = await A.evaluate(() => window.__kd.st.stats[1]);
     assert.ok(s.slides >= 1, "Grätschen " + s.slides); assert.ok(s.bombs >= 1, "Bomben " + s.bombs);
   });
