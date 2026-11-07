@@ -10,11 +10,12 @@
  * @property {(msg: object) => void} [onData]     Nachricht vom anderen Spieler
  * @property {() => void} [onClose]               Verbindung weg
  * @property {(type: string, wasOpen?: boolean) => void} [onError]
+ * @property {(firstMsg: object) => boolean} [onKnock]   Host: neue Verbindung, obwohl eine offen ist (z. B. Gast nach App-Neustart); true = alte ersetzen
  */
 /**
  * @typedef {Object} Transport
  * @property {() => boolean} available
- * @property {(h: TransportHandlers, opts?: { code?: string }) => string} host   Raum öffnen (optional mit festem Code), gibt den Code zurück
+ * @property {(h: TransportHandlers, opts?: { code?: string, retries?: number }) => string} host   Raum öffnen (optional mit festem Code, retries: so oft versuchen, falls die ID noch belegt ist), gibt den Code zurück
  * @property {(code: string, h: TransportHandlers) => void} join
  * @property {(msg: object) => void} send                  zuverlässig und geordnet (Lobby, Ereignisse, Statistik)
  * @property {(msg: object) => void} [sendFast]            häufige Daten (Zustände, Eingaben): darf verloren gehen, kommt dafür ohne Warten

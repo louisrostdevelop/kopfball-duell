@@ -175,7 +175,10 @@ test("Online: Gast kommt nicht zurück", async () => {
   await B.evaluate(() => window.__mockDrop()); await B.close();
   await A.waitForTimeout(800);
   assert.ok(await A.evaluate(() => !!window.__kd.netWait), "Host wartet");
+  // Wartet lange genug für einen App-Neustart des Gastes (RECONNECT_MS), „Verlassen“ beendet sofort
   await A.waitForTimeout(10500);
+  assert.ok(await A.evaluate(() => !!window.__kd.netWait), "Host wartet nach 10 s noch");
+  await A.click("#netWaitLeave"); await A.waitForTimeout(400);
   assert.deepEqual(await A.evaluate(() => [window.__kd.screen, window.__kd.netWait]), ["lobby", null]);
   assert.deepEqual(a.errors.filter(e => !e.includes("TUNNEL")), []);
 });

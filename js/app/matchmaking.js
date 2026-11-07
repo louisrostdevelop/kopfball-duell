@@ -5,7 +5,8 @@ import { S } from "./profile.js";
 import { myCos } from "./cosmetics.js";
 import { applyState } from "./account.js";
 import { quitToMenu } from "./game.js";
-import { hello, hostData, guestData, hostStart, netDropped } from "./online.js";
+import { hello, hostData, guestData, hostStart, knock, netDropped, restoreGuest, restoreHostGame } from "./online.js";
+import { clearSession } from "./session.js";
 import { NET_CHECK, netTooBad, pingStats } from "./netcode.js";
 import { App, inGame } from "./state.js";
 import { toast } from "../ui/dom.js";
@@ -68,19 +69,12 @@ function matched(r) {
   App.netCfg = { arena: parseInt(r.match.slice(0, 2), 16) % 2 ? "strand" : "stadion", rules: {} };
   const my = gen;
   timer = setTimeout(() => { if (my === gen && App.mm && App.mm.state === "connect") fail(t("mm.noConnect")); }, CONNECT_MS);
-  const onClose = () => {
-    if (!App.mm || App.mm.match !== mm.match) return;
-    App.netLost = null;
-    if (inGame() || App.screen === "pause") {
-      // Gegner mitten im Spiel weg: als Aufgabe melden. Meldet er nichts, gewinnt man nach ein paar Minuten.
-      const st = App.st; reportResult([st.s[0], st.s[1]], (Date.now() - (App.t0 || Date.now())) / 1000, true);
-      toast(t("mm.oppLeftWin"), "i-close"); quitToMenu();
-    }
-    else if (App.screen !== "end") fail(t("mm.oppGone"));
-  };
+  const onClose = lostFor(mm);
   App.netLost = onClose;   // Wächter in online.js: Gegenseite friert ein, ohne dass die Verbindung schließt
+  App.roomCode = roomOf(r.match);
   if (r.role === "host") {
     Net.host({
+      onKnock: knock,
       onData: d => { hostData(d); if (d.t === "hello" && App.opp && App.mm && App.mm.state === "connect") { clearTimeout(timer); checkThenStart(my); } },
       onClose: () => netDropped(onClose),
       onError: type => { if (my === gen) fail(t("net.roomFailed", { type })); },
@@ -134,6 +128,40 @@ async function requeue(ms) {
   stop(); Net.close(); App.mm = null;
   await server.matchAbort(mm.match).catch(() => {});
   findMatch(mm.mode).catch(e => fail(errText(e)));
+}
+
+// Gegenseite endgültig weg (Wartezeit um oder „Verlassen“)
+function lostFor(mm) {
+  return () => {
+    if (!App.mm || App.mm.match !== mm.match) return;
+    App.netLost = null; clearSession();
+    if (inGame() || App.screen === "pause") {
+      // Gegner mitten im Spiel weg: als Aufgabe melden. Meldet er nichts, gewinnt man nach ein paar Minuten.
+      const st = App.st; reportResult([st.s[0], st.s[1]], (Date.now() - (App.t0 || Date.now())) / 1000, true);
+      toast(t("mm.oppLeftWin"), "i-close"); quitToMenu();
+    }
+    else if (App.screen !== "end") fail(t("mm.oppGone"));
+  };
+}
+
+/** Nach einem App-Neustart mitten in einem Spiel der Gegnersuche: zurück ins selbe Spiel (Host mit gespeichertem Stand) */
+export function resumeMatch(s) {
+  if (!Net.available()) { clearSession(); return false; }
+  stop(); Net.close();
+  App.mm = { ...s.mm, state: "play" };
+  const gone = lostFor(App.mm);
+  // Kommt die Verbindung nach dem eigenen Neustart nicht mehr zustande, war man selbst weg: keine Aufgabe des
+  // Gegners melden (das tut seine Seite). Erst nach der Rückkehr gilt wieder der normale Abbruch.
+  const onClose = self => {
+    if (!App.resumePending) { gone(); return; }
+    App.resumePending = false; App.netLost = null; clearSession();
+    if (!self) toast(t("net.resumeFailed"), "i-close");   // selbst „Verlassen“ gedrückt: keine Fehlermeldung
+    quitToMenu();
+  };
+  App.resumePending = true; App.netLost = onClose;
+  if (s.role === "host") restoreHostGame(s, { onKnock: knock, onData: hostData, onClose: () => netDropped(onClose), onError: () => {} }, onClose);
+  else restoreGuest(s, { onConn: () => Net.send(hello({ lv: 1 })), onData: guestData, onClose: () => netDropped(onClose), onError: () => {} }, onClose);
+  return true;
 }
 
 function fail(msg) {

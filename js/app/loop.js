@@ -6,7 +6,7 @@ import { S, save } from "./profile.js";
 import { render, setQuality } from "../ui/render/render.js";
 import { onEvent } from "./effects.js";
 import { startDemo } from "./game.js";
-import { guestFrame, hostSend, netWaitTick, pingHud, watchNet } from "./online.js";
+import { guestFrame, hostSend, netWaitTick, pingHud, sessionTick, watchNet } from "./online.js";
 import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
@@ -44,6 +44,7 @@ function frame(now) {
     if (App.mode === "host") hostSend(dt);
   }
   pingHud(dt);
+  sessionTick(dt);
   if (st.ev.length) for (const e of st.ev.splice(0)) { onEvent(e, false); if (App.mode === "host") App.outEv.push(e); }
   if (st.ph === "play") { App.rec.push(snap(st)); if (App.rec.length > 200) App.rec.shift(); }
   let replay = null, frac = 0;

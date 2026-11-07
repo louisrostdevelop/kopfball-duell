@@ -1442,3 +1442,15 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 
 /* Code aus der Mail: groß, mittig, Ziffern gesperrt */
 #accBody input.code { text-align: center; font: 900 26px var(--display); letter-spacing: .35em; }
+
+/* Warten auf die Gegenseite: Leiste oben mittig mit Restzeit und „Verlassen“ (im Spiel und im Menü) */
+#netWaitBox { position: fixed; top: calc(62px + var(--st)); left: 50%; transform: translateX(-50%); z-index: 66; display: flex; align-items: center; gap: 10px; max-width: calc(100vw - 24px); padding: 8px 8px 8px 14px; border-radius: 18px; border: 3px solid var(--ink); background: rgb(8 14 50 / 92%); color: #fff; box-shadow: 0 5px 0 var(--ink); }
+#netWaitBox[hidden], #netWaitShade[hidden] { display: none; }
+#netWaitShade { position: fixed; inset: 0; z-index: 65; background: rgb(4 8 30 / 55%); }
+#netWaitBox b { font-size: 15px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#netWaitBox .btn { flex: none; }
+.nw-spin { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 3px solid rgb(255 255 255 / 25%); border-top-color: var(--yellow); animation: nwspin .8s linear infinite; }
+
+@keyframes nwspin { to { transform: rotate(360deg); } }
+
+@media (max-height: 520px) and (orientation: landscape) { #netWaitBox { top: calc(52px + var(--st)); padding: 5px 6px 5px 12px; } #netWaitBox b { font-size: 13px; } }

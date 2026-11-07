@@ -6,7 +6,9 @@ import { provide } from "./app/services.js";
 import { initProfile, dailyCheck, S } from "./app/profile.js";
 import { startDemo, updateBand } from "./app/game.js";
 import { loop } from "./app/loop.js";
-import { tryJoin } from "./app/online.js";
+import { giveUpWaiting, resumeFriends, sessionHide, tryJoin } from "./app/online.js";
+import { resumeMatch } from "./app/matchmaking.js";
+import { clearSession, sessionRole, takeResumable } from "./app/session.js";
 import { App, inGame } from "./app/state.js";
 import { initRender, resize, setQuality } from "./ui/render/render.js";
 import { onKey, onPad } from "./ui/controls.js";
@@ -79,14 +81,31 @@ async function boot() {
   startDemo();
   showScreen("home", true);
   requestAnimationFrame(loop);
+  window.addEventListener("pagehide", () => sessionHide(true));
+  // aus dem Zurück-Speicher des Browsers wiederhergestellt: Verbindung ist weg, Neustart setzt das Online-Spiel fort
+  window.addEventListener("pageshow", e => { if (e.persisted && sessionRole()) location.reload(); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") sessionHide(false); });
+  $("netWaitLeave").onclick = giveUpWaiting;
   const unlockOnce = () => { webAudio.unlock(); if (!inGame()) webAudio.music(true, "menu"); window.removeEventListener("pointerdown", unlockOnce); window.removeEventListener("keydown", unlockOnce); };
   window.addEventListener("pointerdown", unlockOnce); window.addEventListener("keydown", unlockOnce);
   const fontsReady = document.fonts ? Promise.all(["400 20px 'Lilita One'", "800 20px Nunito", "900 20px Nunito"].map(f => document.fonts.load(f).catch(() => {}))) : Promise.resolve();
   Promise.race([fontsReady, new Promise(r => { setTimeout(r, 1500); })]).then(() => {
     $("loading").classList.add("done"); resize(); homeScreen();
-    const d = dailyCheck();
+    return takeResumable().catch(() => null);
+  }).then(found => {
+    // Einladungslink: ?join=CODE (alte Links mit #CODE gehen auch)
+    const qs = new URLSearchParams(location.search).get("join") || "";
+    const h = /^[A-Za-z0-9]{4}$/.test(qs) ? qs : (location.hash || "").slice(1);
+    const invite = /^[A-Za-z0-9]{4}$/.test(h) ? h : "";
+    // App mitten im Online-Spiel geschlossen? Dann zurück ins Spiel bzw. in die Lobby (session.js).
+    // Ein neuer Einladungslink in einen anderen Raum geht vor.
+    let back = found;
+    if (back && invite && invite.toLowerCase() !== String(back.code).toLowerCase()) { clearSession(); back = null; }
+    if (back && (back.mm ? resumeMatch : resumeFriends)(back)) toast(t("net.resuming"), "i-swap");
+    else back = null;
+    const d = !back && dailyCheck();
     if (d) setTimeout(() => dailyModal(d), 500);
-    if (synced) synced.then(() => { homeScreen(); return claimDaily(); }).then(x => { if (x) { homeScreen(); setTimeout(() => dailyModal(x), 500); } });
+    if (synced) synced.then(() => { homeScreen(); return back ? null : claimDaily(); }).then(x => { if (x) { homeScreen(); setTimeout(() => dailyModal(x), 500); } });
     if (mailBack) toast(mailBack === "ok" ? t("acc.linked") : t("acc.linkFailed", { err: mailBack }), mailBack === "ok" ? "i-check" : "i-close", mailBack === "ok");
     // Rückkehr von der Bezahlseite
     const kauf = new URLSearchParams(location.search).get("kauf");
@@ -102,10 +121,7 @@ async function boot() {
     const showInstall = () => { const ok = canInstall(); $("btnInstall").hidden = !ok; $("rowInstall").hidden = !ok; };
     $("btnInstall").onclick = install; $("btnInstall2").onclick = install;
     initInstall(showInstall);
-    // Einladungslink: ?join=CODE (alte Links mit #CODE gehen auch)
-    const qs = new URLSearchParams(location.search).get("join") || "";
-    const h = /^[A-Za-z0-9]{4}$/.test(qs) ? qs : (location.hash || "").slice(1);
-    if (/^[A-Za-z0-9]{4}$/.test(h)) { history.replaceState(null, "", location.pathname); $("codeIn").value = h.toUpperCase(); openOnline(); setTimeout(() => tryJoin(h), 400); }
+    if (invite) { history.replaceState(null, "", location.pathname); if (!back) { $("codeIn").value = invite.toUpperCase(); openOnline(); setTimeout(() => tryJoin(invite), 400); } }
   });
   if ("serviceWorker" in navigator && (location.protocol === "https:" || /[?&]sw=1/.test(location.search))) navigator.serviceWorker.register("sw.js").catch(() => {});   // sw=1: Test ohne https
   window.__kd = App; window.__kdFire = fireSuper; // für Tests

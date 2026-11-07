@@ -5,6 +5,7 @@ import { owns, S, save } from "../../app/profile.js";
 import { avatarCanvas } from "../render/art.js";
 import { sendNetCfg, hostGame, tryJoin, hostStart } from "../../app/online.js";
 import { headLevel } from "../../app/game.js";
+import { clearSession } from "../../app/session.js";
 import { App } from "../../app/state.js";
 import { $, seg, shareOrCopy, copyText } from "../dom.js";
 import { showScreen, registerScreen, swapScreen, goBack } from "../nav.js";
@@ -75,7 +76,7 @@ export function saveName(v) { v = String(v || "").trim().slice(0, 12); if (v) { 
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
 export function initOnline() {
   registerScreen("lobby", {
-    back: () => { Net.close(); App.stack = ["home"]; swapScreen("online"); return true; },
+    back: () => { Net.send({ t: "bye" }); Net.close(250); clearSession(); App.stack = ["home"]; swapScreen("online"); return true; },   // bewusst raus: die andere Seite wartet nicht, kein Zurückverbinden
     resume: () => lobbyUI(Net.role() === "host" ? "host" : "guest"),
   });
   $("btnHost").onclick = () => { A.sfx("click"); hostGame(); };
