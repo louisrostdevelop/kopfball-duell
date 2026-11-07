@@ -349,13 +349,47 @@
     <div class="achlist" id="achList"></div>
   </section>
 
+  <!-- Profil: Name, Level, Statistik, Konto -->
+  <section class="screen" id="scr-profile" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="prof.title">Profil</h2><span class="grow"></span><button class="btn small purple" id="btnProfAch"><svg><use href="#i-star"/></svg><span data-i18n="html.ach.erfolge">Erfolge</span></button></header>
+    <div class="profgrid">
+      <div class="panel profcard">
+        <div class="profhead">
+          <span class="prof-av" id="profAv"></span>
+          <div class="prof-id">
+            <label for="setName" data-i18n="prof.name">Name</label>
+            <input id="setName" maxlength="12" placeholder="Dein Name" autocomplete="nickname" data-i18n-attr="placeholder:html.attr.deinName">
+          </div>
+          <span class="pf-lvl"><span id="profLvl">1</span></span>
+        </div>
+        <div class="pf-xp prof-xp"><i id="profXp"></i><em id="profXpTxt"></em></div>
+        <div class="profilebox" id="profStats"></div>
+      </div>
+      <div class="profside">
+        <div class="panel account" id="accountPanel" hidden>
+          <h4 data-i18n="html.settings.konto">Konto</h4>
+          <div class="accbody" id="accBody"></div>
+        </div>
+        <div class="panel" id="localPanel" hidden>
+          <h4 data-i18n="prof.saveTitle">Spielstand</h4>
+          <p class="hint" data-i18n="prof.localOnly">Dein Spielstand ist nur auf diesem Gerät gespeichert.</p>
+        </div>
+        <div class="panel">
+          <h4 data-i18n="prof.dataTitle">Daten</h4>
+          <p class="hint" data-i18n="prof.resetHint">Setzt Münzen, Köpfe, Erfolge und Statistik auf diesem Gerät zurück.</p>
+          <button class="btn small ghost danger" id="btnReset" data-i18n="html.settings.fortschrittLoeschen">Fortschritt löschen</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Einstellungen -->
   <section class="screen" id="scr-settings" hidden>
     <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.settings.einstellungen">Einstellungen</h2></header>
-    <div class="settingsgrid">
+    <div class="tabs settabs" id="setTabs"><button data-tab="general" class="on" data-i18n="set.tabGeneral">Allgemein</button><button data-tab="controls" data-i18n="html.settings.steuerung">Steuerung</button><button data-tab="info" data-i18n="set.tabInfo">Info</button></div>
+    <div class="setpane" data-pane="general">
       <div class="panel">
-        <h4 data-i18n="html.settings.spieler">Spieler</h4>
-        <input id="setName" maxlength="12" placeholder="Dein Name" autocomplete="nickname" data-i18n-attr="placeholder:html.attr.deinName">
+        <div class="setrow"><svg><use href="#i-globe"/></svg><span data-i18n="set.language">Sprache</span><div class="seg" id="segLang"></div></div>
         <div class="setrow"><svg><use href="#i-sound"/></svg><span data-i18n="html.settings.soundeffekte">Soundeffekte</span><button class="toggle" id="tglSfx" aria-label="Soundeffekte" data-i18n-attr="aria-label:html.attr.soundeffekte"></button></div>
         <div class="setrow"><svg><use href="#i-music"/></svg><span data-i18n="html.settings.musikImMenue">Musik im Menü</span><button class="toggle" id="tglMusic" aria-label="Musik" data-i18n-attr="aria-label:html.attr.musik"></button></div>
         <div class="setrow"><svg><use href="#i-vib"/></svg><span data-i18n="html.settings.vibration">Vibration</span><button class="toggle" id="tglVib" aria-label="Vibration" data-i18n-attr="aria-label:html.attr.vibration"></button></div>
@@ -363,23 +397,20 @@
         <div class="setrow"><svg><use href="#i-expand"/></svg><span data-i18n="html.settings.vollbild">Vollbild</span><button class="btn small ghost" id="btnFull" data-i18n="html.settings.umschalten">Umschalten</button></div>
         <div class="setrow" id="rowInstall" hidden><svg><use href="#i-download"/></svg><span data-i18n="install.title">App installieren</span><button class="btn small yellow" id="btnInstall2" data-i18n="install.btn">Installieren</button></div>
       </div>
-      <div class="panel account" id="accountPanel" hidden>
-        <h4 data-i18n="html.settings.konto">Konto</h4>
-        <div id="accBody"></div>
-      </div>
+    </div>
+    <div class="setpane" data-pane="controls" hidden>
       <div class="panel">
-        <div class="setrow"><svg><use href="#i-globe"/></svg><span data-i18n="set.language">Sprache</span><div class="seg" id="segLang"></div></div>
-        <h4 data-i18n="html.settings.steuerung">Steuerung</h4>
-        <table class="keys">
-          <tr><th></th><th data-i18n="html.settings.laufen">Laufen</th><th data-i18n="html.settings.springen">Springen</th><th data-i18n="html.settings.graetscheBombe">Grätsche / Bombe</th><th data-i18n="html.settings.schuss">Schuss</th><th data-i18n="html.settings.super">Super</th></tr>
-          <tr><td data-i18n="html.settings.spieler1">Spieler 1</td><td><kbd>A</kbd><kbd>D</kbd></td><td><kbd>W</kbd></td><td><kbd>S</kbd></td><td><kbd data-i18n="html.settings.leer">Leer</kbd></td><td><kbd>E</kbd></td></tr>
-          <tr><td data-i18n="html.settings.spieler2">Spieler 2</td><td><kbd>←</kbd><kbd>→</kbd></td><td><kbd>↑</kbd></td><td><kbd>↓</kbd></td><td><kbd>Enter</kbd></td><td><kbd>.</kbd></td></tr>
-          <tr><td data-i18n="html.settings.controller">Controller</td><td data-i18n="html.settings.stick">Stick</td><td>A</td><td data-i18n="html.settings.stick2">Stick ↓</td><td data-i18n="html.settings.xB">X / B</td><td data-i18n="html.settings.yRb">Y / RB</td></tr>
-          <tr><td data-i18n="html.settings.touch">Touch</td><td data-i18n="html.settings.linksZiehen">links ziehen</td><td data-i18n="html.settings.linksHoch">links hoch</td><td data-i18n="html.settings.linksRunter">links runter</td><td data-i18n="html.settings.rechtsTippen">rechts tippen</td><td data-i18n="html.settings.blitzTaste">Blitz-Taste</td></tr>
-        </table>
+        <div class="seg" id="segCtl"></div>
+        <table class="keys" id="ctlTable"></table>
         <p class="hint" data-i18n="html.settings.springenKurzTippenHalb">Springen kurz tippen: halb hoch, halten: voll. Runter am Boden: Grätsche, in der Luft: Arschbombe, je höher, desto härter. Schuss: Ball liegt ruhig = Lupfer, Ball rollt = flacher Strahl, Ball in der Luft = Volley. Halten macht härter, der Pfeil zeigt die Richtung. Emotes mit 1 bis 6.</p>
-        <button class="btn small danger" id="btnReset" data-i18n="html.settings.fortschrittLoeschen">Fortschritt löschen</button>
-        <p class="legal"><a href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legal.privacy">Datenschutz</a><a href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legal.terms">Nutzungsbedingungen</a><a href="legal/imprint.html" target="_blank" rel="noopener" data-i18n="legal.imprint">Impressum</a></p>
+      </div>
+    </div>
+    <div class="setpane" data-pane="info" hidden>
+      <div class="panel">
+        <h4 data-i18n="set.legal">Rechtliches</h4>
+        <a class="setlink" href="legal/privacy.html" target="_blank" rel="noopener"><span data-i18n="legal.privacy">Datenschutz</span><svg><use href="#i-back"/></svg></a>
+        <a class="setlink" href="legal/terms.html" target="_blank" rel="noopener"><span data-i18n="legal.terms">Nutzungsbedingungen</span><svg><use href="#i-back"/></svg></a>
+        <a class="setlink" href="legal/imprint.html" target="_blank" rel="noopener"><span data-i18n="legal.imprint">Impressum</span><svg><use href="#i-back"/></svg></a>
       </div>
     </div>
   </section>

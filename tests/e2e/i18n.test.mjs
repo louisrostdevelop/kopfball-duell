@@ -19,10 +19,15 @@ test("Englisch vom Gerät, Wechsel auf Deutsch", async () => {
   const modes = await page.evaluate(() => document.getElementById("scr-modes").innerText);
   assert.match(modes, /Quick Match/); assert.doesNotMatch(modes, GERMAN);
   await click(page, "#scr-modes [data-back]");
-  for (const [sel, scr] of [["#navShop", "scr-shop"], ["#navTasks", "scr-tasks"], ["#homeStars", "scr-ach"], ["#navChests", "scr-chests"], ["#btnSettings", "scr-settings"]]) {
+  for (const [sel, scr] of [["#navShop", "scr-shop"], ["#navTasks", "scr-tasks"], ["#homeStars", "scr-ach"], ["#navChests", "scr-chests"], ["#btnProfile", "scr-profile"], ["#btnSettings", "scr-settings"]]) {
     await click(page, sel, 300);
     const txt = await page.evaluate(id => document.getElementById(id).innerText, scr);
     assert.doesNotMatch(txt, GERMAN, scr + ": " + txt.match(GERMAN));
+    if (scr === "scr-settings") for (const tb of ["controls", "info", "general"]) {   // alle Reiter
+      await click(page, `#setTabs [data-tab="${tb}"]`, 150);
+      const tt = await page.evaluate(() => document.getElementById("scr-settings").innerText);
+      assert.doesNotMatch(tt, GERMAN, tb + ": " + tt.match(GERMAN));
+    }
     if (scr !== "scr-settings") await click(page, `#${scr} [data-back]`);
   }
   // Umschalten auf Deutsch (Einstellungen sind offen)

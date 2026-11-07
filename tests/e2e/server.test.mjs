@@ -225,7 +225,7 @@ test("Konto: sichern und auf anderem Gerät anmelden, beides mit Code", { skip: 
   const id = sess.user.id;
   const settle = async p => { await p.waitForTimeout(600); if (await p.locator("#modalOk").isVisible()) await click(p, "#modalOk", 300); };
   await settle(A);
-  await click(A, "#btnSettings", 400);
+  await click(A, "#btnProfile", 400);
   await A.fill("#accMail", "spieler@example.org"); await click(A, "#accLink", 600);
   assert.ok(await A.locator("#accCode").isVisible(), "Code-Feld nach dem Schicken");
   await A.fill("#accCode", "000000"); await click(A, "#accConfirm", 500);
@@ -240,7 +240,7 @@ test("Konto: sichern und auf anderem Gerät anmelden, beides mit Code", { skip: 
   const B = b.page;
   await until(() => B.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-session") || "null")));
   await settle(B);
-  await click(B, "#btnSettings", 400); await click(B, "#accToLogin", 300);
+  await click(B, "#btnProfile", 400); await click(B, "#accToLogin", 300);
   await B.fill("#accMail", "niemand@example.org"); await click(B, "#accSend", 500);
   assert.match(await B.textContent("#accMsg"), /kein Konto|no account/);
   await B.fill("#accMail", "Spieler@example.org"); await click(B, "#accSend", 500);

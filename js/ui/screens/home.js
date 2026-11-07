@@ -194,7 +194,7 @@ export function initHome() {
   $("navAch").onclick = () => { A.sfx("click"); showScreen("ach"); };
   $("navChests").onclick = () => { A.sfx("click"); showScreen("chests"); };
   $("homeStars").onclick = () => { A.sfx("click"); showScreen("ach"); };
-  $("btnProfile").onclick = () => { A.sfx("click"); showScreen("ach"); };
+  $("btnProfile").onclick = () => { A.sfx("click"); showScreen("profile"); };
   $("btnSettings").onclick = () => { A.sfx("click"); showScreen("settings"); };
   $("homeCoins").onclick = () => { A.sfx("click"); showScreen("shop"); };
   $("homeGems").onclick = () => { A.sfx("click"); setShopTab(PAYMENTS ? "gems" : "chars"); showScreen("shop"); };
