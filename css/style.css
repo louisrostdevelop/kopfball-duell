@@ -1551,3 +1551,25 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   .bar .chip { padding-inline: 6px 8px; gap: 4px; font-size: 15px; }
   .bar .btn.small { font-size: 12px; padding-inline: 7px; }
 }
+
+/* Kopfzeile der Startseite auf Handys hochkant: alles in einer Zeile.
+   Installieren und Vollbild nie gleichzeitig (installiert läuft das Spiel ohnehin im Vollbild),
+   in der installierten App kein Vollbild-Knopf. */
+@media (display-mode: standalone), (display-mode: fullscreen) { .fsbtn { display: none !important; } }
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .hud-top #btnInstall:not([hidden]) ~ #btnFullHome { display: none; }
+  .hud-top { gap: 5px; }
+  .hud-top .sqbtn { width: 38px; height: 38px; }
+  .home .profile { height: 44px; gap: 6px; padding-right: 2px; }
+  .home .pf-av { width: 36px; height: 36px; border-width: 2px; }
+  .home .pf-av canvas { width: 40px !important; height: 40px !important; }
+  .home .pf-xp, .home .coin-chip .chip-plus { display: none; }
+  .home .pf-txt { min-width: 0; }
+  .home .pf-txt b { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+  .home .pf-lvl { width: 32px; height: 32px; font-size: 15px; margin-right: 4px; }
+  .home .coin-chip { height: 38px; padding: 0 9px 0 5px; gap: 5px; font-size: 16px; }
+  .home .coin-chip .coin { width: 22px; height: 22px; }
+}
+
+@media (max-width: 370px) and (orientation: portrait) { .home .pf-txt b { max-width: 52px; } }

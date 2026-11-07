@@ -23,7 +23,7 @@ const code = () => ($("accCode").value || "").replace(/\D/g, "");
 async function switched() { await resetProfile(); location.reload(); }
 
 /** Einstellungen direkt mit der Anmeldung öffnen (aus dem Profil) */
-export function showLogin() { view = "login"; accountUI(); }
+export function showLogin() { view = "login"; loginMail = ""; accountUI(); }
 
 export function accountUI() {
   const box = $("accountPanel"); box.hidden = !serverOn(); if (box.hidden) return;
