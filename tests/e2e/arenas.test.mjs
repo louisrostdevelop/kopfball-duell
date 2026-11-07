@@ -1,10 +1,11 @@
 // Arenen: Freischalten im Shop (Level, neue Arenen ohne Server sofort kaufbar), jede Arena mit jedem Layout spielbar
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { start, openPage, click, VIEW } from "./lib.mjs";
+import { start, openPage, click, VIEW, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 test("Shop: alte Arenen ab Level frei, neue für Münzen", async () => {

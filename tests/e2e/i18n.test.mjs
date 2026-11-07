@@ -1,10 +1,11 @@
 // Sprache: Englisch vom Gerät, Umschalten in den Einstellungen, bleibt nach Neuladen
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { start, openPage, click, VIEW } from "./lib.mjs";
+import { start, openPage, click, VIEW, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 const GERMAN = /\b(Spielen|Köpfe|Aufgaben|Erfolge|Einstellungen|Spieler|Münzen|Heute|Wechseln|Gegner)\b/;

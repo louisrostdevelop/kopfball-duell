@@ -1,10 +1,11 @@
 // Steuerung im echten Browser: Tastatur (allein und zu zweit) und Handy-Touch (Lauf-Feld links, Schuss rechts)
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { start, openPage, click, quickMatch, logEvents, takeEvents, pointer, center, measureJump, VIEW } from "./lib.mjs";
+import { start, openPage, click, quickMatch, logEvents, takeEvents, pointer, center, measureJump, VIEW, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 const tap = async (page, key, ms = 60) => { await page.keyboard.down(key); await page.waitForTimeout(ms); await page.keyboard.up(key); };
