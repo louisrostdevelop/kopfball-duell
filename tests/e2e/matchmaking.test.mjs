@@ -1,14 +1,14 @@
 // Gegnersuche über den Server: zwei Spieler suchen Ranked, werden gepaart, verbinden sich (PeerJS-Ersatz),
 // spielen, melden beide dasselbe Ergebnis, der Server wertet (Elo). Dazu: Ranked ohne Konto gesperrt.
 // Läuft gegen tools/dev-backend.mjs auf lokalem Postgres; ohne Postgres übersprungen.
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, rmSync, readdirSync, chmodSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { start, openPage } from "./lib.mjs";
+import { start, openPage, closeAll } from "./lib.mjs";
 
 const hasPg = existsSync("/usr/lib/postgresql") && readdirSync("/usr/lib/postgresql").length > 0;
 const DB_SCRIPT = new URL("../../supabase/local/start-db.sh", import.meta.url).pathname;
@@ -26,6 +26,7 @@ before(async () => {
   be = await startDevBackend({ dbUrl, port: 0 });
   env = await start();
 });
+afterEach(t => closeAll(env, t));
 after(async () => {
   if (!hasPg) return;
   await env.close(); await be.close();

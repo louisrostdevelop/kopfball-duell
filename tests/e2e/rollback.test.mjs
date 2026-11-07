@@ -1,13 +1,14 @@
 // Online mit Rollback-Netcode im Browser (zwei Tabs, PeerJS-Ersatz mit nachgespieltem Netz): beide rechnen dasselbe
 // Spiel, Eingaben des Gasts wirken, Tore sind endgültig und auf beiden Seiten gleich, Emotes reisen mit, Spielende
 // zeigt bei beiden dasselbe Ergebnis. Das alte Verfahren (?netcode=classic) prüfen online.test.mjs und resume.test.mjs.
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { start, openPage } from "./lib.mjs";
+import { start, openPage, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 const VIEW = { viewport: { width: 1100, height: 620 } };

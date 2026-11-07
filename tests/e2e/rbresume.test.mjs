@@ -1,12 +1,13 @@
 // Rollback-Netcode und Wiederverbinden: Abriss ohne Neustart, Gast startet die App neu, Host startet die App neu,
 // Revanche. Nach jeder Wiederaufnahme: neue Sitzung auf beiden Seiten, Stand erhalten, beide rechnen wieder gleich.
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { start, openPage } from "./lib.mjs";
+import { start, openPage, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 const VIEW = { viewport: { width: 1000, height: 560 } };

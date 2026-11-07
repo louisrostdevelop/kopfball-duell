@@ -17,7 +17,17 @@ export async function start() {
   const { chromium } = await playwright();
   const { server, url } = await serve(0);
   const browser = await chromium.launch();
-  return { browser, url, async close() { await browser.close(); server.close(); } };
+  return { browser, url, ctxs: [], async close() { await browser.close(); server.close(); } };
+}
+
+/**
+ * Alle Seiten der bisherigen Tests schließen (afterEach): laufende Spiele im Hintergrund bremsen sonst die folgenden.
+ * t: Test-Kontext; nach Teil-Tests (t.test) nicht, die gehören noch zum laufenden Test
+ */
+export async function closeAll(env, t) {
+  if (t && String(t.fullName || "").includes(" > ")) return;
+  const list = env.ctxs.splice(0);
+  for (const c of list) { try { await c.close(); } catch (_) { /* schon zu */ } }
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -27,6 +37,7 @@ export const SAVE_KEY = "kopfball-duell-save-v2";
 export async function openPage(env, view, { save = {}, init = [], query = "" } = {}) {
   // Weniger Bewegung: Animationen (z. B. Kisten öffnen) laufen kurz, die Tests sind schneller
   const ctx = await env.browser.newContext({ locale: "de-DE", reducedMotion: "reduce", ...view });
+  if (env.ctxs) env.ctxs.push(ctx);
   for (const s of init) await ctx.addInitScript(s);
   await ctx.route("**/vendor/peerjs.min.js", r => r.fulfill({ body: "", contentType: "text/javascript" }));
   // Nur ein leeres Gerät füllen: eine zweite Seite im selben Browser (Gast, App-Neustart) teilt den Speicher wie in echt

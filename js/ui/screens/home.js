@@ -188,7 +188,11 @@ export function drawShowcase(dt) {
 
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
 export function initHome() {
-  registerScreen("home", { show: homeScreen });
+  registerScreen("home", { show: () => {
+    homeScreen();
+    // Tagesbelohnung nach einem zurückgeholten Online-Spiel: sobald man wieder im Menü ist, egal auf welchem Weg
+    if (App.dailyLater && App.mode === "demo" && !App.netWait) { const f = App.dailyLater; App.dailyLater = null; f(); }
+  } });
   $("btnPlay").onclick = () => startMode(S.mode);
   $("modeCard").onclick = () => { A.sfx("click"); showScreen("modes"); };
   $("navHeads").onclick = () => { A.sfx("click"); selectScreen({ title: tx("nav.heads"), okText: tx("ui.select"), onDone: id => { S.char = id; save(); goBack(); } }); };

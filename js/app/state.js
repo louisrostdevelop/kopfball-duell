@@ -9,8 +9,8 @@ export const App = {
   run: null, local2: null, series: {}, lastCfg: null, jug: { i: -1, n: 0 },
   opp: null, inSeq: 0, inSeqSeen: -1, inRep: 0, lastSeq: -1, clock: null, guestIn: [0, 0, 0, 0, 0, 0, 0, 0], gPend: { j: 0, d: 0 }, gEdge: null, sendT: 0, outEv: [], snaps: [], gp: null, lastIn: "", inT: 0, pingT: 0, rtt: 0, pings: [], pingUi: 0, netCfg: null, mid: 0, lastRx: 0, guestInAt: 0, lagWarn: false, netLost: null, netWait: null, netBye: false, dropTried: false, roomCode: "", joinH: null, netTok: "", guestCfg: null,
   career: null,   // laufendes Karriere-Spiel: { li, gi }
-  dailyLater: null,
-  rb: null, rbOn: false, testPatch: null,   // Rollback-Sitzung (app/rbnet.js) bzw. ob das laufende Online-Spiel mit Rollback läuft   // Tagesbelohnung nachholen, sobald man wieder im Menü ist (main.js)
+  dailyLater: null,   // Tagesbelohnung nachholen, sobald man wieder auf der Startseite ist (main.js, home.js)
+  rb: null, rbOn: false, testPatch: null,   // Rollback-Sitzung (app/rbnet.js), ob das laufende Online-Spiel mit Rollback läuft, Test-Startzustand
   mm: null,   // Gegnersuche: { mode, state, match, role, opp } (app/matchmaking.js)
 };
 

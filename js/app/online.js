@@ -94,7 +94,7 @@ export function rematchHint() {
   $("btnEndAgain").classList.add("wants");
 }
 // quiet: veraltet (Tab war im Hintergrund): nur noch die Wiederholung merken, keine Töne und Effekte an alten Stellen
-function playEvents(ev, quiet = false) { ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); if (!quiet) onEvent(e, true); }); }
+function playEvents(ev, quiet = false) { ev.forEach(e => { if (e.t === "goal") App.replay = quiet ? null : App.rec.slice(-160); if (!quiet) onEvent(e, true); }); }
 function flushEvents(rt) {
   const q = App.evQ || [];
   const n = rt === null ? q.length : q.findIndex(x => x.ht > rt);
@@ -311,6 +311,7 @@ export function hostData(d) {
         if (App.opp && d.tok && d.tok === App.opp.tok && d.resume === App.mid && App.guestCfg) {
           lastStats = ""; App.inSeqSeen = -1; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0];
           App.gPend = { j: 0, d: 0 };   // Druck-Zähler des Gastes neu übernehmen (nach seinem Neustart beginnt er bei 0), kein Geistersprung
+          App.outEv = [];   // Ereignisse von vor dem Abriss nicht verspätet laut nachschicken
           // Rollback: neue Sitzung ab dem letzten sicheren Stand, beide frisch (alte Eingaben gelten nicht mehr)
           const rb = App.rbOn ? rbStart(rbBestState(), App.rb ? App.rb.delay : pickDelay(App.rtt)) : undefined;
           Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true, rb }); resumed();
@@ -415,6 +416,7 @@ export function guestData(d) {
     case "start":
       // Wiederaufnahme: Ereignisse von vor dem Abriss sind inzwischen Sekunden alt und fallen bewusst weg (Ton und Jubel
       // zum falschen Zeitpunkt wären schlimmer), der Spielstand kommt mit dem nächsten Zustand
+      App.gEdge = null;   // Druck-Zähler neu ab 0 (der Host übernimmt beim Anpfiff/Zurückkommen den ersten Wert als Grundstand)
       App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.lastSeq = -1; App.clock = makeClock();
       // Rollback: vom Host vorgegebener Startzustand und Verzögerung; ohne rb das alte Verfahren (Host rechnet)
       if (d.rb && d.rb.st && typeof d.rb.st === "object") startRb({ ep: d.rb.ep, st: d.rb.st, delay: clamp(d.rb.d | 0, 0, 8) });

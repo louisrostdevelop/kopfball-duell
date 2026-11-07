@@ -1,11 +1,12 @@
 // Online-Spiel mit zwei Tabs (PeerJS durch einen lokalen Ersatz ersetzt): Lobby, Regeln, Hindernisse, Gast-Eingaben, Revanche, Verlassen
-import { test, before, after } from "node:test";
+import { test, before, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { start, openPage } from "./lib.mjs";
+import { start, openPage, closeAll } from "./lib.mjs";
 
 let env;
 before(async () => { env = await start(); });
+afterEach(t => closeAll(env, t));
 after(async () => { await env.close(); });
 
 const VIEW = { viewport: { width: 1100, height: 620 } };
