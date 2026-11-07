@@ -4,6 +4,7 @@ import { addMeter, ev, pr, shoePos } from "./base.js";
 import { kickMul } from "./rules.js";
 import { touch } from "./supers.js";
 import { MOVE, bombPow, bv, pv } from "./tuning.js";
+import { dhypot } from "../../content/dmath.js";
 
 export function endSlide(p) { p.slide = 0; p.slideCD = MOVE.slideCD; }
 
@@ -44,7 +45,7 @@ export function bombBall(st, b, p) {
 // Grätsche spitzelt den Ball flach weg
 export function slideBall(st, b, p) {
   const f = shoePos(p);
-  if (b.y < p.y + (FOOT + SR) * p.sc - 110 || Math.hypot(b.x - f.x, b.y - f.y) > SR * p.sc * 1.4 + b.r) return false;
+  if (b.y < p.y + (FOOT + SR) * p.sc - 110 || dhypot(b.x - f.x, b.y - f.y) > SR * p.sc * 1.4 + b.r) return false;
   p.slideHit = true;
   b.nh = p.i; b.nhT = 0.12;
   if (!touch(st, b, p, "slide")) return true;

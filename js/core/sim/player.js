@@ -5,6 +5,7 @@ import { obsPlayer } from "./obstacles.js";
 import { gMul, headStats } from "./rules.js";
 import { bombLand, endSlide } from "./tricks.js";
 import { MOVE, PG, bombPow, pv } from "./tuning.js";
+import { dhypot } from "../../content/dmath.js";
 
 export function tickCosmetics(st, dt) {
   st.p.forEach(p => {
@@ -77,7 +78,7 @@ export function movePlayer(st, p, c, dt, frozenPhase) {
     p.vx += Math.abs(d) < mx ? d : Math.sign(d) * mx;
   }
   // Springen: halten = voller Sprung, kurz tippen = halber
-  const gm0 = gMul(st), jv = -pv(1010) * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.min(Math.pow(gm0, 0.25), Math.sqrt(1.5 * gm0)); // weniger Schwerkraft = höhere Sprünge (max. 1,5-fach)
+  const gm0 = gMul(st), jv = -pv(1010) * ch.jmp * (p.jmpT > 0 ? 1.25 : 1) * Math.min(Math.sqrt(Math.sqrt(gm0)), Math.sqrt(1.5 * gm0)); // weniger Schwerkraft = höhere Sprünge (max. 1,5-fach)
   const jPress = !!c.j && !p.lastJ;
   if (!locked && c.j && (p.onG || p.coy > 0) && !p.bomb && p.vy >= -50) {
     if (p.slide > 0) endSlide(p);
@@ -139,7 +140,7 @@ export function onBar(st, p) {
 // Spieler gegen Spieler (inkl. Draufspringen)
 export function playerVsPlayer(st) {
   const [a, b] = st.p, ra = pr(a), rb = pr(b);
-  const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = ra + rb;
+  const dx = b.x - a.x, dy = b.y - a.y, d = dhypot(dx, dy), min = ra + rb;
   if (d >= min || d === 0) return;
   const top = dy < -min * 0.55 ? b : dy > min * 0.55 ? a : null;
   if (top && top.vy > 150) {

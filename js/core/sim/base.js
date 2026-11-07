@@ -1,6 +1,7 @@
 // Gemeinsame Bausteine: Ereignisse, Maße, Kollisionen, Super-Leiste
 import { G, GOAL_H, HR, FOOT, KS, clamp, headBonus } from "../../content/config.js";
 import { KICK } from "./tuning.js";
+import { dcos, dhypot, dsin } from "../../content/dmath.js";
 
 export const barY = (st, side) => G - GOAL_H * (st.rules ? st.rules.goal : 1) - (st.bigGoal[side] > 0 ? 60 : 0);
 
@@ -10,7 +11,7 @@ export function shoePos(p) {
   if (p.slide > 0) return { x: p.x + p.slideDir * 50 * KS * p.sc, y: p.y + (FOOT + 4) * p.sc, k: 0 };
   if (p.bomb) return { x: p.x - p.dir * 8 * KS * p.sc, y: p.y + FOOT * 0.82 * p.sc, k: 0 };
   const pr0 = p.kick > 0 ? 1 - p.kick / KICK.swing : 1;
-  const k = p.kick > 0 ? (pr0 < 0.3 ? Math.sin(pr0 / 0.3 * Math.PI / 2) : Math.cos((pr0 - 0.3) / 0.7 * Math.PI / 2)) : 0;
+  const k = p.kick > 0 ? (pr0 < 0.3 ? dsin(pr0 / 0.3 * Math.PI / 2) : dcos((pr0 - 0.3) / 0.7 * Math.PI / 2)) : 0;
   const wind = p.kHeld && p.charge > 0 ? -p.charge * 0.6 : 0;
   return { x: p.x + p.dir * (16 + 34 * k + 22 * wind) * KS * p.sc, y: p.y + (FOOT - 20 * KS * k) * p.sc, k };
 }
@@ -26,7 +27,7 @@ export function addMeter(st, p, v) {
 
 export function collideRect(b, x0, x1, y0, y1, rest) {
   const cx = clamp(b.x, x0, x1), cy = clamp(b.y, y0, y1);
-  const dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+  const dx = b.x - cx, dy = b.y - cy, d = dhypot(dx, dy);
   if (d >= b.r) return false;
   let nx, ny;
   if (d === 0) { nx = 0; ny = b.y < (y0 + y1) / 2 ? -1 : 1; } else { nx = dx / d; ny = dy / d; }
@@ -37,7 +38,7 @@ export function collideRect(b, x0, x1, y0, y1, rest) {
 }
 
 export function collideCircle(b, cx, cy, minD, pvx, pvy, rest) {
-  const dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+  const dx = b.x - cx, dy = b.y - cy, d = dhypot(dx, dy);
   if (d >= minD || d === 0) return null;
   const nx = dx / d, ny = dy / d;
   b.x = cx + nx * minD; b.y = cy + ny * minD;

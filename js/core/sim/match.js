@@ -10,6 +10,7 @@ import { powerups } from "./powerups.js";
 import { kickoff } from "./state.js";
 import { handleSuper } from "./supers.js";
 import { slideTrip, slideTripHit } from "./tricks.js";
+import { dhypot } from "../../content/dmath.js";
 
 // Echtzeit-Fortschritt inkl. Hit-Stop und Zeitlupe
 export function advance(st, dt, inp, acc) {
@@ -27,6 +28,25 @@ export function advance(st, dt, inp, acc) {
     if (st.hs > 0) { acc = 0; break; }
   }
   return acc;
+}
+
+/**
+ * Ein fester Takt (1/60 s) für Online-Spiele mit Rollback: dieselben Eingaben ergeben auf jedem Gerät exakt denselben
+ * Zustand. Wie advance(), aber ohne echte Zeit: Hit-Stop und Zeitlupe zählen in Takten, der Schritt-Rest liegt als
+ * ganze Zahl im Zustand (st.tq, in 1/100 Schritten), damit sich keine Rundung aufsummiert.
+ * inp: Eingaben beider Spieler für diesen Takt (kurze Drücke sammelt der Aufrufer bis zum Takt).
+ */
+export const TICK = 1 / 60;
+const TICK_Q = Math.round(TICK / STEP * 100), SLOW_Q = Math.round(TICK / STEP * 28);   // 200 bzw. 56 Hundertstel-Schritte
+export function tick(st, inp) {
+  if (st.hs > 0) { st.hs -= TICK; return; }
+  let q = TICK_Q;
+  if (st.slow > 0) { st.slow -= TICK; q = SLOW_Q; }
+  st.tq = (st.tq || 0) + q;
+  while (st.tq >= 100) {
+    step(st, STEP, inp); st.tq -= 100;
+    if (st.hs > 0) { st.tq = 0; break; }
+  }
 }
 
 export function step(st, dt, inp) {
@@ -74,7 +94,7 @@ export function step(st, dt, inp) {
   st.p.forEach(p => kickPush(st, p));
   const trips = st.p.map(p => slideTripHit(st, p)); // erst beide prüfen, dann anwenden: keiner gewinnt nur wegen der Reihenfolge
   st.p.forEach((p, i) => { if (trips[i]) slideTrip(st, p); });
-  const bsp = Math.hypot(st.b.vx, st.b.vy), sub = Math.max(1, Math.min(4, Math.ceil(bsp * dt / (st.b.r * 0.5))));
+  const bsp = dhypot(st.b.vx, st.b.vy), sub = Math.max(1, Math.min(4, Math.ceil(bsp * dt / (st.b.r * 0.5))));
   for (let k = 0; k < sub; k++) ballPhysics(st, dt / sub, false);
   if (st.b.pw > 0) st.b.pw -= dt;
   unjam(st, dt);

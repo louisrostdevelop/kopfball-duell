@@ -7,4 +7,4 @@ export { kickoff, newMatch } from "./sim/state.js";
 export { emote } from "./sim/player.js";
 export { kickKind, kickPreview } from "./sim/kick.js";
 export { fireSuper, target as superTarget } from "./sim/supers.js";
-export { REPLAY_END, REPLAY_START, advance, predictPlayer, skipCelebration, step } from "./sim/match.js";
+export { REPLAY_END, REPLAY_START, TICK, advance, predictPlayer, skipCelebration, step, tick } from "./sim/match.js";

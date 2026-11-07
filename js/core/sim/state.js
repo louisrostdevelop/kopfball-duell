@@ -1,8 +1,9 @@
 // Spielzustand anlegen: Match, Spieler, Ball, Anstoß
 import { buildObstacles, moveObstacles, layoutsFor } from "../../content/layouts.js";
-import { W, W0, setFieldW, REST, arenaById, rand } from "../../content/config.js";
+import { W, W0, setFieldW, REST, arenaById } from "../../content/config.js";
 import { pr } from "./base.js";
 import { DEFAULT_RULES, baseBR, matchLen } from "./rules.js";
+import { newSeed, rnd, rrange } from "../../content/dmath.js";
 
 export function newMatch(o) {
   const ar = arenaById(o.arena);
@@ -13,16 +14,18 @@ export function newMatch(o) {
     t: o.dur || 90, ph: "cd", pt: 3, gold: false, el: 0,
     s: [0, 0],
     p: [mkPlayer(0, o.chars[0]), mkPlayer(1, o.chars[1])],
-    b: null, pu: [], puT: rand(6, 9), puId: 1,
+    b: null, pu: [], puT: 0, puId: 1,
     wall: [0, 0], bigGoal: [0, 0], wind: { t: 0, dir: 1 }, jam: 0,
     ev: [], hs: 0, slow: 0,
     stats: [mkStats(), mkStats()],
     lastGoal: null, trail: 0, seq: 0,
+    rng: (o.seed === undefined ? newSeed() : o.seed) >>> 0,   // Zufall der Physik (deterministisch, siehe dmath.js)
   };
+  st.puT = rrange(st, 6, 9);
   if (st.rules.pu === "off") st.pus = false;
   // Hindernisse: "off", Layout-Nummer oder "rnd" (Zufall wird offline hier gezogen, online schon vorher im Menü)
   let oi = st.rules.obs;
-  if (oi === "rnd") oi = Math.floor(Math.random() * Math.max(1, layoutsFor(ar.id).length));
+  if (oi === "rnd") oi = Math.floor(rnd(st) * Math.max(1, layoutsFor(ar.id).length));
   st.obsIdx = typeof oi === "number" ? oi : -1;
   st.obs = st.obsIdx >= 0 ? buildObstacles(ar.id, st.obsIdx) : [];
   moveObstacles(st.obs, 0, 0);
@@ -44,7 +47,7 @@ export function mkPlayer(i, ch) {
 }
 
 export function mkBall(st) {
-  return { x: W / 2, y: 265, vx: rand(-40, 40), vy: 0, r: baseBR(st), a: 0, av: 0, fx: "", fxT: 0, fxO: -1, fxP: 0, fxK: 0, fxBX: 0, fxBY: 0, fxDX: 0, fxDY: 0, alpha: 1, grow: 1, lt: -1, ltk: "", ltx: 0, held: 0 };
+  return { x: W / 2, y: 265, vx: rrange(st, -40, 40), vy: 0, r: baseBR(st), a: 0, av: 0, fx: "", fxT: 0, fxO: -1, fxP: 0, fxK: 0, fxBX: 0, fxBY: 0, fxDX: 0, fxDY: 0, alpha: 1, grow: 1, lt: -1, ltk: "", ltx: 0, held: 0 };
 }
 
 export function kickoff(st) {

@@ -21,6 +21,7 @@
 //     nicht unter 85 %
 import { W, W0, G, GOAL_W } from "./config.js";
 import { t as tr } from "./i18n.js";
+import { dcos, dsin } from "./dmath.js";
 
 export const LAYOUTS = {
   stadion: [
@@ -120,11 +121,11 @@ export function moveObstacles(obs, t, _dt) {
     if (!o.mv) continue;
     const m = o.mv, w = 2 * Math.PI / m.per, a = w * t + (m.ph || 0);
     if (m.orbit) {
-      o.x = o.cx + o.sign * m.orbit * Math.cos(a); o.y = o.cy + m.orbit * 0.45 * Math.sin(a);
-      o.vx = -o.sign * m.orbit * w * Math.sin(a); o.vy = m.orbit * 0.45 * w * Math.cos(a);
+      o.x = o.cx + o.sign * m.orbit * dcos(a); o.y = o.cy + m.orbit * 0.45 * dsin(a);
+      o.vx = -o.sign * m.orbit * w * dsin(a); o.vy = m.orbit * 0.45 * w * dcos(a);
     } else {
-      o.x = o.cx + (m.ax || 0) * Math.sin(a); o.y = o.cy + (m.ay || 0) * Math.sin(a);
-      o.vx = (m.ax || 0) * w * Math.cos(a); o.vy = (m.ay || 0) * w * Math.cos(a);
+      o.x = o.cx + (m.ax || 0) * dsin(a); o.y = o.cy + (m.ay || 0) * dsin(a);
+      o.vx = (m.ax || 0) * w * dcos(a); o.vy = (m.ay || 0) * w * dcos(a);
     }
   }
 }

@@ -5,6 +5,7 @@ import { collideCircle, ev, pr } from "./base.js";
 import { ballG, gMul, maxBall } from "./rules.js";
 import { bombLand, endSlide } from "./tricks.js";
 import { PG, bv, pv } from "./tuning.js";
+import { dhypot } from "../../content/dmath.js";
 
 // Spieler gegen Plattformen (draufstehen, von unten anstoßen, seitlich abprallen) und Bumper
 export function obsPlayer(st, p, dt, rest) {
@@ -59,7 +60,7 @@ export function obsPlayer(st, p, dt, rest) {
         else { p.x += Math.min(right, lim); if (p.vx < o.vx) p.vx = o.vx; }
       }
     } else if (o.t === "bump") {
-      const dx = p.x - o.x, dy = p.y - o.y, d = Math.hypot(dx, dy), min = r + o.r;
+      const dx = p.x - o.x, dy = p.y - o.y, d = dhypot(dx, dy), min = r + o.r;
       if (d >= min || d === 0) continue;
       const nx = dx / d, ny = dy / d;
       p.x = o.x + nx * min; p.y = Math.min(o.y + ny * min, rest);
@@ -98,7 +99,7 @@ export function obsBall(st, b, dt) {
       break;
     } else if (o.t === "plat") {
       const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2, y0 = o.y, y1 = o.y + o.h;
-      const cx = clamp(b.x, x0, x1), cy = clamp(b.y, y0, y1), dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+      const cx = clamp(b.x, x0, x1), cy = clamp(b.y, y0, y1), dx = b.x - cx, dy = b.y - cy, d = dhypot(dx, dy);
       if (d >= b.r) continue;
       let nx, ny;
       if (d === 0) {
@@ -120,7 +121,7 @@ export function obsBall(st, b, dt) {
     } else if (o.t === "bump") {
       const hit = collideCircle(b, o.x, o.y, o.r + b.r, o.vx, o.vy, 0.9);
       if (!hit || hit.imp <= 0) continue;
-      const sp = Math.hypot(b.vx, b.vy), want = Math.min(maxBall(st), Math.max(sp * o.k, 650 * o.k));
+      const sp = dhypot(b.vx, b.vy), want = Math.min(maxBall(st), Math.max(sp * o.k, 650 * o.k));
       if (sp > 0) { b.vx *= want / sp; b.vy *= want / sp; }
       ev(st, { t: "obs", x: b.x - hit.nx * b.r, y: b.y - hit.ny * b.r, v: want, k: "bump" });
     }
@@ -136,7 +137,7 @@ function rampBall(st, b, o, e) {
   const segs = [[x0, G, a, yt], ...(o.top > 0 ? [[a, yt, c, yt]] : []), [c, yt, x1, G]];
   for (const [ax, ay, bx, by] of segs) {
     const sx = bx - ax, sy = by - ay, l2 = sx * sx + sy * sy, k = clamp(((b.x - ax) * sx + (b.y - ay) * sy) / l2, 0, 1);
-    const px = ax + sx * k, py = ay + sy * k, dx = b.x - px, dy = b.y - py, d = Math.hypot(dx, dy);
+    const px = ax + sx * k, py = ay + sy * k, dx = b.x - px, dy = b.y - py, d = dhypot(dx, dy);
     if (d >= b.r || d === 0 || dy > 0) continue;   // nur von oben/außen
     const nx = dx / d, ny = dy / d;
     b.x = px + nx * b.r; b.y = py + ny * b.r;

@@ -4,6 +4,7 @@ import { ev, pr, shoePos } from "./base.js";
 import { endSlide } from "./tricks.js";
 import { AIR, KICK } from "./tuning.js";
 import { headStats } from "./rules.js";
+import { datan2, dhypot } from "../../content/dmath.js";
 
 export function swingNow(st, p) {
   p.kick = KICK.swing; p.kHit = false; p.kHitP = false; p.kPow = 1 + p.charge * 0.75;
@@ -37,8 +38,8 @@ export function kickPush(st, p) {
   if (o.pushCD > 0) return;
   const fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
   const ro = pr(o), so = shoePos(o);
-  const hitHead = Math.hypot(o.x - fx, o.y - fy) < ro + 26 * KS * p.sc;
-  const hitFoot = Math.hypot(so.x - fx, so.y - fy) < SR * o.sc + 30 * KS * p.sc;
+  const hitHead = dhypot(o.x - fx, o.y - fy) < ro + 26 * KS * p.sc;
+  const hitFoot = dhypot(so.x - fx, so.y - fy) < SR * o.sc + 30 * KS * p.sc;
   if (!(hitHead || hitFoot) || (o.x - p.x) * p.dir < -10) return;
   p.kHitP = true;
   const c = (p.kPow - 1) / 0.75;
@@ -56,7 +57,7 @@ export function kickPush(st, p) {
 // Ball ruhig am Boden = Lupfer (steil), Ball rollt/springt flach = Strahl (hart, flach), Ball in der Luft = Volley (flach, hoch getroffen leicht nach unten)
 export function kickKind(b) {
   if (b.y + b.r < G - 34) return "volley";
-  const sp = KICK.memClassify ? Math.max(b.vmem || 0, Math.hypot(b.vx, b.vy)) : Math.hypot(b.vx, b.vy);
+  const sp = KICK.memClassify ? Math.max(b.vmem || 0, dhypot(b.vx, b.vy)) : dhypot(b.vx, b.vy);
   return sp < KICK.lobSpeed ? "lob" : "drive";
 }
 
@@ -73,8 +74,8 @@ export function kickVec(st, p, b, c, qm, pm) {
 export function kickPreview(st, p) {
   const b = st.b, fx = p.x + p.dir * 40 * KS * p.sc, fy = p.y + 46 * KS * p.sc;
   const reach = 66 * KS * p.sc + b.r;
-  if (Math.hypot(b.x - fx, b.y - fy) > reach * 2 || (b.x - p.x) * p.dir < -18 * KS * p.sc) return null;
+  if (dhypot(b.x - fx, b.y - fy) > reach * 2 || (b.x - p.x) * p.dir < -18 * KS * p.sc) return null;
   const pm = headStats(st, p).pow * (p.miniT > 0 ? 0.8 : 1) * (p.bigT > 0 ? 1.1 : 1);
   const kv = kickVec(st, p, b, p.charge, 1, pm);
-  return { kind: kv.kind, ang: Math.atan2(kv.vy, p.dir * kv.vx), c: p.charge };
+  return { kind: kv.kind, ang: datan2(kv.vy, p.dir * kv.vx), c: p.charge };
 }

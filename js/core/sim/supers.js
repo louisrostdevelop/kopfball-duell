@@ -3,6 +3,7 @@ import { W, G, GOAL_W, BAR_T, charById, clamp } from "../../content/config.js";
 import { barY, ev, pr } from "./base.js";
 import { ballG } from "./rules.js";
 import { pv } from "./tuning.js";
+import { datan2, dcos, dhypot, dsin, rnd } from "../../content/dmath.js";
 
 export function handleSuper(st, p, c) {
   const press = c.s && !p.lastS; p.lastS = !!c.s;
@@ -10,7 +11,7 @@ export function handleSuper(st, p, c) {
   if (p.full && p.armed <= 0) {
     p.full = false; p.meter = 0;
     const b = st.b;
-    if (Math.hypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 90) fireSuper(st, p, charById(p.ch).super);
+    if (dhypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 90) fireSuper(st, p, charById(p.ch).super);
     else { p.armed = 4; ev(st, { t: "arm", i: p.i }); }
   }
 }
@@ -72,13 +73,13 @@ export function target(st, i, hi, b = null) {
   return { x, y };
 }
 
-export function aim(b, tx, ty, sp) { const dx = tx - b.x, dy = ty - b.y, d = Math.hypot(dx, dy) || 1; b.vx = dx / d * sp; b.vy = dy / d * sp; }
+export function aim(b, tx, ty, sp) { const dx = tx - b.x, dy = ty - b.y, d = dhypot(dx, dy) || 1; b.vx = dx / d * sp; b.vy = dy / d * sp; }
 
 export function steer(b, tx, ty, rate, sp, dt) {
-  const cur = Math.atan2(b.vy, b.vx), want = Math.atan2(ty - b.y, tx - b.x);
+  const cur = datan2(b.vy, b.vx), want = datan2(ty - b.y, tx - b.x);
   let d = want - cur; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
   const a = cur + clamp(d, -rate * dt, rate * dt);
-  b.vx = Math.cos(a) * sp; b.vy = Math.sin(a) * sp;
+  b.vx = dcos(a) * sp; b.vy = dsin(a) * sp;
 }
 
 export function fxGravity(b) {
@@ -98,7 +99,7 @@ export function fireSuper(st, p, kind) {
   const b = st.b, t = target(st, p.i, false, b);
   b.fx = kind; b.fxT = 0; b.fxO = p.i; b.fxP = 0; b.fxK = 0; b.fxDY = 0;   // Merker vom letzten Super nicht mitschleppen b.alpha = 1; b.lt = p.i; b.ltk = "super"; b.ltx = p.x;
   // Ball vor den Fuß holen, damit er nicht im Kopf steckt
-  if (Math.hypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 4) { b.x = p.x + p.dir * (pr(p) + b.r + 6); }
+  if (dhypot(b.x - p.x, b.y - p.y) < pr(p) + b.r + 4) { b.x = p.x + p.dir * (pr(p) + b.r + 6); }
   st.stats[p.i].supers++;
   switch (kind) {
     case "fire": aim(b, t.x, t.y, 1550); break;
@@ -112,7 +113,7 @@ export function fireSuper(st, p, kind) {
     case "magnet": b.vx = p.dir * 900; b.vy = -650; break;
     case "meteor": b.vx = 0; b.vy = -2300; b.fxTX = t.x; b.fxTY = G; break;
     case "bouncy": b.vx = (p.i ? -1 : 1) * 1450; b.vy = 500; break;
-    case "clone": case "copypaste": aim(b, t.x, t.y, 1150); b.fxBX = b.x; b.fxBY = b.y; b.fxDX = b.vx; b.fxDY = b.vy; b.fxK = [-1, 0, 1][Math.floor(Math.random() * 3)]; break;
+    case "clone": case "copypaste": aim(b, t.x, t.y, 1150); b.fxBX = b.x; b.fxBY = b.y; b.fxDX = b.vx; b.fxDY = b.vy; b.fxK = [-1, 0, 1][Math.floor(rnd(st) * 3)] * (p.i ? -1 : 1); break;   // welcher der drei echt ist; für rechts gespiegelt (gleicher Zufall = spiegelbildlich)
     case "sad": aim(b, t.x, t.y - 40, 1250); break;
     case "flex": aim(b, t.x, t.y - 20, 1150); break;
     case "bassdrop": aim(b, b.x + p.dir * 260, 250, 950); break;   // schwebt tiefer: mit einem Sprung erreichbar
@@ -145,18 +146,18 @@ export function superStep(st, b, dt) {
       if (b.fxP === 0 && b.fxT > 0.5) { b.fxP = 1; aim(b, b.fxTX, b.fxTY, 1400); ev(st, { t: "launch", x: b.x, y: b.y }); }
       if (b.fxT > 2) endFx(st); break;
     // aus der Nähe enger einlenken, sonst fliegt die Kurve übers Tor (Review 06.11.2026)
-    case "banana": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1000, dt); if (b.fxT > 2.2) endFx(st); break;
+    case "banana": steer(b, t.x, t.y + 20, 2.6 + b.fxT * 2 + 900 / Math.max(150, dhypot(t.x - b.x, t.y - b.y)), 1000, dt); if (b.fxT > 2.2) endFx(st); break;
     case "ghost": b.alpha = b.fxT < 0.2 ? 1 : Math.abs(b.x - t.x) < 320 ? 0.95 : 0.2; if (b.fxT > 1.6) endFx(st); break;
     case "giant":
       if (b.fxP === 1) { aim(b, t.x, t.y - 40, 900); if (b.fxT > b.fxTY) b.fxP = 2; }   // nach dem Durchbrechen wieder aufs Tor
       if (b.fxT > 3) { b.fx = ""; b.fxO = -1; } break;
     case "tornado":
       if (b.fxP === 0) {
-        b.vx = (b.fxO ? -1 : 1) * Math.cos(b.fxT * 16) * 520 + (b.fxBX - b.x) * 3; b.vy = -620;
+        b.vx = (b.fxO ? -1 : 1) * dcos(b.fxT * 16) * 520 + (b.fxBX - b.x) * 3; b.vy = -620;
         if (b.fxT > 0.55 || b.y < 120) { b.fxP = 1; aim(b, t.x, t.y, 1300); ev(st, { t: "launch", x: b.x, y: b.y }); }
       } else steer(b, t.x, t.y, 4, 1250, dt);
       if (b.fxT > 2.4) endFx(st); break;
-    case "magnet": steer(b, t.x, t.y, 2.6 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1100, dt); if (b.fxT > 2.4) endFx(st); break;
+    case "magnet": steer(b, t.x, t.y, 2.6 + 900 / Math.max(150, dhypot(t.x - b.x, t.y - b.y)), 1100, dt); if (b.fxT > 2.4) endFx(st); break;
     case "meteor":
       if (b.fxP === 0 && b.y < -230) {
         // Bahn so legen, dass der Meteor knapp unter der Latte durch ins Tor fällt (vorher traf er immer die Lattenecke)
@@ -193,7 +194,7 @@ export function superStep(st, b, dt) {
         const ph = Math.floor(b.fxT / 0.13);
         if (ph !== b.fxK) { b.fxK = ph; ev(st, { t: "zap", x: b.x, y: b.y }); }
         aim(b, t.x, t.y, 700);
-        const ax = b.vx / 700, ay = b.vy / 700, s = (ph % 2 ? 1 : -1) * (b.fxO ? -1 : 1) * 300 * clamp(Math.hypot(t.x - b.x, t.y - b.y) / 450, 0.25, 1);   // kurz vor dem Tor ruhiger
+        const ax = b.vx / 700, ay = b.vy / 700, s = (ph % 2 ? 1 : -1) * (b.fxO ? -1 : 1) * 300 * clamp(dhypot(t.x - b.x, t.y - b.y) / 450, 0.25, 1);   // kurz vor dem Tor ruhiger
         b.vx += -ay * s; b.vy += ax * s;
       }
       if (b.fxT > 2.4) endFx(st); break;
@@ -215,9 +216,9 @@ export function superStep(st, b, dt) {
       if (b.fxT > 2.4) endFx(st); break;
     case "ghosting": b.alpha = b.fxT < 0.15 ? 1 : Math.abs(b.x - t.x) < 240 ? 0.95 : 0.1; if (b.fxT > 1.7) endFx(st); break;
     case "rizz": {
-      steer(b, t.x, t.y, 2.4 + 900 / Math.max(150, Math.hypot(t.x - b.x, t.y - b.y)), 1050, dt);
+      steer(b, t.x, t.y, 2.4 + 900 / Math.max(150, dhypot(t.x - b.x, t.y - b.y)), 1050, dt);
       // Schlangenlinie, für beide Seiten gespiegelt (vorher drehte sie für links nach unten, für rechts nach oben)
-      const w = (b.fxO ? 1 : -1) * Math.cos(b.fxT * 11) * 0.9 * dt * 11, c = Math.cos(w), s = Math.sin(w), vx = b.vx;
+      const w = (b.fxO ? 1 : -1) * dcos(b.fxT * 11) * 0.9 * dt * 11, c = dcos(w), s = dsin(w), vx = b.vx;
       b.vx = vx * c - b.vy * s; b.vy = vx * s + b.vy * c;
       if (b.fxT > 2.6) endFx(st); break;
     }
@@ -225,15 +226,15 @@ export function superStep(st, b, dt) {
       if (b.fxP === 0 && b.fxT > 0.22) { b.fxP = 1; b.fxBX = 0; }
       if (b.fxP === 1) {
         // Looping: Geschwindigkeit dreht einmal ganz herum (nach oben über den Kopf), dann Feuer aufs Tor
-        const w = -b.fxDX * Math.PI * 2 / 0.62, a = w * dt, c = Math.cos(a), s = Math.sin(a), vx = b.vx;
+        const w = -b.fxDX * Math.PI * 2 / 0.62, a = w * dt, c = dcos(a), s = dsin(a), vx = b.vx;
         b.vx = vx * c - b.vy * s; b.vy = vx * s + b.vy * c; b.fxBX += Math.abs(a);
         if (b.fxBX >= Math.PI * 2) { b.fxP = 2; aim(b, t.x, t.y, 1350); ev(st, { t: "launch", x: b.x, y: b.y }); }
       }
       if (b.fxT > 2.4) endFx(st); break;
     case "clone": case "copypaste": {
       b.fxBX += b.fxDX * dt; b.fxBY += b.fxDY * dt;
-      const amp = 75 * Math.sin(Math.min(1, b.fxT / 0.35) * Math.PI / 2);
-      const d = Math.hypot(b.fxDX, b.fxDY) || 1, px = -b.fxDY / d, py = b.fxDX / d;
+      const amp = 75 * dsin(Math.min(1, b.fxT / 0.35) * Math.PI / 2);
+      const d = dhypot(b.fxDX, b.fxDY) || 1, px = -b.fxDY / d, py = b.fxDX / d;
       const nx = b.fxBX + px * amp * b.fxK, ny = b.fxBY + py * amp * b.fxK;
       b.vx = (nx - b.x) / dt; b.vy = (ny - b.y) / dt;
       b.x = nx - b.vx * dt; b.y = ny - b.vy * dt; // wird gleich wieder addiert
@@ -245,7 +246,7 @@ export function superStep(st, b, dt) {
 export function endFx(st) {
   const b = st.b;
   if (!b.fx) return;
-  if (b.fx === "clone" || b.fx === "copypaste") { const s = Math.hypot(b.fxDX, b.fxDY) || 1; b.vx = b.fxDX / s * 900; b.vy = b.fxDY / s * 900; }
+  if (b.fx === "clone" || b.fx === "copypaste") { const s = dhypot(b.fxDX, b.fxDY) || 1; b.vx = b.fxDX / s * 900; b.vy = b.fxDY / s * 900; }
   if (b.fx === "giant") b.grow = Math.max(b.grow, 2.0);
   b.fx = ""; b.fxO = -1; b.alpha = 1; b.fxP = 0;
 }
