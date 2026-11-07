@@ -712,6 +712,8 @@ export default {
   "league.platinum": "Platinum",
   "league.silver": "Silver",
   "legal.imprint": "Legal Notice",
+  "legal.acceptPlay": "By tapping “Play” you accept the",
+  "legal.acceptSecure": "By saving you accept the {terms}. Privacy information: {privacy}.",
   "legal.privacy": "Privacy",
   "legal.terms": "Terms of Use",
   "level.bonus": "Bonus: <b>+{coins} coins</b>",

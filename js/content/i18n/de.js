@@ -713,6 +713,8 @@ export default {
   "league.platinum": "Platin",
   "league.silver": "Silber",
   "legal.imprint": "Impressum",
+  "legal.acceptPlay": "Mit „Spielen“ akzeptierst du die",
+  "legal.acceptSecure": "Mit dem Sichern akzeptierst du die {terms}. Hinweise zum Datenschutz: {privacy}.",
   "legal.privacy": "Datenschutz",
   "legal.terms": "Nutzungsbedingungen",
   "level.bonus": "Bonus: <b>+{coins} Münzen</b>",

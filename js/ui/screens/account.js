@@ -18,6 +18,8 @@ const errText = e => (ERR.includes(e && e.code) ? t("acc.err." + e.code) : t("ac
 // Eingabefeld für den 6-stelligen Code aus der Mail (Handys bieten den Code aus der Mail direkt an)
 const codeInput = () => `<input id="accCode" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="${t("acc.codePh")}">`;
 const code = () => ($("accCode").value || "").replace(/\D/g, "");
+// Hinweis auf Nutzungsbedingungen und Datenschutz direkt am Knopf (Einbeziehung nach § 305 Abs. 2 BGB)
+const legalNote = () => `<p class="hint accnote">${t("legal.acceptSecure", { terms: `<a href="legal/terms.html" target="_blank" rel="noopener">${t("legal.terms")}</a>`, privacy: `<a href="legal/privacy.html" target="_blank" rel="noopener">${t("legal.privacy")}</a>` })}</p>`;
 
 /** Nach Anmelden auf einem anderen Konto: lokalen Stand verwerfen und neu laden */
 async function switched() { await resetProfile(); location.reload(); }
@@ -53,7 +55,7 @@ export function accountUI() {
     b.innerHTML = `<div class="accstate guest"><svg><use href="#i-user"/></svg><span><b>${t("ui.guest")}</b><small>${pend ? t("acc.codeSent", { email: esc(pend) }) : t("acc.guestState")}</small></span></div>
       ${pend ? `${codeInput()}<button class="btn green" id="accConfirm">${t("acc.confirm")}</button>
         <div class="row"><button class="linkbtn" id="accResend">${t("acc.resend")}</button><button class="linkbtn" id="accOther">${t("acc.otherMail")}</button></div>`
-      : `<p class="hint">${t("acc.secureHint")}</p><input id="accMail" type="email" placeholder="${t("acc.email")}" autocomplete="email"><button class="btn green" id="accLink">${t("acc.secure")}</button>`}
+      : `<p class="hint">${t("acc.secureHint")}</p><input id="accMail" type="email" placeholder="${t("acc.email")}" autocomplete="email"><button class="btn green" id="accLink">${t("acc.secure")}</button>${legalNote()}`}
       <p class="hint" id="accMsg"></p>
       <button class="linkbtn" id="accToLogin">${t("acc.haveAccount")}</button>`;
     const send = async email => {

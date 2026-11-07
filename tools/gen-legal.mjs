@@ -134,20 +134,39 @@ ${payments ? pay.en + "\n" : ""}${captcha ? turn.en + "\n" : ""}<h2>Recipients</
   const terms = {
     title: { de: "Nutzungsbedingungen", en: "Terms of Use" },
     de: `<p class="meta">${G} · Stand: ${date.de}</p>${open ? note.de : ""}
-<h2>Geltungsbereich</h2>
-<p>Diese Bedingungen gelten für die Nutzung des Browserspiels ${G} („das Spiel“), angeboten von ${esc(L.operator)} (siehe <a href="imprint.html">Impressum</a>). Mit dem Spielen akzeptierst du sie. Zwingende Verbraucherschutzvorschriften deines Wohnsitzlandes bleiben unberührt.</p>
-<h2>Alter</h2>
+<h2>1. Geltungsbereich</h2>
+<p>Diese Bedingungen gelten für die Nutzung des Browserspiels ${G} („das Spiel“), angeboten von ${esc(L.operator)} („wir“, siehe <a href="imprint.html">Impressum</a>). Mit dem Spielen akzeptierst du sie. Zwingende Verbraucherschutzvorschriften deines Wohnsitzlandes bleiben unberührt.</p>
+<h2>2. Das Spiel</h2>
+<ul>
+<li>Das Spiel ist kostenlos${payments ? "; einzelne Inhalte kannst du optional kaufen" : ""}. Wir stellen es bereit, wie es ist, und entwickeln es laufend weiter. Funktionen, Inhalte und Spielbalance können sich dabei ändern.</li>
+<li>Online-Spiele laufen direkt zwischen den Geräten der Spieler (Peer-to-Peer). Dabei sehen die Geräte der Mitspieler technisch deine IP-Adresse. Den Inhalt und das Verhalten anderer Spieler kontrollieren wir nicht.</li>
+<li>Für die Sicherheit deines Geräts und Browsers (z. B. Updates) bist du selbst verantwortlich.</li>
+</ul>
+<h2>3. Alter</h2>
 <p>Das Spiel richtet sich an Spieler ab ${L.minAge} Jahren. Jüngere brauchen für ein Konto und Online-Spiele die Zustimmung ihrer Eltern.</p>
-<h2>Konten</h2>
+<h2>4. Konto</h2>
 <ul>
 <li>Du kannst als Gast spielen. Ein Gastkonto hängt an deinem Browser; löschst du die Browserdaten, kann es verloren gehen. Gastkonten ohne Käufe werden nach ${L.guestDays} Tagen ohne Aktivität gelöscht.</li>
-<li>Um deinen Fortschritt zu sichern oder Ranked zu spielen, sicherst du dein Konto mit einer E-Mail-Adresse. Halte deine Zugangsdaten geheim.</li>
-<li>Du darfst mehrere Geräte nutzen, aber keine Konten anlegen, um dir unfaire Vorteile zu verschaffen (z. B. Wertung hochtreiben, Belohnungen sammeln).</li>
+<li>Sicherst du dein Konto mit einer E-Mail-Adresse, meldest du dich mit einem Code aus einer Mail an. Schütze den Zugang zu deinem Postfach; was über dein Konto geschieht, wird dir zugerechnet, soweit du es zu vertreten hast.</li>
+<li>Jedes Konto ist persönlich. Verkauf, Tausch oder Weitergabe von Konten ist nicht erlaubt.</li>
 <li>Du kannst dein Konto jederzeit im Spiel löschen (Profil → Konto).</li>
 </ul>
-<h2>Fair Play</h2>
-<p>Verboten sind: Schummeln, Manipulation des Spiels oder seines Netzwerkverkehrs, Bots und Skripte, Ausnutzen von Fehlern, abgesprochene Ergebnisse, beleidigende Spielernamen und Belästigung. Wir können Fortschritt zurücksetzen, unfair erlangte Belohnungen entfernen und Konten sperren oder löschen, die gegen diese Regeln verstoßen. Ergebnisse von Online-Spielen prüft der Server; widersprüchliche oder unplausible Meldungen werden unter Umständen nicht gewertet.</p>
-<h2>Virtuelle Gegenstände und Währungen</h2>
+<h2>5. Regeln für ein faires und sicheres Spiel</h2>
+<p>Verboten ist insbesondere:</p>
+<ul>
+<li>Schummeln: Bots, Skripte, Makros, Cheat-Programme, manipulierte Spiel- oder Netzwerkdaten, Ausnutzen von Fehlern, abgesprochene Ergebnisse oder mehrere Konten, um dir Vorteile zu verschaffen.</li>
+<li>Angriffe auf das Spiel, unsere Server oder andere Spieler: Schadsoftware oder schädliche Daten übertragen, Überlastungsangriffe, Sicherheitsmaßnahmen umgehen, unbefugt auf Systeme oder Daten zugreifen, IP-Adressen anderer Spieler ausspähen oder für Angriffe nutzen.</li>
+<li>Automatisierte Zugriffe (z. B. Auslesen von Daten), soweit sie nicht für das normale Spielen nötig sind.</li>
+<li>Beleidigende, diskriminierende, extremistische oder sonst rechtswidrige Spielernamen, Belästigung anderer Spieler und das Vortäuschen einer fremden Identität, auch unserer.</li>
+<li>Gewerbliche Nutzung ohne unsere Zustimmung, etwa der Handel mit Konten oder Gegenständen oder bezahltes „Hochspielen“.</li>
+<li>Jede Nutzung, die gegen Gesetze oder Rechte Dritter verstößt.</li>
+</ul>
+<p>Fehler und Sicherheitslücken meldest du bitte an ${mail}, statt sie auszunutzen.</p>
+<h2>6. Folgen von Verstößen</h2>
+<p>Bei einem Verstoß können wir je nach Schwere: Ergebnisse nicht werten, Fortschritt zurücksetzen, unfair erlangte Belohnungen entfernen, deinen Spielernamen ändern, dein Konto vorübergehend sperren oder löschen. Bei schweren Verstößen auch ohne vorherige Warnung. Ergebnisse von Online-Spielen prüft der Server; widersprüchliche oder unplausible Meldungen werden unter Umständen nicht gewertet. Verletzt du schuldhaft diese Regeln oder Rechte Dritter, haftest du für den entstandenen Schaden und stellst uns von Ansprüchen Dritter frei, die daraus entstehen, einschließlich angemessener Kosten der Rechtsverteidigung.</p>
+<h2>7. Rechte am Spiel</h2>
+<p>Alle Rechte am Spiel (Programm, Grafiken, Figuren, Töne, Name und Logo) liegen bei uns oder unseren Lizenzgebern. Du darfst das Spiel privat und nicht gewerblich spielen. Videos, Streams und Screenshots vom Spiel sind erlaubt. Kopieren, Verändern, Weiterverbreiten oder das Nachbauen des Spiels oder seiner Teile ist nur erlaubt, soweit das Gesetz es zwingend gestattet.</p>
+<h2>8. Virtuelle Gegenstände und Währungen</h2>
 <ul>
 <li>Das Spiel hat zwei virtuelle Währungen: Münzen und Juwelen. ${payments ? "Münzen gibt es nur durch Spielen, Juwelen durch Kauf oder selten im Spiel." : "Beide gibt es nur im Spiel, nicht für echtes Geld."}</li>
 <li>Virtuelle Währungen und Gegenstände (Köpfe, Bälle, Arenen, Kosmetik, Saison-Pass, Kopf-Level) sind eine nicht übertragbare, widerrufliche Lizenz zur Nutzung im Spiel. Sie haben keinen Geldwert, können nicht in Geld getauscht, verkauft oder übertragen werden und werden beim Löschen des Kontos nicht erstattet, soweit das Gesetz nichts anderes vorschreibt.</li>
@@ -155,29 +174,55 @@ ${payments ? pay.en + "\n" : ""}${captcha ? turn.en + "\n" : ""}<h2>Recipients</
 <li>Wir können Balance, Preise und Inhalte des Spiels ändern.${payments ? " Entfernen wir einen für echtes Geld gekauften Gegenstand dauerhaft, erhältst du gleichwertigen Ersatz oder eine Erstattung des Restwerts." : ""}</li>
 </ul>
 ${buy.de}
-<h2>Verfügbarkeit</h2>
-<p>Wir stellen das Spiel bereit, wie es ist, und bemühen uns, es verfügbar zu halten, garantieren aber keine ununterbrochene Verfügbarkeit. Online-Funktionen hängen von Diensten Dritter ab. Wir können das Spiel mit mindestens 30 Tagen Vorankündigung im Spiel einstellen.${payments ? " Nicht verbrauchte gekaufte Juwelen erstatten wir dann auf Anfrage anteilig." : ""}</p>
-<h2>Haftung</h2>
-<p>Wir haften unbeschränkt bei Vorsatz und grober Fahrlässigkeit, bei Verletzung von Leben, Körper oder Gesundheit und nach dem Produkthaftungsgesetz. Bei leichter Fahrlässigkeit haften wir nur für die Verletzung wesentlicher Vertragspflichten, begrenzt auf den typischen, vorhersehbaren Schaden. Im Übrigen ist die Haftung ausgeschlossen.</p>
-<h2>Änderungen dieser Bedingungen</h2>
-<p>Wir können diese Bedingungen aus triftigem Grund ändern (z. B. neue Funktionen oder Gesetzesänderungen). Wir informieren dich mindestens 30 Tage vorher im Spiel. Widersprichst du nicht innerhalb dieser Frist, gelten die Änderungen; darauf weisen wir in der Mitteilung hin.</p>
-<h2>Schlussbestimmungen</h2>
-<p>Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts; für Verbraucher nur, soweit dadurch nicht der Schutz zwingender Vorschriften ihres Wohnsitzlandes entzogen wird. Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>`,
+<h2>9. Verfügbarkeit</h2>
+<p>Wir bemühen uns, das Spiel verfügbar zu halten, garantieren aber keine ununterbrochene oder fehlerfreie Verfügbarkeit. Wartung, Störungen und Dienste Dritter (z. B. Internet, Server, Verbindungsdienste für Online-Spiele) können die Nutzung einschränken. Wir können das Spiel mit mindestens 30 Tagen Vorankündigung im Spiel einstellen.${payments ? " Nicht verbrauchte gekaufte Juwelen erstatten wir dann auf Anfrage anteilig." : ""}</p>
+<h2>10. Gesundheit</h2>
+<p>Das Spiel enthält schnelle Bewegungen und Lichteffekte. Wenn du zu lichtbedingten Anfällen neigst, sprich vor dem Spielen mit einem Arzt. Mach regelmäßig Pausen und hör bei Schwindel oder Unwohlsein sofort auf.</p>
+<h2>11. Haftung</h2>
+<ul>
+<li>Wir haften unbeschränkt bei Vorsatz und grober Fahrlässigkeit, bei Verletzung von Leben, Körper oder Gesundheit, nach dem Produkthaftungsgesetz und soweit wir eine Garantie übernommen haben.</li>
+<li>Im Übrigen haften wir bei leichter Fahrlässigkeit nur für die Verletzung wesentlicher Pflichten, also solcher, die die Durchführung des Vertrags erst ermöglichen und auf deren Einhaltung du regelmäßig vertrauen darfst, und nur für den typischen, vorhersehbaren Schaden. Soweit wir das Spiel unentgeltlich bereitstellen, haften wir für leichte Fahrlässigkeit nicht.</li>
+<li>Für das Verhalten anderer Spieler und für Dienste Dritter, die wir nicht beeinflussen können, sind wir nicht verantwortlich, soweit uns daran kein Verschulden trifft.</li>
+<li>Diese Regeln gelten auch für den Verlust von Spielständen oder virtuellen Gegenständen und für die persönliche Haftung unserer Hilfspersonen.</li>
+</ul>
+<h2>12. Änderungen dieser Bedingungen</h2>
+<p>Wir können diese Bedingungen mit Wirkung für die Zukunft ändern, wenn es dafür einen triftigen Grund gibt, etwa neue Funktionen oder geänderte Gesetze. Über Änderungen informieren wir dich im Spiel. Änderungen, die dich wesentlich benachteiligen, gelten erst, wenn du ihnen zustimmst; stimmst du nicht zu, kannst du dein Konto jederzeit löschen.</p>
+<h2>13. Schlussbestimmungen</h2>
+<p>Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts; für Verbraucher nur, soweit dadurch nicht der Schutz zwingender Vorschriften ihres Wohnsitzlandes entzogen wird. Ist eine Bestimmung unwirksam, bleiben die übrigen wirksam. Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>`,
     en: `<p class="meta">${G} · Last updated: ${date.en}</p>${open ? note.en : ""}
-<h2>Scope</h2>
-<p>These terms apply to the use of the browser game ${G} (the "Game") provided by ${esc(L.operator)} (see <a href="imprint.html">Legal Notice</a>). By playing you accept them. Mandatory consumer protection law of your country of residence remains unaffected.</p>
-<h2>Age</h2>
+<h2>1. Scope</h2>
+<p>These terms apply to the use of the browser game ${G} (the "Game") provided by ${esc(L.operator)} ("we", see <a href="imprint.html">Legal Notice</a>). By playing you accept them. Mandatory consumer protection law of your country of residence remains unaffected.</p>
+<h2>2. The Game</h2>
+<ul>
+<li>The Game is free${payments ? "; some content can optionally be bought" : ""}. We provide it as it is and keep developing it, so features, content and balance may change.</li>
+<li>Online matches run directly between the players' devices (peer-to-peer). The other players' devices can therefore technically see your IP address. We do not control what other players do.</li>
+<li>You are responsible for the security of your own device and browser (e.g. updates).</li>
+</ul>
+<h2>3. Age</h2>
 <p>The Game is intended for players aged ${L.minAge} and over. Younger players need a parent's or guardian's consent to create an account and play online.</p>
-<h2>Accounts</h2>
+<h2>4. Account</h2>
 <ul>
 <li>You can play as a guest. A guest account is tied to your browser; if you clear your browser data, it may be lost. Guest accounts without purchases are deleted after ${L.guestDays} days of inactivity.</li>
-<li>To protect your progress or play Ranked, you save your account with an e-mail address. Keep your login details confidential.</li>
-<li>You may use several devices but must not create accounts to gain unfair advantages (for example to boost a rating or collect rewards).</li>
+<li>If you save your account with an e-mail address, you sign in with a code sent by e-mail. Protect access to your mailbox; actions taken through your account are attributed to you insofar as you are responsible for them.</li>
+<li>Each account is personal. Selling, trading or handing over accounts is not allowed.</li>
 <li>You can delete your account at any time in the Game (Profile → Account).</li>
 </ul>
-<h2>Fair play</h2>
-<p>Prohibited: cheating, manipulating the Game or its network traffic, bots and scripts, exploiting bugs, arranging results, offensive player names and harassment. We may reset progress, remove rewards obtained unfairly, and suspend or delete accounts that break these rules. Results of online matches are checked by the server; contradictory or implausible reports may not be rated.</p>
-<h2>Virtual items and currencies</h2>
+<h2>5. Rules for fair and safe play</h2>
+<p>In particular, the following is prohibited:</p>
+<ul>
+<li>Cheating: bots, scripts, macros, cheat programs, manipulated game or network data, exploiting bugs, arranged results, or multiple accounts to gain an advantage.</li>
+<li>Attacks on the Game, our servers or other players: transmitting malware or harmful data, overload (denial-of-service) attacks, circumventing security measures, unauthorised access to systems or data, harvesting other players' IP addresses or using them for attacks.</li>
+<li>Automated access (e.g. scraping) beyond what normal play requires.</li>
+<li>Offensive, discriminatory, extremist or otherwise unlawful player names, harassing other players, and impersonating others, including us.</li>
+<li>Commercial use without our consent, such as trading accounts or items, or paid boosting.</li>
+<li>Any use that violates the law or the rights of others.</li>
+</ul>
+<p>Please report bugs and security issues to ${mail} instead of exploiting them.</p>
+<h2>6. Consequences of violations</h2>
+<p>Depending on the severity of a violation, we may: not count results, reset progress, remove rewards obtained unfairly, change your player name, or suspend or delete your account, in serious cases without prior warning. Results of online matches are checked by the server; contradictory or implausible reports may not be rated. If you culpably violate these rules or the rights of others, you are liable for the resulting damage and indemnify us against third-party claims arising from it, including reasonable legal defence costs.</p>
+<h2>7. Rights in the Game</h2>
+<p>All rights in the Game (software, graphics, characters, sounds, name and logo) belong to us or our licensors. You may play the Game privately and non-commercially. Videos, streams and screenshots of the Game are allowed. Copying, modifying, redistributing or recreating the Game or parts of it is only permitted where mandatory law allows it.</p>
+<h2>8. Virtual items and currencies</h2>
 <ul>
 <li>The Game has two virtual currencies: coins and gems. ${payments ? "Coins are earned only by playing; gems are bought or rarely earned in the Game." : "Both are earned only in the Game, not with real money."}</li>
 <li>Virtual currencies and items (heads, balls, arenas, cosmetics, season pass, head levels) are a non-transferable, revocable licence to use them in the Game. They have no monetary value, cannot be exchanged for money, sold or transferred, and are not refunded when an account is deleted, except where required by law.</li>
@@ -185,14 +230,21 @@ ${buy.de}
 <li>We may change the balance, prices and content of the Game.${payments ? " If an item you bought for real money is removed permanently, you receive an equivalent replacement or a refund of the remaining value." : ""}</li>
 </ul>
 ${buy.en}
-<h2>Availability</h2>
-<p>We provide the Game as it is and try to keep it available, but do not guarantee uninterrupted availability. Online features depend on third-party services. We may end the Game with at least 30 days' notice in the Game.${payments ? " Unused paid gems will then be refunded proportionally on request." : ""}</p>
-<h2>Liability</h2>
-<p>We are liable without limitation for intent and gross negligence, for injury to life, body or health, and under the German Product Liability Act. For slight negligence we are liable only for breach of essential contractual obligations, limited to the typical, foreseeable damage. Otherwise our liability is excluded.</p>
-<h2>Changes to these terms</h2>
-<p>We may change these terms for valid reasons (for example new features or legal changes). We will inform you in the Game at least 30 days in advance. If you do not object within this period, the changes apply; we will point out this consequence in the notice.</p>
-<h2>Final provisions</h2>
-<p>German law applies, excluding the UN Convention on Contracts for the International Sale of Goods; for consumers only insofar as this does not deprive them of the protection of the mandatory law of their country of residence. We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board.</p>`,
+<h2>9. Availability</h2>
+<p>We try to keep the Game available but do not guarantee uninterrupted or error-free availability. Maintenance, outages and third-party services (e.g. internet, servers, connection services for online matches) may limit its use. We may end the Game with at least 30 days' notice in the Game.${payments ? " Unused paid gems will then be refunded proportionally on request." : ""}</p>
+<h2>10. Health</h2>
+<p>The Game contains fast movement and light effects. If you are prone to light-induced seizures, consult a doctor before playing. Take regular breaks and stop immediately if you feel dizzy or unwell.</p>
+<h2>11. Liability</h2>
+<ul>
+<li>We are liable without limitation for intent and gross negligence, for injury to life, body or health, under the German Product Liability Act, and where we have given a guarantee.</li>
+<li>Otherwise, for slight negligence we are liable only for breach of essential obligations, i.e. those that make performance of the contract possible in the first place and on which you may regularly rely, and only for the typical, foreseeable damage. Where we provide the Game free of charge, we are not liable for slight negligence.</li>
+<li>We are not responsible for the conduct of other players or for third-party services beyond our control, unless we are at fault.</li>
+<li>These rules also apply to the loss of game progress or virtual items and to the personal liability of the people we work with.</li>
+</ul>
+<h2>12. Changes to these terms</h2>
+<p>We may change these terms with effect for the future if there is a valid reason, such as new features or changes in the law. We will inform you in the Game. Changes that put you at a significant disadvantage only apply once you agree to them; if you do not agree, you can delete your account at any time.</p>
+<h2>13. Final provisions</h2>
+<p>German law applies, excluding the UN Convention on Contracts for the International Sale of Goods; for consumers only insofar as this does not deprive them of the protection of the mandatory law of their country of residence. If any provision is invalid, the rest remain valid. We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board.</p>`,
   };
 
   const NAV = { de: { back: "← Zurück zum Spiel", other: "English" }, en: { back: "← Back to the game", other: "Deutsch" } };
