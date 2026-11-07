@@ -23,6 +23,7 @@ export function startDemo() {
   App.ai = [makeAI(0, 2), makeAI(1, 2)];
   App.names = ["", ""]; App.labels = [null, null]; App.ball = S.ball;
   App.rec = []; App.replay = null; fx.clear();
+  App.stillKey = null;   // Standbild neu zeichnen
   I.setLayout("none");
 }
 

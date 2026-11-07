@@ -13,7 +13,9 @@ const INK = COL.ink;
 const TEAM = [COL.p1, COL.p2];
 const FT = 330; // obere (hintere) Kante des Spielfelds
 
-let cv, ctx, cw = 0, ch = 0, dpr = 1, band = 0, safeTop = 0;
+let cv, ctx, cw = 0, ch = 0, dpr = 1, band = 0, safeTop = 0, viewN = 0;
+/** Zählt Größenänderungen: das Standbild hinter den Menüs wird nur dann neu gezeichnet */
+export const viewStamp = () => viewN;
 const base = { s: 1, ox: 0, oy: 0 };
 let quality = "high";
 const cam = { z: 1, x: W / 2, y: H / 2, shake: 0, sx: 0, sy: 0, flash: 0, flashCol: "#fff", punch: 0 };
@@ -55,6 +57,7 @@ export function resize() {
   base.s = s;
   base.ox = (vw - W * s) / 2;
   base.oy = vh - extra - H * s;
+  viewN++;
   // Abstand oben wie Pause- und Emote-Knopf (8 px unter dem sicheren Bereich, z. B. Notch)
   safeTop = insetTop();
   bgKey = "";
@@ -1357,6 +1360,8 @@ export function render(st, t, opts) {
     view = opts.replay[idx]; const from = Math.max(0, idx - 27);
     rep = opts.replay.slice(from, idx + 1).map((s, j) => ({ x: s.b.x, y: s.b.y, r: s.b.r, fx: s.b.fx, sp: Math.hypot(s.b.vx, s.b.vy), id: from + j }));
   }
+  // Standbild hinter den Menüs: nur Arena und Tore, ohne Spieler, Ball und Effekte, Kamera in Ruhe
+  if (opts.still) { cam.z = 1; cam.x = W / 2; cam.y = H / 2; cam.punch = 0; cam.shake = 0; }
   let tz = 1, tx = W / 2, ty = H / 2;
   if (rep) {
     const top = Math.min(view.b.y, view.p[0].y - 90, view.p[1].y - 90) - 70, bot = G + 50;
@@ -1387,6 +1392,7 @@ export function render(st, t, opts) {
   lights(st, t);
   goalBack(view, 0, t); goalBack(view, 1, t);
   drawObstacles(st, view, t);
+  if (opts.still) { goalFront(view, 0, t); goalFront(view, 1, t); return; }
   drawPowerups(view, t);
   drawScenes("back");
   view.p.forEach(p => drawPlayerBase(p));

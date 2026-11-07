@@ -3,9 +3,8 @@ import { clamp, MODS } from "../content/config.js";
 import { aiInput } from "../core/ai.js";
 import { advance, REPLAY_END, REPLAY_START } from "../core/physics.js";
 import { S, save } from "./profile.js";
-import { render, setQuality } from "../ui/render/render.js";
+import { render, setQuality, viewStamp } from "../ui/render/render.js";
 import { onEvent } from "./effects.js";
-import { startDemo } from "./game.js";
 import { guestFrame, hostSend, netWaitTick, pingHud, watchNet } from "./online.js";
 import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
@@ -39,6 +38,7 @@ function frame(now) {
   const netWait = netWaitTick(now);   // Verbindung weg: Spiel steht, bis der andere zurück ist oder die Zeit um ist
   if (netWait) { /* nur zeichnen */ }
   else if (App.mode === "guest") guestFrame(dt, now);
+  else if (App.mode === "demo") { /* Menü: kein Spiel im Hintergrund, nur ein Standbild der Arena */ }
   else if (!App.paused && !(rotated && App.mode !== "host")) {
     App.acc = advance(st, dt, gatherInputs(dt), App.acc);
     if (App.mode === "host") hostSend(dt);
@@ -52,10 +52,13 @@ function frame(now) {
   if (App.mode !== "demo") { const me = myIdx(); if (me >= 0) App.maxDef = Math.max(App.maxDef, st.s[1 - me] - st.s[me]); }
   const la = st.ph === "cd" ? 1 : st.ph === "play" && App.goT >= 0 ? clamp(1 - (simT - App.goT - 1.5) / 0.6, 0, 1) : 0;
   const labels = (App.labels || []).map(lb => (lb ? { t: lb, a: la } : null));
-  if (App.screen !== "home" || App.mode !== "demo" || !document.hidden) render(st, simT, { dt, names: App.names, labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesText(), modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
+  if (App.mode === "demo") {
+    // Standbild nur zeichnen, wenn es neu ist oder sich die Größe geändert hat
+    const key = viewStamp() + ":" + st.arena + ":" + (document.fonts ? document.fonts.status : "");   // Schrift nachgeladen: neu zeichnen
+    if (App.stillKey !== key) { App.stillKey = key; render(st, simT, { dt, still: true, noHud: true }); }
+  } else render(st, simT, { dt, names: App.names, labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesText(), modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
   if (App.mode !== "demo") I.touchHud(App.mode === "guest" && App.gp ? { p: [st.p[0], Object.assign({}, st.p[1], { charge: App.gp.charge })] } : st);
-  if (st.ph === "end" && !App.endShown) { App.endShown = true; if (App.mode === "demo") setTimeout(startDemo, 1500); else setTimeout(matchEnd, 900); }
-  if (App.mode === "demo" && st.ph === "goal" && st.pt < 3.0) st.pt = Math.min(st.pt, 0.5);
+  if (st.ph === "end" && !App.endShown && App.mode !== "demo") { App.endShown = true; setTimeout(matchEnd, 900); }
   if (App.screen === "home") drawShowcase(dt);
 }
 
