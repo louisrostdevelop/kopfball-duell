@@ -235,6 +235,7 @@ function starShape(x, y, r, rot) {
 let seedN = 1;
 const srand = () => { seedN = (seedN * 16807) % 2147483647; return seedN / 2147483647; };
 const persp = x => W / 2 + (x - W / 2) * 0.82; // x an der hinteren Feldkante
+const VY = G - (G - FT) / 0.18;                  // Fluchtpunkt von Boden, Feldlinien und Toren
 
 function buildBg(arena) {
   if (W !== lastW) { lastW = W; resize(); } // Feldbreite hat sich geändert: Kamera neu ausrichten
@@ -292,39 +293,66 @@ const CROWD = {
 };
 
 function grassTex(b, R, dark, n = 900) {
-  for (let i = 0; i < n; i++) { const x = R.x0 + srand() * (R.x1 - R.x0), y = FT + Math.pow(srand(), 0.7) * (G - FT); b.fillStyle = srand() > 0.5 ? dark : "rgba(255,255,255,.05)"; b.fillRect(x, y, 2 + srand() * 3, 1.5); }
+  for (let i = 0; i < n; i++) { const x = R.x0 + srand() * (R.x1 - R.x0), y = FT + Math.pow(srand(), 0.7) * (R.y1 - FT); b.fillStyle = srand() > 0.5 ? dark : "rgba(255,255,255,.05)"; b.fillRect(x, y, 2 + srand() * 3, 1.5); }
 }
 function pitch(b, R, c1, c2, lines = "rgba(255,255,255,.6)") {
   // Mähstreifen in Perspektive
-  const n = 16;
-  for (let i = -6; i < n + 6; i++) {
+  // Boden läuft vorne bis zum Bildrand durch (das Feld geht unter dem Bild weiter)
+  const n = 16, kb = (R.y1 - VY) / (G - VY), at = (x, k) => W / 2 + (x - W / 2) * k;
+  for (let i = -8; i < n + 8; i++) {
     const xa = i * W / n, xb = (i + 1) * W / n;
-    b.beginPath(); b.moveTo(persp(xa), FT); b.lineTo(persp(xb), FT); b.lineTo(xb, G); b.lineTo(xa, G); b.closePath();
+    b.beginPath(); b.moveTo(persp(xa), FT); b.lineTo(persp(xb), FT); b.lineTo(at(xb, kb), R.y1); b.lineTo(at(xa, kb), R.y1); b.closePath();
     b.fillStyle = i % 2 ? c1 : c2; b.fill();
   }
   // Licht von oben, hinten dunkler
   const g = b.createLinearGradient(0, FT, 0, G);
   g.addColorStop(0, "rgba(0,10,30,.38)"); g.addColorStop(0.4, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(255,255,255,.05)");
-  b.fillStyle = g; b.fillRect(R.x0, FT, R.x1 - R.x0, G - FT);
+  b.fillStyle = g; b.fillRect(R.x0, FT, R.x1 - R.x0, R.y1 - FT);   // unter G bleibt der helle Ton, sonst Kante
   const rg = b.createRadialGradient(W / 2, FT + 60, 40, W / 2, FT + 60, W * 0.6);
   rg.addColorStop(0, "rgba(255,255,230,.10)"); rg.addColorStop(1, "rgba(255,255,230,0)");
   b.fillStyle = rg; b.fillRect(R.x0, FT, R.x1 - R.x0, G - FT);
   if (!lines) return;
-  b.strokeStyle = lines; b.lineWidth = 3.5; b.lineJoin = "round";
-  const yb = FT + 14;
-  b.beginPath(); b.moveTo(persp(-20), yb); b.lineTo(persp(W + 20), yb); b.stroke();
-  b.beginPath(); b.moveTo(W / 2, yb); b.lineTo(W / 2, G); b.stroke();
-  b.beginPath(); b.ellipse(W / 2, (yb + G) / 2 + 6, 170, 58, 0, 0, TAU); b.stroke();
-  b.fillStyle = lines; b.beginPath(); b.ellipse(W / 2, (yb + G) / 2 + 6, 7, 3, 0, 0, TAU); b.fill();
-  // Strafräume
-  [0, 1].forEach(s => {
-    const d = s ? -1 : 1, gx = s ? W : 0, bx = gx + d * 300;
-    const by = yb + 46;
-    b.beginPath(); b.moveTo(persp(gx) + d * 20, by); b.lineTo(persp(bx), by); b.lineTo(bx, G); b.stroke();
-    b.beginPath(); b.arc(gx + d * 230, G - 70, 5, 0, TAU); b.fill();
-  });
+  fieldLines(b, lines, R);
 }
-function front(b, R, turfCol, boardCol, glow) {
+// Feldlinien in echter Perspektive und echten Maßen. Man sieht das Feld von der Seitenlinie: die Spielebene (vorne, wo
+// Spieler und Tore stehen) ist die Längsachse durch beide Tormitten, die vordere Hälfte liegt außerhalb des Bilds.
+// Strafraum, Torraum, Elfmeterpunkt und Mittelkreis liegen deshalb um die Tore herum, hinten die Seitenlinie; nach vorne
+// laufen die Linien unter dem Bildrand weiter.
+function fieldLines(b, col, R) {
+  const yb = FT + 14, ks = (yb - VY) / (G - VY);        // hintere Seitenlinie
+  const gz = 1 / GK - 1;                                // Tortiefe (in c·z)
+  const m = (W - 2 * GOAL_W) / 105;                     // Einheiten pro Meter: 105 m zwischen den Torlinien
+  const c = (1 / ks - 1 - gz / 2) / (34 * m);           // Seitenlinie 34 m hinter der Achse
+  const za = gz / 2 / c;                                // Achse durch die Tormitten
+  const proj = (x, z) => { const k = 1 / (1 + c * (za + z)); return [W / 2 + (x - W / 2) * k, VY + (G - VY) * k]; };
+  const path = pts => { b.beginPath(); pts.forEach(([x, z], i) => b[i ? "lineTo" : "moveTo"](...proj(x, z))); b.stroke(); };
+  const arc = (cx, cz, r, a0, a1, n = 48) => { const pts = []; for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; pts.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r]); } path(pts); };
+  const spot = (x, z) => { const [sx, sy] = proj(x, z); b.beginPath(); b.ellipse(sx, sy, 6, 2.6, 0, 0, TAU); b.fill(); };
+  const kb = (R.y1 + 20 - VY) / (G - VY), near = (1 / kb - 1) / c - za;   // near: unterer Bildrand (Linien laufen durch)
+  const L = GOAL_W, Rr = W - GOAL_W, back = 34 * m;
+  b.save(); b.beginPath(); b.rect(R.x0, FT, R.x1 - R.x0, R.y1 - FT); b.clip();
+  b.strokeStyle = col; b.fillStyle = col; b.lineWidth = 3.5; b.lineJoin = "round"; b.lineCap = "round";
+  path([[L, near], [L, back], [Rr, back], [Rr, near]]);               // Torlinien und Seitenlinie
+  path([[W / 2, near], [W / 2, back]]);                              // Mittellinie
+  arc(W / 2, 0, 9.15 * m, 0, TAU, 96); spot(W / 2, 0);            // Mittelkreis (vorne läuft er unter dem Bildrand weiter)
+  [[L, 1], [Rr, -1]].forEach(([gx, d]) => {
+    const pb = gx + d * 16.5 * m, ga = gx + d * 5.5 * m, ps = gx + d * 11 * m;
+    path([[gx, 20.16 * m], [pb, 20.16 * m], [pb, -20.16 * m], [gx, -20.16 * m]]);   // Strafraum
+    path([[gx, 9.16 * m], [ga, 9.16 * m], [ga, -9.16 * m], [gx, -9.16 * m]]);       // Torraum
+    spot(ps, 0);                                                       // Elfmeterpunkt
+    const t = Math.acos(5.5 / 9.15);                                   // Teilkreis vor dem Strafraum
+    arc(ps, 0, 9.15 * m, d > 0 ? -t : Math.PI - t, d > 0 ? t : Math.PI + t, 24);
+  });
+  b.restore();
+}
+function front(b, R, turfCol, boardCol, glow, open = false) {
+  if (open) {
+    // Feld läuft durch: nach unten nur sanft dunkler, damit die Steuerung auf dem Handy lesbar bleibt
+    const g = b.createLinearGradient(0, G + 8, 0, R.y1);
+    g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, boardCol + "a6");
+    b.fillStyle = g; b.fillRect(R.x0, G + 8, R.x1 - R.x0, R.y1 - G - 8);
+    return;
+  }
   // Vordere Kante des Felds und Bande unten (dort liegt auf dem Handy die Steuerung)
   b.fillStyle = turfCol; b.fillRect(R.x0, G, R.x1 - R.x0, 34);
   b.fillStyle = "rgba(255,255,255,.55)"; b.fillRect(R.x0, G - 1, R.x1 - R.x0, 3);
@@ -360,7 +388,7 @@ function bgStadion(b, R) {
   });
   pitch(b, R, "#25a552", "#1f964a");
   grassTex(b, R, "rgba(0,40,10,.12)");
-  front(b, R, "#1d8a44", "#0a1433", "rgba(34,211,238,.35)");
+  front(b, R, "#1d8a44", "#0a1433", "rgba(34,211,238,.35)", true);
 }
 function bgStrand(b, R) {
   const sky = b.createLinearGradient(0, R.y0, 0, FT);

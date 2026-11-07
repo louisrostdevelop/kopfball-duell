@@ -63,7 +63,7 @@ export function makeArenaArt({ srand, FT, front, pitch }) {
     b.strokeStyle = "rgba(255,110,40,.22)"; b.lineWidth = 2;
     for (let i = -6; i <= 22; i += 2) { const xa = i * W / 16; b.beginPath(); b.moveTo(persp(xa), FT); b.lineTo(xa, G); b.stroke(); }
     b.save(); b.globalCompositeOperation = "lighter"; glow(b, W / 2, G + 10, 700, "rgba(255,80,20,.12)"); b.restore();
-    front(b, R, "#2b1410", "#160709", "rgba(255,106,26,.6)");
+    front(b, R, "#2b1410", "#160709", "rgba(255,106,26,.6)", true);
   }
 
   // ---------- Skatepark ----------
@@ -116,8 +116,8 @@ export function makeArenaArt({ srand, FT, front, pitch }) {
     b.fillStyle = "#5f6670"; b.fillRect(R.x0, FT - 12, R.x1 - R.x0, 12);
     // Beton in Perspektive, gelbe Feldlinien
     pitch(b, R, "#bcc1c9", "#b4b9c2", "rgba(255,200,40,.9)");
-    for (let i = 0; i < 260; i++) { b.fillStyle = srand() > 0.5 ? "rgba(60,64,72,.08)" : "rgba(255,255,255,.12)"; b.fillRect(R.x0 + srand() * (R.x1 - R.x0), FT + srand() * (G - FT), 2, 2); }
-    front(b, R, "#a4aab3", "#2b2f36", "rgba(255,199,43,.55)");
+    for (let i = 0; i < 260; i++) { b.fillStyle = srand() > 0.5 ? "rgba(60,64,72,.08)" : "rgba(255,255,255,.12)"; b.fillRect(R.x0 + srand() * (R.x1 - R.x0), FT + srand() * (R.y1 - FT), 2, 2); }
+    front(b, R, "#a4aab3", "#2b2f36", "rgba(255,199,43,.55)", true);
   }
 
   // ---------- Tiefsee ----------
@@ -226,7 +226,7 @@ export function makeArenaArt({ srand, FT, front, pitch }) {
     b.fillStyle = "rgba(30,24,6,.35)"; b.fillRect(R.x0, FT - 3, R.x1 - R.x0, 3);
     // Teppich: Bahnen in Perspektive, Linien als abgewetztes Klebeband
     pitch(b, R, "#b5a24c", "#ae9b48", "rgba(255,248,210,.38)");
-    for (let i = 0; i < 900; i++) { b.fillStyle = srand() > 0.5 ? "rgba(90,75,20,.10)" : "rgba(255,245,190,.06)"; b.fillRect(R.x0 + srand() * (R.x1 - R.x0), FT + srand() * (G - FT), 2, 2); }
+    for (let i = 0; i < 900; i++) { b.fillStyle = srand() > 0.5 ? "rgba(90,75,20,.10)" : "rgba(255,245,190,.06)"; b.fillRect(R.x0 + srand() * (R.x1 - R.x0), FT + srand() * (R.y1 - FT), 2, 2); }
     // feuchte Stellen, weich auslaufend, flach in der Bodenebene
     for (const [dx, y, w] of [[-470, 455, 90], [400, 560, 120], [690, 410, 70]]) {
       b.save(); b.translate(vx + dx, y); b.scale(1, 0.22);
@@ -236,7 +236,7 @@ export function makeArenaArt({ srand, FT, front, pitch }) {
     // Vignette
     const vg = b.createRadialGradient(vx, 360, 320, vx, 360, 1150); vg.addColorStop(0, "rgba(40,32,5,0)"); vg.addColorStop(1, "rgba(40,32,5,.32)");
     b.fillStyle = vg; b.fillRect(R.x0, R.y0, R.x1 - R.x0, G - R.y0);
-    front(b, R, "#a8964a", "#2f2a12", "rgba(255,250,200,.45)");
+    front(b, R, "#a8964a", "#2f2a12", "rgba(255,250,200,.45)", true);
   }
 
   // ---------- Hindernisse ----------
