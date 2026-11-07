@@ -10,6 +10,7 @@ import { BITS, clone, packInput } from "../core/rollback.js";
 import { CELEB, onEvent } from "./effects.js";
 import { validEmote } from "./cosmetics.js";
 import { App } from "./state.js";
+import { sessionRole, touchSession } from "./session.js";
 import { input as I, net as Net } from "./services.js";
 
 /** Rollback an? Zum Vergleichen/Notfall: ?netcode=classic (oder window.__netcode = "classic", Tests) schaltet beim Host das alte Verfahren ein */
@@ -80,7 +81,10 @@ function finalFrame(rb, evs, after, f) {
   for (const e of evs) {
     const k = e.t + (e.i ?? ""); rb.counts[k] = (rb.counts[k] || 0) + 1;
     if (e.t === "goal" || e.t === "ko") onEvent(e, false);
-    if (e.t === "end" && !rb.ended) { onEvent(e, false); rb.ended = clone(after); rb.endAt = performance.now(); rb.endF = f; }
+    if (e.t === "end" && !rb.ended) {
+      onEvent(e, false); rb.ended = clone(after); rb.endAt = performance.now(); rb.endF = f;
+      if (App.mode === "host" && sessionRole()) touchSession({ st: rb.ended });   // Endstand sofort sichern (Neustart)
+    }
   }
 }
 // wie loop.js snap(): nur was die Wiederholung zeichnet
@@ -160,9 +164,7 @@ export function afterRemote(fn) {
  */
 export function rbEndedStart() {
   const rb = App.rb;
-  // Host nach einem Neustart, gesicherter Stand ist schon der endgültige Abpfiff (online.js afterWhistle hält ihn so lange)
-  if (!rb) return App.rbOn && App.st && App.st.ph === "end" ? { ep: (Date.now() % 1e9) + 1, st: netState(App.st), d: 3, ended: true } : null;
-  if (!rb.ended) return null;
+  if (!rb || !rb.ended) return null;   // (Host nach einem Neustart mit Endstand: beendete Sitzung aus restoreHostGame)
   rb.endSent = true;   // erledigt, sobald der Gast „rbok“ schickt (online.js)
   return { ep: rb.ep, st: netState(rb.ended), d: rb.delay, ended: true };
 }

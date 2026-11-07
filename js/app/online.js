@@ -250,8 +250,10 @@ const hostState = () => (App.mode === "host" && (liveOnline() || !rbRemoteDone()
 function afterWhistle() {
   const ended = (App.mode === "host" || App.mode === "guest") && App.st && netEnded();
   if (!ended) return false;
-  // Rollback: Gegenseite hat den Abpfiff noch nicht: Sitzung (mit Endstand) behalten, damit ein Neustart ihn ihr schicken kann
-  if (!rbRemoteDone()) return false;
+  // Rollback: Gegenseite hat den Abpfiff noch nicht: Sitzung (mit Endstand) behalten, damit ein Neustart ihn ihr schicken
+  // kann – nur solange das Spiel noch offen ist (Lobby, „Nochmal“ beenden die Sitzung) und begrenzt (kommt sie nie, gilt
+  // danach die Lobby bzw. nichts)
+  if (!rbRemoteDone() && performance.now() - App.rb.endAt < 30000 + RECONNECT_MS) return false;
   if (App.mm) clearSession(); else saveSession(sessionRole(), { phase: "lobby", st: null, mid: 0 });
   return true;
 }
@@ -273,6 +275,9 @@ export function restoreHostGame(s, h, lost) {
   App.opp = s.opp; App.netCfg = s.netCfg || App.netCfg; App.mid = s.mid; App.matchKey = s.key || ""; App.endedKey = s.endedKey || ""; App.guestCfg = s.guestCfg; App.roomCode = s.code;
   beginMatch(s.cfg);
   App.st = s.st; App.st.ev = []; App.t0 = s.t0 || Date.now(); App.rbOn = !!s.rb;   // Rollback: Sitzung startet, wenn der Gast zurück ist
+  // schon endgültig abgepfiffen (gesichert, weil der Gast den Abpfiff noch nicht hatte): beendete Sitzung, die ihm den
+  // Endstand schickt und auf seine Bestätigung wartet
+  if (s.rb && s.st && s.st.ph === "end") { startRb({ ep: (Date.now() % 1e9) + 1, st: netState(s.st), delay: 3, ended: true }); App.rb.remoteDone = false; App.rb.endF = Infinity; }
   App.netLost = lost; App.lastRx = 0;
   saveSession("host", { ...s });
   waitFor(lost);
@@ -487,6 +492,7 @@ export function guestData(d) {
 export function backToLobby() {
   settlePending();
   stopRb();
+  if (sessionRole() && !App.mm) saveSession(sessionRole(), { phase: "lobby", st: null, mid: 0 });   // nach einem Neustart: Lobby, nicht das alte Spiel
   document.body.classList.remove("ingame");
   $("gameBtns").hidden = true;
   A.crowdOff();

@@ -7,7 +7,7 @@ import { fx } from "../ui/render/render.js";
 import { beginMatch, quitToMenu } from "./game.js";
 import { endlessOpp } from "./modes.js";
 import { backToLobby, hostStart, netEnded } from "./online.js";
-import { afterRemote } from "./rbnet.js";
+import { afterRemote, stopRb } from "./rbnet.js";
 import { sessionRole, touchSession } from "./session.js";
 import { App, myIdx, vsCpu } from "./state.js";
 import { $, copyText, shareOrCopy, toast } from "../ui/dom.js";
@@ -159,7 +159,7 @@ export function matchEnd(key = App.matchKey) {
 
 export function endAgain() {
   A.sfx("click");
-  if (App.mm) { afterRemote(() => mmAgain().catch(() => mmLeave())); return; }
+  if (App.mm) { afterRemote(() => { stopRb(); mmAgain().catch(() => mmLeave()); }); return; }   // altes Spiel ist abgeschlossen
   if (App.mode === "career") { careerScreen(); return; }
   if (App.mode === "cup" || App.mode === "endless") { if (App.run && App.run.done && App.run.kind === "cup" && App.run.round >= 3) trophyModal(); runScreen(); return; }
   if (App.mode === "guest") { Net.send({ t: "rematch" }); $("endNote").textContent = t("end.rematchSent"); $("btnEndAgain").disabled = true; return; }

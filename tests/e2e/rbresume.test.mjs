@@ -134,3 +134,19 @@ test("Rollback: Host pfeift ab, der Gast (dem die letzten Pakete fehlen) startet
   assert.equal(await A.evaluate(() => window.__kd.screen), "end", "Host bleibt auf dem Ergebnis");
   assert.deepEqual([...a.errors.filter(e => !e.includes("TUNNEL")), ...err], []);
 });
+
+test("Rollback: Host pfeift ab und startet sofort neu, der Gast (ohne letzte Pakete) bekommt das Ergebnis", async () => {
+  const { a, A, B, bErr } = await match("st.s = [3, 1]; st.t = 3;");
+  await A.waitForFunction(() => window.__kd.st.ph === "play" && window.__kd.st.t < 0.1, null, { polling: 5, timeout: 20000 });
+  await B.evaluate(() => { window.__mockNet = { lat: 30, jit: 10, loss: 1 }; });
+  await A.waitForFunction(() => window.__kd.rb && window.__kd.rb.ended, null, { timeout: 20000 });
+  await A.close();   // Host weg, kurz nach seinem Abpfiff
+  await B.evaluate(() => { window.__mockNet = { lat: 30, jit: 10, loss: 0 }; });
+  const { P: D, err } = await reopen(a.ctx);
+  await D.waitForFunction(() => window.__kd.mode === "host" && window.__kd.rb && window.__kd.rb.ended, null, { timeout: 15000 });
+  await B.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 40000 });
+  assert.deepEqual(await B.evaluate(() => window.__kd.st.s), [3, 1], "Gast sieht das Ergebnis");
+  await D.waitForFunction(() => window.__kd.screen === "end" && !window.__kd.netWait, null, { timeout: 20000 });
+  assert.equal(await D.evaluate(() => window.__kd.rb.remoteDone), true, "Host weiß, dass der Gast den Endstand hat");
+  assert.deepEqual([...err, ...bErr], []);
+});
