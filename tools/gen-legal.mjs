@@ -13,7 +13,7 @@ export const LEGAL = {
   address: ["c/o flexdienst – #10303", "Kurt-Schumacher-Straße 76", "67663 Kaiserslautern"],
   country: { de: "Deutschland", en: "Germany" },
   email: "support@headstars.app",   // Kontakt; leer = gelber Platzhalter
-  updated: "2026-11-06",
+  updated: "2026-11-07",
   // Datenschutz-Aufsichtsbehörde am Sitz des Anbieters (Rheinland-Pfalz)
   authority: { de: "Der Landesbeauftragte für den Datenschutz und die Informationsfreiheit Rheinland-Pfalz",
     en: "the State Commissioner for Data Protection and Freedom of Information of Rhineland-Palatinate (LfDI Rheinland-Pfalz)",
@@ -31,7 +31,6 @@ export function legalPages({ L = LEGAL, payments = PAYMENTS, captcha = !!BACKEND
   const mail = L.email ? `<a href="mailto:${esc(L.email)}">${esc(L.email)}</a>` : ph("E-MAIL");
   const date = { de: L.updated.split("-").reverse().join("."), en: L.updated };
   const addr = lang => [...L.address, L.country[lang]].map(esc).join("<br>");
-  const who = lang => `${esc(L.operator)}, ${[...L.address, L.country[lang]].map(esc).join(", ")}, ${lang === "de" ? "E-Mail" : "e-mail"}: ${mail}`;
   const G = esc(L.game);
   const open = !L.email;   // Platzhalter offen?
   const note = { de: `<p class="note">Gelb markierte Stellen vor der Veröffentlichung ausfüllen (<code>tools/gen-legal.mjs</code>).</p>`,
@@ -56,102 +55,65 @@ export function legalPages({ L = LEGAL, payments = PAYMENTS, captcha = !!BACKEND
   };
 
   const pay = {
-    de: payments
-      ? `<p>Zahlungen wickelt Stripe ab (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Irland). Deine Zahlungsdaten gibst du direkt bei Stripe ein, wir erhalten keine Karten- oder Kontodaten. Wir speichern Zahlungs-ID, Produkt, Betrag, Währung, Zeitpunkt und Status (bezahlt, erstattet, angefochten). Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) und gesetzliche Pflichten (Art. 6 Abs. 1 lit. c DSGVO). Kaufbelege bewahren wir 10 Jahre auf (§ 147 AO, § 257 HGB); löschst du dein Konto, ohne Verbindung zu deinem Spielerprofil. Datenschutz bei Stripe: stripe.com/privacy.</p>`
-      : `<p>Im Spiel gibt es derzeit keine Käufe mit echtem Geld. Wir verarbeiten keine Zahlungsdaten.</p>`,
-    en: payments
-      ? `<p>Payments are processed by Stripe (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Ireland). You enter your payment details directly with Stripe; we never receive card or bank details. We store the payment ID, product, amount, currency, time and status (paid, refunded, disputed). Legal basis: performance of the contract (Art. 6(1)(b) GDPR) and legal obligations (Art. 6(1)(c) GDPR). Purchase records are kept for 10 years (§ 147 AO, § 257 HGB); if you delete your account, without any link to your player profile. Stripe's privacy policy: stripe.com/privacy.</p>`
-      : `<p>There are currently no purchases with real money in the game. We do not process any payment data.</p>`,
+    de: `<p><b>Käufe.</b> Zahlungen wickelt Stripe ab; deine Zahlungsdaten gibst du direkt dort ein, wir erhalten keine Karten- oder Kontodaten. Wir speichern, was du wann gekauft hast. Rechtsgrundlage: Vertrag und gesetzliche Aufbewahrungspflichten (Art. 6 Abs. 1 lit. b und c DSGVO).</p>`,
+    en: `<p><b>Purchases.</b> Payments are processed by Stripe; you enter your payment details directly there and we never receive card or bank details. We store what you bought and when. Legal basis: contract and statutory retention duties (Art. 6(1)(b) and (c) GDPR).</p>`,
   };
   const turn = {
-    de: `<h2>Schutz vor automatischen Anmeldungen</h2>
-<p>Damit keine Bots Konten anlegen, nutzen wir beim Anlegen eines Gastkontos Cloudflare Turnstile (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA). Turnstile verarbeitet deine IP-Adresse und Merkmale deines Browsers, um Menschen von Bots zu unterscheiden. Rechtsgrundlage: unser berechtigtes Interesse am Schutz des Dienstes (Art. 6 Abs. 1 lit. f DSGVO). Cloudflare ist nach dem EU-U.S. Data Privacy Framework zertifiziert.</p>`,
-    en: `<h2>Protection against automated sign-ups</h2>
-<p>To keep bots from creating accounts, we use Cloudflare Turnstile (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA) when a guest account is created. Turnstile processes your IP address and browser characteristics to tell humans from bots. Legal basis: our legitimate interest in protecting the service (Art. 6(1)(f) GDPR). Cloudflare is certified under the EU-U.S. Data Privacy Framework.</p>`,
+    de: `<p><b>Schutz vor Bots.</b> Beim Anlegen eines Gastkontos prüft ein Dienst anhand technischer Merkmale deines Browsers, ob ein Mensch spielt. Rechtsgrundlage: berechtigtes Interesse am Schutz des Dienstes (Art. 6 Abs. 1 lit. f DSGVO).</p>`,
+    en: `<p><b>Bot protection.</b> When a guest account is created, a service checks technical characteristics of your browser to tell humans from bots. Legal basis: legitimate interest in protecting the service (Art. 6(1)(f) GDPR).</p>`,
   };
+  const ctrl = lang => `<p>${esc(L.operator)}<br>${addr(lang)}<br>${lang === "de" ? "E-Mail" : "E-mail"}: ${mail}</p>`;
 
   const privacy = {
     title: { de: "Datenschutzerklärung", en: "Privacy Policy" },
     de: `<p class="meta">${G} · Stand: ${date.de}</p>${open ? note.de : ""}
 <h2>Verantwortlicher</h2>
-<p>${who("de")} („wir“). Siehe auch das <a href="imprint.html">Impressum</a>.</p>
-<h2>Überblick</h2>
-<p>${G} ist ein Browserspiel. Du kannst ohne Anmeldung spielen. Wir nutzen keine Analyse-Werkzeuge, keine Werbe-Tracker und keine Social-Media-Plugins. Schriften und Bibliotheken kommen von unserer eigenen Website, nicht von Dritten. Cookies setzen wir nicht.</p>
-<h2>Daten auf deinem Gerät</h2>
-<p>Das Spiel speichert seinen Stand im lokalen Speicher deines Browsers: Fortschritt, freigeschaltete Gegenstände, Einstellungen (Ton, Sprache, Grafik), das Anmelde-Token für den Spielserver und Spielergebnisse, die noch nicht gesendet werden konnten. Das ist für das Spiel nötig (Art. 6 Abs. 1 lit. b DSGVO; § 25 Abs. 2 Nr. 2 TDDDG). Du kannst es jederzeit in den Browser-Einstellungen löschen oder im Spiel unter Einstellungen → Fortschritt löschen.</p>
-<h2>Hosting</h2>
-<p>Die Website liegt bei GitHub Pages (GitHub, Inc., 88 Colin P. Kelly Jr. St, San Francisco, CA 94107, USA). Beim Aufruf sendet dein Browser technische Daten (IP-Adresse, Zeitpunkt, angefragte Datei, Browsertyp) an GitHub, das sie zur Auslieferung und zum Schutz seines Dienstes verarbeitet. Rechtsgrundlage: unser berechtigtes Interesse an der Bereitstellung der Website (Art. 6 Abs. 1 lit. f DSGVO). GitHub kann Daten in den USA verarbeiten und ist nach dem EU-U.S. Data Privacy Framework zertifiziert.</p>
-<h2>Spielkonto und Spielserver</h2>
-<p>Als Spielserver nutzen wir Supabase (Supabase, Inc.; Server in der EU, Irland). Beim ersten Start wird automatisch ein Gastkonto angelegt. Wir verarbeiten:</p>
-<ul>
-<li>Konto: eine zufällige Nutzer-ID; wenn du deinen Fortschritt sicherst, deine E-Mail-Adresse. Ein Passwort gibt es nicht, du meldest dich mit einem Code aus einer Mail an.</li>
-<li>Spieldaten: Spielername, Level, Münzen und Juwelen, Gegenstände, Kopf-Level, Saison-Pass, Aufgaben, Erfolge, Spielergebnisse, Wertungen, Bestenlisten-Einträge, Freunde und Freundschaftsanfragen, Zeitpunkt der letzten Aktivität.</li>
-<li>Technische Daten: IP-Adresse und Anfrage-Metadaten in den Server-Protokollen von Supabase, kurz aufbewahrt für Sicherheit und Fehlersuche.</li>
-</ul>
-<p>Zweck: das Spiel bereitstellen, Fortschritt geräteübergreifend sichern, faire Gegnersuche, Bestenlisten, Schutz vor Betrug und Missbrauch (z. B. Tageslimits und Plausibilitätsprüfungen). Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) und unser berechtigtes Interesse an einem fairen und sicheren Spiel (Art. 6 Abs. 1 lit. f DSGVO).</p>
-<p>Für andere sichtbar: Spielername, Level, Liga und Wertung sowie Bestenlisten-Einträge. Freunde sehen, wann du zuletzt online warst.</p>
-<p>Gastkonten ohne Käufe werden nach ${L.guestDays} Tagen ohne Aktivität automatisch gelöscht.</p>
-${captcha ? turn.de : ""}
-<h2>Online-Spiele mit anderen</h2>
-<p>Online-Spiele laufen direkt zwischen den Browsern der beiden Spieler (Peer-to-Peer, WebRTC). Für den Verbindungsaufbau nutzt das Spiel den PeerJS-Vermittlungsserver (0.peerjs.com) und Hilfsserver (STUN von Google und Cloudflare, TURN-Weiterleitung von PeerJS). Während eines Spiels erhält der Browser deines Gegners deine IP-Adresse, wie bei jeder direkten Verbindung. Klappt keine direkte Verbindung, laufen die Daten über den TURN-Server. Rechtsgrundlage: Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO). Wenn du das nicht möchtest, spiele nicht online.</p>
-<h2>Käufe</h2>
-${pay.de}
-<h2>E-Mails</h2>
-<p>Sicherst du deinen Fortschritt mit einer E-Mail-Adresse oder meldest dich an, schicken wir dir über Supabase eine Mail mit einem Code und einem Link. Verschickt wird sie über ${esc(L.mailer.de)}. Newsletter verschicken wir nicht. Schreibst du uns an ${mail}, nimmt Cloudflare Email Routing (Cloudflare, Inc., USA, EU-U.S. Data Privacy Framework) die Mail entgegen und leitet sie an unser Postfach weiter.</p>
-<h2>Empfänger und Übermittlung außerhalb der EU</h2>
-<p>Die genannten Anbieter verarbeiten Daten in unserem Auftrag (Auftragsverarbeitung nach Art. 28 DSGVO) oder als eigene Verantwortliche (${payments ? "Stripe bei Zahlungen, " : ""}der Browser deines Gegners während eines Spiels). Sitzen Anbieter in den USA, stützt sich die Übermittlung auf das EU-U.S. Data Privacy Framework oder Standardvertragsklauseln.</p>
+${ctrl("de")}
+<h2>Kurz gesagt</h2>
+<p>Du kannst ohne Anmeldung spielen. Wir setzen keine Cookies, nutzen kein Tracking und keine Werbung und verarbeiten nur, was für das Spiel nötig ist.</p>
+<h2>Was wir wofür verarbeiten</h2>
+<p><b>Website.</b> Beim Aufruf verarbeitet unser Hosting-Anbieter technisch notwendige Verbindungsdaten (z. B. IP-Adresse und Zeitpunkt), um die Seite auszuliefern und abzusichern. Rechtsgrundlage: berechtigtes Interesse an einer funktionierenden, sicheren Website (Art. 6 Abs. 1 lit. f DSGVO).</p>
+<p><b>Spielstand auf deinem Gerät.</b> Fortschritt und Einstellungen speichert das Spiel im Speicher deines Browsers. Das ist für das Spiel technisch erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG). Du kannst diese Daten jederzeit in deinem Browser löschen.</p>
+<p><b>Spielkonto.</b> Beim ersten Start legt das Spiel ein Gastkonto mit einer zufälligen Kennung an. Gespeichert werden dein Spielstand (z. B. Spielername, Fortschritt, Gegenstände und Ergebnisse) und, wenn du dein Konto sicherst, deine E-Mail-Adresse. Spielername, Level und Wertung sehen andere Spieler, etwa in Bestenlisten. Zweck: das Spiel bereitstellen, deinen Fortschritt sichern, faire Spiele ermöglichen und Missbrauch verhindern. Rechtsgrundlage: Vertrag (Art. 6 Abs. 1 lit. b DSGVO), beim Schutz vor Missbrauch unser berechtigtes Interesse (lit. f).</p>
+<p><b>Online-Spiele.</b> Online-Spiele laufen direkt zwischen den Geräten der beiden Spieler. Dabei erhält das Gerät deines Gegners deine IP-Adresse; für den Verbindungsaufbau nutzt das Spiel Vermittlungsdienste. Rechtsgrundlage: Vertrag (Art. 6 Abs. 1 lit. b DSGVO).</p>
+<p><b>E-Mail.</b> Zum Sichern deines Kontos und zum Anmelden schicken wir dir einen Code per E-Mail. Schreibst du uns, nutzen wir deine Nachricht nur, um dir zu antworten. Rechtsgrundlage: Vertrag bzw. berechtigtes Interesse (Art. 6 Abs. 1 lit. b, f DSGVO). Newsletter verschicken wir nicht.</p>
+${payments ? pay.de + "\n" : ""}${captcha ? turn.de + "\n" : ""}<h2>Empfänger</h2>
+<p>Wir setzen Dienstleister ein für Hosting und Domain, den Spielserver (Server in der EU), den E-Mail-Versand und den Verbindungsaufbau bei Online-Spielen${payments ? " sowie für Zahlungen" : ""}. Sie verarbeiten Daten nur, soweit es für ihre Aufgabe nötig ist. Einige sitzen in den USA. Die Übermittlung stützt sich auf den Angemessenheitsbeschluss der EU-Kommission für das EU-U.S. Data Privacy Framework oder auf Standardvertragsklauseln (Art. 45, 46 DSGVO), im Übrigen darauf, dass sie für die von dir gewünschte Verbindung erforderlich ist (Art. 49 Abs. 1 lit. b DSGVO).</p>
 <h2>Speicherdauer</h2>
-<table><tr><th>Daten</th><th>Gespeichert bis</th></tr>
-<tr><td>Gastkonto ohne Käufe</td><td>${L.guestDays} Tage ohne Aktivität</td></tr>
-<tr><td>Gesichertes Konto und Spieldaten</td><td>du löschst dein Konto</td></tr>
-${payments ? `<tr><td>Kaufbelege</td><td>10 Jahre (gesetzliche Pflicht), nach Löschung des Kontos ohne Profilbezug</td></tr>\n` : ""}<tr><td>Kurzlebige Sicherheitsdaten (Limits, Schutz vor doppelten Anfragen)</td><td>1–2 Tage</td></tr>
-<tr><td>Sicherungen</td><td>${L.backupDays} Tage; gelöschte Konten bleiben gelöscht, wenn eine Sicherung eingespielt wird</td></tr></table>
+<p>Wir speichern Daten nur so lange, wie es für den Zweck nötig ist: Gastkonten ohne Käufe löschen wir nach ${L.guestDays} Tagen ohne Aktivität, gesicherte Konten, sobald du sie löschst. Technische Protokolle und Sicherheitsdaten löschen wir nach kurzer Zeit, Sicherungskopien nach spätestens ${L.backupDays} Tagen.${payments ? " Kaufbelege bewahren wir aufgrund gesetzlicher Pflichten 10 Jahre auf." : ""}</p>
+<h2>Musst du Daten angeben?</h2>
+<p>Nein. Ohne Spielkonto kannst du nur ohne Online-Funktionen spielen, ohne E-Mail-Adresse kannst du dein Konto nicht sichern.</p>
 <h2>Deine Rechte</h2>
-<p>Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen aus berechtigtem Interesse (Art. 21 DSGVO). Dein Konto und alle Spieldaten löschst du selbst unter Einstellungen → Konto → Konto und Daten löschen. Für alles andere schreib an ${mail}. Du kannst dich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, etwa in deinem Land oder bei der für uns zuständigen: ${esc(L.authority.de)}, ${esc(L.authority.addr)}.</p>
-<h2>Alter</h2>
-<p>Das Spiel richtet sich an Spieler ab ${L.minAge} Jahren. Jüngere dürfen die Online-Funktionen nur mit Zustimmung der Eltern nutzen.</p>
+<p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Datenübertragbarkeit (Art. 15 bis 18 und 20 DSGVO). Dein Konto mit allen Spieldaten löschst du selbst im Spiel unter Profil → Konto. Für alles andere schreib an ${mail}. Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel bei der für uns zuständigen: ${esc(L.authority.de)}, ${esc(L.authority.addr)}.</p>
+<p class="box"><b>Widerspruchsrecht:</b> Verarbeiten wir Daten auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO), kannst du dem aus Gründen, die sich aus deiner besonderen Situation ergeben, jederzeit widersprechen (Art. 21 DSGVO).</p>
+<h2>Keine automatisierten Entscheidungen</h2>
+<p>Wir treffen keine Entscheidungen, die ausschließlich auf automatisierter Verarbeitung beruhen und dir gegenüber rechtliche Wirkung entfalten (Art. 22 DSGVO).</p>
 <h2>Änderungen</h2>
-<p>Wir passen diese Erklärung an, wenn sich das Spiel oder die Rechtslage ändert. Die aktuelle Fassung steht immer auf dieser Seite.</p>`,
+<p>Wir passen diese Erklärung an, wenn sich das Spiel oder die Rechtslage ändert. Es gilt die Fassung auf dieser Seite.</p>`,
     en: `<p class="meta">${G} · Last updated: ${date.en}</p>${open ? note.en : ""}
-<h2>Who is responsible</h2>
-<p>${who("en")} ("we", "us"). See also the <a href="imprint.html">Legal Notice</a>.</p>
-<h2>Overview</h2>
-<p>${G} is a browser game. You can play without registering. We do not use analytics, advertising trackers or social-media plugins. Fonts and libraries are served from our own website, not from third parties. We do not set cookies.</p>
-<h2>Data stored on your device</h2>
-<p>The game stores its state in your browser's local storage: progress, unlocked items, settings (sound, language, graphics), the login token for the game server and match results that could not be sent yet. This is necessary to provide the game (Art. 6(1)(b) GDPR; § 25(2) no. 2 TDDDG). You can delete it at any time in your browser settings or in the game under Settings → Delete progress.</p>
-<h2>Hosting</h2>
-<p>The website is hosted on GitHub Pages (GitHub, Inc., 88 Colin P. Kelly Jr. St, San Francisco, CA 94107, USA). When you open the page, your browser sends technical data (IP address, time, requested file, browser type) to GitHub, which processes it to deliver the page and protect its service. Legal basis: our legitimate interest in providing the website (Art. 6(1)(f) GDPR). GitHub may process data in the USA and is certified under the EU-U.S. Data Privacy Framework.</p>
-<h2>Player account and game server</h2>
-<p>We use Supabase (Supabase, Inc.; servers in the EU, Ireland) as our game server. When you first start the game, a guest account is created automatically. We process:</p>
-<ul>
-<li>Account: a random user ID; if you save your progress, your e-mail address. There is no password; you sign in with a code sent by e-mail.</li>
-<li>Game data: player name, level, coins and gems, items, head levels, season pass, tasks, achievements, match results, ratings, leaderboard entries, friends and friend requests, time of last activity.</li>
-<li>Technical data: IP address and request metadata in Supabase's server logs, kept briefly for security and troubleshooting.</li>
-</ul>
-<p>Purpose: providing the game, saving progress across devices, fair matchmaking, leaderboards, preventing cheating and abuse (for example daily limits and plausibility checks). Legal basis: performance of the contract (Art. 6(1)(b) GDPR) and our legitimate interest in a fair and secure game (Art. 6(1)(f) GDPR).</p>
-<p>Visible to others: player name, level, league and rating, and leaderboard entries. Friends see when you were last online.</p>
-<p>Guest accounts without purchases are deleted automatically after ${L.guestDays} days of inactivity.</p>
-${captcha ? turn.en : ""}
-<h2>Online matches with other players</h2>
-<p>Online matches run directly between the two players' browsers (peer-to-peer, WebRTC). To establish the connection, the game uses the PeerJS signalling server (0.peerjs.com) and helper servers (STUN by Google and Cloudflare, TURN relay by PeerJS). During a match your opponent's browser receives your IP address, as with any direct connection. If no direct connection is possible, data is relayed through the TURN server. Legal basis: performance of the contract (Art. 6(1)(b) GDPR). If you do not want this, do not play online.</p>
-<h2>Purchases</h2>
-${pay.en}
-<h2>E-mails</h2>
-<p>If you save your progress with an e-mail address or sign in, we send you an e-mail with a code and a link through Supabase. It is delivered by ${esc(L.mailer.en)}. We do not send newsletters. If you write to ${mail}, Cloudflare Email Routing (Cloudflare, Inc., USA, EU-U.S. Data Privacy Framework) receives the e-mail and forwards it to our inbox.</p>
-<h2>Recipients and transfers outside the EU</h2>
-<p>The providers named above process data on our behalf (data processing under Art. 28 GDPR) or as independent controllers (${payments ? "Stripe for payments, " : ""}your opponent's browser during a match). Where providers are located in the USA, transfers rely on the EU-U.S. Data Privacy Framework or standard contractual clauses.</p>
+<h2>Controller</h2>
+${ctrl("en")}
+<h2>In short</h2>
+<p>You can play without registering. We set no cookies, use no tracking and no advertising, and only process what the game needs.</p>
+<h2>What we process and why</h2>
+<p><b>Website.</b> When you open the site, our hosting provider processes technically necessary connection data (e.g. IP address and time) to deliver and secure the page. Legal basis: legitimate interest in a working, secure website (Art. 6(1)(f) GDPR).</p>
+<p><b>Game data on your device.</b> The game stores your progress and settings in your browser's storage. This is technically required for the game (§ 25(2) no. 2 TDDDG). You can delete this data in your browser at any time.</p>
+<p><b>Player account.</b> When you first start the game, it creates a guest account with a random ID. We store your game data (e.g. player name, progress, items and results) and, if you save your account, your e-mail address. Other players see your player name, level and rating, for example on leaderboards. Purpose: providing the game, saving your progress, enabling fair matches and preventing abuse. Legal basis: contract (Art. 6(1)(b) GDPR); for abuse prevention, our legitimate interest (point (f)).</p>
+<p><b>Online matches.</b> Online matches run directly between the two players' devices. Your opponent's device therefore receives your IP address; the game uses connection services to set up the match. Legal basis: contract (Art. 6(1)(b) GDPR).</p>
+<p><b>E-mail.</b> To save your account or sign in, we send you a code by e-mail. If you write to us, we only use your message to reply. Legal basis: contract or legitimate interest (Art. 6(1)(b), (f) GDPR). We do not send newsletters.</p>
+${payments ? pay.en + "\n" : ""}${captcha ? turn.en + "\n" : ""}<h2>Recipients</h2>
+<p>We use service providers for hosting and domain, the game server (servers in the EU), sending e-mails and setting up online matches${payments ? ", and for payments" : ""}. They only process data as far as needed for their task. Some are located in the USA. Transfers rely on the European Commission's adequacy decision for the EU-U.S. Data Privacy Framework or on standard contractual clauses (Art. 45, 46 GDPR), and otherwise on being necessary for the connection you request (Art. 49(1)(b) GDPR).</p>
 <h2>Retention</h2>
-<table><tr><th>Data</th><th>Kept until</th></tr>
-<tr><td>Guest account without purchases</td><td>${L.guestDays} days without activity</td></tr>
-<tr><td>Saved account and game data</td><td>you delete your account</td></tr>
-${payments ? `<tr><td>Purchase records</td><td>10 years (legal obligation), without profile link after account deletion</td></tr>\n` : ""}<tr><td>Short-lived security data (limits, duplicate-request protection)</td><td>1–2 days</td></tr>
-<tr><td>Backups</td><td>${L.backupDays} days; deleted accounts stay deleted when a backup is restored</td></tr></table>
+<p>We only keep data as long as needed for its purpose: guest accounts without purchases are deleted after ${L.guestDays} days without activity, saved accounts as soon as you delete them. Technical logs and security data are deleted after a short time, backups after ${L.backupDays} days at the latest.${payments ? " Purchase records are kept for 10 years as required by law." : ""}</p>
+<h2>Do you have to provide data?</h2>
+<p>No. Without a player account you can only play without online features; without an e-mail address you cannot save your account.</p>
 <h2>Your rights</h2>
-<p>You have the right to access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), data portability (Art. 20) and to object to processing based on legitimate interests (Art. 21 GDPR). You can delete your account and all game data yourself under Settings → Account → Delete account and data. For everything else, write to ${mail}. You can also lodge a complaint with a data protection supervisory authority, for example in your country or the one responsible for us: ${esc(L.authority.en)}, ${esc(L.authority.addr)}, Germany.</p>
-<h2>Age</h2>
-<p>The game is intended for players aged ${L.minAge} and over. Younger players may only use the online features with a parent's or guardian's consent.</p>
+<p>You have the right to access, rectification, erasure, restriction of processing and data portability (Art. 15 to 18 and 20 GDPR). You can delete your account and all game data yourself in the game under Profile → Account. For everything else, write to ${mail}. You can also lodge a complaint with a data protection supervisory authority, for example the one responsible for us: ${esc(L.authority.en)}, ${esc(L.authority.addr)}, Germany.</p>
+<p class="box"><b>Right to object:</b> Where we process data based on legitimate interests (Art. 6(1)(f) GDPR), you may object at any time on grounds relating to your particular situation (Art. 21 GDPR).</p>
+<h2>No automated decisions</h2>
+<p>We do not make decisions based solely on automated processing that have legal effects on you (Art. 22 GDPR).</p>
 <h2>Changes</h2>
-<p>We update this policy when the game or the law changes. The current version is always available on this page.</p>`,
+<p>We update this policy when the game or the law changes. The version on this page applies.</p>`,
   };
 
   const buy = {
@@ -181,7 +143,7 @@ ${payments ? `<tr><td>Purchase records</td><td>10 years (legal obligation), with
 <li>Du kannst als Gast spielen. Ein Gastkonto hängt an deinem Browser; löschst du die Browserdaten, kann es verloren gehen. Gastkonten ohne Käufe werden nach ${L.guestDays} Tagen ohne Aktivität gelöscht.</li>
 <li>Um deinen Fortschritt zu sichern oder Ranked zu spielen, sicherst du dein Konto mit einer E-Mail-Adresse. Halte deine Zugangsdaten geheim.</li>
 <li>Du darfst mehrere Geräte nutzen, aber keine Konten anlegen, um dir unfaire Vorteile zu verschaffen (z. B. Wertung hochtreiben, Belohnungen sammeln).</li>
-<li>Du kannst dein Konto jederzeit im Spiel löschen (Einstellungen → Konto).</li>
+<li>Du kannst dein Konto jederzeit im Spiel löschen (Profil → Konto).</li>
 </ul>
 <h2>Fair Play</h2>
 <p>Verboten sind: Schummeln, Manipulation des Spiels oder seines Netzwerkverkehrs, Bots und Skripte, Ausnutzen von Fehlern, abgesprochene Ergebnisse, beleidigende Spielernamen und Belästigung. Wir können Fortschritt zurücksetzen, unfair erlangte Belohnungen entfernen und Konten sperren oder löschen, die gegen diese Regeln verstoßen. Ergebnisse von Online-Spielen prüft der Server; widersprüchliche oder unplausible Meldungen werden unter Umständen nicht gewertet.</p>
@@ -211,7 +173,7 @@ ${buy.de}
 <li>You can play as a guest. A guest account is tied to your browser; if you clear your browser data, it may be lost. Guest accounts without purchases are deleted after ${L.guestDays} days of inactivity.</li>
 <li>To protect your progress or play Ranked, you save your account with an e-mail address. Keep your login details confidential.</li>
 <li>You may use several devices but must not create accounts to gain unfair advantages (for example to boost a rating or collect rewards).</li>
-<li>You can delete your account at any time in the Game (Settings → Account).</li>
+<li>You can delete your account at any time in the Game (Profile → Account).</li>
 </ul>
 <h2>Fair play</h2>
 <p>Prohibited: cheating, manipulating the Game or its network traffic, bots and scripts, exploiting bugs, arranging results, offensive player names and harassment. We may reset progress, remove rewards obtained unfairly, and suspend or delete accounts that break these rules. Results of online matches are checked by the server; contradictory or implausible reports may not be rated.</p>
