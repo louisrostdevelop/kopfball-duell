@@ -41,7 +41,7 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   const q = `?backend=${be.url.replace("127.0.0.1", "localhost")}&key=dev`;
   const a = await openPage(env, VIEW, { init: [MOCK], query: q });
   const A = a.page; A.__key = "kopfball-duell-session";
-  const ida = await userId(A);   // vor dem zweiten Tab lesen: dessen Start-Skript leert den gemeinsamen Speicher
+  const ida = await userId(A);
   const B = await a.ctx.newPage(); B.__key = "kopfball-duell-session-b";
   const errs = [...a.errors]; B.on("pageerror", e => errs.push("B: " + e.message));
   await B.goto(env.url + "/index.html" + q + "&as=b"); await B.waitForSelector("#loading.done", { state: "attached" });
@@ -75,7 +75,8 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   assert.ok(playing, "beide im Spiel: " + JSON.stringify(await Promise.all([A, B].map(p => p.evaluate(() => [window.__kd.mode, window.__kd.screen, window.__kd.mm && window.__kd.mm.state])))));
   const m = (await db("select id, p1, p2, mode, status from game.matches"))[0];
   assert.equal(m.mode, "ranked");
-  const host = m.p1 === ida ? A : B, guest = host === A ? B : A;
+  const host = m.p1 === ida ? A : B;
+  let guest = host === A ? B : A;
   assert.equal(await host.evaluate(() => window.__kd.mode), "host");
   // Anpfiff beim Server gemeldet: ab jetzt lässt sich das Spiel nicht mehr per Abbruch ungültig machen
   assert.ok(await until(async () => (await db("select started_at from game.matches where id = $1", [m.id]))[0].started_at), "Anpfiff gemeldet");
@@ -84,6 +85,17 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   // Kosmetik vom Server geprüft: Schuhe ja, Torexplosion (nicht besessen) nein; beide sehen dasselbe
   const ia = m.p1 === ida ? 0 : 1;
   for (const p of [A, B]) assert.deepEqual(await p.evaluate(i => [window.__kd.cfg.cos[i].shoes, window.__kd.cfg.cos[i].goalfx], ia), ["shoes:4", null]);
+
+  // Gast schließt die App mitten im gewerteten Spiel und öffnet sie wieder: zurück im selben Spiel, keine Aufgabe gemeldet
+  await host.evaluate(() => { window.__kd.st.s = [1, 0]; });
+  await guest.waitForTimeout(600);
+  const gq = q + (guest === B ? "&as=b" : "");
+  await guest.close();
+  guest = await a.ctx.newPage(); guest.on("pageerror", e => errs.push("Gast neu: " + e.message));
+  await guest.goto(env.url + "/index.html" + gq);
+  assert.ok(await until(() => guest.evaluate(() => window.__kd.mode === "guest" && !window.__kd.netWait && window.__kd.snaps.length > 0 && window.__kd.mm && window.__kd.mm.match), 25000), "Gast wieder im Spiel");
+  assert.deepEqual(await guest.evaluate(() => window.__kd.st.s), [1, 0]);
+  assert.equal((await db("select status from game.matches where id = $1", [m.id]))[0].status, "open", "nicht als Aufgabe gewertet");
 
   // Host gewinnt 2:0, Abpfiff. Der Server wertet nur Spiele, die wirklich so lange liefen: Start zurückdatieren
   await db("update game.matches set created_at = now() - interval '2 minutes' where id = $1", [m.id]);

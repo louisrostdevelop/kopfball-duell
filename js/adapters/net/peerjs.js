@@ -51,27 +51,46 @@ export function isOpen() { return !!(cur && cur.conn && cur.conn.open); }
 export function role() { return cur ? cur.role : null; }
 
 // opts.code: fester Raumname (Matchmaking: aus der Spiel-ID), sonst zufällig
-export function host(h, { code: fixed = null, tries = 0 } = {}) {
+export function host(h, { code: fixed = null, tries = 0, retries = 3 } = {}) {
   close();
   const code = fixed || mkCode();
   const peer = new window.Peer(PREFIX + code, { config: ICE, debug: 0 });
   const me = { peer, role: "host", code, conn: null };
   cur = me;
   peer.on("open", () => { if (cur === me) h.onReady && h.onReady(code); });
-  peer.on("connection", conn => {
-    if (cur !== me) { conn.close(); return; }
-    if (me.conn && me.conn.open) { conn.on("open", () => { try { conn.send({ t: "full" }); } catch (_) {} setTimeout(() => conn.close(), 500); }); return; }
+  // Verbindung übernehmen: ab jetzt laufen Daten und Schließen über diese
+  const adopt = conn => {
     me.conn = conn;
-    conn.on("open", () => { if (cur === me && me.conn === conn) { openFast(me, conn, h); if (h.onConn) h.onConn(); } });
     conn.on("data", d => { if (cur === me && me.conn === conn && d) h.onData && h.onData(d); });
     const closed = () => { if (cur === me && me.conn === conn) { me.conn = null; me.onDrop = null; try { if (me.fast) me.fast.close(); } catch (_) {} me.fast = null; if (h.onClose) h.onClose(); } };
     me.onDrop = closed;
     conn.on("close", closed);
+  };
+  peer.on("connection", conn => {
+    if (cur !== me) { conn.close(); return; }
+    if (me.conn && me.conn.open) {
+      // Raum belegt. Ausnahme: derselbe Gast kommt nach einem App-Neustart wieder, bevor die alte Verbindung als tot
+      // erkannt ist. Seine erste Nachricht entscheidet (h.onKnock prüft den Merker): ersetzen oder „voll“.
+      const full = () => { try { conn.send({ t: "full" }); } catch (_) {} setTimeout(() => conn.close(), 500); };
+      let first = true;
+      conn.on("data", d => {
+        if (!first || cur !== me) return; first = false;
+        if (!(h.onKnock && h.onKnock(d))) { full(); return; }
+        const old = me.conn; me.conn = null;
+        try { if (me.fast) me.fast.close(); } catch (_) {} me.fast = null;
+        try { old.close(); } catch (_) {}
+        adopt(conn); openFast(me, conn, h);
+        if (h.onData) h.onData(d);
+      });
+      return;
+    }
+    adopt(conn);
+    conn.on("open", () => { if (cur === me && me.conn === conn) { openFast(me, conn, h); if (h.onConn) h.onConn(); } });
   });
   peer.on("disconnected", () => { if (cur === me && !peer.destroyed) try { peer.reconnect(); } catch (_) {} });
   peer.on("error", e => {
     if (cur !== me) return;
-    if (e.type === "unavailable-id" && tries < 3) { if (fixed) setTimeout(() => host(h, { code: fixed, tries: tries + 1 }), 1500); else host(h, { tries: tries + 1 }); return; }
+    if (e.type === "unavailable-id" && tries < retries) { if (fixed) setTimeout(() => { if (cur === me) host(h, { code: fixed, tries: tries + 1, retries }); }, 1500); else host(h, { tries: tries + 1, retries }); return; }
     if (me.conn && me.conn.open) return;
     h.onError && h.onError(e.type);
   });

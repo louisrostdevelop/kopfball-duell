@@ -29,7 +29,8 @@ export async function openPage(env, view, { save = {}, init = [], query = "" } =
   const ctx = await env.browser.newContext({ locale: "de-DE", reducedMotion: "reduce", ...view });
   for (const s of init) await ctx.addInitScript(s);
   await ctx.route("**/vendor/peerjs.min.js", r => r.fulfill({ body: "", contentType: "text/javascript" }));
-  await ctx.addInitScript(([key, val]) => { if (!sessionStorage.getItem("seeded")) { localStorage.clear(); localStorage.setItem(key, val); sessionStorage.setItem("seeded", "1"); } },
+  // Nur ein leeres Gerät füllen: eine zweite Seite im selben Browser (Gast, App-Neustart) teilt den Speicher wie in echt
+  await ctx.addInitScript(([key, val]) => { if (!sessionStorage.getItem("seeded") && localStorage.getItem(key) === null) { localStorage.setItem(key, val); sessionStorage.setItem("seeded", "1"); } },
     [SAVE_KEY, JSON.stringify({ tutorial: true, daily: { last: today(), streak: 1 }, ...save })]);
   const page = await ctx.newPage();
   const errors = [];

@@ -7,6 +7,7 @@ import { S, save } from "./profile.js";
 import { fx, setBand, setMatchCos, setMuted } from "../ui/render/render.js";
 import { cosById } from "../content/cosmetics.js";
 import { emoteSlots, myCos } from "./cosmetics.js";
+import { clearSession } from "./session.js";
 import { App, inGame, PLAY_MODES, vsCpu } from "./state.js";
 import { $, $$, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
@@ -101,6 +102,7 @@ export function updateBand() {
 
 export function quitToMenu() {
   if (App.mode === "host" || App.mode === "guest") { Net.send({ t: "bye" }); Net.close(250); }   // „bye“: die andere Seite wartet nicht aufs Wiederverbinden
+  clearSession();   // bewusst verlassen: beim nächsten Start nicht zurückverbinden
   App.netLost = null; App.lastRx = 0; App.netWait = null;
   App.run = null; App.mm = null;
   document.body.classList.remove("ingame");

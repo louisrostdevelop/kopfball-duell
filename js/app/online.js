@@ -13,6 +13,7 @@ import { lobbyUI, makeQR, netNote, saveName } from "../ui/screens/online.js";
 import { audio as A, input as I, net as Net } from "./services.js";
 import { decodeState, encodeState, makeClock, pingBars, pingStats } from "./netcode.js";
 import { t } from "../content/i18n.js";
+import { clearSession, markClosing, saveSession, sessionRole, touchSession } from "./session.js";
 
 // Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
 const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
@@ -110,18 +111,27 @@ export function applySnap(st, a, b, k) {
   [0, 1].forEach(i => { const pa = a.p[i], pb = b.p[i], p = st.p[i]; Object.assign(p, pb); if (Math.hypot(pa.x - pb.x, pa.y - pb.y) < 200) { p.x = L(pa.x, pb.x); p.y = L(pa.y, pb.y); } });
 }
 
-export function hostGame() {
+/** Raum öffnen. resume: { code, netCfg } = nach einem App-Neustart denselben Raum wieder öffnen (der Link bleibt gültig) */
+export function hostGame(resume = null) {
   if (!Net.available()) { netNote(t("net.unavailable"), true); return; }
-  saveName($("nameIn").value);
+  if (!resume) saveName($("nameIn").value);
   App.opp = null;
-  App.netCfg = { arena: owns("arenas", S.arena) ? S.arena : "stadion", rules: { ...S.rules } };
+  App.netCfg = resume && resume.netCfg ? resume.netCfg : { arena: owns("arenas", S.arena) ? S.arena : "stadion", rules: { ...S.rules } };
   $("lobbyCode").textContent = "····"; $("lobbyLink").textContent = ""; $("qrBox").innerHTML = "";
   lobbyUI("host");
   $("lobbyNote").textContent = t("lobby.opening");
   showScreen("lobby");
   setTimeout(() => { if (App.screen === "lobby" && $("lobbyCode").textContent === "····") $("lobbyNote").textContent = t("lobby.noServer"); }, 9000);
-  Net.host({
+  Net.host(hostHandlers(), resume ? { code: resume.code, retries: REOPEN_TRIES } : undefined);
+}
+/** Neue Verbindung, während die alte noch als offen gilt: nur derselbe Gast (Merker), z. B. nach seinem App-Neustart */
+export const knock = d => !!(d && d.t === "hello" && App.opp && d.tok && d.tok === App.opp.tok);
+function hostHandlers() {
+  return {
+    onKnock: knock,
     onReady: code => {
+      App.roomCode = code;
+      if (!liveOnline()) saveSession("host", { phase: "lobby", code, netCfg: App.netCfg, st: null });   // nach Neustart im Spiel: Sitzung bleibt „Spiel“
       const link = location.origin + location.pathname + "?join=" + code.toUpperCase();
       $("lobbyCode").textContent = code.toUpperCase(); $("lobbyLink").textContent = link;
       $("lobbyNote").textContent = t("lobby.sendLink");
@@ -131,13 +141,16 @@ export function hostGame() {
     onData: hostData,
     onClose: () => netDropped(hostLost),
     onError: type => { $("lobbyNote").textContent = t("net.roomFailed", { type }) + " " + t("ui.tryAgain"); },
-  });
+  };
 }
 
 function hostLost() {
   App.opp = null;
   if (inGame() || App.screen === "end" || App.screen === "pause") { toast(t("net.oppLost")); backToLobby(); }
   lobbyUI("host"); $("lobbyNote").textContent = t("lobby.oppGone");
+  // Warten aufgegeben oder abgelaufen (Raum dabei geschlossen): derselbe Code bleibt gültig, Einladungen und ein spät
+  // zurückkehrender Gast landen in dieser Lobby
+  if (!Net.role() && App.roomCode && App.screen === "lobby") Net.host(hostHandlers(), { code: App.roomCode, retries: REOPEN_TRIES });
 }
 function guestLost() { if (App.mode === "guest" || App.screen === "lobby" || App.screen === "end") { toast(t("net.hostLeft")); quitToMenu(); } }
 
@@ -146,7 +159,11 @@ function guestLost() { if (App.mode === "guest" || App.screen === "lobby" || App
  * Netz weg, ohne dass die Verbindung sauber schließt), erst ein Hinweis, nach NET_LOST ms wie ein Abbruch.
  * App.netLost setzt, wer die Verbindung aufbaut (Freunde: hostLost/guestLost, Gegnersuche: matchmaking.js).
  */
-export const NET_WARN = 4000, NET_DROP = 8000, NET_LOST = 15000, RECONNECT_MS = 10000;
+export const NET_WARN = 4000, NET_DROP = 8000, NET_LOST = 15000, RECONNECT_MS = 35000;
+/** Raum mit festem Code wieder öffnen: Versuche alle 1,5 s, solange die Gegenseite wartet */
+const REOPEN_TRIES = Math.floor((RECONNECT_MS - 2000) / 1500);
+/** Online-Spiel läuft (auch mit offenem Pausemenü): Abbruch heißt warten statt beenden */
+export const liveOnline = () => (App.mode === "host" || App.mode === "guest") && !!App.st && App.st.ph !== "end" && (App.screen === null || App.screen === "pause");
 export function watchNet(now) {
   if ((App.mode !== "host" && App.mode !== "guest") || !App.st || App.st.ph === "end" || !App.lastRx || App.netWait) return;
   const gap = now - App.lastRx;
@@ -166,30 +183,102 @@ export function hello(extra = {}) { return { t: "hello", name: S.name || t("ui.g
 export function netDropped(lost) {
   if (App.netWait) return;
   if (App.netBye) { App.netBye = false; lost(); return; }   // hat sich verabschiedet: nicht warten
-  if (!inGame() || !App.st || App.st.ph === "end" || (App.mode !== "host" && App.mode !== "guest")) { lost(); return; }
-  App.netWait = { until: performance.now() + RECONNECT_MS, lost };
-  toast(t("net.reconnecting"), "i-swap");
-  if (App.mode === "guest") rejoin();
+  // Gast in der Lobby oder auf dem Endbildschirm (Freunde): Host ist kurz weg (z. B. App neu gestartet) – wieder
+  // beitreten statt rauszufliegen, der Host öffnet dieselbe Lobby
+  const lobbyGuest = !liveOnline() && Net.role() === "guest" && (App.screen === "lobby" || App.screen === "end") && !App.mm;
+  if (!lobbyGuest && !liveOnline()) { lost(); return; }
+  waitFor(lost);
+  if (App.mode === "guest" || lobbyGuest) rejoin();
 }
+/** Auf die Gegenseite warten (Spiel steht, Leiste mit Restzeit und „Verlassen“) */
+export function waitFor(lost) { App.netWait = { until: performance.now() + RECONNECT_MS, lost }; }
+/** „Verlassen“ in der Warte-Leiste: nicht weiter warten, wie nach Ablauf der Zeit */
+export function giveUpWaiting() { const w = App.netWait; if (!w) return; App.netWait = null; Net.close(); clearSession(); w.lost(true); }
 function rejoin() {
   if (!App.netWait || !App.roomCode || !App.joinH) return;
   const h = App.joinH;
   Net.join(App.roomCode, { ...h,
-    onConn: () => Net.send(hello({ resume: App.mid, ...(App.mm ? { lv: 1 } : {}) })),
+    onConn: () => Net.send(hello({ resume: App.mid, ...(App.mm ? { lv: 1 } : {}) })),   // mid 0 = Lobby: Host nimmt als neuen Gast an
     onClose: () => { if (App.netWait) setTimeout(rejoin, 800); else h.onClose(); },
     onError: () => { if (App.netWait) setTimeout(rejoin, 1000); },
   });
 }
 /** Jeden Frame: true, solange auf die Gegenseite gewartet wird (dann steht das Spiel) */
 export function netWaitTick(now) {
-  const w = App.netWait; if (!w) return false;
-  if (now > w.until) { App.netWait = null; Net.close(); w.lost(); return false; }
+  const w = App.netWait, box = $("netWaitBox"), shade = $("netWaitShade");
+  if (!w) { if (!box.hidden) { box.hidden = true; shade.hidden = true; } return false; }
+  if (now > w.until) { App.netWait = null; box.hidden = true; shade.hidden = true; Net.close(); clearSession(); w.lost(); return false; }
+  box.hidden = false;
+  shade.hidden = App.screen === null;   // im Menü (Neustart, Lobby): Menü sperren, bis zurück oder „Verlassen“
+  $("netWaitTxt").textContent = t("net.waitFor", { name: (App.opp && App.opp.name) || t("search.opponent"), s: Math.ceil((w.until - now) / 1000) });
   return true;
 }
 // Nach dem Wiederverbinden noch NET_LOST − NET_DROP ms Zeit, bis etwas ankommt. Ein eingefrorener Gegner, der nur die
 // Verbindung neu aufbaut, verbindet so nicht endlos neu.
-function resumed() { App.netWait = null; App.lastRx = performance.now() - NET_DROP; App.lagWarn = true; App.dropTried = true; toast(t("net.back"), "i-check", true); }
+function resumed() { App.netWait = null; App.resumePending = false; App.lastRx = performance.now() - NET_DROP; App.lagWarn = true; App.dropTried = true; toast(t("net.back"), "i-check", true); }
 
+
+// ---------- Sitzung über einen App-Neustart (session.js) ----------
+let sessT = 0;
+/** Jeden Frame: jede Sekunde Lebenszeichen, Host mit Spielstand; nach dem Abpfiff Lobby (Freunde) bzw. Ende (Gegnersuche) */
+export function sessionTick(dt) {
+  if (!sessionRole() || (sessT += dt) < 1) return;
+  sessT = 0;
+  if (!afterWhistle()) touchSession(hostState());
+}
+// Spielstand, den der Host sichert (nicht, während er selbst auf den Gast wartet: der Stand steht dann ohnehin)
+const hostState = () => (App.mode === "host" && liveOnline() && !App.netWait ? { st: App.st } : undefined);
+// Abgepfiffen: ein Neustart führt nicht zurück ins beendete Spiel (keine doppelte Wertung oder Belohnung).
+// Gegnersuche: Sitzung vorbei; Freunde: zurück in dieselbe Lobby.
+function afterWhistle() {
+  const ended = (App.mode === "host" || App.mode === "guest") && App.st && App.st.ph === "end";
+  if (!ended) return false;
+  if (App.mm) clearSession(); else saveSession(sessionRole(), { phase: "lobby", st: null, mid: 0 });
+  return true;
+}
+/** Seite wird versteckt (closing false: lebt evtl. weiter) oder geschlossen: Stand sofort sichern (danach kommt evtl. nichts mehr) */
+export function sessionHide(closing) {
+  if (sessionRole() && !afterWhistle()) (closing ? markClosing : touchSession)(hostState());
+  // Seite geht wirklich zu: Verbindung sauber beenden (ohne „bye“), damit die Gegenseite sofort aufs Zurückkommen
+  // wartet und der Server den Raumcode für den Neustart gleich freigibt
+  if (closing && Net.role()) Net.close();
+}
+const mmInfo = () => (App.mm ? { mode: App.mm.mode, match: App.mm.match, role: App.mm.role, opp: App.mm.opp, heads: App.mm.heads } : null);
+
+/**
+ * Nach einem App-Neustart: Host öffnet denselben Raum mit dem gespeicherten Stand und wartet auf den Gast.
+ * h: Verbindungs-Handler (Freunde oder Gegnersuche), lost: was passiert, wenn der Gast nicht zurückkommt.
+ */
+export function restoreHostGame(s, h, lost) {
+  App.opp = s.opp; App.netCfg = s.netCfg || App.netCfg; App.mid = s.mid; App.guestCfg = s.guestCfg; App.roomCode = s.code;
+  beginMatch(s.cfg);
+  App.st = s.st; App.st.ev = []; App.t0 = s.t0 || Date.now();
+  App.netLost = lost; App.lastRx = 0;
+  saveSession("host", { ...s });
+  waitFor(lost);
+  Net.host(h, { code: s.code, retries: REOPEN_TRIES });
+}
+/** Nach einem App-Neustart: Gast tritt dem Raum wieder bei (im Spiel mit Merker und Spiel-Nr., in der Lobby als neuer Gast) */
+export function restoreGuest(s, h, lost) {
+  App.netTok = s.tok || ""; App.roomCode = s.code; App.opp = s.opp || null; App.mid = s.phase === "play" ? s.mid : 0; App.resumeT0 = s.t0 || 0;
+  App.joinH = h;
+  saveSession("guest", { ...s });
+  waitFor(lost);
+  rejoin();
+}
+/** Freunde-Modus fortsetzen (Gegnersuche: matchmaking.js resumeMatch) */
+export function resumeFriends(s) {
+  if (!Net.available()) { clearSession(); return false; }
+  const gone = self => { if (!self) toast(t("net.resumeFailed"), "i-close"); clearSession(); if (App.mode === "host" || App.mode === "guest" || App.screen === "lobby") quitToMenu(); };
+  if (s.role === "host" && s.phase === "play") {
+    restoreHostGame(s, hostHandlers(), () => { clearSession(); hostLost(); });
+  } else if (s.role === "host") {
+    hostGame({ code: s.code, netCfg: s.netCfg });
+  } else {
+    restoreGuest(s, guestHandlers(s.code), gone);
+  }
+  return true;
+}
 
 // ---------- Ping: beide Seiten messen jede Sekunde (Hin und zurück) ----------
 export function pingTick(dt) { App.pingT += dt; if (App.pingT >= 1) { App.pingT = 0; Net.send({ t: "ping", c: performance.now() }); } }
@@ -214,7 +303,7 @@ export function hostData(d) {
   switch (d.t) {
     case "hello":
       // Rückkehr nach Abbruch: nur derselbe Gast (Merker), dann Spiel mit dem vollen Stand fortsetzen
-      if (App.netWait && App.mode === "host") {
+      if ((App.netWait || liveOnline()) && App.mode === "host") {
         if (App.opp && d.tok && d.tok === App.opp.tok && d.resume === App.mid && App.guestCfg) {
           lastStats = ""; App.inSeqSeen = -1; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0];
           Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true }); resumed();
@@ -262,6 +351,7 @@ export function hostStart() {
   beginMatch(fixed); App.dropTried = false;
   App.lastRx = performance.now(); App.guestInAt = App.lastRx; App.lagWarn = false;
   if (!App.mm) App.netLost = hostLost;
+  saveSession("host", { phase: "play", code: App.roomCode, mid: App.mid, cfg: fixed, guestCfg: App.guestCfg, opp: App.opp, netCfg: App.netCfg, mm: mmInfo(), t0: App.t0, st: App.st });
 }
 
 export function tryJoin(code) {
@@ -271,7 +361,10 @@ export function tryJoin(code) {
   saveName($("nameIn").value);
   netNote(t("net.connecting", { code: code.toUpperCase() }));
   App.roomCode = code;
-  Net.join(code, App.joinH = {
+  Net.join(code, App.joinH = guestHandlers(code));
+}
+function guestHandlers(code) {
+  return {
     onConn: () => Net.send(hello()),
     onData: guestData,
     onClose: () => netDropped(guestLost),
@@ -282,7 +375,7 @@ export function tryJoin(code) {
       if (App.screen !== "online") showScreen("online");
       netNote(msg, true);
     },
-  });
+  };
 }
 
 export function guestData(d) {
@@ -290,17 +383,21 @@ export function guestData(d) {
   if (d.t !== "ping" && d.t !== "pong") App.lastRx = performance.now();
   switch (d.t) {
     case "welcome":
-      if (d.v !== VERSION) { Net.close(); showScreen("online"); netNote(t("net.versionMismatch"), true); break; }
+      if (d.v !== VERSION) { App.netWait = null; App.mm = null; App.netLost = null; App.resumePending = false; clearSession(); Net.close(); showScreen("online"); netNote(t("net.versionMismatch"), true); break; }
+      App.netWait = null; App.resumePending = false;   // nach einem Neustart: wieder in der Lobby
       App.opp = { name: (d.name || t("ui.host")).slice(0, 12), ch: charById(d.ch).id, cos: cleanCos(d.cos) }; App.netCfg = d.cfg; lobbyUI("guest");
-      if (!App.mm) showScreen("lobby");   // Gegnersuche: keine Lobby, der Host pfeift gleich an
+      if (!App.mm) saveSession("guest", { phase: "lobby", code: App.roomCode, tok: token(), opp: App.opp });
+      if (!App.mm) { if (App.mode === "guest") backToLobby(); else showScreen("lobby"); }   // Gegnersuche: keine Lobby, der Host pfeift gleich an
       A.sfx("coin"); break;
     case "cfg": App.netCfg = d.cfg; lobbyUI("guest"); break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("guest"); } break;
-    case "full": Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
+    case "full": App.netWait = null; App.mm = null; App.netLost = null; App.resumePending = false; clearSession(); Net.close(); showScreen("online"); netNote(t("net.full"), true); break;
     case "start":
       App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock();
       App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; if (!App.mm) App.netLost = guestLost;
-      if (d.resume) resumed();
+      if (d.resume) { resumed(); if (App.resumeT0) App.t0 = App.resumeT0; }
+      App.resumeT0 = 0;
+      saveSession("guest", { phase: "play", code: App.roomCode, tok: token(), mid: App.mid, opp: App.opp, mm: mmInfo(), t0: App.t0 });
       break;
     case "s": {
       if (App.mode !== "guest" || d.mid !== App.mid) break; // alte Pakete vom letzten Spiel ignorieren
