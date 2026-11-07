@@ -13,7 +13,7 @@ const INK = COL.ink;
 const TEAM = [COL.p1, COL.p2];
 const FT = 330; // obere (hintere) Kante des Spielfelds
 
-let cv, ctx, cw = 0, ch = 0, dpr = 1, band = 0;
+let cv, ctx, cw = 0, ch = 0, dpr = 1, band = 0, safeTop = 0;
 const base = { s: 1, ox: 0, oy: 0 };
 let quality = "high";
 const cam = { z: 1, x: W / 2, y: H / 2, shake: 0, sx: 0, sy: 0, flash: 0, flashCol: "#fff", punch: 0 };
@@ -55,7 +55,14 @@ export function resize() {
   base.s = s;
   base.ox = (vw - W * s) / 2;
   base.oy = vh - extra - H * s;
+  // Abstand oben wie Pause- und Emote-Knopf (8 px unter dem sicheren Bereich, z. B. Notch)
+  safeTop = insetTop();
   bgKey = "";
+}
+// Sicherer Bereich oben in px (env() lässt sich nur über ein Element messen)
+function insetTop() {
+  const d = document.createElement("div"); d.style.cssText = "position:fixed;top:0;height:0;padding-top:var(--st);visibility:hidden";
+  document.body.append(d); const v = d.getBoundingClientRect().height; d.remove(); return v || 0;
 }
 export function viewInfo() { return { cw, ch, s: base.s, ox: base.ox, oy: base.oy }; }
 const visTop = () => Math.max(-40, -base.oy / base.s);
@@ -1170,7 +1177,9 @@ function avatar(chId, size, mood) {
 }
 function pill(x, y, w, h, r, fill) { roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); }
 function hud(st, t, names, opts) {
-  const y = visTop() + 12, cx = W / 2, Wd = 600, Hh = 56;
+  // Oben am Bildschirm angedockt, mittig auf Höhe von Pause- und Emote-Knopf (46 px, 8 px vom Rand), nie enger als 8 px
+  const cx = W / 2, Wd = 600, Hh = 56, s = base.s;
+  const y = (safeTop + Math.max(8, 31 - Hh * s / 2) - base.oy) / s;
   ctx.save();
   ctx.textBaseline = "middle";
   // Hauptleiste

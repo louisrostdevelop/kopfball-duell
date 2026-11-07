@@ -105,7 +105,9 @@ export function ballPhysics(st, dt, postGoal) {
 
 export function ballVsPlayer(st, b, p, _dt) {
   const r = pr(p), ch = headStats(st, p);
-  if (b.nhT > 0 && b.nh === p.i) return; // gerade gequetscht/gespitzelt: kurz keine zweite Berührung
+  // gerade gequetscht/gespitzelt: kurz keine zweite Berührung. Das gilt nur, solange der Ball wegfliegt:
+  // kommt er zurück (Gegner schießt sofort zurück), prallt er ab, sonst flöge er durch den Grätschenden hindurch.
+  if (b.nhT > 0 && b.nh === p.i && (b.x - p.x) * (b.vx - p.vx) > 0) return;
   if (p.bomb && bombBall(st, b, p)) return;
   if (p.slide > 0 && !p.slideHit && slideBall(st, b, p)) return;
   if (b.fx && b.fxO === p.i && b.fxT < 0.25) return; // eigener Schuss löst sich erst

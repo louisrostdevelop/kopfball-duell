@@ -114,6 +114,18 @@ function slideRun(o, inp, secs = 0.9) {
   const stunMid = slideRun({}, (t, s) => { if (Math.abs(t - 0.08) < DT / 2) s.p[0].stun = 0.5; return { d: t < 0.02 }; });
   check("Betäubt während Grätsche: endet sofort", stunMid.p.slide <= 0, "");
 }
+{ // Beide laufen aufeinander zu, Ball dazwischen, einer grätscht, der andere schießt: der Ball darf nie durch den Grätschenden fliegen
+  let through = 0, n = 0; const bad = [];
+  for (const gap of [150, 180, 210, 240]) for (const delay of [0, 0.02, 0.05, 0.1]) for (const kdur of [0.01, 0.1, 0.2]) {
+    const st = setup({ ax: 500, bx: 500 + gap, ballX: 500 + gap / 2, ballY: G - 24 });
+    const A = st.p[0]; A.dir = 1; st.p[1].dir = -1; let crossed = false;
+    run(st, 1.1, t => ({ r: true, d: t < 0.02 }), t => ({ l: true, k: t >= delay && t < delay + kdur }), s => {
+      const b = s.b; if (b.x < A.x - 10 && b.y > A.y - P.pr(A) && s.ph === "play") crossed = true;
+    });
+    n++; if (crossed) { through++; if (bad.length < 3) bad.push(`${gap}/${delay}/${kdur}`); }
+  }
+  check("Grätsche gegen Schuss: Ball fliegt nicht durch", through === 0, `${through}/${n} ${bad.join(" ")}`);
+}
 { // Grätsche in den Ball
   const st = setup({ ballX: 640, ballY: G - 24 });
   const p = st.p[0]; p.x = 500; let poke = null, pvx = 0;

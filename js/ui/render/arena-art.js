@@ -172,45 +172,69 @@ export function makeArenaArt({ srand, FT, front, pitch }) {
   }
 
   // ---------- Backrooms ----------
+  // Ein Fluchtpunkt für alles: derselbe wie Boden und Tore (weit über dem Bild, man schaut leicht von oben in den Raum).
+  // Deshalb keine Decke von unten, sondern eine hohe Wand mit Leuchtstoffröhren an Drähten; Durchgänge zeigen den Flur
+  // dahinter in derselben Perspektive. Feldlinien als abgewetztes Klebeband auf dem Teppich.
   function backrooms(b, R) {
-    const cy = 86, vx = W / 2;
-    // Decke in Perspektive mit Leuchtstoffplatten
-    b.fillStyle = lin(b, R.y0, cy, [[0, "#cfc490"], [1, "#e6dcac"]]); b.fillRect(R.x0, R.y0, R.x1 - R.x0, cy - R.y0);
-    b.strokeStyle = "rgba(110,95,45,.35)"; b.lineWidth = 2;
-    const rows = [cy, cy - 22, cy - 50, cy - 86, cy - 132, cy - 190];
-    rows.forEach(y => { b.beginPath(); b.moveTo(R.x0, y); b.lineTo(R.x1, y); b.stroke(); });
-    for (let i = -14; i <= 14; i++) { b.beginPath(); b.moveTo(vx + i * 110, cy); b.lineTo(vx + i * 210, R.y0); b.stroke(); }
-    for (let i = -6; i <= 6; i += 2) for (let r = 1; r < 4; r += 2) {
-      const y0 = rows[r + 1], y1 = rows[r], k0 = (cy - y0) / 190, k1 = (cy - y1) / 190;
-      const xl = t2 => vx + i * (110 + 100 * t2), xr = t2 => vx + (i + 1) * (110 + 100 * t2);
-      b.fillStyle = "#fffdf0"; b.beginPath(); b.moveTo(xl(k1), y1 - 3); b.lineTo(xr(k1), y1 - 3); b.lineTo(xr(k0), y0 + 3); b.lineTo(xl(k0), y0 + 3); b.closePath(); b.fill();
+    const VY = G - (G - FT) / 0.18, vx = W / 2, base = FT - 20;
+    const toV = (x, y, q) => [vx + (x - vx) * q, VY + (y - VY) * q];   // Punkt um q weiter nach hinten
+    // Wand: warmes Gelb, oben dunkler (das Licht hängt tiefer), feine Tapetenstreifen
+    b.fillStyle = lin(b, R.y0, base, [[0, "#6f6223"], [0.35, "#b9a44c"], [0.7, "#d6c46c"], [1, "#cdb960"]]); b.fillRect(R.x0, R.y0, R.x1 - R.x0, base - R.y0);
+    for (let x = Math.floor(R.x0 / 24) * 24; x < R.x1; x += 24) { b.fillStyle = "rgba(120,100,30,.10)"; b.fillRect(x, R.y0, 2, base - R.y0); b.fillStyle = "rgba(255,248,200,.06)"; b.fillRect(x + 12, R.y0, 1, base - R.y0); }
+    // Leuchtstoffröhren: eine Reihe in gleichem Abstand, Licht fällt als Kegel auf die Wand
+    const lampY = 26, gap = 300, lamps = [];
+    for (let x = vx - gap * 6; x <= vx + gap * 6; x += gap) if (x > R.x0 - 200 && x < R.x1 + 200) lamps.push(x);
+    b.save(); b.globalCompositeOperation = "lighter";
+    for (const x of lamps) {
+      // Licht nach unten auf die Wand (Kegel), nach oben nur ein schwacher Schein
+      const g = b.createRadialGradient(x, lampY + 10, 10, x, lampY + 150, 260); g.addColorStop(0, "rgba(255,248,205,.30)"); g.addColorStop(1, "rgba(255,248,205,0)");
+      b.fillStyle = g; b.fillRect(x - 280, R.y0, 560, base - R.y0);
     }
-    // Tapete: senkrechte Streifen mit Rautenmuster, oben dunkler
-    b.fillStyle = lin(b, cy, FT, [[0, "#c4af55"], [0.35, "#d8c56c"], [1, "#cdb85e"]]); b.fillRect(R.x0, cy, R.x1 - R.x0, FT - cy);
-    for (let x = Math.floor(R.x0 / 32) * 32; x < R.x1; x += 32) { b.fillStyle = "rgba(150,128,45,.13)"; b.fillRect(x, cy, 4, FT - cy); b.fillRect(x + 16, cy, 1.5, FT - cy); }
-    b.fillStyle = "rgba(140,118,40,.2)";
-    for (let y = cy + 24; y < FT - 30; y += 30) for (let x = Math.floor(R.x0 / 32) * 32 + 10; x < R.x1; x += 32) { b.beginPath(); b.moveTo(x, y - 5); b.lineTo(x + 4, y); b.lineTo(x, y + 5); b.lineTo(x - 4, y); b.fill(); }
-    // Licht von oben auf der Wand
-    for (let i = -6; i <= 6; i += 2) glow(b, vx + i * 150 + 75, cy + 10, 160, "rgba(255,252,225,.35)");
-    // Durchgänge mit Tiefe: Rahmen, dunkler Flur, hinten wieder Licht
-    for (const dx of [-560, -190, 190, 560]) {
-      const x = W / 2 + dx - 55, dw = 110, dh = 168, y = FT - 22 - dh;
-      b.fillStyle = "#b39f4a"; b.fillRect(x - 8, y - 8, dw + 16, dh + 8);
-      b.fillStyle = lin(b, y, FT - 22, [[0, "#5b5126"], [1, "#7a6c33"]]); b.fillRect(x, y, dw, dh);
-      b.fillStyle = "#c9b660"; b.fillRect(x + 32, y + 40, dw - 64, dh - 40);
-      b.fillStyle = "rgba(255,252,220,.55)"; b.fillRect(x + 40, y + 46, dw - 80, 6);
-      b.fillStyle = "rgba(60,50,20,.35)"; b.fillRect(x, y, dw, 10);
+    b.restore();
+    // Durchgänge: Zarge, Flurboden, Seitenwand des Flurs (auf der vom Fluchtpunkt abgewandten Seite), hinten Licht
+    const dw = 116, dh = 176, dy = base - dh;
+    for (const dx of [-555, -185, 185, 555]) {
+      const x0 = vx + dx - dw / 2, x1 = x0 + dw;
+      b.save(); b.beginPath(); b.rect(x0, dy, dw, dh); b.clip();
+      b.fillStyle = lin(b, dy, base, [[0, "#3f3714"], [1, "#6b5d27"]]); b.fillRect(x0, dy, dw, dh);   // Flurwand hinten (im Schatten)
+      const q = 0.955, [ix0, iy] = toV(x0, base, q), [ix1] = toV(x1, base, q);
+      // Flurboden
+      b.fillStyle = lin(b, iy, base, [[0, "#7c6c2e"], [1, "#a8954a"]]);
+      b.beginPath(); b.moveTo(x0, base); b.lineTo(x1, base); b.lineTo(ix1, iy); b.lineTo(ix0, iy); b.closePath(); b.fill();
+      // seitliche Flurwand
+      const side = dx < 0 ? [x0, ix0] : [x1, ix1];
+      b.fillStyle = "rgba(40,34,10,.45)"; b.beginPath(); b.moveTo(side[0], dy - 40); b.lineTo(side[0], base); b.lineTo(side[1], iy); b.lineTo(side[1], dy - 40); b.closePath(); b.fill();
+      // Licht am Ende des Flurs
+      const g = b.createRadialGradient((ix0 + ix1) / 2, iy - 50, 4, (ix0 + ix1) / 2, iy - 50, 70); g.addColorStop(0, "rgba(255,245,190,.45)"); g.addColorStop(1, "rgba(255,245,190,0)");
+      b.fillStyle = g; b.fillRect(x0, dy, dw, dh);
+      // Schatten unter dem Sturz
+      b.fillStyle = lin(b, dy, dy + 34, [[0, "rgba(20,16,4,.55)"], [1, "rgba(20,16,4,0)"]]); b.fillRect(x0, dy, dw, 34);
+      b.restore();
+      // Zarge
+      b.strokeStyle = "#e4d488"; b.lineWidth = 7; b.beginPath(); b.moveTo(x0 - 3.5, base); b.lineTo(x0 - 3.5, dy - 3.5); b.lineTo(x1 + 3.5, dy - 3.5); b.lineTo(x1 + 3.5, base); b.stroke();
+      b.strokeStyle = "rgba(90,76,25,.6)"; b.lineWidth = 2; b.beginPath(); b.moveTo(x0 - 7, base); b.lineTo(x0 - 7, dy - 7); b.lineTo(x1 + 7, dy - 7); b.lineTo(x1 + 7, base); b.stroke();
     }
-    // Wasserflecken (wenige, bewusst gesetzt)
-    for (const [dx, y, w, h] of [[-420, 150, 70, 50], [300, 130, 90, 40], [690, 190, 60, 60], [-700, 120, 50, 70]]) { b.fillStyle = "rgba(130,110,35,.16)"; b.beginPath(); b.ellipse(W / 2 + dx, y, w, h, 0.3, 0, TAU); b.fill(); }
+    // Röhren selbst (vor der Wand, an zwei Drähten nach oben aus dem Bild)
+    for (const x of lamps) {
+      b.strokeStyle = "rgba(60,50,15,.55)"; b.lineWidth = 2; b.beginPath(); b.moveTo(x - 60, lampY); b.lineTo(x - 60, R.y0); b.moveTo(x + 60, lampY); b.lineTo(x + 60, R.y0); b.stroke();
+      b.fillStyle = "#9c8e55"; rr(b, x - 82, lampY - 4, 164, 14, 4); b.fill();
+      b.fillStyle = "#fffdf0"; rr(b, x - 76, lampY + 6, 152, 7, 3.5); b.fill();
+      b.save(); b.globalCompositeOperation = "lighter"; glow(b, x, lampY + 10, 90, "rgba(255,250,215,.35)"); b.restore();
+    }
     // Fußleiste
-    b.fillStyle = "#8a7a34"; b.fillRect(R.x0, FT - 22, R.x1 - R.x0, 22); b.fillStyle = "rgba(255,250,200,.35)"; b.fillRect(R.x0, FT - 22, R.x1 - R.x0, 3);
-    // Teppich in Perspektive
-    pitch(b, R, "#b6a44e", "#af9d4a", "rgba(255,250,215,.5)");
-    for (let i = 0; i < 700; i++) { b.fillStyle = srand() > 0.5 ? "rgba(90,75,20,.12)" : "rgba(255,245,190,.07)"; b.fillRect(R.x0 + srand() * (R.x1 - R.x0), FT + srand() * (G - FT), 2, 2); }
-    for (const [dx, y] of [[-480, 470], [380, 560], [640, 420]]) { b.fillStyle = "rgba(90,75,20,.13)"; b.beginPath(); b.ellipse(W / 2 + dx, y, 70, 14, 0, 0, TAU); b.fill(); }
-    // Vignette: Ränder etwas dunkler
-    const vg = b.createRadialGradient(W / 2, 330, 300, W / 2, 330, 1100); vg.addColorStop(0, "rgba(40,32,5,0)"); vg.addColorStop(1, "rgba(40,32,5,.28)");
+    b.fillStyle = "#8a7a34"; b.fillRect(R.x0, base, R.x1 - R.x0, FT - base); b.fillStyle = "rgba(255,250,200,.35)"; b.fillRect(R.x0, base, R.x1 - R.x0, 3);
+    b.fillStyle = "rgba(30,24,6,.35)"; b.fillRect(R.x0, FT - 3, R.x1 - R.x0, 3);
+    // Teppich: Bahnen in Perspektive, Linien als abgewetztes Klebeband
+    pitch(b, R, "#b5a24c", "#ae9b48", "rgba(255,248,210,.38)");
+    for (let i = 0; i < 900; i++) { b.fillStyle = srand() > 0.5 ? "rgba(90,75,20,.10)" : "rgba(255,245,190,.06)"; b.fillRect(R.x0 + srand() * (R.x1 - R.x0), FT + srand() * (G - FT), 2, 2); }
+    // feuchte Stellen, weich auslaufend, flach in der Bodenebene
+    for (const [dx, y, w] of [[-470, 455, 90], [400, 560, 120], [690, 410, 70]]) {
+      b.save(); b.translate(vx + dx, y); b.scale(1, 0.22);
+      const g = b.createRadialGradient(0, 0, 0, 0, 0, w); g.addColorStop(0, "rgba(80,66,18,.22)"); g.addColorStop(0.7, "rgba(80,66,18,.12)"); g.addColorStop(1, "rgba(80,66,18,0)");
+      b.fillStyle = g; b.beginPath(); b.arc(0, 0, w, 0, TAU); b.fill(); b.restore();
+    }
+    // Vignette
+    const vg = b.createRadialGradient(vx, 360, 320, vx, 360, 1150); vg.addColorStop(0, "rgba(40,32,5,0)"); vg.addColorStop(1, "rgba(40,32,5,.32)");
     b.fillStyle = vg; b.fillRect(R.x0, R.y0, R.x1 - R.x0, G - R.y0);
     front(b, R, "#a8964a", "#2f2a12", "rgba(255,250,200,.45)");
   }
