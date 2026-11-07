@@ -146,6 +146,8 @@ export function onGoal(e) {
   else if (Math.abs(e.s[0] - e.s[1]) === 1 && e.s[e.i] > e.s[1 - e.i]) sub = t("goal.lead");
   else sub = Math.random() < 0.5 ? (App.names[e.i] || "").toUpperCase() : t(PHRASES[Math.floor(Math.random() * PHRASES.length)]);
   if (!demo) fx.callout(text, [COL.p1, COL.p2][e.i], sub, 1.9, text.length > 9 ? 0.82 : 1);
-  if (App.mode !== "guest" && e.kind !== "own") { const sc = st.p[e.i]; setTimeout(() => { if (App.st === st) emote(st, e.i, CELEB[sc.ch] || "🔥"); }, 350); }
+  // Torjubel als Emote. Rollback: nur der Schütze selbst, über seine Eingaben (beide Seiten sehen ihn im selben Takt)
+  if (App.rb) { const rb = App.rb, ch = st.p[e.i].ch; if (e.i === rb.me && e.kind !== "own") setTimeout(() => { if (App.rb === rb && !rb.emo) rb.emo = CELEB[ch] || "🔥"; }, 350); }
+  else if (App.mode !== "guest" && e.kind !== "own") { const sc = st.p[e.i]; setTimeout(() => { if (App.st === st) emote(st, e.i, CELEB[sc.ch] || "🔥"); }, 350); }
   if (vsCpu() && e.i === 0 && Math.random() < 0.6) setTimeout(() => { if (App.st === st) emote(st, 1, ["😤", "😤", "🤡", "GG"][Math.floor(Math.random() * 4)]); }, 1100);
 }

@@ -14,7 +14,7 @@ const HASH_EVERY = 60;
  * o.step(st, inputs[2], f): Physik-Takt, liefert Ereignisse (Array)
  * o.send(msg): schneller, unzuverlässiger Kanal; o.sendSafe(msg): zuverlässiger Kanal (Standard: send)
  * o.onSpec(e, f): Ereignis zum ersten Mal gesehen (Ton, Effekte), o.onFinal(events, f, stateAfter): Takt endgültig
- * o.norm(st): Zustand so, wie er übers Netz käme (Standard: JSON hin und zurück)
+ * o.norm(st): Zustand so, wie er übers Netz käme (Standard: JSON hin und zurück), o.onRollback: siehe createSession
  */
 export function createPeer(o) {
   const me = o.me, send = o.send, sendSafe = o.sendSafe || o.send;
@@ -31,7 +31,7 @@ export function createPeer(o) {
     }
     return out;
   };
-  const s = createSession({ me, state: o.state, frame0: o.frame0, delay: o.delay, maxPred: o.maxPred, ring: o.ring, tick: step });
+  const s = createSession({ me, state: o.state, frame0: o.frame0, delay: o.delay, maxPred: o.maxPred, ring: o.ring, tick: step, onRollback: o.onRollback });
   let acc = 0, ackByRemote = (o.frame0 | 0) + s.delay - 1, lastRemoteFrame = (o.frame0 | 0), remoteAdv = 0, cool = 0, finalDone = o.frame0 | 0;
   const advHist = [];
   const myHash = new Map(), theirHash = new Map();

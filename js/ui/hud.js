@@ -1,6 +1,6 @@
 // Knöpfe im Spiel: Pause, Fortsetzen, Neustart, Aufgeben, Vollbild, Emotes, Jubel überspringen
-import { REPLAY_START, skipCelebration } from "../core/physics.js";
-import { beginMatch, canFullscreen, fullscreenElement, pause, quitToMenu, toggleFullscreen } from "../app/game.js";
+import { REPLAY_START } from "../core/physics.js";
+import { beginMatch, canFullscreen, fullscreenElement, pause, quitToMenu, skipGoal, toggleFullscreen } from "../app/game.js";
 import { backToLobby } from "../app/online.js";
 import { App, inGame } from "../app/state.js";
 import { $ } from "./dom.js";
@@ -23,7 +23,7 @@ export function initHud() {
   const bar = $("emoteBar");
   $("btnEmote").onclick = () => { bar.hidden = !bar.hidden; };
   $("netPing").onclick = () => $("netPing").classList.toggle("ms");
-  $("cv").addEventListener("pointerdown", () => { if (inGame() && App.st.ph === "goal" && App.mode !== "guest" && App.st.pt < REPLAY_START) skipCelebration(App.st); });
-  $("touch").addEventListener("pointerdown", () => { if (inGame() && App.st.ph === "goal" && App.mode !== "guest" && App.st.pt < REPLAY_START - 0.3) skipCelebration(App.st); });
+  $("cv").addEventListener("pointerdown", () => { if (inGame() && App.st.ph === "goal" && App.mode !== "guest" && App.st.pt < REPLAY_START) skipGoal(); });
+  $("touch").addEventListener("pointerdown", () => { if (inGame() && App.st.ph === "goal" && App.mode !== "guest" && App.st.pt < REPLAY_START - 0.3) skipGoal(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden && inGame() && App.mode !== "host" && App.mode !== "guest") pause(true); });
 }

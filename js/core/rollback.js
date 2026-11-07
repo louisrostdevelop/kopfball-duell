@@ -45,7 +45,8 @@ const predictIn = last => (isObj(last) ? (last.b || 0) : (last || 0));
  * Sitzung anlegen.
  * o.me: eigener Spieler (0/1), o.state: Startzustand S_frame0, o.frame0: erster Takt (Standard 0),
  * o.tick(st, inputs[2], f): Takt ausführen (verändert st, liefert die Ereignisse des Takts als Array),
- * o.delay: Eingabeverzögerung in Takten, o.maxPred: so weit darf vorhergesagt werden, o.ring: Zustände im Speicher.
+ * o.delay: Eingabeverzögerung in Takten, o.maxPred: so weit darf vorhergesagt werden, o.ring: Zustände im Speicher,
+ * o.onRollback(alt, neu): nach dem Neurechnen (beide für denselben Takt).
  */
 export function createSession(o) {
   const me = o.me, op = 1 - me, D = Math.max(0, o.delay | 0), maxPred = o.maxPred ?? 8, RING = o.ring ?? 256;
@@ -116,9 +117,10 @@ export function createSession(o) {
     reconcile() {
       let rolled = false;
       if (dirty < frame) {
-        const from = dirty, to = frame;
+        const from = dirty, to = frame, old = cur;
         cur = clone(S.get(from));
         for (let f = from; f < to; f++) runTick(f);
+        if (o.onRollback) o.onRollback(old, cur);   // gleicher Takt, alte Vorhersage gegen neue Rechnung (Glätten)
         m.rollbacks++; m.resimFrames += to - from; m.maxDepth = Math.max(m.maxDepth, to - from);
         rolled = true;
       }

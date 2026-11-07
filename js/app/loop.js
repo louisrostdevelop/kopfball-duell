@@ -5,7 +5,8 @@ import { advance, REPLAY_END, REPLAY_START } from "../core/physics.js";
 import { S, save } from "./profile.js";
 import { render, setQuality, viewStamp } from "../ui/render/render.js";
 import { onEvent } from "./effects.js";
-import { guestFrame, hostSend, netWaitTick, pingHud, sessionTick, watchNet } from "./online.js";
+import { guestFrame, hostSend, netWaitTick, pingHud, pingTick, sessionTick, watchNet } from "./online.js";
+import { rbFrame, rbView } from "./rbnet.js";
 import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
@@ -31,12 +32,13 @@ function frame(now) {
     if (perf.t > 3) { if (perf.n / perf.t < 42) { perf.slow++; if (perf.slow >= 2) { S.quality = "low"; save(); setQuality("low"); toast(t("perf.lowQuality")); } } else perf.slow = 0; perf.t = 0; perf.n = 0; }
   }
   I.pollPads();
-  const st = App.st;
+  let st = App.st;
   const rotated = I.isTouch && window.innerHeight > window.innerWidth && inGame();
   $("rotate").hidden = !rotated;
   watchNet(now);
   const netWait = netWaitTick(now);   // Verbindung weg: Spiel steht, bis der andere zurück ist oder die Zeit um ist
   if (netWait) { /* nur zeichnen */ }
+  else if (App.rb && (App.mode === "host" || App.mode === "guest")) { rbFrame(dt); pingTick(dt); st = App.st; }   // Rollback: beide rechnen
   else if (App.mode === "guest") guestFrame(dt, now);
   else if (App.mode === "demo") { /* Menü: kein Spiel im Hintergrund, nur ein Standbild der Arena */ }
   else if (!App.paused && !(rotated && App.mode !== "host")) {
@@ -47,10 +49,11 @@ function frame(now) {
   pingHud(dt);
   sessionTick(dt);
   takeEvents(st);
-  if (st.ph === "play" && App.mode !== "demo") { App.rec.push(snap(st)); if (App.rec.length > 200) App.rec.shift(); }
+  // Wiederholung aufnehmen (Rollback: aus endgültigen Takten, rbnet.js)
+  if (st.ph === "play" && App.mode !== "demo" && !App.rb) { App.rec.push(snap(st)); if (App.rec.length > 200) App.rec.shift(); }
   let replay = null, frac = 0;
   if (st.ph === "goal" && App.replay && st.pt < REPLAY_START && st.pt > REPLAY_END) { replay = App.replay; frac = (REPLAY_START - st.pt) / (REPLAY_START - REPLAY_END); }
-  if (st.ph === "ko" || st.ph === "cd") App.rec = [];
+  if ((st.ph === "ko" || st.ph === "cd") && !App.rb) App.rec = [];
   if (App.mode !== "demo") { const me = myIdx(); if (me >= 0) App.maxDef = Math.max(App.maxDef, st.s[1 - me] - st.s[me]); }
   const la = st.ph === "cd" ? 1 : st.ph === "play" && App.goT >= 0 ? clamp(1 - (simT - App.goT - 1.5) / 0.6, 0, 1) : 0;
   const labels = (App.labels || []).map(lb => (lb ? { t: lb, a: la } : null));
@@ -58,9 +61,10 @@ function frame(now) {
     // Standbild nur zeichnen, wenn es neu ist oder sich die Größe geändert hat
     const key = viewStamp() + ":" + st.arena + ":" + (document.fonts ? document.fonts.status : "");   // Schrift nachgeladen: neu zeichnen
     if (App.stillKey !== key) { App.stillKey = key; render(st, simT, { dt, still: true, noHud: true }); }
-  } else render(st, simT, { dt, names: App.names, labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesText(), modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
+  } else render(App.rb ? rbView(st) : st, simT, { dt, names: App.names, labels, ballSkin: App.ball, replay, replayFrac: frac, noHud: App.mode === "demo", canSkip: App.mode !== "guest", series: seriesText(), modName: st.mod ? (MODS.find(m => m.id === st.mod) || {}).name : "" });
   if (App.mode !== "demo") I.touchHud(App.mode === "guest" && App.gp ? { p: [st.p[0], Object.assign({}, st.p[1], { charge: App.gp.charge })] } : st);
-  if (st.ph === "end" && !App.endShown && App.mode !== "demo") { App.endShown = true; setTimeout(matchEnd, 900); }
+  // Spielende (Rollback: erst wenn es endgültig ist, nicht schon nach einer Vorhersage)
+  if (st.ph === "end" && !App.endShown && App.mode !== "demo" && (!App.rb || App.rb.ended)) { App.endShown = true; setTimeout(matchEnd, 900); }
   if (App.screen === "home") drawShowcase(dt);
 }
 

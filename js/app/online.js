@@ -14,6 +14,7 @@ import { audio as A, input as I, net as Net } from "./services.js";
 import { decodeState, encodeState, makeClock, pingBars, pingStats } from "./netcode.js";
 import { t } from "../content/i18n.js";
 import { clearSession, markClosing, saveSession, sessionRole, touchSession } from "./session.js";
+import { netState, pickDelay, rbBestState, rbMessage, rollbackWanted, startRb, stopRb } from "./rbnet.js";
 
 // Zustände/Eingaben über den schnellen Kanal (falls der Adapter einen hat)
 const fast = m => (Net.sendFast ? Net.sendFast(m) : Net.send(m));
@@ -228,7 +229,7 @@ export function sessionTick(dt) {
   if (!afterWhistle()) touchSession(hostState());
 }
 // Spielstand, den der Host sichert (nicht, während er selbst auf den Gast wartet: der Stand steht dann ohnehin)
-const hostState = () => (App.mode === "host" && liveOnline() && !App.netWait ? { st: App.st } : undefined);
+const hostState = () => (App.mode === "host" && liveOnline() && !App.netWait ? { st: rbBestState() } : undefined);
 // Abgepfiffen: ein Neustart führt nicht zurück ins beendete Spiel (keine doppelte Wertung oder Belohnung).
 // Gegnersuche: Sitzung vorbei; Freunde: zurück in dieselbe Lobby.
 function afterWhistle() {
@@ -254,7 +255,7 @@ const mmInfo = () => (App.mm ? { mode: App.mm.mode, match: App.mm.match, role: A
 export function restoreHostGame(s, h, lost) {
   App.opp = s.opp; App.netCfg = s.netCfg || App.netCfg; App.mid = s.mid; App.guestCfg = s.guestCfg; App.roomCode = s.code;
   beginMatch(s.cfg);
-  App.st = s.st; App.st.ev = []; App.t0 = s.t0 || Date.now();
+  App.st = s.st; App.st.ev = []; App.t0 = s.t0 || Date.now(); App.rbOn = !!s.rb;   // Rollback: Sitzung startet, wenn der Gast zurück ist
   App.netLost = lost; App.lastRx = 0;
   saveSession("host", { ...s });
   waitFor(lost);
@@ -302,6 +303,7 @@ export function pingHud(dt) {
 export function hostData(d) {
   // Ping/Pong beantwortet auch ein eingefrorener Tab (kommt nicht über die Spielschleife): kein Lebenszeichen
   if (d.t !== "ping" && d.t !== "pong") App.lastRx = performance.now();
+  if (rbMessage(d)) return;
   switch (d.t) {
     case "hello":
       // Rückkehr nach Abbruch: nur derselbe Gast (Merker), dann Spiel mit dem vollen Stand fortsetzen
@@ -309,13 +311,16 @@ export function hostData(d) {
         if (App.opp && d.tok && d.tok === App.opp.tok && d.resume === App.mid && App.guestCfg) {
           lastStats = ""; App.inSeqSeen = -1; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0];
           App.gPend = { j: 0, d: 0 };   // Druck-Zähler des Gastes neu übernehmen (nach seinem Neustart beginnt er bei 0), kein Geistersprung
-          Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true }); resumed();
+          // Rollback: neue Sitzung ab dem letzten sicheren Stand, beide frisch (alte Eingaben gelten nicht mehr)
+          const rb = App.rbOn ? rbStart(rbBestState(), App.rb ? App.rb.delay : pickDelay(App.rtt)) : undefined;
+          Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true, rb }); resumed();
         } else Net.send({ t: "full" });
         break;
       }
       if (d.v !== VERSION) toast(t("net.oldVersionGuest"), "i-close");
       App.opp = { name: (d.name || t("ui.guest")).slice(0, 12), ch: charById(d.ch).id, lv: d.lv, cos: cleanCos(d.cos), tok: String(d.tok || "") }; App.inSeqSeen = -1;
       Net.send({ t: "welcome", name: S.name || t("ui.host"), ch: S.char, cos: myCos(), cfg: App.netCfg, v: VERSION });
+      Net.send({ t: "ping", c: performance.now() });   // Laufzeit schon vor dem Anpfiff kennen (Eingabeverzögerung beim Rollback)
       lobbyUI("host"); A.sfx("coin"); toast(t("lobby.joined", { name: App.opp.name }), "i-users");
       break;
     case "pick": if (App.opp) { App.opp.ch = charById(d.ch).id; if (d.lv) App.opp.lv = d.lv; if (d.cos) App.opp.cos = cleanCos(d.cos); lobbyUI("host"); } break;
@@ -350,12 +355,23 @@ export function hostStart() {
   App.mid++;
   const fixed = resolveObs(cfg);
   App.guestCfg = { ...fixed, mode: "guest", labels: [null, t("hud.you")] };
-  Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg });
   beginMatch(fixed); App.dropTried = false;
+  // Rollback: beide rechnen ab genau diesem Startzustand (der Gast bekommt ihn mit), sonst rechnet nur der Host
+  App.rbOn = rollbackWanted();
+  const rb = App.rbOn ? rbStart(App.st, pickDelay(medianPing())) : undefined;
+  Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, rb });
   App.lastRx = performance.now(); App.guestInAt = App.lastRx; App.lagWarn = false;
   if (!App.mm) App.netLost = hostLost;
-  saveSession("host", { phase: "play", code: App.roomCode, mid: App.mid, cfg: fixed, guestCfg: App.guestCfg, opp: App.opp, netCfg: App.netCfg, mm: mmInfo(), t0: App.t0, st: App.st });
+  saveSession("host", { phase: "play", code: App.roomCode, mid: App.mid, cfg: fixed, guestCfg: App.guestCfg, opp: App.opp, netCfg: App.netCfg, mm: mmInfo(), t0: App.t0, st: App.st, rb: App.rbOn });
 }
+/** Host: Rollback-Sitzung starten; liefert, was der Gast dafür braucht (Sitzungs-Nr., Startzustand, Verzögerung) */
+function rbStart(st, delay) {
+  if (App.testPatch) App.testPatch(st);   // nur Tests: Startzustand vorgeben (z. B. Ball vor dem Tor)
+  const ep = (Date.now() % 1e9) + 1, s0 = netState(st);
+  startRb({ ep, st: s0, delay });
+  return { ep, st: s0, d: delay };
+}
+const medianPing = () => { const p = [...App.pings].sort((a, b) => a - b); return p.length ? p[p.length >> 1] : App.rtt; };
 
 export function tryJoin(code) {
   code = String(code || $("codeIn").value).trim().toLowerCase();
@@ -384,6 +400,7 @@ function guestHandlers(code) {
 export function guestData(d) {
   // Ping/Pong beantwortet auch ein eingefrorener Tab (kommt nicht über die Spielschleife): kein Lebenszeichen
   if (d.t !== "ping" && d.t !== "pong") App.lastRx = performance.now();
+  if (rbMessage(d)) return;
   switch (d.t) {
     case "welcome":
       if (d.v !== VERSION) { App.netWait = null; App.mm = null; App.netLost = null; App.resumePending = false; clearSession(); Net.close(); showScreen("online"); netNote(t("net.versionMismatch"), true); break; }
@@ -398,7 +415,10 @@ export function guestData(d) {
     case "start":
       // Wiederaufnahme: Ereignisse von vor dem Abriss sind inzwischen Sekunden alt und fallen bewusst weg (Ton und Jubel
       // zum falschen Zeitpunkt wären schlimmer), der Spielstand kommt mit dem nächsten Zustand
-      App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.st.ph = "cd"; App.lastSeq = -1; App.clock = makeClock();
+      App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.lastSeq = -1; App.clock = makeClock();
+      // Rollback: vom Host vorgegebener Startzustand und Verzögerung; ohne rb das alte Verfahren (Host rechnet)
+      if (d.rb && d.rb.st && typeof d.rb.st === "object") startRb({ ep: d.rb.ep, st: d.rb.st, delay: clamp(d.rb.d | 0, 0, 8) });
+      else { stopRb(); App.st.ph = "cd"; }
       App.lastRx = performance.now(); App.lagWarn = false; App.dropTried = false; if (!App.mm) App.netLost = guestLost;
       if (d.resume) { resumed(); if (App.resumeT0) App.t0 = App.resumeT0; }
       App.resumeT0 = 0;
@@ -430,6 +450,7 @@ export function guestData(d) {
 }
 
 export function backToLobby() {
+  stopRb();
   document.body.classList.remove("ingame");
   $("gameBtns").hidden = true;
   A.crowdOff();

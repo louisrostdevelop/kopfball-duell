@@ -2,7 +2,8 @@
 import { ARENAS, CHARS } from "../content/config.js";
 import { layoutsFor } from "../content/layouts.js";
 import { makeAI } from "../core/ai.js";
-import { emote, newMatch } from "../core/physics.js";
+import { emote, newMatch, skipCelebration } from "../core/physics.js";
+import { rbEmote, rbSkip, stopRb } from "./rbnet.js";
 import { S, save } from "./profile.js";
 import { fx, setBand, setMatchCos, setMuted } from "../ui/render/render.js";
 import { cosById } from "../content/cosmetics.js";
@@ -53,6 +54,7 @@ export function beginMatch(cfg) {
   if (vsCpu()) App.ai[1] = makeAI(1, cfg.diff ?? 1, !!cfg.keeper);
   App.names = cfg.names; App.labels = cfg.labels; App.ball = cfg.ball || S.ball;
   App.acc = 0; App.paused = false; App.endShown = false; App.rec = []; App.replay = null; App.maxDef = 0; App.goT = -1; App.t0 = Date.now();
+  App.rb = null;   // Rollback startet online.js nach dem Anpfiff, sonst klassisch
   App.snaps = []; App.evQ = []; App.rematchWanted = false; App.gp = null; App.outEv = []; App.guestIn = [0, 0, 0, 0, 0, 0, 0, 0]; App.gPend = { j: 0, d: 0 }; App.jug = { i: -1, n: 0 };
   fx.clear();
   const me = cfg.mode === "guest" ? 1 : 0;
@@ -106,7 +108,11 @@ export function updateBand() {
   setBand(I.isTouch && ig ? (App.mode === "local" ? 92 : 104) : 0);
 }
 
+/** Torjubel überspringen (Tippen, Leertaste): online mit Rollback als Eingabe, sonst direkt */
+export function skipGoal() { if (App.rb) rbSkip(); else skipCelebration(App.st); }
+
 export function quitToMenu() {
+  stopRb();
   if (App.mode === "host" || App.mode === "guest") { Net.send({ t: "bye" }); Net.close(250); }   // „bye“: die andere Seite wartet nicht aufs Wiederverbinden
   clearSession();   // bewusst verlassen: beim nächsten Start nicht zurückverbinden
   App.netLost = null; App.lastRx = 0; App.netWait = null;
@@ -141,6 +147,7 @@ export function sendEmote(e) {
   const now = performance.now() / 1000;
   if (now - (App.emoT || 0) < EMOTE_GAP) return;
   App.emoT = now;
+  if (App.rb) { rbEmote(e); return; }   // Rollback: Emote reist mit den Eingaben
   if (App.mode === "guest") { Net.send({ t: "emo", e }); return; }
   emote(App.st, 0, e);
 }
