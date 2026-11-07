@@ -118,7 +118,6 @@ export function quitToMenu() {
   updateBand();
   App.stack = [];
   showScreen("home", true);
-  if (App.dailyLater) { const f = App.dailyLater; App.dailyLater = null; f(); }   // nach einem zurückgeholten Online-Spiel
 }
 
 export function pause(on) {

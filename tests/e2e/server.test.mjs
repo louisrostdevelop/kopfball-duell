@@ -160,12 +160,14 @@ test("Offline spielen: Meldung wartet, Kaufen gesperrt, beim Wiederverbinden gew
   await until(async () => (await db("select 1 from game.ledger where player_id = $1 and reason = 'daily'", [id])).length);
   await page.waitForTimeout(700); if (await page.locator("#modal").isVisible()) await click(page, "#modalOk");
   const pending = () => page.evaluate(() => JSON.parse(localStorage.getItem("kopfball-duell-pending") || "[]").length);
-  const win = () => page.evaluate(() => { const K = window.__kd; K.t0 = Date.now() - 60000; const st = K.st; st.s = [2, 0]; st.stats[0].goals = 2; st.t = 0.2; st.rules.win = 0; });
+  // erst nach dem Anstoß-Countdown (auf einem langsamen Rechner dauert er länger als 3 s), sonst läuft die Zeit nicht
+  const win = async () => { await page.waitForFunction(() => window.__kd.st && window.__kd.st.ph === "play", null, { timeout: 15000 }); await page.evaluate(() => { const K = window.__kd; K.t0 = Date.now() - 60000; const st = K.st; st.s = [2, 0]; st.stats[0].goals = 2; st.t = 0.2; st.rules.win = 0; }); };
 
   // Offline: Karriere Spiel 1 gewinnen, Meldung bleibt liegen, Sterne lokal sichtbar
   await ctx.setOffline(true);
   await click(page, "#modeCard"); await click(page, "#modeGrid [data-mode=career]"); await click(page, "#btnPlay", 400);
-  await click(page, "#btnCareerGo", 3400); await win(); await page.waitForTimeout(3300);
+  await click(page, "#btnCareerGo", 400); await win();
+  await until(async () => (await pending()) === 1, 8000);
   assert.equal(await pending(), 1, "Meldung wartet");
   await click(page, "#btnEndAgain", 500);
   assert.equal(await page.locator("#careerGrid .cstage:nth-child(1) .stars svg.on").count(), 3, "lokal 3 Sterne");
@@ -187,7 +189,7 @@ test("Offline spielen: Meldung wartet, Kaufen gesperrt, beim Wiederverbinden gew
   await page.evaluate(async () => { const a = await import("/js/app/account.js"); const s = await import("/js/app/services.js"); a.applyState(await s.server.state()); });
   await click(page, "#scr-career [data-back]"); await click(page, "#modeCard"); await click(page, "#modeGrid [data-mode=career]"); await click(page, "#btnPlay", 400);
   assert.match(await page.textContent("#btnCareerGo"), /Kalle/, "Spiel 5 ist dran");
-  await click(page, "#btnCareerGo", 3400); await win();
+  await click(page, "#btnCareerGo", 400); await win();
   assert.ok(await until(async () => (await db("select 1 from game.ledger where player_id = $1 and reason = 'career_league'", [id])).length, 8000), "Liga-Bonus gebucht");
   assert.ok(await until(async () => /Kreisliga geschafft: \+200/.test(await page.textContent("#toasts")) || null, 4000), "Bonus angezeigt");
   assert.deepEqual(errors.filter(e => !/status of 400|Failed to load resource|ERR_INTERNET_DISCONNECTED|Failed to fetch/.test(e)), []);
