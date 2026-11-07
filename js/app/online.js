@@ -256,7 +256,7 @@ const mmInfo = () => (App.mm ? { mode: App.mm.mode, match: App.mm.match, role: A
  * h: Verbindungs-Handler (Freunde oder Gegnersuche), lost: was passiert, wenn der Gast nicht zurückkommt.
  */
 export function restoreHostGame(s, h, lost) {
-  App.opp = s.opp; App.netCfg = s.netCfg || App.netCfg; App.mid = s.mid; App.guestCfg = s.guestCfg; App.roomCode = s.code;
+  App.opp = s.opp; App.netCfg = s.netCfg || App.netCfg; App.mid = s.mid; App.matchKey = s.key || ""; App.guestCfg = s.guestCfg; App.roomCode = s.code;
   beginMatch(s.cfg);
   App.st = s.st; App.st.ev = []; App.t0 = s.t0 || Date.now(); App.rbOn = !!s.rb;   // Rollback: Sitzung startet, wenn der Gast zurück ist
   App.netLost = lost; App.lastRx = 0;
@@ -321,7 +321,7 @@ export function hostData(d) {
           // erneut, nichts Endgültiges wird zurückgenommen. Sonst neue Sitzung ab dem letzten sicheren Stand des Hosts.
           const keep = App.rbOn && App.rb && d.rb && d.rb.ep === App.rb.ep;
           const rb = !App.rbOn ? undefined : keep ? { ep: App.rb.ep, keep: true } : rbStart(rbBestState(), App.rb ? App.rb.delay : pickDelay(App.rtt));
-          Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, resume: true, rb }); resumed();
+          Net.send({ t: "start", mid: App.mid, key: App.matchKey, cfg: App.guestCfg, resume: true, rb }); resumed();
         } else Net.send({ t: "full" });
         break;
       }
@@ -361,16 +361,17 @@ export function hostStart() {
   const cos = sv && sv.p1 ? [cleanCos(sv.p1.cos), cleanCos(sv.p2 && sv.p2.cos)] : [myCos(), App.opp.cos || {}];
   const cfg = { mode: "host", levels: lv, cos, chars: [S.char, App.opp.ch], arena: c.arena, dur: matchLen(c.rules).dur, rules: c.rules, mod: null, fair: !!(App.mm && App.mm.mode === "ranked"), golden: true, names: [S.name || t("ui.you"), App.opp.name], labels: [t("hud.you"), null], ball: S.ball };
   App.mid++;
+  App.matchKey = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);   // eindeutig je Spiel (auch über Neustarts)
   const fixed = resolveObs(cfg);
   App.guestCfg = { ...fixed, mode: "guest", labels: [null, t("hud.you")] };
   beginMatch(fixed); App.dropTried = false;
   // Rollback: beide rechnen ab genau diesem Startzustand (der Gast bekommt ihn mit), sonst rechnet nur der Host
   App.rbOn = rollbackWanted();
   const rb = App.rbOn ? rbStart(App.st, pickDelay(medianPing())) : undefined;
-  Net.send({ t: "start", mid: App.mid, cfg: App.guestCfg, rb });
+  Net.send({ t: "start", mid: App.mid, key: App.matchKey, cfg: App.guestCfg, rb });
   App.lastRx = performance.now(); App.guestInAt = App.lastRx; App.lagWarn = false;
   if (!App.mm) App.netLost = hostLost;
-  saveSession("host", { phase: "play", code: App.roomCode, mid: App.mid, cfg: fixed, guestCfg: App.guestCfg, opp: App.opp, netCfg: App.netCfg, mm: mmInfo(), t0: App.t0, st: App.st, rb: App.rbOn });
+  saveSession("host", { phase: "play", code: App.roomCode, mid: App.mid, key: App.matchKey, cfg: fixed, guestCfg: App.guestCfg, opp: App.opp, netCfg: App.netCfg, mm: mmInfo(), t0: App.t0, st: App.st, rb: App.rbOn });
 }
 /** Host: Rollback-Sitzung starten; liefert, was der Gast dafür braucht (Sitzungs-Nr., Startzustand, Verzögerung) */
 function rbStart(st, delay) {
@@ -427,6 +428,7 @@ export function guestData(d) {
       }
       // Wiederaufnahme: Ereignisse von vor dem Abriss sind inzwischen Sekunden alt und fallen bewusst weg (Ton und Jubel
       // zum falschen Zeitpunkt wären schlimmer), der Spielstand kommt mit dem nächsten Zustand
+      App.matchKey = typeof d.key === "string" ? d.key.slice(0, 24) : "";
       App.gEdge = null;   // Druck-Zähler neu ab 0 (der Host übernimmt beim Anpfiff/Zurückkommen den ersten Wert als Grundstand)
       App.mid = d.mid; App.pings = []; beginMatch({ ...d.cfg, mode: "guest", labels: [null, t("hud.you")] }); App.lastSeq = -1; App.clock = makeClock();
       // Rollback: vom Host vorgegebener Startzustand und Verzögerung; ohne rb das alte Verfahren (Host rechnet)
