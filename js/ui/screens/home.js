@@ -16,6 +16,7 @@ import { setShopTab } from "./shop.js";
 import { availableModes } from "./modes.js";
 import { t as tx } from "../../content/i18n.js";
 import { canInstall, installAsk } from "../install.js";
+import { canFullscreen } from "../../app/game.js";
 
 export let showcaseT = 0, showcaseTap = 0;
 export const juggle = { y: 0, vy: 0, a: 0, hits: 0 };
@@ -26,7 +27,9 @@ export function tapShowcase() { showcaseTap = 0.5; juggle.vy = Math.min(juggle.v
 export function homeScreen() {
   refreshTop();
   // einmal nach ein paar Spielen fragen, ob man die App installieren will (nie über einem anderen Fenster)
-  if (canInstall() && !S.installAsked && (S.stats && S.stats.games) >= 3) setTimeout(() => {
+  // Auf dem iPhone gibt es im Browser kein Vollbild: dort schon nach dem ersten Spiel fragen, sonst nach drei
+  const askAfter = canFullscreen() ? 3 : 1;
+  if (canInstall() && !S.installAsked && (S.stats && S.stats.games) >= askAfter) setTimeout(() => {
     if (!$("modal").hidden || App.screen !== "home" || S.installAsked) return;
     S.installAsked = true; save(); installAsk();
   }, 900);

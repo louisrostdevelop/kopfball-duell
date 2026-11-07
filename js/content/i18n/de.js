@@ -708,6 +708,8 @@ export default {
   "hud.tapToSkip": "Tippen zum Überspringen",
   "hud.unmuted": "Emotes des Gegners wieder an",
   "hud.you": "DU",
+  "install.askFs": "Auf dem iPhone geht Vollbild nur als App: dann spielst du ohne Browserleisten und startest direkt vom Home-Bildschirm.",
+  "install.fsHint": "Auf dem iPhone geht Vollbild nur als App.",
   "install.title": "App installieren",
   "install.btn": "Installieren",
   "install.later": "Später",

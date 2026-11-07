@@ -801,7 +801,7 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
   /* Spielmodus: 4 x 2 Kacheln */
   .modegrid { grid-template-columns: repeat(4, 1fr); gap: 8px; padding-bottom: 0; }
   .modegrid:has(> :nth-child(9)) { grid-template-columns: repeat(5, 1fr); }   /* mit Casual und Ranked: 5 x 2 */
-  .mcard { min-height: 0; height: calc((100vh - 72px - var(--st) - var(--sb)) / 2); padding: 10px 12px; gap: 2px; border-radius: 16px; }
+  .mcard { min-height: 0; height: calc((100dvh - 72px - var(--st) - var(--sb)) / 2); padding: 10px 12px; gap: 2px; border-radius: 16px; }
   .mcard .big-ic { width: 34px; height: 34px; }
   .mcard b { font-size: 18px; }
   .mcard p { font-size: 11.5px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -1492,3 +1492,5 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 @keyframes wants { 50% { transform: scale(1.06); box-shadow: 0 0 0 6px rgb(255 214 74 / 35%), 0 5px 0 var(--ink); } }
 
 @media (prefers-reduced-motion: reduce) { .btn.wants { animation: none; outline: 3px solid rgb(255 214 74 / 70%); } }
+
+.sethint { display: block; font-size: 12px; font-weight: 800; opacity: .6; }

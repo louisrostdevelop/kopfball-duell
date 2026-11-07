@@ -4,7 +4,7 @@
 import { fireSuper } from "./core/physics.js";
 import { provide } from "./app/services.js";
 import { initProfile, dailyCheck, S } from "./app/profile.js";
-import { startDemo, updateBand } from "./app/game.js";
+import { canFullscreen, startDemo, updateBand } from "./app/game.js";
 import { loop } from "./app/loop.js";
 import { tryJoin } from "./app/online.js";
 import { App, inGame } from "./app/state.js";
@@ -13,7 +13,7 @@ import { onKey, onPad } from "./ui/controls.js";
 import { $, applyI18n, toast } from "./ui/dom.js";
 import { detectLang, setLang, t } from "./content/i18n.js";
 import { dailyModal } from "./ui/modals.js";
-import { canInstall, initInstall, install } from "./ui/install.js";
+import { canInstall, initInstall, install, standalone } from "./ui/install.js";
 import { initNav, showScreen } from "./ui/nav.js";
 import { initHud } from "./ui/hud.js";
 import { homeScreen, initHome, refreshTop } from "./ui/screens/home.js";
@@ -100,7 +100,11 @@ async function boot() {
       } else toast(t("shop.cancelled"), "i-close");
     }
     // App installieren: Knopf oben und in den Einstellungen, nur wenn es geht und die App nicht schon läuft
-    const showInstall = () => { const ok = canInstall(); $("btnInstall").hidden = !ok; $("rowInstall").hidden = !ok; };
+    // Vollbild-Zeile nur, wo es Vollbild gibt (nicht als installierte App, nicht auf dem iPhone); dort Hinweis bei „App installieren“
+    const showInstall = () => {
+      const ok = canInstall(); $("btnInstall").hidden = !ok; $("rowInstall").hidden = !ok;
+      $("rowFull").hidden = !canFullscreen() || standalone(); $("installFsHint").hidden = !ok || canFullscreen();
+    };
     $("btnInstall").onclick = install; $("btnInstall2").onclick = install;
     initInstall(showInstall);
     // Einladungslink: ?join=CODE (alte Links mit #CODE gehen auch)

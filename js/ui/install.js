@@ -36,5 +36,6 @@ function iosGuide() {
 
 /** Einmaliger Hinweis (nach ein paar Spielen, aufgerufen von der Startseite) */
 export function installAsk() {
-  modal({ title: t("install.title"), icon: "i-download", body: `<p>${esc(t("install.ask"))}</p>`, btn: t("install.btn"), cancel: t("install.later"), onOk: install });
+  const el = document.documentElement, noFs = !(el.requestFullscreen || el.webkitRequestFullscreen);
+  modal({ title: t("install.title"), icon: "i-download", body: `<p>${esc(t(noFs ? "install.askFs" : "install.ask"))}</p>`, btn: t("install.btn"), cancel: t("install.later"), onOk: install });
 }

@@ -78,9 +78,20 @@ export function tutorial() {
   lines.forEach((line, n) => setTimeout(() => toast(line, "i-ball"), 300 + n * 1500));
 }
 
+// Vollbild: Standard-API, auf älteren iPads mit webkit-Präfix. Das iPhone kann im Browser kein Vollbild für Seiten
+// (nur für Videos); dort hilft nur „Zum Home-Bildschirm“, dann startet das Spiel als App ohne Browserleisten.
+export const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+export const canFullscreen = () => { const el = document.documentElement; return !!(el.requestFullscreen || el.webkitRequestFullscreen); };
 export function goFullscreen() {
   const el = document.documentElement;
-  if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).then(() => { try { screen.orientation.lock("landscape").catch(() => {}); } catch (_) {} }).catch(() => {});
+  if (fullscreenElement()) return;
+  const lock = () => { try { screen.orientation.lock("landscape").catch(() => {}); } catch (_) { /* nicht unterstützt */ } };
+  if (el.requestFullscreen) el.requestFullscreen({ navigationUI: "hide" }).then(lock).catch(() => {});
+  else if (el.webkitRequestFullscreen) { try { el.webkitRequestFullscreen(); lock(); } catch (_) { /* abgelehnt */ } }
+}
+export function exitFullscreen() {
+  if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
 }
 
 export function updateBand() {

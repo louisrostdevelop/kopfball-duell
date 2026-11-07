@@ -707,6 +707,8 @@ export default {
   "hud.tapToSkip": "Tap to skip",
   "hud.unmuted": "Opponent's emotes back on",
   "hud.you": "YOU",
+  "install.askFs": "On iPhone, fullscreen only works as an app: you play without browser bars and start right from your home screen.",
+  "install.fsHint": "On iPhone, fullscreen only works as an app.",
   "install.title": "Install app",
   "install.btn": "Install",
   "install.later": "Later",
