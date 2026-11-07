@@ -33,13 +33,15 @@ export function packState(st) {
 let netSeq = 0, lastStats = "";
 export function hostSend(dt) {
   if (!Net.isOpen()) return;
+  // feste 30 Hz: Rest behalten statt auf 0 setzen, sonst wechseln die Abstände zwischen 33 und 50 ms (bei 60 Hz
+  // Bildrate) und der Gast muss mit mehr Puffer zeichnen oder ruckelt
   App.sendT += dt;
   if (App.sendT < 1 / 30) return;
-  App.sendT = 0;
+  App.sendT = Math.min(App.sendT - 1 / 30, 1 / 30);
   fast({ t: "s", mid: App.mid, ...encodeState(App.st, ++netSeq, performance.now()) });
   pingTick(1 / 30);
   const ev = App.outEv.splice(0).filter(e => e.t !== "bounce" || e.v > 400);
-  if (ev.length) Net.send({ t: "ev", mid: App.mid, ev });
+  if (ev.length) Net.send({ t: "ev", mid: App.mid, ht: performance.now(), ev });
   const sj = JSON.stringify(App.st.stats);
   if (sj !== lastStats) { lastStats = sj; Net.send({ t: "stats", mid: App.mid, stats: App.st.stats }); }
 }
@@ -58,8 +60,9 @@ export function guestFrame(dt, now) {
   pingTick(dt);
   // Zeichnen knapp hinter dem Host: Zeitachse = Sendezeit des Hosts, Puffer passt sich dem Netz an (netcode.js)
   const S2 = App.snaps;
-  if (!S2.length) return;
+  if (!S2.length) { flushEvents(null); return; }
   const rt = App.clock.renderTime(now);
+  flushEvents(rt);
   while (S2.length > 2 && S2[1].ht <= rt) S2.shift();
   const a = S2[0], b = S2[1] || S2[0];
   if (rt > S2[S2.length - 1].ht + 4) App.clock.starved();
@@ -82,10 +85,18 @@ export function guestFrame(dt, now) {
   Object.assign(st.p[1], { x: gp.x, y: gp.y, kick: Math.max(gp.kick, sp.kick), kHeld: gp.kHeld, charge: gp.charge, onG: gp.onG, slide: gp.slide, slideDir: gp.slideDir, bomb: gp.bomb, vx: gp.vx, vy: gp.vy });
 }
 
+function playEvents(ev) { ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); onEvent(e, true); }); }
+function flushEvents(rt) {
+  const q = App.evQ || [];
+  const n = rt === null ? q.length : q.findIndex(x => x.ht > rt);
+  q.splice(0, n < 0 ? q.length : n).forEach(x => playEvents(x.ev));
+}
+
 export function applySnap(st, a, b, k) {
   const L = (x, y) => x + (y - x) * k;
   if (b.el !== undefined) { const ne = a.el !== undefined && Math.abs(b.el - a.el) < 1 ? L(a.el, b.el) : b.el; if (ne > st.el || ne < st.el - 2) st.el = ne; }
-  st.s = b.s; st.t = b.t; st.ph = b.ph; st.pt = b.pt; st.gold = b.gold; st.wall = b.wall; st.bigGoal = b.bigGoal; if (b.wind) st.wind = b.wind; st.pu = b.pu;
+  // Phasen-Zeit gleitend (steuert z. B. die Wiederholung), sonst springt sie im 30-Hz-Takt
+  st.s = b.s; st.t = b.t; st.ph = b.ph; st.pt = a.ph === b.ph && a.pt !== undefined ? L(a.pt, b.pt) : b.pt; st.gold = b.gold; st.wall = b.wall; st.bigGoal = b.bigGoal; if (b.wind) st.wind = b.wind; st.pu = b.pu;
   if (b.stats) st.stats = b.stats;
   const jump = Math.hypot(a.b.x - b.b.x, a.b.y - b.b.y) > 200;
   Object.assign(st.b, b.b);
@@ -294,7 +305,10 @@ export function guestData(d) {
     }
     case "ev":
       if (App.mode !== "guest" || d.mid !== App.mid || !Array.isArray(d.ev)) break;
-      d.ev.forEach(e => { if (e.t === "goal") App.replay = App.rec.slice(-160); onEvent(e, true); });
+      // Ereignisse erst zeigen, wenn das gezeichnete Bild so weit ist (der Gast zeichnet etwas hinter dem Host):
+      // sonst explodiert das Tor, bevor der Ball drin ist, und die Wiederholung endet zu früh
+      if (typeof d.ht === "number" && App.clock) (App.evQ ||= []).push({ ht: d.ht, ev: d.ev });
+      else playEvents(d.ev);
       break;
     case "stats": if (App.mode === "guest" && d.mid === App.mid && App.st) App.st.stats = d.stats; break;
     case "lobby": if (!App.mm) backToLobby(); break;
