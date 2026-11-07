@@ -171,7 +171,9 @@ export function drawShowcase(dt) {
   const [gr, gg, gb] = RC[rarityOf(charById(S.char))] || RC.basis;
   const hopt = { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t }, hy = headY - bump * r * 0.4, far = 10000;
   // nur der Schatten landet im Bild (Kopf selbst weit außerhalb), sonst färbt der Schein das Gesicht ein
-  x.save(); x.shadowColor = `rgba(${gr},${gg},${gb},.95)`; x.shadowBlur = r * 0.5 * dpr; x.shadowOffsetX = far * dpr; x.translate(-far, 0);
+  // Schattenversatz gilt in Gerätepixeln und ignoriert die Skalierung beim Nicken: aus der aktuellen Matrix rechnen,
+  // sonst springt der Schein bei jedem Kopfball zur Seite
+  x.save(); x.shadowColor = `rgba(${gr},${gg},${gb},.95)`; x.shadowBlur = r * 0.5 * dpr; x.shadowOffsetX = far * x.getTransform().a; x.translate(-far, 0);
   drawHead(x, S.char, cx, hy, r, hopt); x.restore();
   drawHead(x, S.char, cx, hy, r, hopt);
   x.restore();
