@@ -42,7 +42,7 @@ export function homeScreen() {
   $("mcSub").textContent = sub;
   $("mcIcon").innerHTML = svg(m.icon);
   $("mcIcon").style.background = `linear-gradient(${m.c1}, ${m.c2})`;
-  const pf = $("pfAv"); pf.innerHTML = ""; pf.append(avatarCanvas(S.char, 50));
+  const pf = $("pfAv"); pf.innerHTML = ""; pf.append(avatarCanvas(S.char, 50, { fill: true }));
   $("pfName").textContent = S.name || tx("ui.player");
   // Tages-Challenge
   const ch = dailyChallenge();

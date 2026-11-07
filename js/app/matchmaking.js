@@ -11,7 +11,8 @@ import { App, inGame } from "./state.js";
 import { toast } from "../ui/dom.js";
 import { showScreen, swapScreen } from "../ui/nav.js";
 import { mmPanel, netNote } from "../ui/screens/online.js";
-import { searchUI } from "../ui/screens/search.js";
+import { searchActivity, searchUI } from "../ui/screens/search.js";
+import { activity } from "./activity.js";
 import { net as Net, server } from "./services.js";
 import { t } from "../content/i18n.js";
 
@@ -28,6 +29,7 @@ export const errText = e => t(e && ERR[e.code] ? "err.mm." + e.code : "err.tryAg
 
 let timer = null, gen = 0;
 const stop = () => { clearTimeout(timer); timer = null; gen++; };
+const $hideCpu = () => { const b = document.getElementById("srCpu"); if (b) b.hidden = true; const o = document.getElementById("srOpp"); if (o) o.textContent = ""; };
 
 /** Suche starten. Wirft bei Fehlern (z. B. Ranked ohne Konto) eine Meldung für die Oberfläche. */
 export async function findMatch(mode) {
@@ -35,6 +37,8 @@ export async function findMatch(mode) {
   await server.queueJoin(mode, "head:" + S.char, myCos());
   App.mm = { mode, state: "search", t0: Date.now() };
   searchUI(App.mm); showScreen("search");
+  $hideCpu();
+  activity(0).then(searchActivity);
   const my = gen;
   const tick = async () => {
     if (my !== gen) return;
@@ -43,6 +47,7 @@ export async function findMatch(mode) {
       if (my !== gen) return;
       if (r.matched) return matched(r);
       searchUI(App.mm);
+      activity(4000).then(searchActivity);
     } catch (e) {
       if (my !== gen) return;
       if (e.code === "not_queued") { await server.queueJoin(mode, "head:" + S.char, myCos()).catch(() => {}); }

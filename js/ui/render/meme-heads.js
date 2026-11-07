@@ -4,30 +4,30 @@
 // Die alten Köpfe zeichnet weiter art.js; drawHead leitet nur Stile aus MEME_STYLES hierher um.
 import { INK, TAU, circ, shade, stroke } from "./paint.js";
 
-function capPath(ctx, x, y, r, from, to, inset) { ctx.beginPath(); ctx.arc(x, y, r - inset, from, to); ctx.closePath(); }
-function star(ctx, x, y, r, col, lw) {
+export function capPath(ctx, x, y, r, from, to, inset) { ctx.beginPath(); ctx.arc(x, y, r - inset, from, to); ctx.closePath(); }
+export function star(ctx, x, y, r, col, lw) {
   ctx.beginPath();
   for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * 0.45 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
   ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = lw * 0.6; ctx.strokeStyle = INK; ctx.stroke();
 }
 // Form mit optionalem weißem Sticker-Rand (für Teile, die über den Kopf hinausragen)
-function blob(ctx, build, fill, lw, white) {
+export function blob(ctx, build, fill, lw, white) {
   build();
   if (white) { ctx.lineWidth = lw * 2.8; ctx.strokeStyle = "#fff"; ctx.stroke(); }
   ctx.fillStyle = fill; ctx.fill(); stroke(ctx, lw);
 }
 // Weißer Sticker-Rand nur außerhalb des Kopfes (für Haare/Teile, die über den Kopfrand ragen)
-function whiteOutside(ctx, x, y, r, build, lw) {
+export function whiteOutside(ctx, x, y, r, build, lw) {
   ctx.save(); ctx.beginPath(); ctx.rect(x - r * 3, y - r * 3, r * 6, r * 6); ctx.arc(x, y, r, 0, TAU); ctx.clip("evenodd");
   build(); ctx.lineWidth = lw * 2.8; ctx.strokeStyle = "#fff"; ctx.stroke();
   ctx.restore();
 }
-function blobOut(ctx, x, y, r, build, fill, lw) {
+export function blobOut(ctx, x, y, r, build, fill, lw) {
   whiteOutside(ctx, x, y, r, build, lw);
   build(); ctx.fillStyle = fill; ctx.fill(); stroke(ctx, lw);
 }
-function headClip(ctx, x, y, r, lw) { ctx.save(); circ(ctx, x, y, r - lw); ctx.clip(); }
-function skinGrad(ctx, c, x, y, r) {
+export function headClip(ctx, x, y, r, lw) { ctx.save(); circ(ctx, x, y, r - lw); ctx.clip(); }
+export function skinGrad(ctx, c, x, y, r) {
   const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r * 1.05);
   g.addColorStop(0, shade(c.skin, 0.25)); g.addColorStop(0.7, c.skin); g.addColorStop(1, shade(c.skin, -0.22));
   return g;
@@ -46,8 +46,10 @@ function jawCover(ctx, c, x, y, r, outer, lw) {
 
 // ---------- Kopf ----------
 // o: { dir, look (Winkel), mood: "" | happy | sad | angry, blink, effort, frozen, t }
-export function drawMemeHead(ctx, c, x, y, r, o = {}) {
-  const S = MEME_STYLES[c.style], dir = o.dir || 1, lw = Math.max(2, r * 0.085);
+export function drawMemeHead(ctx, c, x, y, r, o = {}) { drawStyledHead(ctx, c, MEME_STYLES[c.style], x, y, r, o); }
+/** Kopf nach einer Stilbeschreibung { back, face, front } (Meme-Köpfe hier, klassische Köpfe in classic-heads.js) */
+export function drawStyledHead(ctx, c, S, x, y, r, o = {}) {
+  const dir = o.dir || 1, lw = Math.max(2, r * 0.085);
   ctx.save();
   ctx.lineJoin = "round"; ctx.lineCap = "round";
   if (S.back) S.back(ctx, c, x, y, r, dir, lw, o);
@@ -153,7 +155,7 @@ function brows(ctx, c, F, r, lw, P) {
   ctx.lineWidth = lw * (heavy ? 1.9 : flat ? 0.9 : 1.1) * (F.browW || 1); ctx.stroke();
 }
 
-function mouthStd(ctx, mx, my, r, dir, lw, mood, k) {
+export function mouthStd(ctx, mx, my, r, dir, lw, mood, k) {
   ctx.beginPath();
   if (mood === "happy") {
     ctx.moveTo(mx - r * 0.3 * k, my - r * 0.06 * k); ctx.quadraticCurveTo(mx, my + r * 0.42 * k, mx + r * 0.3 * k, my - r * 0.06 * k); ctx.closePath();
@@ -170,7 +172,7 @@ function mouthStd(ctx, mx, my, r, dir, lw, mood, k) {
 }
 
 // Selbstsicheres Grinsen (Chad, Krypto-Bro, Sigma)
-function smirk(ctx, mx, my, r, dir, lw, mood, teeth) {
+export function smirk(ctx, mx, my, r, dir, lw, mood, teeth) {
   if (mood === "sad") { ctx.beginPath(); ctx.moveTo(mx - r * 0.2, my + r * 0.04); ctx.lineTo(mx + r * 0.2, my + r * 0.04); stroke(ctx, lw); return; }
   if (mood === "angry" || (teeth && mood === "happy")) {
     const w = mood === "happy" ? 0.3 : 0.24;

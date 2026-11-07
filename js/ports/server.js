@@ -26,6 +26,7 @@
  * @property {(mode: "casual"|"ranked", head: string, cos?: object) => Promise<object>} queueJoin   in die Warteschlange (Kosmetik prüft der Server)
  * @property {() => Promise<{ matched: boolean, waited?: number, match?: string, role?: "host"|"guest", opponent?: object }>} queuePoll
  * @property {() => Promise<object>} queueLeave
+ * @property {() => Promise<{ active: number, casual: number, ranked: number, playing: number }>} [activity]   Wie viele gerade suchen, spielen, aktiv sind
  * @property {(match: string) => Promise<{ status: string }>} matchAbort   Spiel vor dem Anpfiff abbrechen (Verbindung zu schlecht)
  * @property {(match: string) => Promise<{ status: string }>} matchStarted Anpfiff melden: danach kein Abbruch mehr
  * @property {(match: string, r: { score: number[], duration: number }) => Promise<{ status: string, result?: object }>} reportOnline

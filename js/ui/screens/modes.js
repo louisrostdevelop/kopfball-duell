@@ -8,6 +8,7 @@ import { showScreen, registerScreen } from "../nav.js";
 import { audio as A } from "../../app/services.js";
 import { online as serverOn, serverState } from "../../app/account.js";
 import { league, MIN_LEVEL } from "../../app/matchmaking.js";
+import { activity } from "../../app/activity.js";
 import { t } from "../../content/i18n.js";
 
 /** Modi, die es gerade gibt (Casual/Ranked nur mit Server) */
@@ -38,6 +39,26 @@ export function modesScreen() {
     b.onclick = () => { A.sfx("click"); S.mode = m.id; save(); App.stack = []; showScreen("home", true); };
     g.append(b);
   });
+  // Aktivität dezent an Casual und Ranked: wie viele gerade suchen bzw. spielen
+  activity().then(a => {
+    if (!a) return;
+    for (const id of ["casual", "ranked"]) {
+      const card = g.querySelector(`[data-mode="${id}"]`);
+      if (!card || card.classList.contains("locked") || card.querySelector(".tag.live")) continue;
+      const tag = document.createElement("span"); const { text, on } = activityText(a, id);
+      tag.className = "tag live" + (on ? " on" : ""); tag.textContent = text;
+      card.querySelector(".tags").append(tag);
+    }
+  });
+}
+
+/** Kurztext zur Aktivität für einen Modus: suchen > spielen > aktiv > ruhig */
+export function activityText(a, id) {
+  const n = a[id] || 0;
+  if (n > 0) return { text: t(n === 1 ? "act.search1" : "act.search", { n }), on: true };
+  if (a.playing > 0) return { text: t("act.playing", { n: a.playing }), on: true };
+  if (a.active > 1) return { text: t("act.active", { n: a.active }), on: false };
+  return { text: t("act.quiet"), on: false };
 }
 
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)

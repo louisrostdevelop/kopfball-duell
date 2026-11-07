@@ -64,8 +64,11 @@ test("Ranked: suchen, gepaart, spielen, gewertet", { skip: !hasPg && "kein Postg
   await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.equip.shoes = "shoes:4"; p.S.equip.goalfx = "goalfx:8"; p.S.cos.push("goalfx:8"); });
   assert.match(await A.textContent("#btnRanked em"), /Bronze · 1000/);
 
+  assert.match(await A.textContent("#mmAct"), /aktiv|ruhig|im Spiel|sucht|suchen/, "Aktivität im Online-Menü");
   await A.click("#btnRanked"); await A.waitForTimeout(300);
   assert.equal(await A.evaluate(() => window.__kd.screen), "search");
+  // allein in der Suche: Hinweis, dass sonst niemand sucht (Zahl kommt vom Server)
+  assert.match(await until(async () => (await A.textContent("#srOpp")) || false), /sucht sonst niemand/);
   await B.bringToFront(); await B.click("#btnRanked");
   // gepaart und verbunden: beide im Spiel
   const playing = await until(async () => (await Promise.all([A, B].map(p => p.evaluate(() => ["host", "guest"].includes(window.__kd.mode) && window.__kd.screen === null)))).every(Boolean), 20000);

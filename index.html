@@ -206,7 +206,7 @@
     <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.online.online">Online</h2></header>
     <div class="onlinegrid">
       <div class="panel mm" id="mmPanel" hidden>
-        <h4 data-i18n="html.online.gegnerSuchen">Gegner suchen</h4>
+        <h4 class="mmhead"><span data-i18n="html.online.gegnerSuchen">Gegner suchen</span><small class="tag live" id="mmAct" hidden></small></h4>
         <div class="mmrow">
           <button class="mmbtn casual" id="btnCasual"><svg><use href="#i-globe"/></svg><b data-i18n="html.online.casual">Casual</b><em></em></button>
           <button class="mmbtn ranked" id="btnRanked"><svg><use href="#i-crown"/></svg><b data-i18n="html.online.ranked">Ranked</b><em></em></button>
@@ -238,7 +238,7 @@
     <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="srTitle"></h2></header>
     <div class="searchwrap">
       <div class="sr-me"><div class="sr-av" id="srAv"></div><b id="srMe"></b></div>
-      <div class="sr-mid"><div class="sr-ring"><span id="srTime">0:00</span></div><b id="srState"></b><small id="srOpp"></small></div>
+      <div class="sr-mid"><div class="sr-ring"><span id="srTime">0:00</span></div><b id="srState"></b><small id="srOpp"></small><button class="linkbtn srcpu" id="srCpu" hidden data-i18n="act.playCpu">Solange gegen den Computer spielen</button></div>
       <div class="sr-me sr-them" id="srThem" hidden><div class="sr-av" id="srOppAv"></div><b id="srOppName"></b><small id="srOppInfo"></small></div>
       <button class="btn ghost" id="srCancel" data-i18n="html.search.abbrechen">Abbrechen</button>
     </div>

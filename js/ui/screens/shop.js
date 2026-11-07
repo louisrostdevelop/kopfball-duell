@@ -105,13 +105,13 @@ async function gemShop() {
     btn.disabled = !p.buyable && !guest;
     btn.onclick = async () => {
       A.sfx("click");
-      if (guest) { showScreen("settings"); return; }
+      if (guest) { showScreen("profile"); return; }
       btn.disabled = true; btn.textContent = "…";
       try { await startCheckout(p.id); } catch (_) { toast(t("shop.checkoutDown"), "i-close"); btn.disabled = false; btn.textContent = euro(p.priceCents); }
     };
     d.append(btn); g.append(d);
   });
-  const acc = $("shopAcc"); if (acc) acc.onclick = () => { A.sfx("click"); showScreen("settings"); };
+  const acc = $("shopAcc"); if (acc) acc.onclick = () => { A.sfx("click"); showScreen("profile"); };
 }
 
 export function ballCanvas(id, px) {

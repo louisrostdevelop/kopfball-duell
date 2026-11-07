@@ -11,7 +11,7 @@ import { online as serverOn, setServerName } from "../../app/account.js";
 import { t } from "../../content/i18n.js";
 
 export function profileScreen() {
-  const av = $("profAv"); av.innerHTML = ""; av.append(avatarCanvas(S.char, 96));
+  const av = $("profAv"); av.innerHTML = ""; av.append(avatarCanvas(S.char, 96, { fill: true }));
   $("setName").value = S.name || "";
   $("profLvl").textContent = S.level;
   const need = xpFor(S.level);

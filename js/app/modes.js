@@ -23,7 +23,7 @@ import { careerScreen } from "../ui/screens/career.js";
 function startSearch(id) {
   if (!serverOn()) { openOnline(); return; }
   const lock = modeLock(id);
-  if (lock === "account") { toast(t("lock.rankedAccount"), "i-user"); showScreen("settings"); return; }
+  if (lock === "account") { toast(t("lock.rankedAccount"), "i-user"); showScreen("profile"); return; }
   if (lock) { toast(t("lock.levelHint", { n: MIN_LEVEL[id] }), "i-lock"); return; }
   findMatch(id).catch(e => toast(errText(e), "i-close"));
 }

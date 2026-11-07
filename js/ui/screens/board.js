@@ -25,7 +25,7 @@ export async function boardScreen() {
     ? `<span>${t("board.yourRank")}</span><b>${m.capped ? "10000+" : m.rank}</b><span>${tab === "endless" ? t("board.wins", { n: m.score }) : m.mmr + " · " + m.league}</span>`
     : `<span>${t(tab === "endless" ? "board.noEndless" : "board.noRanked")}</span>`;
   if (!S.name) me.insertAdjacentHTML("beforeend", `<button class="btn small ghost" id="boardName">${t("board.setName")}</button>`);
-  const bn = $("boardName"); if (bn) bn.onclick = () => { toast(t("board.setNameHint"), "i-user"); showScreen("settings"); };
+  const bn = $("boardName"); if (bn) bn.onclick = () => { toast(t("board.setNameHint"), "i-user"); showScreen("profile"); };
 }
 
 export function initBoard() {

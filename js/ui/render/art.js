@@ -2,7 +2,8 @@
 import { charById } from "../../content/config.js";
 import { cosById } from "../../content/cosmetics.js";
 import { INK, TAU, circ, shade, stroke } from "./paint.js";
-import { MEME_STYLES, drawMemeHead } from "./meme-heads.js";
+import { MEME_STYLES, drawStyledHead } from "./meme-heads.js";
+import { CLASSIC_STYLES } from "./classic-heads.js";
 import { drawShoeSkin } from "./shoes.js";
 import { drawFrame } from "./frames.js";
 import { drawBallSkin } from "./balls.js";
@@ -11,7 +12,8 @@ export { shade };
 // o: { dir, look (Winkel), mood, blink, effort, frozen, t }
 export function drawHead(ctx, chId, x, y, r, o = {}) {
   const c = charById(chId), dir = o.dir || 1, lw = Math.max(2, r * 0.085);
-  if (MEME_STYLES[c.style]) { drawMemeHead(ctx, c, x, y, r, o); return; }
+  const S = MEME_STYLES[c.style] || CLASSIC_STYLES[c.style];
+  if (S) { drawStyledHead(ctx, c, S, x, y, r, o); return; }
   ctx.save();
   ctx.lineJoin = "round"; ctx.lineCap = "round";
   // Hinterkopf-Elemente
@@ -297,7 +299,8 @@ export function avatarCanvas(chId, px, opts = {}) {
   const x = c.getContext("2d"); x.scale(dpr, dpr);
   const fr = opts.frame ? cosById(opts.frame) : null, dir = opts.dir || 1;
   // mit Rahmen kleiner, damit Flügel, Krone und Strahlen ins Bild passen
-  const r = px * (fr ? 0.2 : 0.3), cy = px * (fr ? 0.53 : 0.56);
+  // fill: Kopf füllt einen runden Rahmen (Profil-Kreise), sonst Platz für Frisuren und Kronen
+  const r = px * (fr ? 0.2 : opts.fill ? 0.34 : 0.3), cy = px * (fr ? 0.53 : opts.fill ? 0.57 : 0.56);
   const paint = t => {
     x.clearRect(0, 0, px, px);
     if (fr) drawFrame(x, fr, px / 2, cy, r * 1.13, t, "back");

@@ -15,8 +15,18 @@ const CAT = { ui: 0.5, body: 0.85, fx: 1, big: 1.15 };
 // Diese Sounds ducken die Musik kurz
 const DUCK = new Set(["goal", "super", "win", "lose", "levelup", "chest-legend", "chest-head", "chest-open"]);
 
+// Seite im Hintergrund (anderer Tab, App gewechselt, Handy gesperrt): Ton komplett anhalten, sonst laufen z. B.
+// Website und installierte App gleichzeitig. Zurück im Vordergrund geht es weiter.
+let hiddenStop = false;
+function onVisibility() {
+  if (!ac) return;
+  if (document.hidden) { if (ac.state === "running") { hiddenStop = true; ac.suspend().catch(() => {}); } }
+  else if (hiddenStop) { hiddenStop = false; ac.resume().catch(() => {}); }
+}
+if (globalThis.document) { document.addEventListener("visibilitychange", onVisibility); addEventListener("pagehide", () => { if (ac && ac.state === "running") { hiddenStop = true; ac.suspend().catch(() => {}); } }); addEventListener("pageshow", onVisibility); }
+
 export function unlock() {
-  if (ac) { if (ac.state === "suspended") ac.resume(); return; }
+  if (ac) { if (ac.state === "suspended" && !document.hidden) ac.resume(); return; }
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; }
   // Ausgang: Limiter -> Lautstärke
   master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination);
@@ -117,7 +127,7 @@ function duck(sec) {
 }
 
 export function sfx(kind, v = 1) {
-  if (!ac) return;
+  if (!ac || document.hidden) return;   // im Hintergrund nichts einreihen, sonst kommt beim Zurückkehren alles auf einmal
   if (DUCK.has(kind)) duck(kind === "goal" || kind === "chest-head" ? 1.6 : 0.9);
   if (kind === "goal") { roar(1.2); if (filesOn && files.roar) playFile("roar", 1, false, null, 0.15); }
   // Abpfiff: kurz, kurz, lang (aus den Aufnahmen der Einzelpfiffe zusammengesetzt)
