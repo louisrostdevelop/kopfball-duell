@@ -9,7 +9,7 @@ import { cleanCos, myCos, validEmote } from "./cosmetics.js";
 import { App, inGame, VERSION } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { showScreen } from "../ui/nav.js";
-import { lobbyUI, makeQR, netNote, saveName } from "../ui/screens/online.js";
+import { lobbyUI, makeQR, netNote } from "../ui/screens/online.js";
 import { audio as A, input as I, net as Net } from "./services.js";
 import { decodeState, encodeState, makeClock, pingBars, pingStats } from "./netcode.js";
 import { t } from "../content/i18n.js";
@@ -117,7 +117,6 @@ export function applySnap(st, a, b, k) {
 /** Raum öffnen. resume: { code, netCfg } = nach einem App-Neustart denselben Raum wieder öffnen (der Link bleibt gültig) */
 export function hostGame(resume = null) {
   if (!Net.available()) { netNote(t("net.unavailable"), true); return; }
-  if (!resume) saveName($("nameIn").value);
   App.opp = null; App.netBye = false;
   App.netCfg = resume && resume.netCfg ? resume.netCfg : { arena: owns("arenas", S.arena) ? S.arena : "stadion", rules: { ...S.rules } };
   $("lobbyCode").textContent = "····"; $("lobbyLink").textContent = ""; $("qrBox").innerHTML = "";
@@ -407,7 +406,6 @@ export function tryJoin(code) {
   code = String(code || $("codeIn").value).trim().toLowerCase();
   if (!/^[a-z0-9]{4}$/.test(code)) { netNote(t("net.codeLength"), true); return; }
   if (!Net.available()) { netNote(t("net.loading"), true); return; }
-  saveName($("nameIn").value);
   netNote(t("net.connecting", { code: code.toUpperCase() }));
   App.roomCode = code; App.netBye = false;
   Net.join(code, App.joinH = guestHandlers(code));

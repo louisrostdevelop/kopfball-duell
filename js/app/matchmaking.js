@@ -12,8 +12,7 @@ import { clearSession } from "./session.js";
 import { NET_CHECK, netTooBad, pingStats } from "./netcode.js";
 import { App, inGame } from "./state.js";
 import { toast } from "../ui/dom.js";
-import { showScreen, swapScreen } from "../ui/nav.js";
-import { mmPanel, netNote } from "../ui/screens/online.js";
+import { showScreen } from "../ui/nav.js";
 import { searchActivity, searchUI } from "../ui/screens/search.js";
 import { activity } from "./activity.js";
 import { net as Net, server } from "./services.js";
@@ -176,7 +175,7 @@ export function resumeMatch(s) {
 function fail(msg) {
   stop(); Net.close(); App.mm = null;
   if (inGame()) quitToMenu();
-  App.stack = ["home"]; swapScreen("online"); netNote(msg, true); mmPanel();
+  App.stack = []; showScreen("home", true); toast(msg, "i-close");   // Suche gestartet wird aus der Modus-Wahl auf der Startseite
 }
 
 /** Ergebnis melden (beide Seiten). Wartet, bis der Server gewertet hat, und gibt das Ergebnis zurück. */

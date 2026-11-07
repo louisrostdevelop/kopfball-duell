@@ -38,3 +38,22 @@ for (const [w, h] of [[640, 360], [667, 375], [780, 360], [844, 390]]) {
     assert.deepEqual(errors, []);
   });
 }
+
+// Online (Freunde) und Lobby: quer ohne Scrollen, hochkant nicht zu breit (Wischreihen dürfen die Spalte nicht aufblähen)
+const MOCK = { path: new URL("./mockpeer.js", import.meta.url).pathname };
+for (const [w, h, quer] of [[667, 375, true], [844, 390, true], [375, 667, false], [390, 844, false]]) {
+  test(`Online und Lobby ${w}x${h}: passt`, async t => {
+    const { page, errors } = await openPage(env, { viewport: { width: w, height: h }, isMobile: true, hasTouch: true }, { init: [MOCK] });
+    const size = () => page.evaluate(() => { const s = [...document.querySelectorAll(".screen")].find(x => !x.hidden); return { id: s.id, sh: s.scrollHeight, ch: s.clientHeight, sw: s.scrollWidth, cw: s.clientWidth }; });
+    await page.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await page.waitForTimeout(300);
+    const on = await size();
+    await page.click("#btnHost"); await page.waitForTimeout(700);
+    const lob = await size();
+    for (const [name, m] of [["Online", on], ["Lobby", lob]]) await t.test(name, () => {
+      assert.ok(m.sw - m.cw <= TOL, `${name} (${m.id}): ${m.sw - m.cw}px zu breit`);
+      if (quer) assert.ok(m.sh - m.ch <= TOL, `${name} (${m.id}): ${m.sh - m.ch}px zu hoch`);
+    });
+    assert.equal(lob.id, "scr-lobby");
+    assert.deepEqual(errors.filter(e => !e.includes("TUNNEL")), []);
+  });
+}

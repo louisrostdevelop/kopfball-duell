@@ -21,7 +21,7 @@ test("Online: Lobby bis Revanche", async t => {
   // Host trägt Schuhe und eine Torexplosion
   await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.cos = ["shoes:2", "goalfx:3", "emoji:5"]; p.S.equip = { shoes: "shoes:2", goalfx: "goalfx:3", title: null, frame: null, emotes: ["emoji:5", null, null, null] }; });
   await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
-  await A.fill("#nameIn", "Louis"); await A.click("#btnHost"); await A.waitForTimeout(500);
+  await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.name = "Louis"; }); await A.click("#btnHost"); await A.waitForTimeout(500);
   const code = (await A.textContent("#lobbyCode")).trim();
   assert.match(code, /^[A-Z0-9]{4}$/);
 

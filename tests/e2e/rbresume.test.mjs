@@ -122,8 +122,9 @@ test("Rollback: Abpfiff, Revanche (neues Spiel, neue Sitzung), beide Spiele gena
 test("Rollback: Host pfeift ab, der Gast (dem die letzten Pakete fehlen) startet neu und bekommt das Ergebnis", async () => {
   const { a, A, B } = await match("st.s = [2, 0]; st.t = 3;");
   // Kurz vor Schluss bekommt der Gast nichts mehr vom Host (einseitiger Verlust), der Host aber alles vom Gast: nur der
-  // Host pfeift ab (der Gast bleibt in seiner Vorhersage stehen, der Host darf ihm höchstens ~12 Takte voraus sein)
-  await A.waitForFunction(() => window.__kd.st.ph === "play" && window.__kd.st.t < 0.1, null, { polling: 5, timeout: 20000 });
+  // Host pfeift ab. Fenster: der Gast darf die Host-Eingaben bis zum Abpfiff noch nicht haben (> Verzögerung, ~3 Takte
+  // vorher), muss aber noch weit genug rechnen, dass der Host seine bis zum Abpfiff bekommt (< Verzögerung + Vorhersage)
+  await A.waitForFunction(() => window.__kd.st.ph === "play" && window.__kd.st.t < 0.2, null, { polling: 5, timeout: 20000 });
   await B.evaluate(() => { window.__mockNet = { lat: 30, jit: 10, loss: 1 }; });
   await A.waitForFunction(() => window.__kd.screen === "end", null, { timeout: 30000 });
   assert.equal(await B.evaluate(() => !!(window.__kd.rb && window.__kd.rb.ended)), false, "Gast noch nicht abgepfiffen");
@@ -139,7 +140,7 @@ test("Rollback: Host pfeift ab und startet sofort neu, der Gast (ohne letzte Pak
   const { a, A, B, bErr } = await match("st.s = [3, 1]; st.t = 3;");
   const games = p => p.evaluate(async () => (await import("/js/app/profile.js")).S.stats.games);
   const h0 = await games(A);
-  await A.waitForFunction(() => window.__kd.st.ph === "play" && window.__kd.st.t < 0.1, null, { polling: 5, timeout: 20000 });
+  await A.waitForFunction(() => window.__kd.st.ph === "play" && window.__kd.st.t < 0.2, null, { polling: 5, timeout: 20000 });
   await B.evaluate(() => { window.__mockNet = { lat: 30, jit: 10, loss: 1 }; });
   await A.waitForFunction(() => window.__kd.rb && window.__kd.rb.ended, null, { timeout: 20000 });
   await A.close();   // Host weg, kurz nach seinem Abpfiff

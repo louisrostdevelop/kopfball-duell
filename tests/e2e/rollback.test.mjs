@@ -26,7 +26,7 @@ async function pair(net, patch) {
   const a = await openPage(env, VIEW, { init: [MOCK, { content: `window.__mockNet = ${JSON.stringify(net)};` }] });
   const A = a.page;
   await A.click("#modeCard"); await A.waitForTimeout(200); await A.click("#modeGrid [data-mode=online]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(200);
-  await A.fill("#nameIn", "Host"); await A.click("#btnHost"); await A.waitForTimeout(500);
+  await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.name = "Host"; }); await A.click("#btnHost"); await A.waitForTimeout(500);
   const code = (await A.textContent("#lobbyCode")).trim();
   const B = await a.ctx.newPage(); const bErr = [];
   B.on("pageerror", e => bErr.push("Gast: " + e.message));

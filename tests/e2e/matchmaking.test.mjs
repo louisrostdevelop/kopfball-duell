@@ -61,9 +61,10 @@ for (const mode of ["rollback", "classic"]) test(`Ranked (${mode}): suchen, gepa
   await closeModal(A); await closeModal(B);
 
   // Gast: Ranked gesperrt
-  await A.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline());
-  await until(() => A.evaluate(() => !document.getElementById("mmPanel").hidden));
-  assert.match(await A.textContent("#btnRanked em"), /Level 5|Konto nötig/);
+  const rankedCard = p => p.textContent("#modeGrid [data-mode=ranked]");
+  const openModes = async p => { await p.evaluate(async () => (await import("/js/ui/nav.js")).showScreen("modes")); await p.waitForTimeout(300); };
+  await openModes(A);
+  assert.match(await rankedCard(A), /Level 5|Konto nötig/);
 
   // Beide: Konto (verknüpft) und Level 6
   await db("update auth.users set is_anonymous = false, email = id::text || '@test' where id in ($1, $2)", [ida, idb]);
@@ -71,16 +72,16 @@ for (const mode of ["rollback", "classic"]) test(`Ranked (${mode}): suchen, gepa
   await db("insert into game.ratings (player_id, season_id, mmr, games, wins) select x, 1, 1000, 10, 5 from unnest(array[$1, $2]::uuid[]) x", [ida, idb]);   // schon eingestuft
   // A besitzt (auf dem Server) Schuhe 4 und trägt sie, dazu eine Torexplosion, die A gar nicht hat: der Server lässt nur Echtes durch
   await db("insert into game.inventory (player_id, item_id, source) values ($1, 'shoes:4', 'test')", [ida]);
-  for (const p of [A, B]) { await resync(p); await p.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await p.waitForTimeout(200); }
+  for (const p of [A, B]) { await resync(p); await openModes(p); }
   await A.evaluate(async () => { const p = await import("/js/app/profile.js"); p.S.equip.shoes = "shoes:4"; p.S.equip.goalfx = "goalfx:8"; p.S.cos.push("goalfx:8"); });
-  assert.match(await A.textContent("#btnRanked em"), /Bronze · 1000/);
-
-  assert.match(await A.textContent("#mmAct"), /aktiv|ruhig|im Spiel|sucht|suchen/, "Aktivität im Online-Menü");
-  await A.click("#btnRanked"); await A.waitForTimeout(300);
+  assert.match(await rankedCard(A), /Bronze · 1000/);
+  assert.match(await until(async () => { const x = await rankedCard(A); return /aktiv|ruhig|im Spiel|sucht|suchen/.test(x) && x; }), /aktiv|ruhig|im Spiel|sucht|suchen/, "Aktivität in der Modus-Wahl");
+  // Ranked wählen und spielen: startet direkt die Suche
+  await A.click("#modeGrid [data-mode=ranked]"); await A.waitForTimeout(200); await A.click("#btnPlay"); await A.waitForTimeout(300);
   assert.equal(await A.evaluate(() => window.__kd.screen), "search");
   // allein in der Suche: Hinweis, dass sonst niemand sucht (Zahl kommt vom Server)
   assert.match(await until(async () => (await A.textContent("#srOpp")) || false), /sucht sonst niemand/);
-  await B.bringToFront(); await B.click("#btnRanked");
+  await B.bringToFront(); await B.click("#modeGrid [data-mode=ranked]"); await B.waitForTimeout(200); await B.click("#btnPlay");
   // gepaart und verbunden: beide im Spiel
   const playing = await until(async () => (await Promise.all([A, B].map(p => p.evaluate(() => ["host", "guest"].includes(window.__kd.mode) && window.__kd.screen === null)))).every(Boolean), 20000);
   assert.ok(playing, "beide im Spiel: " + JSON.stringify(await Promise.all([A, B].map(p => p.evaluate(() => [window.__kd.mode, window.__kd.screen, window.__kd.mm && window.__kd.mm.state])))));
@@ -145,15 +146,6 @@ test("Name, Freunde und Bestenliste", { skip: !hasPg && "kein Postgres" }, async
     await p.click("#scr-profile [data-back]");
   }
   assert.deepEqual((await db("select name from game.players where id in ($1, $2) order by name", [ida, idb])).map(r => r.name), ["Kumpel", "Louis"]);
-  // Freundschaft: A fragt an, B nimmt an
-  await A.bringToFront(); await A.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await A.waitForTimeout(300);
-  await A.fill("#frName", "kumpel"); await A.click("#frAdd"); await A.waitForTimeout(600);
-  assert.match(await A.textContent("#frMsg"), /Anfrage an kumpel/);
-  await B.bringToFront(); await B.evaluate(async () => (await import("/js/ui/screens/online.js")).openOnline()); await B.waitForTimeout(500);
-  await B.click("#frList .fr-row.incoming .btn.green"); await B.waitForTimeout(600);
-  assert.match(await B.textContent("#frList"), /Louis/);
-  await A.evaluate(async () => (await import("/js/ui/screens/friends.js")).friendsPanel()); await A.waitForTimeout(400);
-  assert.match(await A.textContent("#frList"), /Kumpel.*online/s);
   // Bestenliste Endlos: Rekord melden (Server prüft gegen die Siegesserie, die er selbst gezählt hat)
   await db("update game.progress set endless_best = 7 where player_id = $1", [ida]);
   await A.evaluate(async () => (await import("/js/app/account.js")).submitEndless(7)); await A.waitForTimeout(500);

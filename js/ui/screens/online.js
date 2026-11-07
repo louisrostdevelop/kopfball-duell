@@ -13,40 +13,10 @@ import { rulesSummary, rulesScreen } from "./rules.js";
 import { obsChoices } from "./setup.js";
 import { selectScreen } from "./select.js";
 import { audio as A, net as Net } from "../../app/services.js";
-import { online as serverOn, serverState } from "../../app/account.js";
-import { errText, findMatch, league, MIN_LEVEL } from "../../app/matchmaking.js";
-import { friendsPanel } from "./friends.js";
-import { activityText, lockText, modeLock } from "./modes.js";
-import { activity } from "../../app/activity.js";
 import { t } from "../../content/i18n.js";
 
-export function openOnline() { $("nameIn").value = S.name || ""; netNote(""); mmPanel(); friendsPanel(); showScreen("online"); }
-
-// Gegner suchen (nur mit Server): Casual ohne Wertung, Ranked mit Liga
-export function mmPanel() {
-  const box = $("mmPanel"); box.hidden = !serverOn(); if (box.hidden) return;
-  const st = serverState() || {}, r = st.season && st.season.rating, mmr = r ? r.mmr : 1000;
-  const setBtn = (b, mode, sub) => {
-    const lock = modeLock(mode);
-    b.classList.toggle("locked", !!lock);
-    b.querySelector("em").textContent = lockText(lock, mode) || sub;
-    b.onclick = () => {
-      A.sfx("click");
-      if (lock === "account") { showScreen("profile"); return; }
-      if (lock) { netNote(t("lock.levelHint", { n: MIN_LEVEL[mode] }), true); return; }
-      saveName($("nameIn").value);
-      findMatch(mode).catch(e => netNote(errText(e), true));
-    };
-  };
-  // Aktivität dezent neben der Überschrift: Suchende in beiden Modi, sonst Spielende
-  activity().then(a => {
-    const el = $("mmAct"); if (!a || !el) return;
-    const n = (a.casual || 0) + (a.ranked || 0), { text, on } = n > 0 ? { text: t(n === 1 ? "act.search1" : "act.search", { n }), on: true } : activityText(a, "casual");
-    el.textContent = text; el.classList.toggle("on", on); el.hidden = false;
-  });
-  setBtn($("btnCasual"), "casual", t("mm.unranked"));
-  setBtn($("btnRanked"), "ranked", league(mmr) + " · " + mmr + (r ? " · " + t("mm.wins", { w: r.wins, g: r.games }) : ""));
-}
+// Mit Freunden spielen: nur Raum erstellen oder per Code beitreten (Casual/Ranked starten direkt aus der Modus-Wahl)
+export function openOnline() { netNote(""); showScreen("online"); }
 
 export function lobbyUI(role) {
   const host = role === "host";
