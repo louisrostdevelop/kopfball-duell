@@ -12,7 +12,13 @@ export const PREFS = [
 const ua = navigator.userAgent || "";
 const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
 const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-const supported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+// Manche Browser (z. B. Samsung Internet) bieten Push nur am Service Worker an, nicht als window.PushManager; ohne
+// Notification-Objekt fragt subscribe selbst nach der Erlaubnis
+const hasSW = () => "serviceWorker" in navigator;
+const hasPush = () => "PushManager" in window || (typeof ServiceWorkerRegistration !== "undefined" && "pushManager" in ServiceWorkerRegistration.prototype);
+const hasNotif = () => "Notification" in window;
+const supported = () => hasSW() && hasPush();
+const permission = () => (hasNotif() ? Notification.permission : "default");
 
 /** Gerätename für die Liste am Server, z. B. „Android · Chrome“ */
 export function deviceLabel(s = ua) {
@@ -39,7 +45,7 @@ export function createPush({ client, vapidKey }) {
     return navigator.serviceWorker.ready;
   }
   async function localSub() {
-    if (!supported() || Notification.permission !== "granted") return null;
+    if (!supported() || (hasNotif() && Notification.permission !== "granted")) return null;
     const reg = await navigator.serviceWorker.getRegistration();
     return reg ? reg.pushManager.getSubscription() : null;
   }
@@ -49,9 +55,10 @@ export function createPush({ client, vapidKey }) {
     if (!supported()) {
       return ios && !standalone()
         ? `<p class="push-hint">Auf dem iPhone geht das nur aus der Home-Bildschirm-App: im Safari „Teilen“ → „Zum Home-Bildschirm“, dann dort öffnen.</p>`
-        : `<p class="push-hint">Dieser Browser kann keine Push-Nachrichten. Auf dem Handy Chrome nehmen.</p>`;
+        : `<p class="push-hint">Dieser Browser kann hier keine Push-Nachrichten (fehlt: ${[!hasSW() && "Service Worker", !hasPush() && "Push"].filter(Boolean).join(", ")}).
+            ${hasSW() ? "" : "Im Geheimmodus oder privaten Tab gibt es keinen Service Worker: normalen Tab nehmen. "}Sonst auf dem Handy Chrome nehmen.</p>`;
     }
-    if (Notification.permission === "denied") {
+    if (permission() === "denied") {
       return `<p class="push-hint down">Benachrichtigungen sind für diese Seite blockiert. Erlauben: Schloss-Symbol neben der Adresse → Berechtigungen → Benachrichtigungen, danach neu laden.</p>`;
     }
     return "";
@@ -68,7 +75,7 @@ export function createPush({ client, vapidKey }) {
       if (r) r.onclick = () => { st.err = ""; load(); };
       return;
     }
-    const can = supported() && Notification.permission !== "denied";
+    const can = supported() && permission() !== "denied";
     box.innerHTML = `<div class="push-dev">
         <div class="push-state ${st.on ? "on" : ""}"><i aria-hidden="true"></i><span><b>Dieses Gerät</b><small id="pushStatus">${st.on ? "Bekommt Nachrichten" : "Bekommt keine Nachrichten"}</small></span></div>
         <button class="btn${st.on ? " ghost" : ""}" id="pushToggle"${can && !st.busy ? "" : " disabled"}>${st.on ? "Auf diesem Gerät ausschalten" : "Auf diesem Gerät einschalten"}</button></div>
@@ -103,7 +110,7 @@ export function createPush({ client, vapidKey }) {
   async function enable() {
     st.busy = true; st.note = ""; render();
     try {
-      const perm = await Notification.requestPermission();
+      const perm = hasNotif() ? await Notification.requestPermission() : "granted";
       if (perm !== "granted") { st.note = perm === "denied" ? "" : "Ohne Erlaubnis keine Nachrichten. Nochmal tippen und „Zulassen“ wählen."; st.noteCls = "muted"; return; }
       const reg = await registration();
       const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64urlBytes(vapidKey) });
