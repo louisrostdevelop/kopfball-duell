@@ -6,7 +6,7 @@
 // Stadion-Hall als Send, leichte Sättigung, Bus-Kompressor und Limiter vor dem Ausgang. Große Momente ducken die Musik.
 import { initSynth, inst, play } from "./synth.js";
 
-let ac = null, master, mix, verbIn, musBus, crowdGain, noiseBuf, crowdNodes = [], musSrc = null;
+let ac = null, master, mix, verbIn, sfxVerb, musVerb, musBus, crowdGain, noiseBuf, crowdNodes = [], musSrc = null;
 const buses = {};
 let sfxOn = true, musOn = true, musicPlaying = false, musTimer = null, nextNote = 0, stepIdx = 0, musicMode = "menu";
 const MUS_LEVEL = 0.3;
@@ -44,10 +44,13 @@ export function unlock() {
   const verbOut = ac.createGain(); verbOut.gain.value = 0.32; verbIn = ac.createGain();
   const verbHp = ac.createBiquadFilter(); verbHp.type = "highpass"; verbHp.frequency.value = 250;
   verbIn.connect(verbHp); verbHp.connect(verb); verb.connect(verbOut); verbOut.connect(glue);
+  // Hall-Anteile laufen an mix und musBus vorbei: eigene Schalter je Quelle, sonst bleibt bei "aus" der Hall hörbar
+  sfxVerb = ac.createGain(); sfxVerb.gain.value = sfxOn ? 1 : 0; sfxVerb.connect(verbIn);
+  musVerb = ac.createGain(); musVerb.gain.value = musOn ? 1 : 0; musVerb.connect(verbIn);
   musBus = ac.createGain(); musBus.gain.value = musOn ? MUS_LEVEL : 0; musBus.connect(glue);
   noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
   const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  initSynth(ac, { ...buses, verb: verbIn, music: musBus }, noiseBuf);
+  initSynth(ac, { ...buses, verb: sfxVerb, music: musBus, musVerb }, noiseBuf);
   crowdGain = ac.createGain(); crowdGain.gain.value = 0; crowdGain.connect(buses.fx);
   startCrowd();
   if (musicPlaying) startLoop();
@@ -111,7 +114,7 @@ function playFile(name, v = 1, loop = false, dest = null, at = 0) {
   if (!loop) src.playbackRate.value = 0.96 + Math.random() * 0.08 + (k - 1) * 0.06;
   g.gain.value = loop ? 1 : Math.min(1.4, 0.55 + 0.45 * k);
   src.connect(g); g.connect(dest || buses[fileCat(name)]);
-  if (!loop && dest === null) { const s = ac.createGain(); s.gain.value = 0.12; g.connect(s); s.connect(verbIn); }
+  if (!loop && dest === null) { const s = ac.createGain(); s.gain.value = 0.12; g.connect(s); s.connect(sfxVerb); }
   src.start(ac.currentTime + at);
   return src;
 }
@@ -119,8 +122,14 @@ function playFile(name, v = 1, loop = false, dest = null, at = 0) {
 /** Nur für das Sound-Lab (tools/sound-lab): Dateien aus audio/sfx ein- oder ausschalten, um erzeugt und aufgenommen zu vergleichen */
 let filesOn = true;
 export function useFiles(on) { filesOn = on; }
-export function setSfx(on) { sfxOn = on; if (mix) mix.gain.value = on ? 1 : 0; }
-export function setMusic(on) { musOn = on; if (musBus) musBus.gain.setTargetAtTime(on ? MUS_LEVEL : 0, ac.currentTime, 0.1); }
+export function setSfx(on) { sfxOn = on; if (mix) { mix.gain.value = on ? 1 : 0; sfxVerb.gain.value = on ? 1 : 0; } }
+export function setMusic(on) {
+  musOn = on; if (!musBus) return;
+  // geplante Werte (Ducken holt die Musik sonst nach Sekunden zurück) verwerfen
+  const t = ac.currentTime;
+  for (const p of [musBus.gain, musVerb.gain]) { p.cancelScheduledValues(t); p.setValueAtTime(p.value, t); }
+  musBus.gain.setTargetAtTime(on ? MUS_LEVEL : 0, t, 0.1); musVerb.gain.setTargetAtTime(on ? 1 : 0, t, 0.1);
+}
 function duck(sec) {
   if (!musOn || !musBus) return; const t = ac.currentTime;
   musBus.gain.cancelScheduledValues(t); musBus.gain.setTargetAtTime(MUS_LEVEL * 0.35, t, 0.03); musBus.gain.setTargetAtTime(MUS_LEVEL, t + sec, 0.4);
@@ -175,6 +184,11 @@ const BPM = 112, S16 = 60 / BPM / 4;
 const BASS = [36, 36, 48, 36, 39, 39, 51, 39, 41, 41, 53, 41, 43, 43, 55, 46];
 const CHORDS = [[60, 63, 67], [63, 67, 70], [65, 68, 72], [67, 70, 74]];
 const LEAD = [72, -1, 75, 72, 79, -1, 77, 75, 72, -1, 70, 72, 75, -1, -1, -1, 77, -1, 75, 77, 79, -1, 82, 79, 77, -1, 75, 72, 70, -1, 72, -1];
+/** Für Tests: Zustand des Mischpults (Pegel zum jetzigen Zeitpunkt) */
+export function state() {
+  const v = n => (n ? n.gain.value : null);
+  return { ctx: ac ? ac.state : "none", sfxOn, musOn, musicPlaying, sfx: v(mix), sfxVerb: v(sfxVerb), music: v(musBus), musVerb: v(musVerb), loop: !!(musTimer || musSrc) };
+}
 export function music(on, mode = "menu") {
   musicPlaying = on; musicMode = mode;
   if (!ac) return;

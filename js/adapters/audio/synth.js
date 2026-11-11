@@ -366,7 +366,7 @@ function whistle(dt, d) {
   hiss(dt, { type: "bandpass", f0: 3200, q: 2, vol: 0.05, a: 0.01, h: d * 0.6, d: d * 0.4, cat: "fx" });
 }
 
-// ---------- Musik-Instrumente (für den Sequenzer in webaudio.js, schreiben auf bus.music) ----------
+// ---------- Musik-Instrumente (für den Sequenzer in webaudio.js, schreiben auf bus.music, Hall auf bus.musVerb) ----------
 export const inst = {
   bass(t, m, d, vol) {
     const g = ac.createGain(), f = ac.createBiquadFilter(), o = ac.createOscillator(), s = ac.createOscillator();
@@ -379,14 +379,14 @@ export const inst = {
   pad(t, m, d, vol) {
     const g = ac.createGain(), f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 1800; f.Q.value = 0.5;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.25); g.gain.setValueAtTime(vol, t + d * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-    f.connect(g); g.connect(bus.music); const s = ac.createGain(); s.gain.value = 0.5; g.connect(s); s.connect(bus.verb);
+    f.connect(g); g.connect(bus.music); const s = ac.createGain(); s.gain.value = 0.5; g.connect(s); s.connect(bus.musVerb);
     [-9, 9].forEach(det => { const o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = mtof(m); o.detune.value = det; o.connect(f); o.start(t); o.stop(t + d + 0.05); });
   },
   lead(t, m, d, vol) {
     const g = ac.createGain(), car = ac.createOscillator(), mod = ac.createOscillator(), mg = ac.createGain(), f = mtof(m);
     car.frequency.value = f; mod.frequency.value = f * 2; mg.gain.setValueAtTime(f * 1.5, t); mg.gain.exponentialRampToValueAtTime(f * 0.1, t + d * 0.6);
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-    mod.connect(mg); mg.connect(car.frequency); car.connect(g); g.connect(bus.music); const s = ac.createGain(); s.gain.value = 0.35; g.connect(s); s.connect(bus.verb);
+    mod.connect(mg); mg.connect(car.frequency); car.connect(g); g.connect(bus.music); const s = ac.createGain(); s.gain.value = 0.35; g.connect(s); s.connect(bus.musVerb);
     car.start(t); mod.start(t); car.stop(t + d + 0.02); mod.stop(t + d + 0.02);
   },
   drum(t, kind, vel = 1) {
@@ -402,7 +402,7 @@ export const inst = {
       const o = ac.createOscillator(), og = ac.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(160, t + 0.08);
       og.gain.setValueAtTime(0.35 * vel, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.1); o.connect(og); og.connect(bus.music); o.start(t); o.stop(t + 0.12);
       g.gain.setValueAtTime(0.45 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
-      const s = ac.createGain(); s.gain.value = 0.3; g.connect(s); s.connect(bus.verb);
+      const s = ac.createGain(); s.gain.value = 0.3; g.connect(s); s.connect(bus.musVerb);
     } else { f.type = "highpass"; f.frequency.value = 7500; g.gain.setValueAtTime(0.14 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + (kind === "o" ? 0.18 : 0.035)); }
     n.connect(f); f.connect(g); n.start(t, Math.random()); n.stop(t + 0.25);
   },

@@ -195,7 +195,7 @@ async function boot() {
     });
   }
   // Test-Zugang nur lokal (auf headstars.app nicht offen: sonst ließe sich der Spielstand bequem von Hand ändern)
-  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { window.__kd = App; window.__kdFire = fireSuper; }
+  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { window.__kd = App; window.__kdFire = fireSuper; window.__kdAudio = webAudio.state; }
 }
 
 boot().catch(e => {

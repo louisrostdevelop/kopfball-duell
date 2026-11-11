@@ -36,6 +36,7 @@ const RULES = [
   [/^js\/(content\/layouts|core\/sim\/obstacles)|^js\/ui\/render\/(arena|field)/, ["arenas", "ui"]],
   [/^js\/(core\/chests|ui\/screens\/chests)/, ["chests", "server", "ui"]],
   [/^js\/(ui\/controls|adapters\/input)/, ["controls", "ui"]],
+  [/^js\/(adapters\/audio\/|ui\/screens\/settings\.js$|main\.js$)/, ["audio"]],   // Ton-Schalter
   [/^js\/ui\/screens\/(online|search)\.js$/, ["online", "matchmaking", "layout", "ui"]],
   [/^js\/content\/i18n/, ["i18n", ...UI]],
   [/^(css\/|index\.html$|js\/ui\/|js\/main\.js$|js\/app\/)/, UI],
