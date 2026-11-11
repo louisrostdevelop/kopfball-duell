@@ -16,8 +16,7 @@ let days = 30, last = null, client = null;
 try { days = DAYS.includes(Number(localStorage.getItem("kopfball-duell-admin-days"))) ? Number(localStorage.getItem("kopfball-duell-admin-days")) : 30; } catch (_) { /* ohne Speicher: 30 Tage */ }
 
 function gate(title, text, extra = "") {
-  $("days").hidden = true;
-  app.innerHTML = `<section class="gate"><h1>${esc(title)}</h1>${text}${extra}<p><a href="/">Zum Spiel</a></p></section>`;
+  app.innerHTML = `<section class="gate"><img src="icons/icon-192.png" alt="" width="72" height="72"><h1>${esc(title)}</h1>${text}${extra}<p><a class="btn ghost" href="/">Zum Spiel</a></p></section>`;
 }
 const denied = (pre = "") => gate("Kein Zugriff", pre + "<p>Kein Zugriff. Melde dich im Spiel mit deinem gesicherten Konto an.</p>");
 
@@ -57,14 +56,40 @@ async function load() {
 }
 
 function show() {
-  const seg = $("days");
-  seg.hidden = false;
-  seg.innerHTML = DAYS.map(d => `<button data-d="${d}" class="${d === days ? "on" : ""}" aria-pressed="${d === days}">${d} T</button>`).join("");
-  for (const b of seg.querySelectorAll("button")) b.onclick = () => { days = Number(b.dataset.d); try { localStorage.setItem("kopfball-duell-admin-days", String(days)); } catch (_) {} load(); };
-  app.innerHTML = dashboard(last);
+  const y = scrollY;
+  app.innerHTML = dashboard(last, { days, daysList: DAYS, updated: new Date() });
   drawCharts(app, last);
+  for (const b of app.querySelectorAll("#days button")) b.onclick = () => { days = Number(b.dataset.d); try { localStorage.setItem("kopfball-duell-admin-days", String(days)); } catch (_) {} load(); };
+  $("refresh").onclick = () => { $("refresh").classList.add("busy"); load(); };
   $("staffBtn").onclick = staffLink;
+  spy();
+  scrollTo(0, y);   // Neu laden und Zeitraum wechseln behalten die Stelle
 }
+
+// Navigation: sanft zum Abschnitt, aktiver Eintrag folgt dem Scrollen
+let io = null;
+function spy() {
+  if (io) io.disconnect();
+  const links = [...app.querySelectorAll("[data-nav]")];
+  const mark = id => { for (const a of links) a.classList.toggle("on", a.dataset.nav === id); };
+  for (const a of links) a.onclick = e => {
+    e.preventDefault();
+    const t = $(a.dataset.nav);
+    if (t) scrollTo({ top: a.dataset.nav === "top" ? 0 : t.getBoundingClientRect().top + scrollY - 76, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    mark(a.dataset.nav);
+  };
+  mark("top");
+  if (!("IntersectionObserver" in window)) return;
+  io = new IntersectionObserver(es => {
+    const vis = es.filter(x => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (vis) mark(vis.target.id === "secTop" ? "top" : vis.target.id);
+  }, { rootMargin: "-20% 0px -65% 0px" });
+  for (const id of ["secGrowth", "secSources", "secFunnel", "secModes", "secOnline", "secStaff"]) { const el = $(id); if (el) io.observe(el); }
+  const k = app.querySelector(".kpis"); if (k) { k.id = "secTop"; io.observe(k); }
+}
+
+// Zahlen alle 2 Minuten neu, solange die Seite sichtbar ist (Server erlaubt 120 Abrufe je Stunde)
+setInterval(() => { if (last && document.visibilityState === "visible") load(); }, 120000);
 
 async function staffLink() {
   const box = $("staffBox"), btn = $("staffBtn");
