@@ -438,3 +438,7 @@ verify_jwt = true
 
 [functions.turn]
 verify_jwt = true
+
+# Zeitplan (pg_cron) ruft ohne Nutzer-Token; prüft selbst: x-cron-secret bzw. das Token des Admins für die Probe
+[functions.admin-push]
+verify_jwt = false

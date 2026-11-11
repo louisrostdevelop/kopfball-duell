@@ -44,3 +44,25 @@ self.addEventListener("fetch", e => {
   const req = e.request.mode === "navigate" ? new Request(e.request.url, { cache: "no-cache", credentials: "same-origin", redirect: "manual" }) : new Request(e.request, { cache: "no-cache" });
   e.respondWith(fetch(req).then(r => { if (r.ok && r.type === "basic" && !(e.request.mode === "navigate" && u.search)) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {}); } return r; }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match("index.html"))));
 });
+// Push fürs Admin-Dashboard (Server: supabase/functions/admin-push). Gleiches tag ersetzt die vorige Nachricht,
+// renotify meldet sich trotzdem neu.
+self.addEventListener("push", e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data ? e.data.text() : "" }; }
+  e.waitUntil(self.registration.showNotification(String(d.title || "Headstars"), {
+    body: String(d.body || ""), tag: String(d.tag || "admin"), renotify: true,
+    icon: "icons/icon-192.png", data: { url: typeof d.url === "string" ? d.url : "admin.html" },
+  }));
+});
+// Antippen: offenes Dashboard nach vorne holen, sonst öffnen. Nur eigene Adressen (fremde Links aus der Nachricht nie)
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  let u;
+  try { u = new URL((e.notification.data && e.notification.data.url) || "admin.html", self.registration.scope); } catch (_) { return; }
+  if (u.origin !== location.origin) return;
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+    const open = list.find(c => new URL(c.url).pathname === u.pathname);
+    if (open) return open.focus();
+    return self.clients.openWindow(u.href);
+  }));
+});

@@ -158,10 +158,10 @@ code { font: 800 12px ui-monospace, monospace; background: rgb(255 255 255 / 7%)
 .ring-bg { fill: none; stroke: rgb(255 255 255 / 8%); stroke-width: 10; }
 .ring-fg { fill: none; stroke-width: 10; stroke-linecap: round; }
 .ring-fg.flat { stroke-linecap: butt; }
-.ring-val { position: absolute; left: 0; width: 84px; text-align: center; font: 400 19px var(--display); font-variant-numeric: tabular-nums; }
+.ring-val { position: absolute; left: var(--rp, 0); width: 84px; text-align: center; font: 400 19px var(--display); font-variant-numeric: tabular-nums; }
 .ring-txt { display: flex; flex-direction: column; font-size: 13px; color: var(--muted); }
 .ring-txt b { color: var(--ink); font-size: 15px; }
-.growth-side .ring { padding: 12px; border-radius: 18px; background: rgb(255 255 255 / 4%); border: 1px solid var(--line); }
+.growth-side .ring { --rp: 12px; padding: 12px; border-radius: 18px; background: rgb(255 255 255 / 4%); border: 1px solid var(--line); }
 
 /* Herkunft */
 .scroll { overflow-x: auto; margin: 0 -4px; }
@@ -211,6 +211,34 @@ td .pc { display: block; color: var(--faint); font-size: 11px; }
 .down { color: var(--bad); }
 .ok { color: var(--good); }
 
+/* Benachrichtigungen */
+.spin.sm { display: inline-block; width: 14px; height: 14px; border-width: 2px; vertical-align: -2px; margin-right: 6px; }
+.push-dev { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-radius: 16px; background: rgb(255 255 255 / 4%); border: 1px solid var(--line); }
+.push-dev .btn { flex: none; }
+.push-state { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.push-state i { width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 4px rgb(255 255 255 / 6%); }
+.push-state.on i { background: var(--good); box-shadow: 0 0 0 4px rgb(62 212 111 / 18%); }
+.push-state b { display: block; }
+.push-state small { display: block; color: var(--muted); font-size: 13px; }
+.push-hint { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+.switches { display: grid; gap: 2px; }
+
+.switch {
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.switch:last-child { border-bottom: 0; }
+.switch input { position: absolute; opacity: 0; width: 44px; height: 26px; margin: 0; cursor: pointer; }
+.sw-track { position: relative; width: 44px; height: 26px; flex: none; border-radius: 99px; background: rgb(255 255 255 / 12%); border: 1px solid var(--line2); transition: background .15s; }
+.sw-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.switch input:checked + .sw-track { background: linear-gradient(180deg, var(--blue), var(--blue-d)); border-color: transparent; }
+.switch input:checked + .sw-track::after { transform: translateX(18px); background: #fff; }
+.switch input:focus-visible + .sw-track { outline: 2px solid var(--c1); outline-offset: 2px; }
+.sw-txt { flex: 1; min-width: 0; font-size: 14px; }
+.sw-ok { color: var(--good); font-size: 12px; font-weight: 900; }
+.push-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.push-foot b { color: var(--ink); }
+#pushBox > p.small { margin: 10px 0 0; }
+
 .foot { text-align: center; color: var(--faint); font-size: 12px; margin: 22px 0 0; }
 
 @media (max-width: 639px) {
@@ -251,7 +279,7 @@ td .pc { display: block; color: var(--faint); font-size: 11px; }
   .nav a.on { color: var(--ink); background: linear-gradient(90deg, rgb(47 107 255 / 28%), rgb(47 107 255 / 6%)); box-shadow: inset 3px 0 0 var(--c1); }
   .nav a.on .ico { color: var(--c1); }
   .side-foot { margin-top: auto; }
-  .tabs, .brand.mini { display: none; }
+  .tabs, .brand.mini, .to-game { display: none; }
   .bar { padding: 16px 28px; }
   .bar h1 { font-size: 28px; }
   .content { padding: 22px 28px 40px; }
@@ -261,4 +289,5 @@ td .pc { display: block; color: var(--faint); font-size: 11px; }
 
 @media (prefers-reduced-motion: reduce) {
   .spin, .iconbtn.busy .ico { animation: none; }
+  .sw-track, .sw-track::after { transition: none; }
 }

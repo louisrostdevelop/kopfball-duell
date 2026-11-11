@@ -41,6 +41,7 @@
  * @property {(name: string) => Promise<{ status: string }>} friendRequest
  * @property {(name: string) => Promise<object>} friendRemove
  * @property {(name: string) => Promise<object>} setName
+ * @property {() => Promise<boolean>} [amAdmin]   darf dieses Konto das Admin-Dashboard sehen (Gäste: immer false)
  * @property {(kind: string, data?: object) => Promise<object>} [track]   Nutzungsereignis melden (app/track.js; Arten und Felder prüft api.track)
  */
 export {};

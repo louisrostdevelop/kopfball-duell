@@ -626,6 +626,7 @@ export default {
   "home.upTo": "bis {n}",
   "html.ach.bestenliste": "Bestenliste",
   "html.ach.erfolge": "Erfolge",
+  "html.attr.admin": "Admin",
   "html.attr.deinKopfAntippenZum": "Dein Kopf, antippen zum Jonglieren",
   "html.attr.deinName": "Dein Name",
   "html.attr.einstellungen": "Einstellungen",

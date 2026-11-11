@@ -69,6 +69,7 @@ export function supabaseServer(client, storage = safeStorage()) {
     queuePoll: () => rpc("queue_poll"),
     queueLeave: () => rpc("queue_leave"),
     activity: () => rpc("activity"),
+    amAdmin: () => client.rpc("am_admin"),
     matchAbort: match => rpc("match_abort", { match }),
     matchStarted: match => rpc("match_started", { match }),
     reportOnline: (match, r) => rpc("report_match", { match, r }),

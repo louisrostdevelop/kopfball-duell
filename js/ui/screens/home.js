@@ -10,7 +10,7 @@ import { App } from "../../app/state.js";
 import { $, $$, esc, RCOL, svg } from "../dom.js";
 import { goBack, registerScreen, showScreen } from "../nav.js";
 import { selectScreen } from "./select.js";
-import { audio as A } from "../../app/services.js";
+import { audio as A, auth, has, server } from "../../app/services.js";
 import { dailyBriefing } from "./run.js";
 import { setShopTab } from "./shop.js";
 import { availableModes, modeInfo } from "./modes.js";
@@ -185,10 +185,25 @@ export function drawShowcase(dt) {
   drawBall(x, S.ball, bx, j.y, br, j.a, 1, null, { t, vy: j.vy });
 }
 
+// Knopf zum Admin-Dashboard: nur Bequemlichkeit, den Zugriff prüft der Server bei jedem Abruf der Zahlen.
+// Einmal je Konto fragen; Gäste nie (sind nie Admin), ohne Server gar nicht. Scheitert die Frage (offline), beim
+// nächsten Weg ins Menü nochmal.
+let adminFor = null;
+function checkAdmin(u = auth.user()) {
+  const id = u && !u.guest ? u.id : null, b = $("btnAdmin");
+  if (id === adminFor) return;
+  adminFor = id; b.hidden = true;
+  if (!id || !has("server") || typeof server.amAdmin !== "function") return;
+  server.amAdmin().then(ok => { if (adminFor === id) b.hidden = ok !== true; }, () => { if (adminFor === id) adminFor = null; });
+}
+
 // Knöpfe verdrahten und bei der Navigation anmelden (einmal beim Start)
 export function initHome() {
+  checkAdmin();
+  auth.onChange(u => checkAdmin(u));
   registerScreen("home", { show: () => {
     homeScreen();
+    checkAdmin();
     // Tagesbelohnung nach einem zurückgeholten Online-Spiel: sobald man wieder im Menü ist, egal auf welchem Weg
     if (App.dailyLater && App.mode === "demo" && !App.netWait) { const f = App.dailyLater; App.dailyLater = null; f(); }
     // Meldungen, die nach dem letzten Spiel nicht mehr auf den Endbildschirm passten (Revanche sofort gestartet)

@@ -625,6 +625,7 @@ export default {
   "home.upTo": "first to {n}",
   "html.ach.bestenliste": "Leaderboard",
   "html.ach.erfolge": "Achievements",
+  "html.attr.admin": "Admin",
   "html.attr.deinKopfAntippenZum": "Your head, tap to juggle",
   "html.attr.deinName": "Your name",
   "html.attr.einstellungen": "Settings",

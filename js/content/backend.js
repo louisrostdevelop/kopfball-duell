@@ -5,5 +5,7 @@
 export const BACKEND = {
   url: "https://usobpjzoupofuhbryhum.supabase.co",   // Projekt "headstars" (EU, Irland)
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzb2JwanpvdXBvZnVoYnJ5aHVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM5ODYzNDUsImV4cCI6MjEwOTU2MjM0NX0.8BKuiS9ArsaHCAOOkyiozhxvOGK9px_a2zmjXVG00IQ",
+  // Web-Push (VAPID), öffentlicher Teil; der private Schlüssel liegt nur als Secret bei der Edge Function admin-push
+  vapidPublicKey: "BFc-V2DOBJxp6S0Rwsud-Q3vJCMGLDWMDZqQEipe3j7a9JaGOH1lt24GYCR5oqppMdH2txaxR9bbmklgFHDdy-w",
   captchaSiteKey: "0x4AAAAAAF4Ufx9ayyvu94Or",   // Cloudflare Turnstile (öffentlich); Secret nur im Supabase-Dashboard unter Attack Protection
 };

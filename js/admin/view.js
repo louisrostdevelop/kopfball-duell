@@ -33,12 +33,13 @@ const ICONS = {
   match: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z",
   refresh: "M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4",
   game: "M14 5h5v5M19 5l-8 8M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4",
+  bell: "M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15zM10 20.5a2.2 2.2 0 0 0 4 0M12 3v2",
 };
 export const icon = (k, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[k]}"/></svg>`;
 
 export const NAV = [
   ["top", "Übersicht", "home"], ["secGrowth", "Wachstum", "growth"], ["secSources", "Herkunft", "source"], ["secFunnel", "Trichter", "funnel"],
-  ["secModes", "Modi", "modes"], ["secOnline", "Online", "online"], ["secStaff", "Geräte", "devices"],
+  ["secModes", "Modi", "modes"], ["secOnline", "Online", "online"], ["secPush", "Push", "bell"], ["secStaff", "Geräte", "devices"],
 ];
 // Tab-Leiste am Handy: höchstens fünf Ziele, der Rest per Scrollen
 const TABS = ["top", "secGrowth", "secSources", "secModes", "secOnline"];
@@ -108,7 +109,7 @@ export function dashboard(s, { days, daysList, updated }) {
 <div class="main">
 <header class="bar"><a class="brand mini" href="/"><img src="icons/icon-192.png" alt="" width="30" height="30"></a>
   <div class="bar-title"><h1>Übersicht</h1><p>Heute${today ? ", " + today : ""} · Stand <span id="stamp">${esc(clock(updated))}</span></p></div>
-  ${seg}<button class="iconbtn" id="refresh" aria-label="Neu laden" title="Neu laden">${icon("refresh")}</button></header>
+  ${seg}<a class="iconbtn to-game" href="/" aria-label="Zum Spiel" title="Zum Spiel">${icon("game")}</a><button class="iconbtn" id="refresh" aria-label="Neu laden" title="Neu laden">${icon("refresh")}</button></header>
 <main class="content" id="top">
 ${sinceNote ? `<p class="note">${sinceNote}</p>` : ""}
 <section class="kpis" aria-label="Heute">${kpi("Aktive heute", s.kpi.active, "users", C.active, col("active"))}${kpi("Neue Spieler", s.kpi.new, "plus", C.new, col("new"))}${kpi("Wiederkehrer", s.kpi.returning, "back", C.alt, null, `${pct(ret, act)} der Aktiven heute`)}${kpi("Online-Matches", s.kpi.online, "match", C.online, col("online"))}</section>
@@ -133,9 +134,10 @@ ${card("secOnline", "Online", "online", `<h3>Gegnersuche</h3>
   <div class="split"><div><h3>Verbindung</h3>${donut([{ label: "Direkt", n: o.direct, color: C.active }, { label: "Relay", n: o.relay, color: C.relay }, { label: "Gescheitert", n: o.failed, color: C.bad }])}</div>
   <div><h3>Mit Freunden</h3>${tiles([["Lobbys", num(o.lobby_created)], ["Beigetreten", num(o.lobby_joined), pct(o.lobby_joined, o.lobby_created)], ["Angepfiffen", num(o.lobby_started)]])}
   <h3>Abbrüche</h3>${abN ? `<div class="kv">${Object.entries(ab).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(REASONS[k] || k)}</span><span>${num(v)}</span>`).join("")}</div>` : `<p class="muted small">Keine.</p>`}</div></div>`)}
+${card("secPush", "Benachrichtigungen", "bell", `<div id="pushBox"></div>`)}
 ${card("secStaff", "Weiteres Gerät ausschließen", "devices", `<p class="muted small">Eigene Testgeräte und Testkonten sollen nicht mitzählen. Der Link macht das Gerät, auf dem er geöffnet wird, zu „Staff“: es zählt in keiner Zahl hier mehr mit. Dein eigenes Konto zählt ohnehin nicht.</p>
   <button class="btn" id="staffBtn">Link erzeugen</button>
-  <div id="staffBox"></div>`, "wide")}
+  <div id="staffBox"></div>`)}
 </div>
 <p class="foot">Stand ${esc(dateTime(updated.toISOString()))} · Tage nach deutscher Zeit · ohne Admin und Staff</p>
 </main></div>

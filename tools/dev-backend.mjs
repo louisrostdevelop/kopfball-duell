@@ -25,6 +25,26 @@ export async function startDevBackend({ dbUrl, port = 54321, log = false } = {})
   const userRow = async id => (await pool.query("select id, email, is_anonymous from auth.users where id = $1", [id])).rows[0];
   const session = async id => { const r = randomUUID(); refresh.set(r, id); return { access_token: tok(id), refresh_token: r, expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, token_type: "bearer", user: { ...await userRow(id), new_email: pendingMail.get(id) || null } }; };
 
+  // Server-Funktion als Spieler (Rolle authenticated) bzw. ohne Anmeldung (anon); Fehler wie PostgREST
+  const rpc = async (sub, name, data) => {
+    const keys = Object.keys(data).filter(k => /^[a-z][a-z0-9_]{0,39}$/.test(k));
+    const args = keys.map((k, i) => `${k} => $${i + 1}`).join(", ");
+    const vals = keys.map(k => data[k] !== null && typeof data[k] === "object" ? JSON.stringify(data[k]) : data[k]);
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('request.jwt.claim.sub', $1, true)", [sub || ""]);
+      await c.query(`set local role ${sub ? "authenticated" : "anon"}`);
+      const { rows } = await c.query(`select api.${name}(${args}) as r`, vals);
+      await c.query("commit");
+      return rows[0].r;
+    } catch (e) {
+      await c.query("rollback").catch(() => {});
+      const status = e.code === "P0001" ? 400 : e.code === "42501" ? (sub ? 403 : 401) : e.code === "42883" ? 404 : 500;
+      throw Object.assign(new Error(e.message), { status, body: { code: e.code, message: e.message, details: e.detail || null, hint: e.hint || null } });
+    } finally { c.release(); }
+  };
+
   const server = http.createServer(async (req, res) => {
     const cors = { "Access-Control-Allow-Origin": req.headers.origin || "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, content-profile, accept-profile, x-client-info", "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS" };
     const send = (status, body) => { res.writeHead(status, { ...cors, "Content-Type": "application/json" }); res.end(JSON.stringify(body)); };
@@ -80,22 +100,13 @@ export async function startDevBackend({ dbUrl, port = 54321, log = false } = {})
       const fn = /^\/rest\/v1\/rpc\/([a-z_]{1,40})$/.exec(path);
       if (fn && req.method === "POST") {
         const sub = subOf(req); if (sub === "expired") return send(401, { code: "PGRST301", message: "JWT expired" });
-        const keys = Object.keys(data).filter(k => /^[a-z_]{1,40}$/.test(k));
-        const args = keys.map((k, i) => `${k} => $${i + 1}`).join(", ");
-        const vals = keys.map(k => data[k] !== null && typeof data[k] === "object" ? JSON.stringify(data[k]) : data[k]);
-        const c = await pool.connect();
-        try {
-          await c.query("begin");
-          await c.query("select set_config('request.jwt.claim.sub', $1, true)", [sub || ""]);
-          await c.query(`set local role ${sub ? "authenticated" : "anon"}`);
-          const { rows } = await c.query(`select api.${fn[1]}(${args}) as r`, vals);
-          await c.query("commit");
-          return send(200, rows[0].r);
-        } catch (e) {
-          await c.query("rollback").catch(() => {});
-          const status = e.code === "P0001" ? 400 : e.code === "42501" ? (sub ? 403 : 401) : e.code === "42883" ? 404 : 500;
-          return send(status, { code: e.code, message: e.message, details: e.detail || null, hint: e.hint || null });
-        } finally { c.release(); }
+        try { return send(200, await rpc(sub, fn[1], data)); } catch (e) { return send(e.status, e.body); }
+      }
+      // Push an Admin-Geräte: nur die Probe, als Aufrufer (prüft Admin und Grenze wie echt), ohne wirklich zu senden
+      if (path === "/functions/v1/admin-push" && req.method === "POST") {
+        const sub = subOf(req); if (!sub || sub === "expired") return send(401, { error: "not_authenticated" });
+        try { const list = await rpc(sub, "admin_push_test", {}); return send(200, { sent: list.length, failed: 0, removed: 0 }); }
+        catch (e) { return send(e.status === 400 && e.body.message === "forbidden" ? 403 : e.status === 400 && e.body.message === "rate_limited" ? 429 : e.status, { error: e.body.message }); }
       }
       // Relay-Zugangsdaten: lokal ohne Relay (Browser auf demselben Rechner verbinden sich direkt)
       if (path === "/functions/v1/turn") return send(200, { iceServers: [], ttl: 3600 });

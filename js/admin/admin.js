@@ -7,12 +7,13 @@ import { backendConfig } from "../adapters/server/config.js";
 import { turnstileToken } from "../adapters/server/turnstile.js";
 import { BACKEND } from "../content/backend.js";
 import { dashboard, drawCharts } from "./view.js";
+import { createPush } from "./push.js";
 
 const $ = id => document.getElementById(id);
 const app = $("app");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const DAYS = [7, 30, 90];
-let days = 30, last = null, client = null;
+let days = 30, last = null, client = null, push = null;
 try { days = DAYS.includes(Number(localStorage.getItem("kopfball-duell-admin-days"))) ? Number(localStorage.getItem("kopfball-duell-admin-days")) : 30; } catch (_) { /* ohne Speicher: 30 Tage */ }
 
 function gate(title, text, extra = "") {
@@ -62,6 +63,7 @@ function show() {
   for (const b of app.querySelectorAll("#days button")) b.onclick = () => { days = Number(b.dataset.d); try { localStorage.setItem("kopfball-duell-admin-days", String(days)); } catch (_) {} load(); };
   $("refresh").onclick = () => { $("refresh").classList.add("busy"); load(); };
   $("staffBtn").onclick = staffLink;
+  push.mount();   // nach dem Dashboard; behält Schalter und Gerätestand beim Neuzeichnen
   spy();
   scrollTo(0, y);   // Neu laden und Zeitraum wechseln behalten die Stelle
 }
@@ -84,7 +86,7 @@ function spy() {
     const vis = es.filter(x => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
     if (vis) mark(vis.target.id === "secTop" ? "top" : vis.target.id);
   }, { rootMargin: "-20% 0px -65% 0px" });
-  for (const id of ["secGrowth", "secSources", "secFunnel", "secModes", "secOnline", "secStaff"]) { const el = $(id); if (el) io.observe(el); }
+  for (const id of ["secGrowth", "secSources", "secFunnel", "secModes", "secOnline", "secPush", "secStaff"]) { const el = $(id); if (el) io.observe(el); }
   const k = app.querySelector(".kpis"); if (k) { k.id = "secTop"; io.observe(k); }
 }
 
@@ -111,6 +113,7 @@ async function boot() {
   if (!be) { gate("Kein Server", "<p>Diese Seite braucht den Spiel-Server.</p>"); return; }
   const captcha = be.captchaSiteKey ? turnstileToken(be.captchaSiteKey) : null;
   client = createClient({ ...be, captcha, sessionKey: be.sessionKey });
+  push = createPush({ client, vapidKey: BACKEND.vapidPublicKey });
   const m = /^#staff=([A-Za-z0-9]{16,128})$/.exec(location.hash || "");
   let note = "";
   if (m) {
