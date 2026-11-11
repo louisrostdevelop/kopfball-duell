@@ -1,0 +1,138 @@
+// Online über PeerJS (WebRTC, direkt Browser zu Browser)
+const PREFIX = "kopfball-duell-v2-";
+const CH = "abcdefghjkmnpqrstuvwxyz23456789";
+// STUN zum Finden der eigenen Adresse. Relay-Server (TURN) für Netze ohne direkte Verbindung kommen mit kurzlebigen
+// Zugangsdaten vom Spielserver (setIce, siehe app/relay.js); die früheren freien PeerJS-Relays gibt es nicht mehr.
+const STUN = [{ urls: "stun:stun.cloudflare.com:3478" }, { urls: "stun:stun.l.google.com:19302" }];
+let relays = [];
+const ICE = () => ({ iceServers: [...STUN, ...relays] });
+/** Relay-Server für die nächsten Verbindungen (laufende behalten ihre) */
+export function setIce(list) { relays = Array.isArray(list) ? list.filter(s => s && s.urls) : []; }
+export const mkCode = () => Array.from({ length: 4 }, () => CH[Math.floor(Math.random() * CH.length)]).join("");
+export const available = () => !!window.Peer;
+
+let cur = null;
+// Schneller Kanal für Zustände und Eingaben: ungeordnet, ohne Wiederholung (ein verlorenes Paket hält nichts auf,
+// das nächste ist eh aktueller). Beide Seiten legen ihn gleich an (negotiated), PeerJS bekommt davon nichts mit.
+const FAST = { negotiated: true, id: 77, ordered: false, maxRetransmits: 0 };
+function openFast(me, conn, h) {
+  try {
+    const pc = conn.peerConnection; if (!pc || !pc.createDataChannel) return;
+    const ch = pc.createDataChannel("fast", FAST);
+    ch.onmessage = e => { if (cur !== me) return; let d; try { d = JSON.parse(e.data); } catch (_) { return; } if (d && h.onData) h.onData(d); };
+    me.fast = ch;
+  } catch (_) { me.fast = null; }
+}
+/** after (ms): erst später wirklich schließen, damit eine letzte Nachricht („bye“) noch ankommt; neue Verbindungen sind sofort möglich */
+export function close(after = 0) {
+  if (!cur) return; const c = cur; cur = null;
+  const fin = () => {
+    try { c.fast && c.fast.close(); } catch (_) {}
+    try { c.conn && c.conn.close(); } catch (_) {}
+    try { c.peer && c.peer.destroy(); } catch (_) {}
+  };
+  if (after > 0) setTimeout(fin, after); else fin();
+}
+/** Nur die Verbindung trennen (der Host behält seinen Raum, damit der Gast wieder beitreten kann). Löst onClose aus. */
+export function drop() {
+  if (!cur || !cur.conn) return;
+  const c = cur.conn;
+  try { c.close(); } catch (_) {}
+  // manche PeerJS-Versionen melden das eigene Schließen nicht: dann hier nachholen
+  if (cur && cur.conn === c && cur.onDrop) cur.onDrop();
+}
+export function send(m) { if (cur && cur.conn && cur.conn.open) try { cur.conn.send(m); } catch (_) {} }
+/** Für Zustände und Eingaben: schneller Kanal, falls offen, sonst der normale. Bei Stau lieber auslassen. */
+export function sendFast(m) {
+  const f = cur && cur.fast;
+  if (f && f.readyState === "open") { if (!(f.bufferedAmount > 65536)) try { f.send(JSON.stringify(m)); } catch (_) {} return; }
+  send(m);
+}
+/**
+ * Weg der offenen Verbindung: "relay" (über den TURN-Server), "direct" oder null (unbekannt, z. B. ohne getStats).
+ * Maßgeblich ist das gewählte Kandidatenpaar: ist eine Seite davon vom Typ relay, laufen die Daten über das Relay.
+ */
+export async function path() {
+  const pc = cur && cur.conn && cur.conn.peerConnection;
+  if (!pc || typeof pc.getStats !== "function") return null;
+  try {
+    const stats = await pc.getStats(), all = new Map();
+    stats.forEach(r => all.set(r.id, r));
+    let pair = null;
+    for (const r of all.values()) if (r.type === "transport" && r.selectedCandidatePairId) pair = all.get(r.selectedCandidatePairId);
+    // Firefox kennt selectedCandidatePairId nicht, markiert das Paar dafür selbst
+    if (!pair) for (const r of all.values()) if (r.type === "candidate-pair" && (r.selected || (r.nominated && r.state === "succeeded"))) { pair = r; break; }
+    if (!pair) return null;
+    const types = [all.get(pair.localCandidateId), all.get(pair.remoteCandidateId)].map(c => c && c.candidateType);
+    return types.includes("relay") ? "relay" : types.some(Boolean) ? "direct" : null;
+  } catch (_) { return null; }
+}
+export function isOpen() { return !!(cur && cur.conn && cur.conn.open); }
+export function role() { return cur ? cur.role : null; }
+
+// opts.code: fester Raumname (Matchmaking: aus der Spiel-ID), sonst zufällig
+export function host(h, { code: fixed = null, tries = 0, retries = 3 } = {}) {
+  close();
+  const code = fixed || mkCode();
+  const peer = new window.Peer(PREFIX + code, { config: ICE(), debug: 0 });
+  const me = { peer, role: "host", code, conn: null };
+  cur = me;
+  peer.on("open", () => { if (cur === me) h.onReady && h.onReady(code); });
+  // Verbindung übernehmen: ab jetzt laufen Daten und Schließen über diese
+  const adopt = conn => {
+    me.conn = conn;
+    conn.on("data", d => { if (cur === me && me.conn === conn && d) h.onData && h.onData(d); });
+    const closed = () => { if (cur === me && me.conn === conn) { me.conn = null; me.onDrop = null; try { if (me.fast) me.fast.close(); } catch (_) {} me.fast = null; if (h.onClose) h.onClose(); } };
+    me.onDrop = closed;
+    conn.on("close", closed);
+  };
+  peer.on("connection", conn => {
+    if (cur !== me) { conn.close(); return; }
+    if (me.conn && me.conn.open) {
+      // Raum belegt. Ausnahme: derselbe Gast kommt nach einem App-Neustart wieder, bevor die alte Verbindung als tot
+      // erkannt ist. Seine erste Nachricht entscheidet (h.onKnock prüft den Merker): ersetzen oder „voll“.
+      const full = () => { try { conn.send({ t: "full" }); } catch (_) {} setTimeout(() => conn.close(), 500); };
+      let first = true;
+      conn.on("data", d => {
+        if (!first || cur !== me) return; first = false;
+        if (!(h.onKnock && h.onKnock(d))) { full(); return; }
+        const old = me.conn; me.conn = null;
+        try { if (me.fast) me.fast.close(); } catch (_) {} me.fast = null;
+        try { old.close(); } catch (_) {}
+        adopt(conn); openFast(me, conn, h);
+        if (h.onData) h.onData(d);
+      });
+      return;
+    }
+    adopt(conn);
+    conn.on("open", () => { if (cur === me && me.conn === conn) { openFast(me, conn, h); if (h.onConn) h.onConn(); } });
+  });
+  peer.on("disconnected", () => { if (cur === me && !peer.destroyed) try { peer.reconnect(); } catch (_) {} });
+  peer.on("error", e => {
+    if (cur !== me) return;
+    if (e.type === "unavailable-id" && tries < retries) { if (fixed) setTimeout(() => { if (cur === me) host(h, { code: fixed, tries: tries + 1, retries }); }, 1500); else host(h, { tries: tries + 1, retries }); return; }
+    if (me.conn && me.conn.open) return;
+    h.onError && h.onError(e.type);
+  });
+  return code;
+}
+
+export function join(code, h) {
+  close();
+  const peer = new window.Peer({ config: ICE(), debug: 0 });
+  const me = { peer, role: "guest", code, conn: null, ok: false };
+  cur = me;
+  peer.on("open", () => {
+    if (cur !== me) return;
+    const conn = peer.connect(PREFIX + code.toLowerCase(), { serialization: "json", reliable: true });
+    me.conn = conn;
+    conn.on("open", () => { if (cur !== me) return; me.ok = true; openFast(me, conn, h); if (h.onConn) h.onConn(); });
+    conn.on("data", d => { if (cur === me && d) h.onData && h.onData(d); });
+    let gone = false;
+    const closed = () => { if (cur === me && !gone) { gone = true; me.onDrop = null; h.onClose && h.onClose(); } };
+    me.onDrop = closed;
+    conn.on("close", closed);
+  });
+  peer.on("error", e => { if (cur !== me) return; h.onError && h.onError(e.type, me.ok); });
+  setTimeout(() => { if (cur === me && !me.ok) h.onError && h.onError("timeout", false); }, 15000);
+}

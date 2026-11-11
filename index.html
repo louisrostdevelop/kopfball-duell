@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.peerjs.com wss://*.peerjs.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; frame-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Headstars</title>
+<meta name="description" content="Kopfball-Fußball im Browser: Köpfe mit Spezialschüssen, Power-ups, Cup und online gegen Freunde per Link. Kostenlos, ohne Download.">
+<meta name="theme-color" content="#1b2b6b">
+<meta property="og:title" content="Headstars – fordere mich heraus!">
+<meta property="og:description" content="Kopfball-Fußball im Browser. Online gegen Freunde per Link, Spezialschüsse, Power-ups. Ohne Download.">
+<meta property="og:image" content="https://headstars.app/og.jpg">
+<meta property="og:url" content="https://headstars.app/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="icons/wordmark.webp" as="image">
+<link rel="preload" href="fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/nunito-900.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=13">
+<script src="vendor/peerjs.min.js" defer></script>
+<script src="vendor/qrcode.js" defer></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5Z"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 3h12v2h3v3a5 5 0 0 1-4.6 5 6 6 0 0 1-3.4 3.4V19h3v2H8v-2h3v-2.6A6 6 0 0 1 7.6 13 5 5 0 0 1 3 8V5h3V3Zm0 4H5v1a3 3 0 0 0 1.4 2.5A6 6 0 0 1 6 9V7Zm12 0v2a6 6 0 0 1-.4 1.5A3 3 0 0 0 19 8V7h-1Z"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 6h-2.8a15 15 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8ZM12 4a13 13 0 0 1 1.9 4h-3.8A13 13 0 0 1 12 4ZM4.3 14a8 8 0 0 1 0-4h3.2a16 16 0 0 0 0 4H4.3Zm.8 2h2.8a15 15 0 0 0 1.4 3.6A8 8 0 0 1 5.1 16Zm2.8-8H5.1a8 8 0 0 1 4.2-3.6A15 15 0 0 0 7.9 8ZM12 20a13 13 0 0 1-1.9-4h3.8a13 13 0 0 1-1.9 4Zm2.3-6H9.7a14 14 0 0 1 0-4h4.6a14 14 0 0 1 0 4Zm.4 5.6a15 15 0 0 0 1.4-3.6h2.8a8 8 0 0 1-4.2 3.6Zm1.8-5.6a16 16 0 0 0 0-4h3.2a8 8 0 0 1 0 4h-3.2Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><circle cx="17" cy="9" r="3"/><path d="M1 20a7 7 0 0 1 14 0v1H1v-1Zm15 1v-1a8.9 8.9 0 0 0-2-5.7A5.5 5.5 0 0 1 23 18.5V21h-7Z"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M8 7V6a4 4 0 0 1 8 0v1h3.2a1 1 0 0 1 1 .9l1 13A1 1 0 0 1 20.2 22H3.8a1 1 0 0 1-1-1.1l1-13a1 1 0 0 1 1-.9H8Zm2 0h4V6a2 2 0 0 0-4 0v1Zm-1 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm6 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></symbol>
+  <symbol id="i-tasks" viewBox="0 0 24 24"><path d="M9 2h6a2 2 0 0 1 2 2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2-2Zm0 2v2h6V4H9Zm-1.3 9.3-1.4 1.4L9.6 18l6.7-6.7-1.4-1.4-5.3 5.3-1.9-1.9Z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6 12 2Z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M19.67 10.10 L22.49 10.51 L22.49 13.49 L19.67 13.90 L18.77 16.07 L20.48 18.36 L18.36 20.48 L16.07 18.77 L13.90 19.67 L13.49 22.49 L10.51 22.49 L10.10 19.67 L7.93 18.77 L5.64 20.48 L3.52 18.36 L5.23 16.07 L4.33 13.90 L1.51 13.49 L1.51 10.51 L4.33 10.10 L5.23 7.93 L3.52 5.64 L5.64 3.52 L7.93 5.23 L10.10 4.33 L10.51 1.51 L13.49 1.51 L13.90 4.33 L16.07 5.23 L18.36 3.52 L20.48 5.64 L18.77 7.93Z M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 1 0 0-7.2Z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15.5 3.5 7 12l8.5 8.5 2.1-2.1L11.2 12l6.4-6.4-2.1-2.1Z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1Zm2 0h6V7a3 3 0 0 0-6 0v3Z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M10 4h4v6h6v4h-6v6h-4v-6H4v-4h6V4Z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v8.2l2.6-2.6a2 2 0 1 1 2.8 2.8l-6 6a2 2 0 0 1-2.8 0l-6-6a2 2 0 1 1 2.8-2.8l2.6 2.6V4a2 2 0 0 1 2-2ZM4 19a2 2 0 0 1 2 2h12a2 2 0 1 1 0 4H6a4 4 0 0 1-4-4 2 2 0 0 1 2-2Z" transform="translate(0 -2)"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M18 2a4 4 0 1 1-3.3 6.3L9.9 10.8a4 4 0 0 1 0 2.4l4.8 2.5A4 4 0 1 1 14 18v-.2l-5.2-2.7a4 4 0 1 1 0-6.2L14 6.2V6a4 4 0 0 1 4-4Z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 2h11a2 2 0 0 1 2 2v12h-2V4H8V2Zm-3 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V2ZM5 10v10h14V10H5Zm7 1.5 1.3 2.7 3 .4-2.2 2 .6 3-2.7-1.5-2.7 1.5.6-3-2.2-2 3-.4 1.3-2.7Z"/></symbol>
+  <symbol id="i-inf" viewBox="0 0 24 24"><path d="M6.5 7C9 7 10.6 9 12 10.8 13.4 9 15 7 17.5 7a5 5 0 0 1 0 10c-2.5 0-4.1-2-5.5-3.8C10.6 15 9 17 6.5 17a5 5 0 0 1 0-10Zm0 3a2 2 0 0 0 0 4c1.1 0 2-1 3.3-2-1.3-1-2.2-2-3.3-2Zm11 0c-1.1 0-2 1-3.3 2 1.3 1 2.2 2 3.3 2a2 2 0 0 0 0-4Z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm0 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 2.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M3 5h9.2a3 3 0 0 1 5.6 0H21v2h-3.2a3 3 0 0 1-5.6 0H3V5Zm0 6h3.2a3 3 0 0 1 5.6 0H21v2h-9.2a3 3 0 0 1-5.6 0H3v-2Zm0 6h11.2a3 3 0 0 1 5.6 0H21v2h-1.2a3 3 0 0 1-5.6 0H3v-2Z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.3 4.2 5.7 5.7 5.7-5.7 2.1 2.1-5.7 5.7 5.7 5.7-2.1 2.1-5.7-5.7-5.7 5.7-2.1-2.1 5.7-5.7-5.7-5.7 2.1-2.1Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20ZM8.5 8a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm7 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM7 13.5a5 5 0 0 0 10 0H7Z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 1 4 13.5h6.5L9 23l11-13h-7l.5-9Z"/></symbol>
+  <!-- Platzhalter-Formen für Kosmetik -->
+  <symbol id="cos-shoes" viewBox="0 0 48 48"><path d="M6 32V16h12l4 8c8 1 18 3 20 8v4H6Z" fill="var(--col)" stroke="#1c1838" stroke-width="3" stroke-linejoin="round"/><path d="M6 36h36" stroke="#1c1838" stroke-width="3"/></symbol>
+  <symbol id="cos-goalfx" viewBox="0 0 48 48"><path d="m24 4 5 13 14-3-9 11 9 11-14-3-5 13-5-13-14 3 9-11-9-11 14 3Z" fill="var(--col)" stroke="#1c1838" stroke-width="3" stroke-linejoin="round"/></symbol>
+  <symbol id="cos-emote" viewBox="0 0 48 48"><circle cx="24" cy="26" r="16" fill="var(--col)" stroke="#1c1838" stroke-width="3"/><path d="M16 30c4 5 12 5 16 0M18 20v3m12-3v3M10 8l4 4m24-4-4 4" stroke="#1c1838" stroke-width="3" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-shard" viewBox="0 0 24 24"><path d="m12 2 6 7-6 13-6-13Zm0 3.4L8.6 9.3 12 17l3.4-7.7Z"/></symbol>
+  <symbol id="i-chest" viewBox="0 0 24 24"><path d="M3 10a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v1H3Zm0 3h18v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm7 0h4v3a2 2 0 0 1-4 0Z"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><path d="M8.5 2a3 3 0 0 1 3.5 2.4A3 3 0 1 1 15.5 8H21v4h-1v9a1 1 0 0 1-1 1h-6V12h-2v10H5a1 1 0 0 1-1-1v-9H3V8h5.5a3 3 0 0 1 0-6Zm0 2a1 1 0 0 0 0 2H11a2.5 2.5 0 0 0-2.5-2Zm7 0A2.5 2.5 0 0 0 13 6h2.5a1 1 0 0 0 0-2Z"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M16 3l5 5-5 5V9.5H8v-3h8V3ZM8 11v3.5h8v3H8V21l-5-5 5-5Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m9.5 15.6-4.3-4.3-2.4 2.4 6.7 6.7L21.2 8.7l-2.4-2.4-9.3 9.3Z"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M3 9h4l6-5v16l-6-5H3V9Zm13.5-1.5a6 6 0 0 1 0 9l-1.4-1.4a4 4 0 0 0 0-6.2l1.4-1.4Zm2.8-2.8a10 10 0 0 1 0 14.6l-1.4-1.4a8 8 0 0 0 0-11.8l1.4-1.4Z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M20 2v14.5a3.5 3.5 0 1 1-2-3.2V6.4L10 8.2v10.3A3.5 3.5 0 1 1 8 15.3V5l12-3Z"/></symbol>
+  <symbol id="i-vib" viewBox="0 0 24 24"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 3v13h8V5H8ZM2 8h2v8H2V8Zm18 0h2v8h-2V8Z"/></symbol>
+  <symbol id="i-shrink" viewBox="0 0 24 24"><path d="M7 3h3v7H3V7h4V3Zm7 0h3v4h4v3h-7V3ZM3 14h7v7H7v-4H3v-3Zm11 0h7v3h-4v4h-3v-7Z"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M15.6 3.6a2 2 0 0 1 2.8 0l2 2a2 2 0 0 1 0 2.8L9.2 19.6 3.5 21l1.4-5.7L15.6 3.6Zm-9 13 2 2 9-9-2-2-9 9Z"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M3 3h7v3H6v4H3V3Zm11 0h7v7h-3V6h-4V3ZM3 14h3v4h4v3H3v-7Zm15 0h3v7h-7v-3h4v-4Z"/></symbol>
+  <symbol id="i-ball" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm0 5.2-3.4 2.5 1.3 4h4.2l1.3-4L12 7.2Zm-5.6-.4A8 8 0 0 0 4 12.3l2.5-1.8-.1-3.7Zm11.2 0-.1 3.7 2.5 1.8a8 8 0 0 0-2.4-5.5ZM12 4a8 8 0 0 0-3.6.9L12 6.2l3.6-1.3A8 8 0 0 0 12 4Zm-3.9 12.1-3.5.3a8 8 0 0 0 4.2 4.1l-.7-4.4Zm7.8 0-.7 4.4a8 8 0 0 0 4.2-4.1l-3.5-.3Z"/></symbol>
+  <symbol id="i-stadium" viewBox="0 0 24 24"><path d="M2 8c0-1.7 4.5-3 10-3s10 1.3 10 3v8c0 1.7-4.5 3-10 3S2 17.7 2 16V8Zm10 1c-4.4 0-7-1-7-1v6s2.6 1 7 1 7-1 7-1V8s-2.6 1-7 1Zm-1 1h2v4h-2v-4Z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="m2 7 5 4 5-7 5 7 5-4-2 12H4L2 7Zm2.4 14h15.2v2H4.4v-2Z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20Zm-1 4v7l5.5 3.3 1-1.7-4.5-2.7V6h-2Z"/></symbol>
+  <symbol id="i-gem" viewBox="0 0 24 24"><path d="M7 3h10l5 6-10 12L2 9l5-6Zm1.2 2L5.4 8.4h4.1L11 5H8.2Zm4.8 0 1.5 3.4h4.1L15.8 5H13Zm-3.3 5.4L12 16.9l2.3-6.5H9.7Zm-4.2 0 4.4 5.3-1.9-5.3H5.5Zm10.5 0-1.9 5.3 4.4-5.3H16Z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 12c5 0 9 2.5 9 5.5V22H3v-2.5C3 16.5 7 14 12 14Z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><path d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-2h3v3h-3v-3Zm5 0h3v3h-3v-3Zm-5 5h3v3h-3v-3Zm5 0h3v3h-3v-3Z"/></symbol>
+</svg>
+
+<canvas id="cv" aria-label="Spielfeld"></canvas>
+<div id="touch" class="touch none"></div>
+
+<div id="gameBtns" hidden>
+  <button class="gbtn" id="btnPause" aria-label="Pause"><svg><use href="#i-pause"/></svg></button>
+  <button class="gbtn" id="btnEmote" aria-label="Emote"><svg><use href="#i-smile"/></svg></button>
+  <button class="gbtn pingbtn" id="netPing" hidden aria-label="Ping"><span class="bars"><i></i><i></i><i></i><i></i></span><b id="netPingMs"></b></button>
+  <div id="emoteBar" hidden></div>
+</div>
+
+<main id="ui">
+  <!-- Start -->
+  <section class="screen home" id="scr-home">
+    <header class="hud-top">
+      <button class="profile" id="btnProfile" aria-label="Profil" data-i18n-attr="aria-label:html.attr.profil">
+        <span class="pf-av" id="pfAv"></span>
+        <span class="pf-txt"><span class="pf-row"><b id="pfName"></b><em class="pf-guest" id="pfGuest" hidden data-i18n="ui.guest">Gast</em></span><span class="pf-xp"><i id="xpFill"></i><em id="xpTxt">0/120</em></span></span>
+        <span class="pf-lvl"><span id="lvlNum">1</span></span>
+      </button>
+      <span class="grow"></span>
+      <button class="chip coin-chip" id="homeCoins" aria-label="Münzen, zum Shop" data-i18n-attr="aria-label:html.attr.muenzenZumShop"><span class="coin"></span><b class="coinNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
+      <button class="chip gem-chip" id="homeGems" aria-label="Juwelen, zum Shop" hidden data-i18n-attr="aria-label:html.attr.juwelenZumShop"><span class="gem"></span><b class="gemNum">0</b><span class="chip-plus"><svg><use href="#i-plus"/></svg></span></button>
+      <button class="shopbtn" id="navShop" aria-label="Shop" data-i18n-attr="aria-label:html.home.shop"><svg><use href="#i-bag"/></svg><span data-i18n="html.home.shop">Shop</span><i class="badge" id="shopBadge" hidden>!</i></button>
+      <button class="chip star-chip" id="homeStars" aria-label="Erfolge" data-i18n-attr="aria-label:html.attr.erfolge"><svg class="ic"><use href="#i-star"/></svg><b id="starNum">0</b></button>
+      <button class="sqbtn" id="btnInstall" hidden aria-label="App installieren" data-i18n-attr="aria-label:install.title"><svg><use href="#i-download"/></svg></button>
+      <button class="sqbtn fsbtn" id="btnFullHome" aria-label="Vollbild" data-i18n-attr="aria-label:html.settings.vollbild" hidden><svg><use href="#i-expand"/></svg></button>
+      <button class="sqbtn" id="btnSettings" aria-label="Einstellungen" data-i18n-attr="aria-label:html.attr.einstellungen"><svg><use href="#i-gear"/></svg></button>
+    </header>
+
+    <nav class="sidenav">
+      <button class="navbtn blue" id="navHeads"><svg><use href="#i-swap"/></svg><span data-i18n="html.home.koepfe">Köpfe</span></button>
+      <button class="navbtn green" id="navTasks"><svg><use href="#i-tasks"/></svg><span data-i18n="html.home.aufgaben">Aufgaben</span><i class="badge" id="taskBadge" hidden></i></button>
+      <button class="navbtn purple" id="navChests"><svg><use href="#i-chest"/></svg><span data-i18n="html.home.kisten">Kisten</span><i class="badge" id="chestBadge" hidden></i></button>
+      <button class="navbtn gold" id="navAch"><svg><use href="#i-trophy"/></svg><span data-i18n="html.home.erfolge">Erfolge</span></button>
+    </nav>
+
+    <div class="stage">
+      <canvas id="showcase" aria-label="Dein Kopf, antippen zum Jonglieren" data-i18n-attr="aria-label:html.attr.deinKopfAntippenZum"></canvas>
+      <div class="plate">
+        <span class="rarity" id="stRarity"></span>
+        <b id="stName"></b>
+        <span class="superline"><svg><use href="#i-bolt"/></svg><span id="stSuper"></span></span>
+      </div>
+      <button class="nextup" id="hsNext" hidden><span class="nu-av" id="nuAv"></span><span class="nu-txt"><small data-i18n="html.home.naechsterKopf">Nächster Kopf</small><b id="nuName"></b><span class="nu-bar"><i id="nuFill"></i></span></span><span class="nu-num" id="nuNum">0/200</span></button>
+    </div>
+
+    <div class="playzone">
+      <div class="homeside">
+        <button class="hs-daily" id="hsDaily">
+          <span class="hd-ic"><svg><use href="#i-cal"/></svg></span>
+          <span class="hd-txt"><small data-i18n="html.home.tagesChallenge">Tages-Challenge</small><b id="hdOpp"></b><em id="hdRules"></em></span>
+          <span class="hd-av" id="hdAv"></span>
+          <span class="hd-rw" id="hdRw"><span class="coin"></span>+150</span>
+        </button>
+        <button class="hs-tasks" id="hsTasks">
+          <span class="ht-head"><svg><use href="#i-tasks"/></svg><b data-i18n="html.home.heute">Heute</b><span class="grow"></span><em id="htCount">0/3</em></span>
+          <span class="ht-list" id="htList"></span>
+        </button>
+      </div>
+      <button class="modecard" id="modeCard">
+        <span class="mc-ic" id="mcIcon"><svg><use href="#i-play"/></svg></span>
+        <span class="mc-txt"><small id="mcSide"><svg><use href="#i-play"/></svg><span data-i18n="html.home.modus">Modus</span></small><b id="mcTitle"></b><em id="mcSub"></em></span>
+        <span class="mc-chev" data-i18n="html.home.wechseln">Wechseln</span>
+      </button>
+      <button class="btn-play" id="btnPlay"><span data-i18n="html.home.spielen">Spielen</span></button>
+      <p class="legalnote"><span data-i18n="legal.acceptPlay">Mit „Spielen“ akzeptierst du die</span> <a href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legal.terms">Nutzungsbedingungen</a>. <a href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legal.privacy">Datenschutz</a></p>
+    </div>
+  </section>
+
+  <!-- Modus-Auswahl -->
+  <section class="screen sheet" id="scr-modes" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 class="mtitle" data-i18n="html.modes.spielmodus">Spielmodus</h2>
+      <div class="mtabs" id="modeTabs" role="tablist">
+        <button role="tab" data-tab="on" aria-selected="false"><svg><use href="#i-globe"/></svg><span data-i18n="modes.side.on">Online</span><span class="cnt" hidden></span></button>
+        <button role="tab" data-tab="off" aria-selected="false"><svg><use href="#i-play"/></svg><span data-i18n="modes.side.off">Offline</span></button>
+      </div></header>
+    <div class="modes" id="modeGrid"></div>
+  </section>
+
+  <!-- Kopf-Auswahl -->
+  <section class="screen" id="scr-select" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="selTitle"></h2><span class="grow"></span><button class="btn small purple" id="btnSelLocker"><svg><use href="#i-star"/></svg><span data-i18n="locker.title">Ausrüstung</span></button><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
+    <div class="selgrid">
+      <div class="cardgrid" id="charGrid"></div>
+      <aside class="detail">
+        <div class="det-top" id="detTop"><span class="rarity" id="ciRarity"></span><div class="bigav" id="bigAv"></div>
+          <div class="superbox"><svg><use href="#i-bolt"/></svg><div><b id="ciSuper"></b><p id="ciDesc"></p></div></div></div>
+        <h3 id="ciName"></h3>
+        <div class="stats" id="ciStats"></div>
+        <div class="headlv" id="ciLevel" hidden></div>
+        <div class="mastery" id="ciMastery"></div>
+        <button class="btn green" id="btnSelOk"></button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Spiel einstellen -->
+  <section class="screen" id="scr-setup" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="setupTitle"></h2></header>
+    <div class="setupgrid">
+      <div class="panel">
+        <h4 data-i18n="html.setup.arena">Arena</h4>
+        <div class="arenas" id="arenaList"></div>
+        <div class="obsopt"><h4 data-i18n="html.setup.hindernisse">Hindernisse</h4><div class="seg wrap" id="segObs"></div><div class="obsrow"><div class="obsprev" id="obsPrev"></div><p class="hint" id="obsDesc"></p></div></div>
+      </div>
+      <div class="panel opts">
+        <div class="opt" id="optDiff"><h4 data-i18n="html.setup.gegner">Gegner</h4><div class="seg" id="segDiff"></div></div>
+        <div class="opt" id="optRules"><h4 data-i18n="html.setup.regeln">Regeln</h4><button class="rulesbtn" id="btnRules"><svg><use href="#i-sliders"/></svg><span id="rulesSum"></span><em data-i18n="html.setup.anpassen">Anpassen</em></button></div>
+        <button class="btn green big" id="btnKickoff" data-i18n="html.setup.anpfiff">Anpfiff</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Regeln -->
+  <section class="screen sheet" id="scr-rules" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.rules.regeln">Regeln</h2><span class="grow"></span><button class="btn small ghost" id="btnRulesReset" data-i18n="html.rules.standard">Standard</button></header>
+    <div class="rulewrap">
+      <div class="presets" id="rulePresets"></div>
+      <div class="rtabs" role="tablist"><button id="rtCore" class="on" role="tab"></button><button id="btnRulesMore" role="tab"><span data-i18n="html.rules.mehr">Mehr</span><em id="moreCount" hidden></em></button></div>
+      <div class="rulelist" id="ruleList"></div>
+      <div class="rulelist" id="ruleMore" hidden></div>
+    </div>
+    <div class="sheetfoot"><span class="rulesum" id="rulesNow"></span><button class="btn green big" id="btnRulesDone" data-i18n="html.rules.fertig">Fertig</button></div>
+  </section>
+
+  <!-- Cup / Endlos -->
+  <section class="screen" id="scr-run" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="runTitle"></h2></header>
+    <div class="runwrap">
+      <div class="bracket" id="bracket"></div>
+      <p class="runnote" id="runNote"></p>
+      <button class="btn yellow big" id="btnRunNext"></button>
+    </div>
+  </section>
+
+  <!-- Online -->
+  <section class="screen" id="scr-online" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.online.online">Online</h2></header>
+    <div class="onlinegrid">
+      <div class="panel">
+        <h4 data-i18n="html.online.einladen">Freund einladen</h4>
+        <button class="btn purple big" id="btnHost"><svg><use href="#i-plus"/></svg><span data-i18n="html.online.raumErstellen">Raum erstellen</span></button>
+        <p class="hint" data-i18n="html.online.duBekommstEinenLink">Du bekommst einen Link, den du deinem Kumpel schickst.</p>
+      </div>
+      <div class="panel">
+        <h4 data-i18n="html.online.codeVonDeinemKumpel">Code von deinem Kumpel</h4>
+        <div class="codebox"><input id="codeIn" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Raumcode" data-i18n-attr="aria-label:html.attr.raumcode"></div>
+        <button class="btn yellow big" id="btnJoin" data-i18n="html.online.beitreten">Beitreten</button>
+        <p class="hint" id="netNote"></p>
+      </div>
+    </div>
+        <p class="legalnote online-legal"><span data-i18n="legal.acceptOnline">Mit dem Online-Spiel akzeptierst du die</span> <a href="legal/terms.html" target="_blank" rel="noopener" data-i18n="legal.terms">Nutzungsbedingungen</a>. <a href="legal/privacy.html" target="_blank" rel="noopener" data-i18n="legal.privacy">Datenschutz</a></p>
+  </section>
+
+  <!-- Gegnersuche -->
+  <section class="screen" id="scr-search" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 id="srTitle"></h2></header>
+    <div class="searchwrap">
+      <div class="sr-me"><div class="sr-av" id="srAv"></div><b id="srMe"></b></div>
+      <div class="sr-mid"><div class="sr-ring"><span id="srTime">0:00</span></div><b id="srState"></b><small id="srOpp"></small><button class="linkbtn srcpu" id="srCpu" hidden data-i18n="act.playCpu">Stattdessen gegen den Computer spielen</button></div>
+      <div class="sr-me sr-them" id="srThem" hidden><div class="sr-av" id="srOppAv"></div><b id="srOppName"></b><small id="srOppInfo"></small></div>
+      <button class="btn ghost" id="srCancel" data-i18n="html.search.abbrechen">Abbrechen</button>
+    </div>
+  </section>
+
+  <!-- Lobby -->
+  <section class="screen" id="scr-lobby" hidden>
+    <header class="bar"><button class="iconback" id="btnLobbyLeave" aria-label="Verlassen" data-i18n-attr="aria-label:html.attr.verlassen"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.lobby.lobby">Lobby</h2></header>
+    <div class="lobbygrid">
+      <div class="panel invite" id="inviteBox">
+        <h4 data-i18n="html.lobby.raumcode">Raumcode</h4>
+        <div class="bigcode" id="lobbyCode">····</div>
+        <div class="qr" id="qrBox"></div>
+        <div class="row">
+          <button class="btn purple" id="btnShare"><svg><use href="#i-share"/></svg><span data-i18n="html.lobby.linkTeilen">Link teilen</span></button>
+          <button class="btn ghost" id="btnCopyLink"><svg><use href="#i-copy"/></svg><span data-i18n="html.lobby.kopieren">Kopieren</span></button>
+        </div>
+        <div class="linkline" id="lobbyLink"></div>
+      </div>
+      <div class="panel versus">
+        <div class="vsrow">
+          <div class="vsp p1"><div class="vsav" id="vsAv0"></div><b id="vsName0"></b><small id="vsCh0"></small></div>
+          <div class="vs" data-i18n="html.lobby.vs">VS</div>
+          <div class="vsp p2"><div class="vsav" id="vsAv1"><span class="wait">?</span></div><b id="vsName1"></b><small id="vsCh1"></small></div>
+        </div>
+        <p class="hint center" id="lobbyNote"></p>
+        <div class="lobbyopts" id="lobbyOpts">
+          <div class="opt"><h4 data-i18n="html.lobby.arena">Arena</h4><div class="seg wrap" id="segLobbyArena"></div></div>
+          <div class="opt"><h4 data-i18n="html.lobby.hindernisse">Hindernisse</h4><div class="seg wrap" id="segLobbyObs"></div></div>
+          <div class="opt"><h4 data-i18n="html.lobby.regeln">Regeln</h4><button class="rulesbtn" id="btnLobbyRules"><svg><use href="#i-sliders"/></svg><span id="lobbyRulesSum"></span><em data-i18n="html.lobby.anpassen">Anpassen</em></button></div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="btnLobbyHead"><svg><use href="#i-swap"/></svg><span data-i18n="html.lobby.kopf">Kopf</span></button>
+          <button class="btn green big" id="btnLobbyStart" disabled data-i18n="html.lobby.anpfiff">Anpfiff</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shop -->
+  <section class="screen" id="scr-shop" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.shop.shop">Shop</h2><span class="grow"></span><span class="chip gem-chip static gemOnly" hidden><span class="gem"></span><b class="gemNum">0</b></span><span class="chip coin-chip static"><span class="coin"></span><b class="coinNum">0</b></span></header>
+    <div class="shoptop">
+      <div class="tabs" id="shopTabs"><button data-tab="chars" class="on" data-i18n="html.shop.koepfe">Köpfe</button><button data-tab="balls" data-i18n="html.shop.baelle">Bälle</button><button data-tab="arenas" data-i18n="html.shop.arenen">Arenen</button><button data-tab="shoes" data-i18n="shop.tabShoes">Schuhe</button><button data-tab="cos" data-i18n="shop.tabCos">Kosmetik</button><button data-tab="gems" class="gemtab payOnly" hidden><span class="gem"></span><span data-i18n="html.shop.juwelen">Juwelen</span></button></div>
+      <div class="deal" id="dealBox"></div>
+    </div>
+    <div class="shopgrid" id="shopGrid"></div>
+  </section>
+
+  <!-- Karriere -->
+  <section class="screen" id="scr-career" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="mode.career.name">Karriere</h2><span class="grow"></span><span class="chip static"><svg class="ic"><use href="#i-star"/></svg><b id="careerStars">0</b></span></header>
+    <div class="runwrap">
+      <div class="tabs" id="careerTabs"></div>
+      <div class="bracket cgrid" id="careerGrid"></div>
+      <p class="runnote" id="careerNote"></p>
+      <button class="btn yellow big" id="btnCareerGo"></button>
+    </div>
+  </section>
+
+  <!-- Aufgaben -->
+  <section class="screen" id="scr-tasks" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.tasks.aufgaben">Aufgaben</h2><span class="grow"></span><button class="btn small purple" id="btnPass" hidden><svg><use href="#i-crown"/></svg><span data-i18n="html.tasks.saisonPass">Saison-Pass</span><i class="badge" id="passBadge" hidden></i></button></header>
+    <div class="taskwrap">
+      <div class="challenge" id="challengeCard"></div>
+      <div class="tasktabs tabs" id="taskTabs"><button data-tab="day" class="on" data-i18n="html.tasks.heute">Heute</button><button data-tab="week" data-i18n="week.title">Diese Woche</button></div>
+      <div class="panel" id="dayPanel"><h4 data-i18n="html.tasks.heute">Heute</h4><div class="tasklist" id="taskList"></div><p class="hint" data-i18n="html.tasks.jedenTagGibtS">Jeden Tag gibt's drei neue.</p></div>
+      <div class="panel" id="weekPanel"><h4 data-i18n="week.title">Diese Woche</h4><div class="tasklist" id="weekList"></div><div class="weekchest" id="weekChest"></div></div>
+    </div>
+  </section>
+
+  <!-- Bestenliste -->
+  <section class="screen" id="scr-board" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.board.bestenliste">Bestenliste</h2></header>
+    <div class="tabs" id="boardTabs"><button data-board="endless" class="on" data-i18n="html.board.endlos">Endlos</button><button data-board="ranked" data-i18n="html.board.ranked">Ranked</button></div>
+    <div class="boardwrap"><ol class="board" id="boardList"></ol><div class="boardme" id="boardMe"></div></div>
+  </section>
+
+  <!-- Saison-Pass -->
+  <section class="screen" id="scr-pass" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.pass.saisonPass">Saison-Pass</h2><span class="grow"></span><span class="chip gem-chip static"><span class="gem"></span><b class="gemNum">0</b></span></header>
+    <div class="passtop" id="passTop"></div>
+    <div class="passtrack" id="passTrack"></div>
+  </section>
+
+  <!-- Ausrüstung -->
+  <section class="screen" id="scr-locker" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="locker.title">Ausrüstung</h2><span class="grow"></span><span class="chip static shard-chip" data-i18n-attr="title:chest.shardsTitle"><svg class="ic"><use href="#i-shard"/></svg><b id="lockerShards">0</b></span></header>
+    <div class="lockerwrap">
+      <div class="lockerside"><div class="lockerprev" id="lockerPreview"></div><small class="titletag" id="lockerTitle"></small><div class="eslots" id="lockerSlots" hidden></div></div>
+      <div class="lockermain"><div class="tabs" id="lockerTabs"></div><p class="hint" id="lockerHint"></p><div class="lockergrid" id="lockerGrid"></div></div>
+    </div>
+  </section>
+
+  <!-- Kisten -->
+  <section class="screen" id="scr-chests" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.chests.title">Kisten</h2><span class="grow"></span><button class="btn small purple" id="btnLocker"><svg><use href="#i-star"/></svg><span data-i18n="locker.title">Ausrüstung</span></button><button class="btn small ghost" id="btnChestOdds" data-i18n="chest.odds">Chancen</button><span class="chip static shard-chip" data-i18n-attr="title:chest.shardsTitle"><svg class="ic"><use href="#i-shard"/></svg><b id="chestShards">0</b></span></header>
+    <div class="chestwrap">
+      <div class="chestgrid" id="chestGrid"></div>
+      <p class="runnote" id="chestHint"></p>
+      <p class="hint center" id="chestPity"></p>
+    </div>
+  </section>
+
+  <!-- Erfolge -->
+  <section class="screen" id="scr-ach" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.ach.erfolge">Erfolge</h2><span class="grow"></span><button class="btn small purple" id="btnBoard" hidden><svg><use href="#i-trophy"/></svg><span data-i18n="html.ach.bestenliste">Bestenliste</span></button><span class="chip static"><svg class="ic"><use href="#i-star"/></svg><b id="achSum">0</b></span></header>
+    <div class="profilebox" id="profileBox"></div>
+    <div class="achlist" id="achList"></div>
+  </section>
+
+  <!-- Profil (Tipp auf den Namen oben links): Spielerkarte, Statistik, Konto -->
+  <section class="screen" id="scr-profile" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="prof.title">Profil</h2></header>
+    <div class="profgrid">
+      <div class="profmain">
+        <div class="pcard">
+          <div class="pc-av" id="profAv"></div>
+          <div class="pc-main">
+            <div class="pc-name" id="pcNameBox"></div>
+            <span class="titletag" id="pcTitle"></span>
+            <div class="pc-lvl"><span class="pf-lvl"><span id="profLvl">1</span></span><span class="pc-xp"><i id="profXp"></i></span><small id="profXpTxt"></small></div>
+          </div>
+        </div>
+        <div class="profilebox" id="profStats"></div>
+        <div class="pc-links"><button class="btn yellow" id="btnProfAch"><svg><use href="#i-trophy"/></svg><span data-i18n="html.home.erfolge">Erfolge</span></button><button class="btn purple" id="pcToLocker"><svg><use href="#i-star"/></svg><span data-i18n="locker.title">Ausrüstung</span></button></div>
+      </div>
+      <div class="profside">
+        <div class="panel account" id="accountPanel" hidden>
+          <h4 data-i18n="html.settings.konto">Konto</h4>
+          <div class="accbody" id="accBody"></div>
+        </div>
+        <div class="panel" id="localPanel" hidden>
+          <h4 data-i18n="prof.saveTitle">Spielstand</h4>
+          <p class="hint" data-i18n="prof.localOnly">Dein Spielstand ist nur auf diesem Gerät gespeichert.</p>
+        </div>
+        <div class="panel">
+          <h4 data-i18n="prof.dataTitle">Daten</h4>
+          <p class="hint" data-i18n="prof.resetHint">Setzt Münzen, Köpfe, Erfolge und Statistik auf diesem Gerät zurück.</p>
+          <button class="btn small ghost danger" id="btnReset" data-i18n="html.settings.fortschrittLoeschen">Fortschritt löschen</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Einstellungen -->
+  <section class="screen" id="scr-settings" hidden>
+    <header class="bar"><button class="iconback" data-back aria-label="Zurück" data-i18n-attr="aria-label:html.attr.zurueck"><svg><use href="#i-back"/></svg></button><h2 data-i18n="html.settings.einstellungen">Einstellungen</h2></header>
+    <div class="tabs settabs" id="setTabs"><button data-tab="general" class="on" data-i18n="set.tabGeneral">Allgemein</button><button data-tab="controls" data-i18n="html.settings.steuerung">Steuerung</button><button data-tab="info" data-i18n="set.tabInfo">Info</button></div>
+    <div class="setpane" data-pane="general">
+      <div class="panel">
+        <div class="setrow"><svg><use href="#i-globe"/></svg><span data-i18n="set.language">Sprache</span><div class="seg" id="segLang"></div></div>
+        <div class="setrow"><svg><use href="#i-sound"/></svg><span data-i18n="html.settings.soundeffekte">Soundeffekte</span><button class="toggle" id="tglSfx" aria-label="Soundeffekte" data-i18n-attr="aria-label:html.attr.soundeffekte"></button></div>
+        <div class="setrow"><svg><use href="#i-music"/></svg><span data-i18n="html.settings.musikImMenue">Musik im Menü</span><button class="toggle" id="tglMusic" aria-label="Musik" data-i18n-attr="aria-label:html.attr.musik"></button></div>
+        <div class="setrow"><svg><use href="#i-vib"/></svg><span data-i18n="html.settings.vibration">Vibration</span><button class="toggle" id="tglVib" aria-label="Vibration" data-i18n-attr="aria-label:html.attr.vibration"></button></div>
+        <div class="setrow"><svg><use href="#i-stadium"/></svg><span data-i18n="html.settings.grafik">Grafik</span><div class="seg" id="segQual"></div></div>
+        <div class="setrow" id="rowFull"><svg><use href="#i-expand"/></svg><span data-i18n="html.settings.vollbild">Vollbild</span><button class="btn small ghost" id="btnFull" data-i18n="html.settings.umschalten">Umschalten</button></div>
+        <div class="setrow" id="rowInstall" hidden><svg><use href="#i-download"/></svg><span><span data-i18n="install.title">App installieren</span><small class="sethint" id="installFsHint" hidden data-i18n="install.fsHint">Auf dem iPhone geht Vollbild nur als App.</small></span><button class="btn small yellow" id="btnInstall2" data-i18n="install.btn">Installieren</button></div>
+      </div>
+    </div>
+    <div class="setpane" data-pane="controls" hidden>
+      <div class="panel">
+        <div class="seg" id="segCtl"></div>
+        <table class="keys" id="ctlTable"></table>
+        <p class="hint" data-i18n="html.settings.springenKurzTippenHalb">Springen kurz tippen: halb hoch, halten: voll. Runter am Boden: Grätsche, in der Luft: Arschbombe, je höher, desto härter. Schuss: Tippen schwingt das Bein, die Kraft kommt vom Moment des Treffers. Ruhender Ball = Bogen, Ball in Kopfhöhe = flach, in der Luft = Volley. Emotes mit 1 bis 4.</p>
+      </div>
+    </div>
+    <div class="setpane" data-pane="info" hidden>
+      <div class="panel">
+        <h4 data-i18n="set.legal">Rechtliches</h4>
+        <a class="setlink" href="legal/privacy.html" target="_blank" rel="noopener"><span data-i18n="legal.privacy">Datenschutz</span><svg><use href="#i-back"/></svg></a>
+        <a class="setlink" href="legal/terms.html" target="_blank" rel="noopener"><span data-i18n="legal.terms">Nutzungsbedingungen</span><svg><use href="#i-back"/></svg></a>
+        <a class="setlink" href="legal/imprint.html" target="_blank" rel="noopener"><span data-i18n="legal.imprint">Impressum</span><svg><use href="#i-back"/></svg></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ergebnis -->
+  <section class="screen overlay" id="scr-end" hidden>
+    <div class="endcard">
+      <div class="ribbon" id="endTitle"></div>
+      <div class="endscore">
+        <div class="es p1"><div id="endAv0"></div><b id="endN0"></b></div>
+        <div class="es-num"><span id="endS0">0</span><i>:</i><span id="endS1">0</span></div>
+        <div class="es p2"><div id="endAv1"></div><b id="endN1"></b></div>
+      </div>
+      <div class="endstats" id="endStats"></div>
+      <div class="rewards" id="endRewards"></div>
+      <p class="hint center" id="endNote"></p>
+      <div class="row">
+        <button class="btn ghost" id="btnEndMenu"></button>
+        <button class="btn ghost" id="btnEndShare"><svg><use href="#i-share"/></svg><span data-i18n="html.end.teilen">Teilen</span></button>
+        <button class="btn yellow big" id="btnEndAgain"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pause -->
+  <section class="screen overlay" id="scr-pause" hidden>
+    <div class="pausecard">
+      <div class="ribbon blue" data-i18n="html.pause.pause">Pause</div>
+      <button class="btn green big" id="btnResume"><svg><use href="#i-play"/></svg><span data-i18n="html.pause.weiter">Weiter</span></button>
+      <button class="btn ghost fsbtn" id="btnFullPause" hidden><svg><use href="#i-expand"/></svg><span data-i18n="html.settings.vollbild">Vollbild</span></button>
+      <button class="btn ghost" id="btnRestart" data-i18n="html.pause.neuStarten">Neu starten</button>
+      <button class="btn ghost danger" id="btnQuit"></button>
+    </div>
+  </section>
+</main>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+<!-- Warten auf die Gegenseite (Verbindung weg oder App neu gestartet) -->
+<div id="netWaitShade" hidden></div>
+<div id="netWaitBox" hidden><span class="nw-spin"></span><b id="netWaitTxt"></b><button class="btn small ghost" id="netWaitLeave" data-i18n="net.leave">Verlassen</button></div>
+<div id="chestOpen" hidden>
+  <div class="co-stage" id="coStage"></div>
+  <div class="co-cards" id="coCards"></div>
+  <div class="co-btns"><button class="btn yellow big" id="coNext" hidden data-i18n="chest.openNext">Nächste öffnen</button><button class="btn ghost" id="coDone" hidden data-i18n="ui.next">Weiter</button></div>
+</div>
+<div id="modal" hidden role="dialog" aria-modal="true"><div class="modalcard" id="modalCard"></div></div>
+<div id="rotate" hidden><div class="phone"></div><b data-i18n="html.pause.handyDrehen">Handy drehen</b><span data-i18n="html.pause.querSpieltEsSich">Quer spielt es sich viel besser.</span></div>
+<div id="loading"><img class="ld-word" src="icons/wordmark.webp" width="600" height="200" alt="Headstars" data-i18n-attr="alt:brand.name"><div class="ld-play"><svg class="ld-ball" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="ldc"><circle cx="50" cy="50" r="44"/></clipPath></defs><circle cx="50" cy="50" r="44" fill="#fff"/><g fill="#15112e" clip-path="url(#ldc)"><polygon points="50.0,35.0 64.3,45.4 58.8,62.1 41.2,62.1 35.7,45.4"/><polygon points="50.0,25.0 37.6,16.0 42.4,1.5 57.6,1.5 62.4,16.0"/><polygon points="73.8,42.3 78.5,27.7 93.8,27.7 98.5,42.3 86.1,51.3"/><polygon points="64.7,70.2 80.0,70.2 84.7,84.8 72.3,93.7 60.0,84.8"/><polygon points="35.3,70.2 40.0,84.8 27.7,93.7 15.3,84.8 20.0,70.2"/><polygon points="26.2,42.3 13.9,51.3 1.5,42.3 6.2,27.7 21.5,27.7"/></g><circle cx="50" cy="50" r="44" fill="none" stroke="#15112e" stroke-width="7"/><path d="M28 30 q8 -10 20 -12" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/></svg><i class="ld-shadow"></i></div></div>
+
+<script type="module" src="js/main.js?v=24"></script>
+</body>
+</html>

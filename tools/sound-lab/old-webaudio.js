@@ -1,0 +1,201 @@
+// Alter Klang-Motor (Stand vor der Überarbeitung), nur zum Vergleich im Sound-Lab. Nicht im Spiel benutzt.
+/* eslint-disable no-unused-vars -- eingefrorene Kopie, das Laden von Dateien ist hier bewusst aus */
+// Sounds: werden live erzeugt (keine Dateien nötig). Liegen echte Dateien in audio/sfx (Liste: audio/sfx/manifest.json,
+// node tools/sound-manifest.mjs), spielt das Spiel stattdessen diese.
+let ac = null, master, sfxBus, musBus, crowdGain, crowdFilter, noiseBuf, crowdNoise = null, musSrc = null;
+let sfxOn = true, musOn = true, musicPlaying = false, musTimer = null, nextNote = 0, stepIdx = 0, musicMode = "menu";
+
+export function unlock() {
+  if (ac) { if (ac.state === "suspended") ac.resume(); return; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return; }
+  master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination);
+  const comp = ac.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(master);
+  sfxBus = ac.createGain(); sfxBus.gain.value = sfxOn ? 1 : 0; sfxBus.connect(comp);
+  musBus = ac.createGain(); musBus.gain.value = musOn ? 0.32 : 0; musBus.connect(comp);
+  noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+  const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  // Publikums-Rauschen (Dauerschleife)
+  const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true; crowdNoise = n;
+  crowdFilter = ac.createBiquadFilter(); crowdFilter.type = "bandpass"; crowdFilter.frequency.value = 700; crowdFilter.Q.value = 0.6;
+  crowdGain = ac.createGain(); crowdGain.gain.value = 0;
+  n.connect(crowdFilter); crowdFilter.connect(crowdGain); crowdGain.connect(sfxBus); n.start();
+  if (musicPlaying) startLoop();
+  // (im Lab ohne Dateien: so hört man den alten erzeugten Klang)
+}
+
+// ---------- Echte Sound-Dateien ----------
+// manifest.json: { "kick": ["kick_1", "kick_2"], "goal": ["goal"] }. Je Name eine oder mehrere Varianten; das Spiel nimmt
+// .ogg oder (Safari ohne Ogg) .m4a. Fehlt eine Datei oder lässt sie sich nicht lesen, bleibt der erzeugte Sound.
+const files = {};
+const decode = b => new Promise(res => { ac.decodeAudioData(b, res, () => res(null)); });
+async function loadFiles() {
+  try {
+    const m = await (await fetch("audio/sfx/manifest.json")).json();
+    const a = document.createElement("audio"), ext = a.canPlayType('audio/ogg; codecs="opus"') || a.canPlayType('audio/ogg; codecs="vorbis"') ? ".ogg" : ".m4a";
+    await Promise.all(Object.entries(m).map(async ([name, list]) => {
+      const bufs = await Promise.all(list.map(f => fetch(`audio/sfx/${f}${ext}`).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => b && decode(b)).catch(() => null)));
+      if (bufs.some(Boolean)) files[name] = bufs.filter(Boolean);
+    }));
+    if (files.crowd && crowdNoise) { crowdNoise.stop(); crowdNoise = null; playFile("crowd", 1, true, crowdGain); }
+    if (files["music-menu"] && musicPlaying) { clearInterval(musTimer); musTimer = null; startLoop(); }
+  } catch (_) { /* keine Liste: alles bleibt erzeugt */ }
+}
+/** Spielt eine Datei (zufällige Variante, Tonhöhe leicht gestreut, v = Stärke wie beim erzeugten Sound) */
+function playFile(name, v = 1, loop = false, bus = sfxBus) {
+  const list = files[name]; if (!list) return null;
+  const src = ac.createBufferSource(), g = ac.createGain(), k = Math.min(1.5, Math.max(0.2, v ?? 1));
+  src.buffer = list[Math.floor(Math.random() * list.length)]; src.loop = loop;
+  if (!loop) src.playbackRate.value = 0.95 + Math.random() * 0.1 + (k - 1) * 0.06;
+  g.gain.value = loop ? 1 : Math.min(1.4, 0.55 + 0.45 * k);
+  src.connect(g); g.connect(bus); src.start();
+  return src;
+}
+export function setSfx(on) { sfxOn = on; if (sfxBus) sfxBus.gain.value = on ? 1 : 0; }
+export function setMusic(on) { musOn = on; if (musBus) musBus.gain.setTargetAtTime(on ? 0.32 : 0, ac.currentTime, 0.1); }
+
+function env(g, t, a, peak, dec) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); }
+function osc(type, f0, f1, dur, vol, t = 0, bus = sfxBus) {
+  if (!ac) return; const s = ac.currentTime + t, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, s); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), s + dur);
+  env(g, s, 0.005, vol, dur); o.connect(g); g.connect(bus); o.start(s); o.stop(s + dur + 0.05);
+}
+function noise(dur, vol, type, freq, q, t, f1, bus) {
+  q ??= 1; t ??= 0; bus ??= sfxBus;
+  if (!ac) return; const s = ac.currentTime + t, n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  n.buffer = noiseBuf; f.type = type; f.frequency.setValueAtTime(freq, s); if (f1) f.frequency.exponentialRampToValueAtTime(f1, s + dur); f.Q.value = q;
+  env(g, s, 0.004, vol, dur); n.connect(f); f.connect(g); g.connect(bus); n.start(s, Math.random()); n.stop(s + dur + 0.05);
+}
+
+export function sfx(kind, v = 1) {
+  if (!ac) return;
+  if (files[kind]) { playFile(kind, v); if (kind === "goal") roar(1.2); return; }
+  switch (kind) {
+    case "kick": osc("sine", 140 * Math.min(1.3, v), 42, 0.18, 0.75 * Math.min(1.4, v)); noise(0.07, 0.45, "lowpass", 900, 1, 0, 200); noise(0.04, 0.3, "highpass", 2500); if (v > 1.4) { noise(0.3, 0.32, "bandpass", 400, 1, 0, 3000); osc("square", 90, 40, 0.12, 0.12); } break;
+    case "head": osc("triangle", 340 * Math.min(1.2, v), 160, 0.12, 0.35); noise(0.03, 0.18, "bandpass", 1500, 2); if (v > 1.3) osc("sine", 120, 50, 0.15, 0.4); break;
+    case "bump": osc("sine", 180, 70, 0.12, 0.35 * Math.min(1.5, v)); noise(0.06, 0.25, "lowpass", 700); break;
+    case "pop": osc("sine", 300, 900, 0.12, 0.2); break;
+    case "bounce": osc("sine", 90, 50, 0.1, Math.min(0.4, 0.1 + v * 0.0004)); break;
+    case "post": osc("sine", 920, 900, 0.5, 0.25); osc("sine", 1380, 1370, 0.35, 0.15); osc("square", 230, 220, 0.08, 0.1); break;
+    case "jump": osc("square", 260, 520, 0.08, 0.05); break;
+    case "land": osc("sine", 110, 60, 0.08, 0.2); break;
+    case "hammer": osc("sine", 170, 38, 0.32, 0.85); osc("square", 90, 35, 0.16, 0.22); noise(0.09, 0.6, "lowpass", 1400, 1, 0, 300); noise(0.45, 0.35, "bandpass", 500, 0.7, 0.01, 3500); noise(0.05, 0.4, "highpass", 3000); break;
+    case "chip": osc("sine", 220, 90, 0.12, 0.4); osc("triangle", 500, 900, 0.1, 0.12, 0.01); noise(0.05, 0.25, "highpass", 2500); break;
+    case "slide": noise(0.26, 0.22, "bandpass", 500, 0.8, 0, 1600); noise(0.18, 0.12, "highpass", 3000); break;
+    case "bomb": noise(0.22, 0.14, "bandpass", 2200, 2, 0, 500); break;
+    case "pound": osc("sine", 120, 38, 0.22, 0.45 * Math.min(1.3, 0.6 + v)); noise(0.16, 0.35, "lowpass", 500, 1, 0, 120); break;
+    case "squash": osc("sine", 90, 40, 0.2, 0.55); osc("triangle", 160, 620, 0.16, 0.28 * (0.6 + v), 0.03); noise(0.08, 0.35, "lowpass", 1200); break;
+    case "swing": noise(0.1, 0.12, "bandpass", 900, 1.5, 0, 2400); break;
+    case "whistle": [0, 0.2, 0.42].forEach((t, i) => { const d = i === 2 ? 0.55 : 0.13; whistleNote(t, d); }); break;
+    case "whistle1": whistleNote(0, 0.35); break;
+    case "goal": {
+      osc("sawtooth", 220, 220, 1.2, 0.18); osc("sawtooth", 277, 277, 1.2, 0.14); osc("sawtooth", 330, 330, 1.2, 0.14);
+      osc("sawtooth", 440, 440, 0.9, 0.08, 0.05);
+      noise(2.4, 0.5, "bandpass", 900, 0.5, 0, 1400);
+      roar(1.2); break;
+    }
+    case "full": [0, 0.07, 0.14].forEach((t, i) => osc("triangle", 660 * Math.pow(1.26, i), 660 * Math.pow(1.26, i), 0.12, 0.18, t)); break;
+    case "arm": osc("sawtooth", 200, 900, 0.3, 0.12); break;
+    case "super": noise(0.6, 0.45, "bandpass", 300, 0.8, 0, 4000); osc("sawtooth", 110, 55, 0.5, 0.25); osc("square", 880, 1760, 0.25, 0.06); break;
+    case "launch": noise(0.4, 0.35, "highpass", 800, 0.7, 0, 5000); break;
+    case "zap": noise(0.06, 0.3, "highpass", 3000); osc("square", 1200, 300, 0.06, 0.06); break;
+    case "pu": [0, 0.06, 0.12, 0.18].forEach((t, i) => osc("square", 523 * Math.pow(1.335, i), 523 * Math.pow(1.335, i), 0.09, 0.08, t)); break;
+    case "puSpawn": osc("sine", 880, 1320, 0.15, 0.08); break;
+    case "freeze": osc("triangle", 1800, 900, 0.3, 0.15); noise(0.3, 0.2, "highpass", 5000); break;
+    case "stomp": osc("square", 300, 80, 0.15, 0.2); osc("triangle", 900, 1400, 0.1, 0.1, 0.05); break;
+    case "burn": noise(0.4, 0.4, "lowpass", 1500, 1, 0, 200); break;
+    case "quake": osc("sine", 70, 30, 0.6, 0.8); noise(0.6, 0.5, "lowpass", 400, 1, 0, 80); break;
+    case "tick": osc("square", 1400, 1400, 0.03, 0.05); break;
+    case "click": osc("triangle", 700, 500, 0.05, 0.12); break;
+    case "coin": osc("square", 988, 988, 0.06, 0.07); osc("square", 1319, 1319, 0.2, 0.07, 0.06); break;
+    case "levelup": [0, 0.1, 0.2, 0.3, 0.45].forEach((t, i) => osc("square", [523, 659, 784, 1047, 1319][i], [523, 659, 784, 1047, 1319][i], 0.16, 0.08, t)); break;
+    case "count": osc("square", 660, 660, 0.1, 0.1); break;
+    case "go": osc("square", 1320, 1320, 0.25, 0.12); break;
+    case "emote": osc("sine", 600, 900, 0.1, 0.12); break;
+    case "lose": [0, 0.18, 0.36].forEach((t, i) => osc("triangle", [392, 349, 262][i], [392, 349, 262][i], 0.3, 0.12, t)); break;
+    case "win": [0, 0.12, 0.24, 0.36].forEach((t, i) => osc("square", [523, 659, 784, 1047][i], [523, 659, 784, 1047][i], 0.22, 0.09, t)); break;
+    case "wallhit": osc("square", 400, 200, 0.12, 0.12); break;
+    case "bumper": osc("triangle", 260, 780, 0.14, 0.3 * Math.min(1.3, 0.6 + v)); osc("sine", 520, 1400, 0.1, 0.12, 0.03); break;
+    case "ohh": noise(1.1, 0.25, "bandpass", 500, 0.8, 0, 380); break;
+    default:
+      // Meisterschafts-Torexplosion (gfx-m-<kopf>): Fanfare in C, je Kopf etwas anders gestimmt, bis echte Sounds kommen
+      if (kind.startsWith("gfx-m-")) {
+        const h = [...kind].reduce((x, ch) => x + ch.charCodeAt(0), 0) % 4, root = [523, 587, 659, 784][h];
+        [1, 1.25, 1.5, 2].forEach((m, i) => { osc("triangle", root * m, root * m, 0.3, 0.09, i * 0.08); osc("square", root * m, root * m, 0.12, 0.04, i * 0.08); });
+        noise(0.8, 0.18, "highpass", 3000, 0.6, 0, 8000); osc("sine", 110, 55, 0.4, 0.4);
+      }
+      break;
+    // Kisten: wackeln, aufspringen, Enthüllung nach Seltenheit (alles in C), je Gegenstand ein Tick
+    case "chest-shake": noise(0.06, 0.12, "bandpass", 1800 + Math.random() * 900, 3); osc("triangle", 180, 140, 0.05, 0.08); break;
+    case "chest-open": osc("sine", 140, 60, 0.25, 0.5); noise(0.35, 0.3, "highpass", 1500, 0.7, 0, 7000); osc("triangle", 523, 1047, 0.18, 0.1, 0.03); break;
+    case "chest-selten": [523, 659, 784].forEach((f, i) => osc("triangle", f, f, 0.22, 0.1, i * 0.08)); break;
+    case "chest-episch": [523, 659, 784, 1047].forEach((f, i) => osc("triangle", f, f, 0.26, 0.11, i * 0.08)); osc("sine", 1568, 1568, 0.5, 0.05, 0.32); break;
+    case "chest-legend": [523, 659, 784, 1047, 1319].forEach((f, i) => { osc("square", f, f, 0.2, 0.06, i * 0.07); osc("triangle", f, f, 0.5, 0.07, i * 0.07); }); [262, 330, 392].forEach(f => osc("sawtooth", f, f, 1.1, 0.05, 0.35)); noise(1.2, 0.1, "highpass", 6000, 0.5, 0.3); break;
+    case "chest-head": [392, 523, 659, 784, 1047, 1319, 1568].forEach((f, i) => { osc("square", f, f, 0.18, 0.07, i * 0.06); osc("triangle", f, f, 0.6, 0.07, i * 0.06); }); [262, 330, 392, 523].forEach(f => osc("sawtooth", f, f, 1.4, 0.05, 0.42)); break;
+    case "chest-item": osc("triangle", 1047, 1047, 0.08, 0.1); osc("sine", 2093, 2093, 0.12, 0.04, 0.02); break;
+    case "shards": [2637, 3136, 3951].forEach((f, i) => osc("sine", f, f * 0.98, 0.25, 0.05, i * 0.04)); noise(0.15, 0.08, "highpass", 7000); break;
+    // Torexplosionen (goalfx.js): je ein eigener Sound
+    case "gfx-67": [0, 0.22, 0.44, 0.66, 0.88].forEach((t, i) => { const f = i % 2 ? 659 : 523; osc("square", f, f, 0.12, 0.09, t); osc("sine", f / 2, f / 4, 0.12, 0.2, t); }); break;
+    case "gfx-crash": noise(0.6, 0.55, "highpass", 3500, 0.7, 0, 9000); osc("sine", 110, 35, 0.4, 0.7); [0.02, 0.06, 0.11, 0.17, 0.24].forEach(t => osc("triangle", 2400 + Math.random() * 2600, 1800, 0.12, 0.08, t)); noise(1.2, 0.2, "highpass", 2500, 0.5, 0.3); break;
+    case "gfx-peak": osc("sine", 50, 120, 0.7, 0.6); noise(0.7, 0.4, "lowpass", 300, 1, 0, 900); [392, 494, 587].forEach(f => osc("sawtooth", f, f, 0.8, 0.07, 0.5)); osc("sawtooth", 784, 784, 0.6, 0.05, 0.7); break;
+    case "gfx-brainrot": [0, 0.35, 0.6, 0.9, 1.15, 1.4].forEach((t, i) => osc("sine", 180 + i * 40, 700 + i * 90, 0.18, 0.22, t)); osc("sine", 1800, 300, 0.9, 0.1, 0.1); break;
+    case "gfx-dank": [[0, 0.12], [0.18, 0.12], [0.36, 0.5]].forEach(([t, d]) => [440, 554, 659, 446].forEach(f => osc("sawtooth", f, f * 0.97, d, 0.07, t))); [0.05, 0.16, 0.27, 0.38, 0.49].forEach(t => osc("square", 1900, 1900, 0.02, 0.06, t)); break;
+    case "gfx-ko": noise(0.12, 0.5, "lowpass", 1200, 1, 0.12, 200); osc("sine", 95, 38, 0.3, 0.8, 0.12); osc("triangle", 1250, 1250, 0.5, 0.12, 0.45); osc("triangle", 1250, 1250, 0.6, 0.12, 0.7); break;
+    case "gfx-aura": [523, 659, 784, 988, 1175, 1319, 1568].forEach((f, i) => osc("sine", f, f, 0.3, 0.07, i * 0.07)); [262, 330, 392].forEach(f => osc("triangle", f, f, 1.6, 0.06, 0.2)); noise(1.4, 0.12, "highpass", 6000, 0.5, 0.1); break;
+    case "gfx-glitch": for (let i = 0; i < 14; i++) { const t = i * 0.06 + Math.random() * 0.03, f = 100 + Math.random() * 1600; osc("square", f, f * (Math.random() < 0.5 ? 0.5 : 2), 0.05, 0.07, t); } noise(0.2, 0.3, "bandpass", 1200, 4, 0.1); noise(0.15, 0.3, "highpass", 4000, 1, 0.5); break;
+  }
+}
+function whistleNote(t, d) {
+  if (!ac) return; const s = ac.currentTime + t, o = ac.createOscillator(), l = ac.createOscillator(), lg = ac.createGain(), g = ac.createGain();
+  o.type = "sine"; o.frequency.value = 2300; l.frequency.value = 38; lg.gain.value = 120; l.connect(lg); lg.connect(o.frequency);
+  env(g, s, 0.01, 0.14, d); o.connect(g); g.connect(sfxBus); o.start(s); l.start(s); o.stop(s + d + 0.05); l.stop(s + d + 0.05);
+}
+function roar(sec) {
+  if (!crowdGain) return; const t = ac.currentTime;
+  crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(0.5, t, 0.05); crowdGain.gain.setTargetAtTime(0.06, t + sec, 0.6);
+}
+export function crowd(level) { if (crowdGain && ac) crowdGain.gain.setTargetAtTime(0.03 + level * 0.12, ac.currentTime, 0.4); }
+export function crowdOff() { if (crowdGain && ac) crowdGain.gain.setTargetAtTime(0, ac.currentTime, 0.3); }
+
+// ---------- Musik: kleiner Sequenzer ----------
+const BPM = 112, S16 = 60 / BPM / 4;
+const BASS = [36, 36, 48, 36, 39, 39, 51, 39, 41, 41, 53, 41, 43, 43, 55, 46];
+const CHORDS = [[60, 63, 67], [63, 67, 70], [65, 68, 72], [67, 70, 74]];
+const LEAD = [72, -1, 75, 72, 79, -1, 77, 75, 72, -1, 70, 72, 75, -1, -1, -1, 77, -1, 75, 77, 79, -1, 82, 79, 77, -1, 75, 72, 70, -1, 72, -1];
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+export function music(on, mode = "menu") {
+  musicPlaying = on; musicMode = mode;
+  if (!ac) return;
+  if (on) startLoop(); else { clearInterval(musTimer); musTimer = null; if (musSrc) { musSrc.stop(); musSrc = null; } }
+}
+function startLoop() {
+  if (files["music-menu"]) { if (!musSrc) musSrc = playFile("music-menu", 1, true, musBus); return; }
+  if (musTimer) return;
+  nextNote = ac.currentTime + 0.1; stepIdx = 0;
+  musTimer = setInterval(sched, 25);
+}
+function sched() {
+  while (nextNote < ac.currentTime + 0.12) { playStep(stepIdx, nextNote); nextNote += S16; stepIdx = (stepIdx + 1) % 64; }
+}
+function mnote(type, m, t, dur, vol, cut = 1800) {
+  const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+  o.type = type; o.frequency.value = mtof(m); f.type = "lowpass"; f.frequency.value = cut;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(f); f.connect(g); g.connect(musBus); o.start(t); o.stop(t + dur + 0.02);
+}
+function mdrum(kind, t) {
+  if (kind === "k") { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12); g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18); o.connect(g); g.connect(musBus); o.start(t); o.stop(t + 0.2); return; }
+  const n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  n.buffer = noiseBuf; f.type = kind === "h" ? "highpass" : "bandpass"; f.frequency.value = kind === "h" ? 7000 : 1800;
+  const d = kind === "h" ? 0.04 : 0.15, v = kind === "h" ? 0.18 : 0.5;
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+  n.connect(f); f.connect(g); g.connect(musBus); n.start(t, Math.random()); n.stop(t + d + 0.02);
+}
+function playStep(i, t) {
+  const s = i % 16, bar = Math.floor(i / 16);
+  if (s % 4 === 0) mdrum("k", t);
+  if (s === 4 || s === 12) mdrum("s", t);
+  if (s % 2 === 0) mdrum("h", t);
+  mnote("sawtooth", BASS[s] + (bar === 3 ? -2 : 0), t, S16 * 0.9, 0.22, 700);
+  if (s === 0) CHORDS[bar].forEach(m => mnote("triangle", m, t, S16 * 14, 0.06, 2500));
+  if (musicMode === "menu") { const l = LEAD[(bar % 2) * 16 + s]; if (l > 0) mnote("square", l, t, S16 * 1.6, 0.05, 3000); }
+}

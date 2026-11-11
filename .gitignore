@@ -1,0 +1,8 @@
+node_modules
+test-results/
+*.log
+backups/
+supabase/.env*
+supabase/.temp/
+_site/
+.DS_Store

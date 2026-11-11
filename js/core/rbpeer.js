@@ -1,0 +1,161 @@
+// Rollback-Gegenstelle: Takt, Pakete, Zeitabgleich, Prüfsummen und Korrektur rund um die Sitzung (rollback.js).
+// Rein und ohne DOM: Netz (send), Uhr (dt in update) und Physik (tick) kommen von außen, deshalb mit simuliertem
+// Netz testbar (tests/sim/rollback.test.mjs). Beide Seiten sind gleichberechtigt, nur bei abweichender Prüfsumme
+// schickt der Host (me 0) seinen endgültigen Zustand, und beide rechnen ab dort weiter.
+import { clone, createSession, hashState } from "./rollback.js";
+
+export const TICK_S = 1 / 60;
+/** Ereignisse, die erst zählen, wenn sie endgültig sind (keine Phantom-Tore durch falsche Vorhersage) */
+export const FINAL_ONLY = new Set(["goal", "end", "ko"]);
+const HASH_EVERY = 60;
+
+/**
+ * o.me, o.state, o.frame0, o.delay, o.maxPred: wie createSession
+ * o.step(st, inputs[2], f): Physik-Takt, liefert Ereignisse (Array)
+ * o.send(msg): schneller, unzuverlässiger Kanal; o.sendSafe(msg): zuverlässiger Kanal (Standard: send)
+ * o.onSpec(e, f): Ereignis zum ersten Mal gesehen (Ton, Effekte), o.onFinal(events, f, stateAfter): Takt endgültig
+ * o.norm(st): Zustand so, wie er übers Netz käme (Standard: JSON hin und zurück), o.onRollback: siehe createSession
+ * o.checkFix(own, fix, recent, f): Gast prüft eine Korrektur des Hosts gegen den eigenen Stand (true = annehmen);
+ * o.onBadFix(): eine Korrektur war unplausibel (abgelehnt, die Sitzung ist damit nicht mehr zu retten)
+ * o.strict(): true = keine Korrektur (Gegnersuche): eine Abweichung der Prüfsummen oder eine Korrektur des Hosts ruft auf
+ * beiden Seiten o.onDesync() auf, das Spiel wird ungültig
+ */
+export function createPeer(o) {
+  const me = o.me, send = o.send, sendSafe = o.sendSafe || o.send;
+  const norm = o.norm || (st => JSON.parse(JSON.stringify(st)));
+  const played = [];   // { k, f } zuletzt abgespielte Ereignisse (gegen doppelte Töne nach dem Neurechnen)
+  const step = (st, inp, f) => {
+    const out = o.step(st, inp, f) || [];
+    for (const e of out) {
+      if (FINAL_ONLY.has(e.t)) continue;
+      const k = e.t + "|" + (e.i ?? "");
+      if (played.some(p => p.k === k && Math.abs(p.f - f) <= 2)) continue;
+      played.push({ k, f }); if (played.length > 64) played.shift();
+      if (o.onSpec) o.onSpec(e, f);
+    }
+    return out;
+  };
+  const s = createSession({ me, state: o.state, frame0: o.frame0, delay: o.delay, maxPred: o.maxPred, ring: o.ring, tick: step, onRollback: o.onRollback });
+  let acc = 0, sendT = 0, lastFix = -1, ackByRemote = (o.frame0 | 0) + s.delay - 1, lastRemoteFrame = (o.frame0 | 0), remoteAdv = 0, cool = 0, finalDone = o.frame0 | 0;
+  const advHist = [];
+  const myHash = new Map(), theirHash = new Map();
+  const m = Object.assign(s.metrics, { staleFixes: 0, badFixes: 0, badResyncs: 0, resyncs: 0, slowdowns: 0, packetsIn: 0, packetsOut: 0, desyncs: 0, mid: 0 });
+  const mid = o.mid ?? 0;
+  const strict = () => !!(o.strict && o.strict());
+  const desync = () => { if (o.onDesync) o.onDesync(); };
+
+  function packet() {
+    const r = s.localRange(ackByRemote + 1, 40);
+    return { t: "ri", mid, f: r.f, v: r.v, k: s.remoteTop, fr: s.frame, ad: s.frame - lastRemoteFrame };
+  }
+  function flushFinal() {
+    while (finalDone < s.sync) {
+      const f = finalDone++;
+      if (o.onFinal) o.onFinal(s.eventsAt(f), f, s.stateAt(f + 1));
+      const g = f + 1;   // Prüfsumme über S_g, alle HASH_EVERY Takte (beide Seiten dieselben Takte)
+      if (g % HASH_EVERY === 0) {
+        const st = s.stateAt(g);
+        if (st) { const h = hashState(st); myHash.set(g, h); sendSafe({ t: "rh", mid, f: g, h }); compare(g); }
+      }
+    }
+    for (const map of [myHash, theirHash]) for (const k of [...map.keys()]) if (k < s.sync - 1200) map.delete(k);
+  }
+  function compare(f) {
+    if (!myHash.has(f) || !theirHash.has(f)) return;
+    // Abweichungen bis zur letzten Korrektur sind schon behoben (die Gegenseite hatte sie vor der Korrektur gerechnet)
+    if (f > lastFix && myHash.get(f) !== theirHash.get(f)) {
+      m.desyncs++;
+      if (strict()) desync();
+      else if (me === 0) correct();
+    }
+  }
+  /** eigene Stände der letzten 4 s vor Takt f (soweit noch im Speicher), für checkFix */
+  function recent(f) {
+    const out = [];
+    for (let g = Math.min(f, s.frame) - 1; g > f - 240; g -= 8) { const st = s.stateAt(g); if (st) out.push(st); }
+    return out;
+  }
+  /** Host: endgültigen Zustand verschicken und selbst genau diesen (übers Netz normierten) Stand übernehmen */
+  function correct() {
+    const f = s.sync, st = s.stateAt(f);
+    if (!st) return;
+    const n = norm(st);
+    sendSafe({ t: "rs", mid, f, st: n });
+    s.resync(f, n); m.resyncs++; lastFix = f;
+  }
+
+  return {
+    session: s, metrics: m,
+    get frame() { return s.frame; },
+    /** höchster eigener Takt, dessen Eingabe die Gegenseite lückenlos hat */
+    get acked() { return ackByRemote; },
+    state: () => s.state(),
+    /**
+     * Pro Bild: echte Zeit dt (s) aufholen, je Takt eigene Eingabe holen (sample()), rechnen, senden.
+     * Liefert die Zahl der gerechneten Takte (0: Stau, wartet auf die Gegenseite).
+     */
+    update(dt, sample) {
+      acc = Math.min(acc + dt, 0.25);   // nach langem Hänger nicht endlos nachrechnen
+      let n = 0;
+      while (acc >= TICK_S) {
+        acc -= TICK_S;
+        // Zeitabgleich: wer im Mittel vorne liegt, wartet ab und zu einen Takt (der andere holt auf)
+        if (cool > 0) cool--;
+        const adv = advHist.length ? median(advHist) : 0;
+        if (adv >= 1 && cool === 0) { cool = 30; m.slowdowns++; continue; }
+        if (s.needLocal()) s.setLocal(sample());
+        const out = s.advance();
+        if (out === null) { acc = 0; break; }   // Stau: auf Eingaben warten
+        n++;
+      }
+      if (n === 0) s.reconcile();
+      flushFinal();
+      // senden: nach jedem Takt, sonst (Stau, schnelle Bildschirme) höchstens 30-mal pro Sekunde
+      sendT += dt;
+      if (n > 0 || sendT >= 1 / 30) { sendT = 0; send(packet()); m.packetsOut++; }
+      return n;
+    },
+    /** Nachricht der Gegenseite (nur rollback-eigene Typen; true, wenn verarbeitet) */
+    onMessage(d) {
+      if (!d || d.mid !== mid) return false;
+      if (d.t === "ri") {
+        m.packetsIn++;
+        if (Array.isArray(d.v) && Number.isInteger(d.f)) s.addRemote(d.f, d.v.slice(0, 64));
+        if (Number.isInteger(d.k) && d.k > ackByRemote) ackByRemote = Math.min(d.k, s.localTop);
+        if (Number.isInteger(d.fr) && d.fr > lastRemoteFrame) lastRemoteFrame = d.fr;
+        if (typeof d.ad === "number") remoteAdv = d.ad;
+        // eigener Vorsprung minus dem der Gegenseite, halbiert = wie weit die eigene Uhr vorgeht (Laufzeit kürzt sich weg)
+        advHist.push(((s.frame - lastRemoteFrame) - remoteAdv) / 2); if (advHist.length > 24) advHist.shift();
+        return true;
+      }
+      // Prüfsumme nur in einem sinnvollen Fenster annehmen (sonst wüchse die Liste mit beliebigen Takten)
+      if (d.t === "rh") { if (Number.isInteger(d.f) && typeof d.h === "string" && d.h.length <= 32 && d.f > s.sync - 1200 && d.f < s.frame + 1200) { theirHash.set(d.f, d.h); compare(d.f); } return true; }
+      if (d.t === "rs") {
+        if (me === 0 || !Number.isInteger(d.f) || !d.st || typeof d.st !== "object") return true;
+        if (strict()) { desync(); return true; }   // Gegnersuche: der Host korrigiert nie, eine Korrektur ist ein Angriff
+        // Takt weiter voraus, als ein ehrlicher Host sein kann (er braucht dafür die eigenen Eingaben): abgelehnt
+        if (d.f > s.frame + s.delay + (o.maxPred ?? 8)) { m.badFixes++; if (o.onBadFix) o.onBadFix(); return true; }
+        // Takt nicht mehr im Speicher (verspätet): verwerfen, der Host korrigiert beim nächsten Vergleich erneut
+        if (d.f < s.frame && !s.stateAt(d.f)) { m.staleFixes++; return true; }
+        if (o.checkFix && !o.checkFix(s.stateAt(d.f) || s.state(), d.st, recent(d.f), d.f)) { m.badFixes++; if (o.onBadFix) o.onBadFix(); return true; }
+        if (s.resync(d.f, d.st)) { m.resyncs++; lastFix = d.f; } else m.badResyncs++;
+        return true;
+      }
+      return false;
+    },
+    /** Host: Zustand ab dem letzten endgültigen Takt vorgeben (wie eine Korrektur; Tests, Fehlersuche). fn(st) ändert ihn */
+    force(fn) {
+      if (me !== 0) return false;
+      const f = s.sync, st = s.stateAt(f);
+      if (!st) return false;
+      const n = norm(st); fn(n);
+      sendSafe({ t: "rs", mid, f, st: n });
+      s.resync(f, n); lastFix = f;
+      return true;
+    },
+    /** Kopie des aktuellen Zustands (z. B. zum Sichern) */
+    snapshot: () => clone(s.state()),
+  };
+}
+
+function median(a) { const b = [...a].sort((x, y) => x - y); return b[b.length >> 1]; }

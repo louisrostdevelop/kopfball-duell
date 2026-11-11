@@ -1,0 +1,72 @@
+# Spiel-Tests. Nicht bei reinen Doku-Änderungen (*.md); ein neuer Push bricht den laufenden Lauf ab.
+name: Tests
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "tools/sound-lab/**", "tools/brand/**", "tools/botlab.mjs"]
+  pull_request:
+    paths-ignore: ["**.md", "tools/sound-lab/**", "tools/brand/**", "tools/botlab.mjs"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  spiellogik:
+    name: Lint + Spiellogik (Referenzspiele + Matrix)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test   # Lint (ESLint, Stylelint) + Spiellogik
+
+  browser:
+    name: Browser (Menüs, Steuerung, Online, Server, Handy-Layout)
+    needs: spiellogik   # nur wenn die schnellen Tests grün sind
+    runs-on: ubuntu-latest
+    timeout-minutes: 25   # Online-Tests nacheinander, Oberfläche gleichzeitig daneben (tools/e2e.mjs)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}   # PR: Historie für den Vergleich mit der Basis
+      # PR: nur die Browser-Tests zu den geänderten Dateien (tools/test-map.mjs), Push und von Hand: alle.
+      # Ausgecheckt ist der Merge-Stand des PRs, verglichen wird mit dessen Basis. Node vom Runner reicht dafür.
+      - name: Betroffene Browser-Tests
+        id: auswahl
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -z "$BASE" ]; then echo "Alle Browser-Tests"; echo "run=alle" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if ! out=$(node tools/e2e.mjs --changed "$BASE" --list); then
+            echo "::warning::Auswahl gegen $BASE fehlgeschlagen, es laufen alle Browser-Tests"; echo "run=alle" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "$out"
+          tests=$(echo "$out" | sed -n 's/^Browser-Tests: //p' | tr -d ',')
+          if [ "$tests" = keine ]; then echo "run=nein" >> "$GITHUB_OUTPUT"; else echo "run=auswahl" >> "$GITHUB_OUTPUT"; echo "tests=$tests" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.auswahl.outputs.run != 'nein'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.auswahl.outputs.run != 'nein'
+        run: npm ci
+      - if: steps.auswahl.outputs.run != 'nein'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.auswahl.outputs.run != 'nein'
+        run: npx playwright install --with-deps chromium
+      - if: steps.auswahl.outputs.run == 'alle'
+        run: npm run test:e2e
+      - if: steps.auswahl.outputs.run == 'auswahl'
+        env:
+          TESTS: ${{ steps.auswahl.outputs.tests }}
+        run: read -ra t <<< "$TESTS" && node tools/e2e.mjs "${t[@]}"

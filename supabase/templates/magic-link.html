@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- Mail-Vorlage für Supabase Auth (supabase/config.toml). Platzhalter: {{ .Token }} Code, {{ .ConfirmationURL }} Link.
+     Mail-tauglich: Tabellen, Inline-Styles, Systemschriften; Tiefe über dicke Unterkante (wie die Knöpfe im Spiel). -->
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>Headstars – Anmelden</title></head>
+<body style="margin:0;padding:0;background:#0f0b30;-webkit-text-size-adjust:100%">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#0f0b30">Dein Code: {{ .Token }} &middot; Your code&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f0b30">
+<tr><td align="center" style="padding:28px 14px 22px">
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
+  <tr><td align="center" style="background:#2b4db0;background-image:radial-gradient(circle at 50% 35%,#5b88f5,#1c2d75 75%);border:3px solid #15112e;border-bottom:0;border-radius:26px 26px 0 0;padding:30px 20px 24px">
+   <img src="https://headstars.app/icons/wordmark-mail.png" width="270" height="90" alt="HEADSTARS" style="display:block;border:0;width:270px;max-width:78%;height:auto;font-family:'Arial Black','Helvetica Neue',Arial,Helvetica,sans-serif;font-size:34px;line-height:90px;color:#ffffff;text-align:center">
+  </td></tr>
+  <tr><td style="background:#fff8e8;border:3px solid #15112e;border-top:0;border-radius:0 0 26px 26px;padding:30px 28px 30px;text-align:center;font-family:Arial,Helvetica,sans-serif;color:#15112e">
+   <p style="margin:0;font-family:'Arial Black','Helvetica Neue',Arial,Helvetica,sans-serif;font-size:26px;line-height:1.15;color:#15112e">Anmelden</p>
+   <p style="margin:4px 0 0;font-size:14px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;color:#6b6588">Sign in</p>
+   <p style="margin:20px 0 0;font-size:16px;line-height:1.5;color:#15112e">Gib diesen Code im Spiel ein, um dich anzumelden.</p>
+   <p style="margin:2px 0 0;font-size:14px;line-height:1.5;color:#6b6588">Enter this code in the game to sign in.</p>
+   <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:22px auto 0"><tr>
+    <td style="background:#ffc21f;border:3px solid #15112e;border-bottom-width:7px;border-radius:18px;padding:12px 18px 10px 26px;font-family:'Arial Black','Helvetica Neue',Arial,Helvetica,sans-serif;font-size:40px;line-height:1;letter-spacing:10px;color:#15112e;white-space:nowrap">{{ .Token }}</td>
+   </tr></table>
+   <p style="margin:14px 0 0;font-size:13px;color:#6b6588">Gilt 1 Stunde &middot; Valid for 1 hour</p>
+   <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:24px auto 0"><tr>
+    <td style="background:#2f6bff;border:3px solid #15112e;border-bottom-width:6px;border-radius:16px">
+     <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 24px;font-family:'Arial Black','Helvetica Neue',Arial,Helvetica,sans-serif;font-size:16px;color:#ffffff;text-decoration:none;white-space:nowrap">Anmelden &middot; Sign in</a>
+    </td>
+   </tr></table>
+   <p style="margin:26px 0 0;font-size:13px;line-height:1.5;color:#6b6588">Nicht angefordert? Dann ignoriere diese Mail einfach.<br>Didn&rsquo;t ask for this? Just ignore this e-mail.</p>
+  </td></tr>
+  <tr><td align="center" style="padding:18px 10px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9b97c4">
+   <a href="https://headstars.app" style="color:#c9c6ff;text-decoration:none;font-weight:bold">headstars.app</a> &nbsp;&middot;&nbsp; <a href="mailto:support@headstars.app" style="color:#c9c6ff;text-decoration:none">support@headstars.app</a>
+  </td></tr>
+ </table>
+</td></tr></table>
+</body></html>

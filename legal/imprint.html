@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- ERZEUGT von tools/gen-legal.mjs. Nicht von Hand ändern: dort anpassen, dann npm run legal. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impressum / Legal Notice – Headstars</title>
+<link rel="stylesheet" href="style.css">
+<script>
+// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser. Ohne Skript stehen beide Fassungen untereinander.
+(function () {
+  var ok = function (x) { return x === "de" || x === "en"; }, l = null;
+  try { l = new URLSearchParams(location.search).get("lang"); } catch (e) { l = null; }
+  if (!ok(l)) { try { l = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { l = null; } }
+  if (!ok(l)) { var ls = navigator.languages || [navigator.language]; l = "en"; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
+  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l);
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("nav a[href$='.html']").forEach(function (a) { a.href = a.getAttribute("href") + "?lang=" + l; });
+  });
+})();
+</script>
+</head>
+<body>
+<main>
+<section data-l="de" lang="de">
+<nav data-l="de"><a href="../">← Zurück zum Spiel</a><a href="privacy.html">Datenschutzerklärung</a><a href="terms.html">Nutzungsbedingungen</a><a href="?lang=en" lang="en">English</a></nav>
+<div class="card">
+<h1>Impressum</h1>
+<p class="meta">Angaben gemäß § 5 DDG</p>
+<h2>Anbieter</h2>
+<p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Deutschland</p>
+<h2>Kontakt</h2>
+<p>E-Mail: <a href="mailto:support@headstars.app">support@headstars.app</a></p>
+<h2>Verbraucherstreitbeilegung</h2>
+<p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+</div>
+</section>
+<section data-l="en" lang="en">
+<nav data-l="en"><a href="../">← Back to the game</a><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Use</a><a href="?lang=de" lang="de">Deutsch</a></nav>
+<div class="card">
+<h1>Legal Notice</h1>
+<p class="meta">Information pursuant to § 5 DDG (German Digital Services Act)</p>
+<h2>Provider</h2>
+<p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Germany</p>
+<h2>Contact</h2>
+<p>Email: <a href="mailto:support@headstars.app">support@headstars.app</a></p>
+<h2>Consumer dispute resolution</h2>
+<p>We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board.</p>
+</div>
+</section>
+</main>
+</body>
+</html>

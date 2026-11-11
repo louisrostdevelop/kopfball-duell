@@ -1,0 +1,44 @@
+# Seite veröffentlichen (headstars.app) über GitHub Actions. Einmalig nötig: Settings → Pages → Source „GitHub Actions“.
+# Veröffentlicht wird nur, was der Browser braucht (keine Tests, Werkzeuge, Server-Dateien, Doku).
+# Erst nach grünen Spiel-Tests auf main (Workflow „Tests“): ein roter Stand geht nicht live. Von Hand: workflow_dispatch.
+name: Seite
+on:
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Veröffentlichen
+    # nur ein grüner Lauf nach einem Push (nicht nach Pull Requests oder abgebrochenen Läufen)
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}   # genau der getestete Stand
+      - name: Seite zusammenstellen
+        run: |
+          mkdir _site
+          cp -r index.html admin.html sw.js manifest.webmanifest og.jpg CNAME LICENSE js css fonts icons vendor legal audio _site/
+          touch _site/.nojekyll
+          du -sh _site
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

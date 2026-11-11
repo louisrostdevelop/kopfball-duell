@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Vorschau der Marke: node tools/brand/build.mjs erzeugt die Dateien, das hier nur zum Ansehen -->
+<html lang="en"><head><meta charset="utf-8">
+<style>
+@font-face { font-family: "Lilita One"; src: url("../../fonts/lilita.woff2") format("woff2"); }
+@font-face { font-family: Nunito; src: url("../../fonts/nunito-900.woff2") format("woff2"); font-weight: 900; }
+body { margin: 0; width: 1400px; background: radial-gradient(70% 90% at 50% 30%, #2f56b8, #1b2b6b 60%, #0f0c2e); font-family: Nunito; color: #fff; }
+.row { display: flex; gap: 40px; align-items: center; padding: 36px 50px; }
+.word svg { width: 820px; height: auto; display: block; }
+.icon { position: relative; width: 300px; height: 300px; border-radius: 66px; overflow: hidden; box-shadow: 0 18px 40px rgb(0 0 0 / 45%); }
+.icon.s96 { width: 96px; height: 96px; border-radius: 21px; } .icon.s48 { width: 48px; height: 48px; border-radius: 11px; }
+.light { background: #f1ede4; }
+</style></head><body>
+<div class="row"><div class="word" id="w"></div></div>
+<div class="row"><div class="icon" id="i1"></div><div class="icon s96" id="i2"></div><div class="icon s48" id="i3"></div>
+ <div style="display:flex;gap:16px;align-items:center;background:#f1ede4;border-radius:24px;padding:20px"><div class="icon s96" id="i4"></div><span style="color:#15112e;font-size:24px">Headstars</span></div></div>
+<script type="module">
+import { wordmarkSvg } from "../../js/ui/brand.js";
+import { iconCanvas } from "./icon.js";
+await document.fonts.load("150px 'Lilita One'");
+document.getElementById("w").innerHTML = wordmarkSvg();
+for (const [id, s] of [["i1", 300], ["i2", 96], ["i3", 48], ["i4", 96]]) { const c = iconCanvas(1024); c.style.width = c.style.height = s + "px"; document.getElementById(id).append(c); }
+document.body.dataset.ready = 1;
+</script></body></html>
