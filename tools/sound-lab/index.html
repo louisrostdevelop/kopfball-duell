@@ -30,6 +30,7 @@
 <div class="bar">
   <div class="bar__title">Sound-Lab · Headstars</div>
   <div class="bar__group">Musik <button class="btn" id="musOld">alt</button><button class="btn btn--new" id="musNew">neu</button><button class="btn" id="musOff">aus</button></div>
+  <div class="bar__group">Menü-Stück <button class="btn btn--on" data-track="klassik">klassik</button><button class="btn" data-track="lounge">lounge</button><button class="btn" data-track="stadion">stadion</button><button class="btn" data-track="lofi">lofi</button></div>
   <div class="bar__group">Publikum <button class="btn" id="crowdOld">alt</button><button class="btn btn--new" id="crowdNew">neu</button><button class="btn" id="crowdOff">aus</button></div>
   <div class="bar__group">Aufnahmen <button class="btn btn--on" id="files">an</button></div>
 </div>
@@ -129,6 +130,11 @@ document.getElementById("musOff").onclick = () => { OLD.music(false); NEW.music(
 document.getElementById("crowdOld").onclick = () => { NEW.crowdOff(); OLD.unlock(); OLD.crowd(0.6); sel(["crowdOld", "crowdNew", "crowdOff"], "crowdOld"); };
 document.getElementById("crowdNew").onclick = () => { OLD.crowdOff(); NEW.unlock(); NEW.crowd(0.6); sel(["crowdOld", "crowdNew", "crowdOff"], "crowdNew"); };
 document.getElementById("crowdOff").onclick = () => { OLD.crowdOff(); NEW.crowdOff(); sel(["crowdOld", "crowdNew", "crowdOff"], "crowdOff"); };
+// Menü-Stück wählen (aus MENU_TRACKS in synth.js) und gleich abspielen
+document.querySelectorAll("[data-track]").forEach(b => { b.onclick = () => {
+  NEW.setMenuTrack(b.dataset.track); document.getElementById("musNew").click();
+  document.querySelectorAll("[data-track]").forEach(x => x.classList.toggle("btn--on", x === b));
+}; });
 let filesOn = true;
 document.getElementById("files").onclick = e => { filesOn = !filesOn; NEW.useFiles(filesOn); e.target.textContent = filesOn ? "an" : "aus"; e.target.classList.toggle("btn--on", filesOn); };
 </script>

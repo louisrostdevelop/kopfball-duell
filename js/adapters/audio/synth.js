@@ -406,4 +406,215 @@ export const inst = {
     } else { f.type = "highpass"; f.frequency.value = 7500; g.gain.setValueAtTime(0.14 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + (kind === "o" ? 0.18 : 0.035)); }
     n.connect(f); f.connect(g); n.start(t, Math.random()); n.stop(t + 0.25);
   },
+
+  // ----- leise Instrumente für die ruhigen Menü-Stücke: weiche Einsätze (kein Knacken), wenig über 6 kHz, 1-2 Oszillatoren je Ton -----
+  /** Warme Fläche: Dreieck + Sinus leicht verstimmt, Tiefpass atmet langsam. a/r = Ein-/Ausblenden in s */
+  warm(t, m, d, vol, { a = 1, r = 1, lp = 900, send = 0.5, pan = 0, air = 0 } = {}) {
+    vol *= mlev;
+    const g = musOut(send, pan), f = ac.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 0.4;
+    f.frequency.setValueAtTime(lp * 0.7, t); f.frequency.linearRampToValueAtTime(lp, t + d * 0.5); f.frequency.linearRampToValueAtTime(lp * 0.7, t + d);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a); g.gain.setValueAtTime(vol, t + d - r); g.gain.linearRampToValueAtTime(0, t + d);
+    f.connect(g);
+    [["triangle", -6, 1], ["sine", 6, 1], ...(air ? [["sine", 3, 2]] : [])].forEach(([type, det, mul], i) => {
+      const o = ac.createOscillator(); o.type = type; o.frequency.value = mtof(m) * mul; o.detune.value = det;
+      if (i === 2) { const og = ac.createGain(); og.gain.value = air; o.connect(og); og.connect(f); } else o.connect(f);
+      o.start(t); o.stop(t + d + 0.05);
+    });
+  },
+  /** E-Piano (FM 1:1, Modulation klingt schnell ab): weicher Anschlag, Ausklang auf 35 %, dann loslassen */
+  epiano(t, m, d, vol, { send = 0.3, pan = 0 } = {}) {
+    vol *= mlev;
+    // FM 1:1 erzeugt auch 0 Hz (Gleichanteil): Hochpass davor
+    const g = musOut(send, pan), f = mtof(m), car = ac.createOscillator(), mod = ac.createOscillator(), mg = ac.createGain(), hp = ac.createBiquadFilter();
+    hp.type = "highpass"; hp.frequency.value = 60; hp.Q.value = 0.6; hp.connect(g);
+    car.frequency.value = f; mod.frequency.value = f; mg.gain.setValueAtTime(f * 1.1, t); mg.gain.exponentialRampToValueAtTime(f * 0.06, t + 0.6);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.008); g.gain.setTargetAtTime(vol * 0.4, t + 0.01, 0.5); g.gain.setTargetAtTime(0, t + d, 0.15);
+    mod.connect(mg); mg.connect(car.frequency); car.connect(hp); car.start(t); mod.start(t); car.stop(t + d + 1); mod.stop(t + d + 1);
+  },
+  /** Gezupft: Dreieck, Tiefpass fällt von 2,2 kHz, viel Hall */
+  pluck(t, m, d, vol, { send = 0.5, pan = 0 } = {}) {
+    vol *= mlev;
+    const g = musOut(send, pan), f = ac.createBiquadFilter(), o = ac.createOscillator();
+    f.type = "lowpass"; f.Q.value = 0.6; f.frequency.setValueAtTime(2200, t); f.frequency.exponentialRampToValueAtTime(350, t + d);
+    o.type = "triangle"; o.frequency.value = mtof(m);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(f); f.connect(g); o.start(t); o.stop(t + d + 0.05);
+  },
+  /** Runder Bass: Sinus + leise Oktave (damit er auch aus Handy-Lautsprechern hörbar bleibt) */
+  sub(t, m, d, vol) {
+    vol *= mlev;
+    const g = musOut(0), o = ac.createOscillator(), o2 = ac.createOscillator(), g2 = ac.createGain();
+    o.frequency.value = mtof(m); o2.frequency.value = mtof(m) * 2; g2.gain.value = 0.3;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.02); g.gain.setValueAtTime(vol, t + Math.max(0.03, d - 0.08)); g.gain.linearRampToValueAtTime(0, t + d);
+    o.connect(g); o2.connect(g2); g2.connect(g); o.start(t); o2.start(t); o.stop(t + d + 0.05); o2.stop(t + d + 0.05);
+  },
+  /** Leises Schlagzeug: k = weiche Bassdrum, s = gedämpfte Snare, b = Besen (kurz), w = Besen-Wischer (lang) */
+  soft(t, kind, vel = 1) {
+    vel *= mlev;
+    if (kind === "k") {
+      // Hochpass gegen Gleichanteil (ein abklingender Sinus ist nicht symmetrisch)
+      const g = musOut(0), o = ac.createOscillator(), hp = ac.createBiquadFilter(); o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.12);
+      hp.type = "highpass"; hp.frequency.value = 38; hp.Q.value = 0.6;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5 * vel, t + 0.004); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      o.connect(hp); hp.connect(g); o.start(t); o.stop(t + 0.32);
+      return;
+    }
+    const snare = kind === "s", len = snare ? 0.12 : kind === "w" ? 0.22 : 0.07;
+    const g = musOut(snare ? 0.2 : 0.1), n = ac.createBufferSource(), bp = ac.createBiquadFilter(), lp = ac.createBiquadFilter();
+    n.buffer = noiseBuf; bp.type = "bandpass"; bp.frequency.value = snare ? 1400 : 3200; bp.Q.value = snare ? 0.9 : 0.6; lp.type = "lowpass"; lp.frequency.value = snare ? 4000 : 5500;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime((snare ? 0.12 : 0.05) * vel, t + (kind === "w" ? 0.05 : 0.004)); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+    n.connect(bp); bp.connect(lp); lp.connect(g); n.start(t, hash(t * 1000, 1) * 1.5); n.stop(t + len + 0.02);
+    if (snare) {
+      const o = ac.createOscillator(), og = musOut(0); o.type = "triangle"; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(150, t + 0.07);
+      og.gain.setValueAtTime(0, t); og.gain.linearRampToValueAtTime(0.09 * vel, t + 0.003); og.gain.exponentialRampToValueAtTime(0.001, t + 0.09); o.connect(og); o.start(t); o.stop(t + 0.1);
+    }
+  },
+  /** Rausch-Fläche (fernes Publikum, Plattenrauschen): Band f/q, langsam ein- und ausblenden, optional Gemurmel (Pegel schwankt) */
+  air(t, d, vol, { f = 600, q = 0.7, lp = 0, a = d * 0.4, send = 0.5, murmur = 0, seed = 0 } = {}) {
+    vol *= mlev;
+    const g = musOut(send), n = ac.createBufferSource(), bp = ac.createBiquadFilter(); let last = bp;
+    n.buffer = noiseBuf; n.loop = true; bp.type = "bandpass"; bp.frequency.value = f; bp.Q.value = q; n.connect(bp);
+    if (lp) { const l = ac.createBiquadFilter(); l.type = "lowpass"; l.frequency.value = lp; bp.connect(l); last = l; }
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a); g.gain.setValueAtTime(vol, t + d - a); g.gain.linearRampToValueAtTime(0, t + d);
+    if (murmur) {
+      const am = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain(); am.gain.value = 1 - murmur; lfo.frequency.value = 0.2 + hash(seed, 2) * 0.3; lg.gain.value = murmur;
+      lfo.connect(lg); lg.connect(am.gain); last.connect(am); am.connect(g); lfo.start(t); lfo.stop(t + d + 0.05);
+    } else last.connect(g);
+    n.start(t, hash(seed, 3) * 1.5); n.stop(t + d + 0.05);
+  },
+  /** Staub auf der Platte: winziges, dumpfes Knistern */
+  dust(t, vol) {
+    vol *= mlev;
+    const g = musOut(0), n = ac.createBufferSource(), lp = ac.createBiquadFilter(); n.buffer = noiseBuf; lp.type = "lowpass"; lp.frequency.value = 3000;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.001); g.gain.exponentialRampToValueAtTime(0.0005, t + 0.006);
+    n.connect(lp); lp.connect(g); n.start(t, hash(t * 1000, 4) * 1.5); n.stop(t + 0.01);
+  },
 };
+/** Pegel des laufenden Stücks (setzt quiet() vor jedem Schritt), gilt für die leisen Instrumente */
+let mlev = 1;
+/** Ausgang der leisen Instrumente: Pegel -> (Panorama) -> Musik-Bus, Hall-Anteil auf den Musik-Hall (folgt dem Musik-Schalter) */
+function musOut(send, pan = 0) {
+  const g = ac.createGain(); let out = g;
+  if (pan) { const p = ac.createStereoPanner(); p.pan.value = pan; g.connect(p); out = p; }
+  out.connect(bus.music);
+  if (send > 0) { const s = ac.createGain(); s.gain.value = send; out.connect(s); s.connect(bus.musVerb); }
+  return g;
+}
+/** Fester Zufall (0..1) aus Schritt und Sorte: jeder Durchlauf der Schleife klingt gleich, also nahtlos */
+function hash(i, k = 0) {
+  let x = (Math.floor(i) * 374761393 + k * 668265263 + 1013904223) | 0;
+  x = Math.imul(x ^ (x >>> 13), 1274126177); x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
+}
+
+// ---------- Menü-Musik: Stücke für den Sequenzer in webaudio.js ----------
+// Jedes Stück: bpm, steps (Länge der Schleife in 16teln), step(i, t, s16, mode) plant Schritt i (0..steps-1) zur Zeit t.
+// Welches im Spiel läuft, steht in webaudio.js (MENU_TRACK); "klassik" ist das treibende, die anderen sind ruhig.
+const ch = (r, ...v) => ({ r, v });
+/** Ruhiges Stück mit eigenem Gesamtpegel in dB (abgeglichen mit tools/sound-lab bzw. Offline-Messung) */
+const quiet = (db, def) => ({ ...def, step(i, t, s16, mode) { mlev = Math.pow(10, db / 20); def.step(i, t, s16, mode); } });
+
+// klassik: c-Moll, 112 BPM, 4 Takte (8,6 s), Four-on-the-floor, Sägezahn-Bass in 16teln, Lead-Melodie im Menü
+const K_BASS = [36, 36, 48, 36, 39, 39, 51, 39, 41, 41, 53, 41, 43, 43, 55, 46];
+const K_CHORDS = [[60, 63, 67], [63, 67, 70], [65, 68, 72], [67, 70, 74]];
+const K_LEAD = [72, -1, 75, 72, 79, -1, 77, 75, 72, -1, 70, 72, 75, -1, -1, -1, 77, -1, 75, 77, 79, -1, 82, 79, 77, -1, 75, 72, 70, -1, 72, -1];
+const klassik = {
+  bpm: 112, steps: 64,
+  step(i, t, S16, mode) {
+    const s = i % 16, bar = Math.floor(i / 16), swing = s % 2 ? S16 * 0.08 : 0, tt = t + swing;
+    if (s % 4 === 0) inst.drum(t, "k");
+    if (s === 4 || s === 12) inst.drum(t, "s");
+    if (s % 2 === 0) inst.drum(tt, s === 14 ? "o" : "h", s % 4 === 0 ? 1 : 0.6);
+    else if (Math.random() < 0.25) inst.drum(tt, "h", 0.35);
+    inst.bass(t, K_BASS[s] + (bar === 3 ? -2 : 0), S16 * 0.85, 0.2);
+    if (s === 0) K_CHORDS[bar].forEach(m => inst.pad(t, m, S16 * 15, 0.045));
+    if (mode === "menu") { const l = K_LEAD[(bar % 2) * 16 + s]; if (l > 0) inst.lead(tt, l, S16 * 1.8, 0.07); }
+  },
+};
+
+// A lounge: c-Moll, 78 BPM, 32 Takte (98 s) in vier Teilen A B A' C, Akkord je 2 Takte. Warme Fläche, runder Bass,
+// Besen im Swing (ab Takt 3), nur vereinzelte E-Piano-Töne. Höchstens 28 Quellen gleichzeitig (beim Akkordwechsel).
+const L_PROG = [
+  [ch(36, 51, 55, 58, 62), ch(44, 55, 58, 60, 63), ch(41, 51, 55, 56, 60), ch(43, 50, 53, 55, 60)],   // Cm9  Abmaj9  Fm9  G7sus
+  [ch(39, 53, 55, 58, 62), ch(38, 53, 56, 60, 62), ch(36, 51, 55, 58, 62), ch(43, 50, 53, 59, 63)],   // Ebmaj9  Dm7b5  Cm9  G7b13
+  [ch(36, 51, 55, 58, 62), ch(44, 55, 58, 60, 63), ch(41, 51, 55, 56, 60), ch(46, 53, 57, 58, 62)],   // Cm9  Abmaj9  Fm9  Bb6
+  [ch(44, 55, 58, 60, 63), ch(43, 53, 55, 58, 62), ch(41, 51, 55, 56, 60), ch(43, 50, 53, 59, 63)],   // Abmaj9  Eb/G  Fm9  G7b13
+];
+const L_NOTES = [63, 65, 67, 70, 72, 75];   // c-Moll-Pentatonik, nur einzelne Töne, keine Melodie
+const lounge = quiet(-1, {
+  bpm: 78, steps: 32 * 16,
+  step(i, t, S16) {
+    const s = i % 16, bar = Math.floor(i / 16), sec = bar >> 3, c = L_PROG[sec][(bar >> 1) & 3], first = bar % 2 === 0;
+    const sw = s % 4 === 2 ? S16 * 0.33 : 0, bar2 = S16 * 32;
+    if (s === 0 && first) c.v.forEach((m, k) => inst.warm(t, m, bar2 + 0.9, 0.028, { a: 0.9, r: 1.1, lp: 850, pan: (k - 1.5) * 0.25 }));
+    if (s === 0) inst.sub(t, c.r, S16 * (first ? 9 : 6), 0.07);
+    if (s === 10 && hash(i, 1) < 0.6) inst.sub(t + sw, c.r + (hash(i, 2) < 0.4 ? 7 : 0), S16 * 3, 0.05);
+    const drums = !(bar < 2 || (bar >= 24 && bar < 26));
+    if (drums && s % 2 === 0) inst.soft(t + sw, "b", (s % 4 === 0 ? 0.55 : 0.85) * (0.8 + hash(i, 3) * 0.4));
+    if (drums && sec % 2 === 1 && (s === 4 || s === 12)) inst.soft(t, "w", 0.6);
+    if (drums && sec > 0 && s === 0) inst.soft(t, "k", 0.2);
+    if (sec % 2 === 1 && s === 0 && first) c.v.forEach((m, k) => inst.epiano(t + k * 0.015, m + 12, S16 * 6, 0.016, { pan: (k - 1.5) * 0.3 }));
+    if ((s === 6 || s === 14) && hash(i, 7) < 0.09) inst.epiano(t + sw, L_NOTES[Math.floor(hash(i, 8) * L_NOTES.length)], S16 * 4, 0.03, { send: 0.45, pan: hash(i, 9) * 0.6 - 0.3 });
+  },
+});
+
+// B stadion: a-Moll/C-Dur, 66 BPM, 24 Takte (87 s) in drei Teilen, Akkord je 2 Takte. Luftige Fläche mit Oberton,
+// fernes Publikum als Rauschen, das alle 4 Takte langsam an- und abschwillt, ab und zu ein gezupftes Arpeggio,
+// im Mittelteil ein leiser Puls. Kein Schlagzeug sonst. Höchstens ~35 Quellen gleichzeitig (lange Überblendungen), im Schnitt 9 neue Knoten/s.
+const S_PROG = [
+  ch(41, 52, 55, 57, 60), ch(40, 50, 55, 60, 64), ch(45, 55, 59, 60, 64), ch(43, 50, 52, 55, 57),   // Fmaj9  C/E  Am9  G6sus2
+  ch(41, 52, 55, 57, 60), ch(45, 55, 59, 60, 64), ch(38, 53, 57, 60, 64), ch(40, 50, 55, 59, 64),   // Fmaj9  Am9  Dm9  Em7
+  ch(46, 53, 57, 62, 64), ch(41, 52, 55, 57, 60), ch(45, 55, 59, 60, 64), ch(43, 50, 52, 55, 57),   // Bbmaj7#11  Fmaj9  Am9  G6sus2
+];
+const stadion = quiet(-0.5, {
+  bpm: 66, steps: 24 * 16,
+  step(i, t, S16) {
+    const s = i % 16, bar = Math.floor(i / 16), c = S_PROG[bar >> 1], first = bar % 2 === 0, bar2 = S16 * 32;
+    if (s === 0 && first) {
+      c.v.forEach((m, k) => inst.warm(t, m, bar2 + 2, 0.026, { a: 1.6, r: 2, lp: 1300, send: 0.75, pan: (k - 1.5) * 0.4, air: k >= 2 ? 0.35 : 0 }));
+      inst.sub(t, c.r, bar2 + 0.5, 0.045);
+    }
+    if (s === 0 && bar % 4 === 0) {
+      const d = S16 * 64 + 2.5, v = 0.06 + hash(bar, 5) * 0.04;
+      inst.air(t, d, v, { f: 520, q: 0.8, a: d * 0.45, send: 0.8, murmur: 0.35, seed: bar });
+      inst.air(t, d, v * 0.55, { f: 1150, q: 1.1, lp: 2500, a: d * 0.5, send: 0.8, murmur: 0.4, seed: bar + 100 });
+    }
+    if (bar % 2 === 1 && s >= 8 && s % 2 === 0 && hash(bar, 6) < 0.75) {
+      const n = (s - 8) / 2; if (n < 4 && !(n === 3 && hash(bar, 7) < 0.5)) inst.pluck(t, c.v[n] + 12, 1.1, 0.04, { send: 0.7, pan: n * 0.2 - 0.3 });
+    }
+    if (bar >= 8 && bar < 16 && (s === 0 || s === 8)) inst.soft(t, "k", s === 0 ? 0.18 : 0.1);
+  },
+});
+
+// C lofi: C-Dur/d-Moll, 80 BPM, 32 Takte (96 s) in vier Teilen A B A' B', Akkord je Takt. E-Piano-Akkorde mit Swing,
+// weiche Bassdrum, gedämpfte Snare, Besen-Hihat, leises Plattenrauschen. B' beginnt mit 2 Takten ohne Schlagzeug.
+// Höchstens 22 Quellen gleichzeitig.
+const F_A = [ch(38, 53, 57, 60, 64), ch(43, 53, 57, 59, 64), ch(36, 52, 55, 59, 62), ch(45, 55, 59, 60, 64)];   // Dm9  G13  Cmaj9  Am9
+const F_A2 = [ch(38, 53, 57, 60, 64), ch(43, 53, 57, 59, 64), ch(40, 50, 55, 59, 62), ch(45, 55, 61, 65, 67)];  // Dm9  G13  Em7  A7b13
+const F_B = [ch(41, 52, 55, 57, 60), ch(40, 50, 55, 59, 62), ch(38, 53, 57, 60, 64), ch(36, 52, 55, 59, 62)];   // Fmaj9  Em7  Dm9  Cmaj9
+const F_B2 = [ch(41, 52, 55, 57, 60), ch(40, 50, 53, 56, 59), ch(45, 55, 59, 60, 64), ch(43, 53, 57, 60, 64)];  // Fmaj9  E7b9  Am9  G13sus
+const F_SEC = [[...F_A, ...F_A2], [...F_B, ...F_B2], [...F_A, ...F_A2], [...F_B, ...F_B2]];
+const lofi = quiet(0, {
+  bpm: 80, steps: 32 * 16,
+  step(i, t, S16) {
+    const s = i % 16, bar = Math.floor(i / 16), sec = bar >> 3, c = F_SEC[sec][bar & 7], sw = s % 2 ? S16 * 0.22 : 0, tt = t + sw;
+    const strum = (at, d, vol) => c.v.forEach((m, k) => inst.epiano(at + k * 0.012, m, d, vol * (k === 3 ? 0.8 : 1), { pan: (k - 1.5) * 0.25 }));
+    const again = hash(bar, 2) < 0.7;
+    if (s === 0) strum(t, S16 * (again ? 10 : 15), 0.05);
+    if (s === 10 && again) strum(t, S16 * 5.5, 0.034);
+    if (s === 0) inst.sub(t, c.r, S16 * 6, 0.075);
+    if (s === 7 && hash(bar, 3) < 0.5) inst.sub(tt, c.r + 12, S16 * 2, 0.04);
+    if (s === 10) inst.sub(t, c.r + (hash(bar, 4) < 0.5 ? 7 : 0), S16 * 4, 0.06);
+    const drums = !(sec === 3 && bar < 26) && bar !== 31;
+    if (drums) {
+      if (s === 0 || s === 10 || (s === 7 && hash(bar, 5) < 0.4)) inst.soft(tt, "k", s === 0 ? 0.3 : 0.22);
+      if (s === 4 || s === 12) inst.soft(t + S16 * 0.1, "s", 0.55);
+      if (s % 2 === 0) inst.soft(tt, "b", s % 4 === 0 ? 0.5 : 0.8);
+      else if (hash(i, 6) < 0.15) inst.soft(tt, "b", 0.35);
+    }
+    if (s === 0 && bar % 4 === 0) inst.air(t, S16 * 64 + 0.6, 0.012, { f: 1800, q: 0.5, lp: 4000, a: 0.3, send: 0, seed: bar });
+    if (hash(i, 9) < 0.06) inst.dust(t + hash(i, 10) * S16, 0.03 + hash(i, 11) * 0.04);
+  },
+});
+
+export const MENU_TRACKS = { klassik, lounge, stadion, lofi };

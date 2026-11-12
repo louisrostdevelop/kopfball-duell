@@ -4,7 +4,7 @@
 //
 // Mischpult: Kategorie-Busse (ui, body, fx, big) mit Pegeln nach einer Lautstärke-Leiter, ein kurzer
 // Stadion-Hall als Send, leichte Sättigung, Bus-Kompressor und Limiter vor dem Ausgang. Große Momente ducken die Musik.
-import { initSynth, inst, play } from "./synth.js";
+import { initSynth, play, MENU_TRACKS } from "./synth.js";
 
 let ac = null, master, mix, verbIn, sfxVerb, musVerb, musBus, crowdGain, noiseBuf, crowdNodes = [], musSrc = null;
 const buses = {};
@@ -179,11 +179,16 @@ function legacy(kind) {
   }
 }
 
-// ---------- Musik: Sequenzer (c-Moll, 112 BPM), Instrumente aus synth.js ----------
-const BPM = 112, S16 = 60 / BPM / 4;
-const BASS = [36, 36, 48, 36, 39, 39, 51, 39, 41, 41, 53, 41, 43, 43, 55, 46];
-const CHORDS = [[60, 63, 67], [63, 67, 70], [65, 68, 72], [67, 70, 74]];
-const LEAD = [72, -1, 75, 72, 79, -1, 77, 75, 72, -1, 70, 72, 75, -1, -1, -1, 77, -1, 75, 77, 79, -1, 82, 79, 77, -1, 75, 72, 70, -1, 72, -1];
+// ---------- Musik: Sequenzer, Stücke und Instrumente aus synth.js ----------
+// Menü-Musik: Name aus MENU_TRACKS (die anderen Stücke lassen sich im Sound-Labor vergleichen)
+const MENU_TRACK = "lofi";
+let track = MENU_TRACKS[MENU_TRACK];
+/** Nur für das Sound-Lab: Stück wechseln (läuft die Musik, beginnt das neue Stück sofort von vorn) */
+export function setMenuTrack(name) {
+  if (!MENU_TRACKS[name] || track === MENU_TRACKS[name]) return;
+  track = MENU_TRACKS[name];
+  if (musTimer) { clearInterval(musTimer); musTimer = null; startLoop(); }
+}
 /** Für Tests: Zustand des Mischpults (Pegel zum jetzigen Zeitpunkt) */
 export function state() {
   const v = n => (n ? n.gain.value : null);
@@ -201,15 +206,6 @@ function startLoop() {
   musTimer = setInterval(sched, 25);
 }
 function sched() {
-  while (nextNote < ac.currentTime + 0.12) { playStep(stepIdx, nextNote); nextNote += S16; stepIdx = (stepIdx + 1) % 64; }
-}
-function playStep(i, t) {
-  const s = i % 16, bar = Math.floor(i / 16), swing = s % 2 ? S16 * 0.08 : 0, tt = t + swing;
-  if (s % 4 === 0) inst.drum(t, "k");
-  if (s === 4 || s === 12) inst.drum(t, "s");
-  if (s % 2 === 0) inst.drum(tt, s === 14 ? "o" : "h", s % 4 === 0 ? 1 : 0.6);
-  else if (Math.random() < 0.25) inst.drum(tt, "h", 0.35);
-  inst.bass(t, BASS[s] + (bar === 3 ? -2 : 0), S16 * 0.85, 0.2);
-  if (s === 0) CHORDS[bar].forEach(m => inst.pad(t, m, S16 * 15, 0.045));
-  if (musicMode === "menu") { const l = LEAD[(bar % 2) * 16 + s]; if (l > 0) inst.lead(tt, l, S16 * 1.8, 0.07); }
+  const s16 = 60 / track.bpm / 4;
+  while (nextNote < ac.currentTime + 0.12) { track.step(stepIdx, nextNote, s16, musicMode); nextNote += s16; stepIdx = (stepIdx + 1) % track.steps; }
 }
