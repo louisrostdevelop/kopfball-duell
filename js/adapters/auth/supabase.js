@@ -11,10 +11,7 @@ export function supabaseAuth(client) {
   const reload = async () => { if (user && user.guest && user.pendingEmail) await client.reload(); return user; };
   return {
     async init() {
-      // nicht ewig auf einen langsamen Server warten: mit gespeicherter Sitzung nach 2,5 s weiter (erneuert im Hintergrund,
-      // onAuthChange meldet sie dann), beim allerersten Start höchstens 6 s
-      const job = client.ensureSession().catch(() => { /* offline: mit gespeicherter Sitzung weiter */ });
-      await Promise.race([job, new Promise(r => { setTimeout(r, client.user() ? 2500 : 6000); })]);
+      const job = client.ensureSession().catch(() => {});   // im Hintergrund; Server-Aufrufe warten selbst darauf
       user = toUser(client.user());
       if (user && user.guest && user.pendingEmail) job.then(reload).catch(() => {});   // Sichern evtl. schon woanders bestätigt
       return user;

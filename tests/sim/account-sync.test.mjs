@@ -27,6 +27,15 @@ let n = 1000;
 const st = (o, read = false) => Object.defineProperty(o, REQ, { value: { n: ++n, read } });
 const reset = () => { for (const k in calls) calls[k].length = 0; };
 
+test("frisches Profil: gilt sofort als abgeglichen, ein vor der Anmeldung gespieltes Spiel wird nicht übernommen", async () => {
+  reset();
+  assert.equal(S.serverSynced, true, "beim Einstecken markiert");
+  S.coins = 190;
+  acc.applyState(st({ coins: 150, imported: false }));
+  assert.equal(calls.importLocal.length, 0, "keine Übernahme: sonst zählte das Spiel doppelt");
+  assert.equal(S.coins, 150, "Server-Stand gilt, die Spielmeldung bringt die 40 Münzen nach");
+});
+
 test("alter lokaler Spielstand: Server-Stand überschreibt ihn nicht, Übernahme einmal (mit Sperre), danach nachholen", async () => {
   reset(); S.serverSynced = false; S.coins = 2000;
   acc.applyState(st({ coins: 150, imported: false }));
