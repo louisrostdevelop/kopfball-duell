@@ -136,6 +136,16 @@ body.cvbaked:not([data-scr=""], [data-scr="end"], [data-scr="pause"]) #cv { filt
 .profile { display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 6px 0 4px; border-radius: 30px; background: rgb(8 14 50 / 70%); border: 3px solid var(--ink); position: relative; }
 .pf-av { width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(var(--blue), var(--blue-d)); border: 3px solid #fff; display: grid; place-items: center; overflow: hidden; }
 .pf-av canvas { width: 100% !important; height: 100% !important; }
+.pf-avw { position: relative; display: grid; }
+.pf-sync { position: absolute; pointer-events: none; }
+.pf-sync[data-s="syncing"] { inset: -5px; border-radius: 50%; border: 3px solid transparent; border-top-color: var(--cyan); border-left-color: var(--cyan); animation: pfSpin 1s linear infinite; }
+.pf-sync[data-s="syncing"] svg { display: none; }
+.pf-sync[data-s="offline"] { left: -6px; bottom: -4px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); border: 2px solid #fff; display: grid; place-items: center; pointer-events: auto; }
+.pf-sync[data-s="offline"] svg { width: 14px; height: 14px; fill: #fff; }
+
+@keyframes pfSpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) { .pf-sync[data-s="syncing"] { animation: none; } }
 .pf-txt { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 110px; }
 .pf-txt b { font-family: var(--display); font-weight: 400; font-size: 19px; line-height: 1; text-shadow: var(--o-sm); }
 .pf-xp { position: relative; width: 120px; height: 14px; border-radius: 8px; background: rgb(0 0 0 / 45%); border: 2px solid var(--ink); overflow: hidden; }
