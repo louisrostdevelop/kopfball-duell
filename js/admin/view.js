@@ -9,10 +9,16 @@ const WD = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const dayLabel = (iso, wd = false) => { const [y, m, d] = String(iso).split("-").map(Number); const dt = new Date(Date.UTC(y, m - 1, d)); return (wd ? WD[dt.getUTCDay()] + " " : "") + d + "." + m + "."; };
 const dateTime = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" }) + ", " + d.toLocaleTimeString("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit" }); };
 const clock = d => d.toLocaleTimeString("de-DE", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit" });
+// Stunde in deutscher Zeit („14 Uhr“) für den Verlauf über 24 Stunden
+const HOUR = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", hour: "2-digit", hourCycle: "h23" });
+const hourOf = iso => Number(HOUR.format(new Date(iso)));
+const hourLabel = iso => hourOf(iso) + " Uhr";
 
 export const MODE_NAMES = { cpu: "Gegen Computer", cup: "Cup", career: "Karriere", endless: "Endlos", daily: "Tages-Challenge", training: "Training",
   local: "Zu zweit", friends: "Mit Freunden", casual: "Casual", ranked: "Ranked", other: "Sonstige" };
-const SRC_NAMES = { direct: "Direkt", invite: "Einladungslink", other: "Andere Seite", unknown: "Unbekannt (vor der Erfassung)", x: "X / Twitter" };
+export const SRC_NAMES = { direct: "Direkt", invite: "Einladungslink", other: "Andere Seite", unknown: "Unbekannt (vor der Erfassung)", x: "X / Twitter",
+  reddit: "Reddit", google: "Google", bing: "Bing", duckduckgo: "DuckDuckGo", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram",
+  facebook: "Facebook", discord: "Discord" };
 const REASONS = { dropped: "Eigene Verbindung weg", opp_gone: "Gegner weg", void: "Start ungültig", desync: "Nicht synchron" };
 
 // Reihenfarben: 1 Aktive, 2 Neue, 3 Online; Relay und Fehler eigene Töne (alle mit mindestens 3:1 gegen die Karte)
@@ -34,15 +40,16 @@ const ICONS = {
   refresh: "M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4",
   game: "M14 5h5v5M19 5l-8 8M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4",
   bell: "M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15zM10 20.5a2.2 2.2 0 0 0 4 0M12 3v2",
+  live: "M3 12h3.5l2.5-6 4 12 2.5-6H21",
 };
 export const icon = (k, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[k]}"/></svg>`;
 
 export const NAV = [
-  ["top", "Übersicht", "home"], ["secGrowth", "Wachstum", "growth"], ["secSources", "Herkunft", "source"], ["secFunnel", "Trichter", "funnel"],
+  ["top", "Übersicht", "home"], ["secLive", "Live", "live"], ["secGrowth", "Wachstum", "growth"], ["secSources", "Herkunft", "source"], ["secFunnel", "Trichter", "funnel"],
   ["secModes", "Modi", "modes"], ["secOnline", "Online", "online"], ["secPush", "Push", "bell"], ["secStaff", "Geräte", "devices"],
 ];
 // Tab-Leiste am Handy: höchstens fünf Ziele, der Rest per Scrollen
-const TABS = ["top", "secGrowth", "secSources", "secModes", "secOnline"];
+const TABS = ["top", "secLive", "secGrowth", "secModes", "secOnline"];
 
 /** Kleine Verlaufslinie (letzte 14 Tage) für eine Kachel */
 function spark(vals, color) {
@@ -87,17 +94,22 @@ const card = (id, title, ico, body, cls = "", extra = "") => `<section class="ca
 
 /** Ganze Seite als HTML (Gerüst und Inhalt); Diagramme danach mit drawCharts */
 export function dashboard(s, { days, daysList, updated }) {
-  const since = s.since ? new Date(s.since) : null, from = new Date(s.from + "T00:00:00");
+  const hourly = s.unit === "hour";
+  const since = s.since ? new Date(s.since) : null, from = s.start ? new Date(s.start) : new Date(s.from + "T00:00:00");
+  const per = hourly ? "pro Stunde" : "pro Tag", span = hourly ? "24 Std" : `${s.days} Tage`;
+  const inSpan = hourly ? "der letzten 24 Stunden" : "im Zeitraum";
+  // Rückkehr zählt bei 24 Std über die Konten von 7 Tagen
+  const cohort = s.cohort_days && s.cohort_days !== s.days ? ` (${s.cohort_days} Tage)` : "";
   const late = !since || since > from;
   const sinceNote = !since ? "Noch keine Ereignisse erfasst: Herkunft, Modi und Online-Details erscheinen, sobald gespielt wird."
     : late ? `Ereignisse (Herkunft, Spielstarts, Suche, Verbindung) gibt es erst seit ${esc(dateTime(s.since))}. Davor zählen nur Konten, Buchungen und Online-Spiele.` : "";
   const r = s.retention, f = s.funnel, o = s.online, ser = s.series || [];
-  const col = k => ser.map(x => Number(x[k]) || 0);
+  const col = k => ser.map(x => Number(x[k]) || 0).slice(hourly ? -24 : -14);
   const steps = [["Konten angelegt", f.created], ["Erstes Spiel begonnen", f.started], ["Erstes Spiel beendet", f.finished], ["Am nächsten Tag wieder da", f.returned]];
   const modes = s.modes || [], mMax = Math.max(1, ...modes.map(m => Math.max(m.started, m.booked)));
   const ab = o.aborts || {}, abN = Object.values(ab).reduce((a, b) => a + b, 0);
   const act = s.kpi.active[0], ret = s.kpi.returning[0];
-  const seg = `<div class="seg" id="days" role="group" aria-label="Zeitraum">${daysList.map(d => `<button data-d="${d}" class="${d === days ? "on" : ""}" aria-pressed="${d === days}">${d} Tage</button>`).join("")}</div>`;
+  const seg = `<div class="seg" id="days" role="group" aria-label="Zeitraum">${daysList.map(d => `<button data-d="${d}" class="${d === days ? "on" : ""}" aria-pressed="${d === days}">${d === 1 ? "24 Std" : d + " Tage"}</button>`).join("")}</div>`;
   const nav = NAV.map(([id, l, ic]) => `<a href="#${id}" data-nav="${id}">${icon(ic)}<span>${l}</span></a>`).join("");
   const tabs = NAV.filter(([id]) => TABS.includes(id)).map(([id, l, ic]) => `<a href="#${id}" data-nav="${id}">${icon(ic)}<span>${l}</span></a>`).join("");
   const today = s.today ? dayLabel(s.today, true) : "";
@@ -114,39 +126,42 @@ export function dashboard(s, { days, daysList, updated }) {
 ${sinceNote ? `<p class="note">${sinceNote}</p>` : ""}
 <section class="kpis" aria-label="Heute">${kpi("Aktive heute", s.kpi.active, "users", C.active, col("active"))}${kpi("Neue Spieler", s.kpi.new, "plus", C.new, col("new"))}${kpi("Wiederkehrer", s.kpi.returning, "back", C.alt, null, `${pct(ret, act)} der Aktiven heute`)}${kpi("Online-Matches", s.kpi.online, "match", C.online, col("online"))}</section>
 <div class="grid">
+${card("secLive", "Live", "live", `<div id="feedBox"></div>`, "wide live-card", `<span class="chip">alle 30 s</span>`)}
 ${card("secGrowth", "Wachstum", "growth", `<div class="growth">
-  <div class="growth-main">${chart("chartActive", `Aktive Spieler pro Tag · ${s.days} Tage`, C.active, true)}
-    <div class="duo">${chart("chartNew", "Neue Spieler pro Tag", C.new)}${chart("chartOnline", "Angepfiffene Online-Matches pro Tag", C.online)}</div></div>
+  <div class="growth-main">${chart("chartActive", `Aktive Spieler ${per} · ${span}`, C.active, true)}
+    <div class="duo">${chart("chartNew", `Neue Spieler ${per}`, C.new)}${chart("chartOnline", `Angepfiffene Online-Matches ${per}`, C.online)}</div></div>
   <div class="growth-side"><h3>Rückkehr neuer Spieler</h3>
-    ${ring(r.d1.back, r.d1.cohort, C.new, "Am Tag 1", `${num(r.d1.back)} von ${num(r.d1.cohort)} neuen`)}
-    ${ring(r.d7.back, r.d7.cohort, C.active, "Bis Tag 7", `${num(r.d7.back)} von ${num(r.d7.cohort)} neuen`)}</div></div>`, "wide")}
+    ${ring(r.d1.back, r.d1.cohort, C.new, "Am Tag 1", `${num(r.d1.back)} von ${num(r.d1.cohort)} neuen${cohort}`)}
+    ${ring(r.d7.back, r.d7.cohort, C.active, "Bis Tag 7", `${num(r.d7.back)} von ${num(r.d7.cohort)} neuen${cohort}`)}</div></div>`, "wide")}
 ${card("secSources", "Herkunft", "source", `<div class="scroll"><table><thead><tr><th>Quelle</th><th>Neu</th><th>Gespielt</th><th>Tag 1</th></tr></thead><tbody>
-  ${(s.sources || []).map(x => `<tr><td>${esc(SRC_NAMES[x.src] || x.src)}</td><td>${num(x.new)}</td><td>${num(x.played)}<span class="pc">${pct(x.played, x.new)}</span></td><td>${num(x.d1)}<span class="pc">${pct(x.d1, x.new)}</span></td></tr>`).join("") || `<tr><td colspan="4" class="muted">Keine neuen Spieler im Zeitraum.</td></tr>`}
+  ${(s.sources || []).map(x => `<tr><td>${esc(SRC_NAMES[x.src] || x.src)}</td><td>${num(x.new)}</td><td>${num(x.played)}<span class="pc">${pct(x.played, x.new)}</span></td><td>${num(x.d1)}<span class="pc">${pct(x.d1, x.new)}</span></td></tr>`).join("") || `<tr><td colspan="4" class="muted">Keine neuen Spieler ${inSpan}.</td></tr>`}
   </tbody></table></div>
-  <p class="hint">Quelle: <code>?src=</code> aus dem Link, sonst die verweisende Seite. Neue Konten im Zeitraum.</p>`)}
+  <p class="hint">Quelle: <code>?src=</code> aus dem Link, sonst die verweisende Seite. Neue Konten ${inSpan}.</p>`, "", `<span class="chip">${span}</span>`)}
 ${card("secFunnel", "Trichter", "funnel", `${steps.map(([l, v], i) => hbar(l, v, f.created, i ? `${pct(v, steps[i - 1][1])} vom Schritt davor` : "", [C.active, C.active, C.active, C.online][i])).join("")}
-  <p class="hint">Neue Konten im Zeitraum. „Wieder da“ heißt: am Kalendertag nach dem Anlegen aktiv.</p>`)}
+  <p class="hint">Neue Konten ${inSpan}. „Wieder da“ heißt: am Kalendertag nach dem Anlegen aktiv.</p>`, "", `<span class="chip">${span}</span>`)}
 ${card("secModes", "Modi", "modes", `${modes.length ? modes.map(m => hbar(esc(MODE_NAMES[m.mode] || m.mode), m.started || m.booked, mMax, m.started ? `${num(m.done)} beendet` : "abgerechnet", m.mode === "casual" || m.mode === "ranked" || m.mode === "friends" ? C.online : C.active)).join("") : `<p class="muted">Keine Spiele.</p>`}
-  <p class="hint">Gestartete Spiele; ohne Ereignisse zählen die abgerechneten Spiele (mit Münzen).</p>`, "", `<span class="chip">7 Tage</span>`)}
+  <p class="hint">Gestartete Spiele; ohne Ereignisse zählen die abgerechneten Spiele (mit Münzen).</p>`, "", `<span class="chip">${hourly ? "24 Std" : "7 Tage"}</span>`)}
 ${card("secOnline", "Online", "online", `<h3>Gegnersuche</h3>
   ${tiles([["Suchen", num(o.searches)], ["Gefunden", num(o.matched), pct(o.matched, o.searches)], ["Wartezeit", o.wait_median == null ? "–" : Math.round(o.wait_median) + " s", "Median"],
     ["Angepfiffen", num(o.started), `von ${num(o.pairings)} gepaart`], ["Abgebrochen", num(o.cancel)], ["Fehler", num(o.error)]])}
   <div class="split"><div><h3>Verbindung</h3>${donut([{ label: "Direkt", n: o.direct, color: C.active }, { label: "Relay", n: o.relay, color: C.relay }, { label: "Gescheitert", n: o.failed, color: C.bad }])}</div>
   <div><h3>Mit Freunden</h3>${tiles([["Lobbys", num(o.lobby_created)], ["Beigetreten", num(o.lobby_joined), pct(o.lobby_joined, o.lobby_created)], ["Angepfiffen", num(o.lobby_started)]])}
-  <h3>Abbrüche</h3>${abN ? `<div class="kv">${Object.entries(ab).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(REASONS[k] || k)}</span><span>${num(v)}</span>`).join("")}</div>` : `<p class="muted small">Keine.</p>`}</div></div>`)}
+  <h3>Abbrüche</h3>${abN ? `<div class="kv">${Object.entries(ab).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<span>${esc(REASONS[k] || k)}</span><span>${num(v)}</span>`).join("")}</div>` : `<p class="muted small">Keine.</p>`}</div></div>`, "", `<span class="chip">${span}</span>`)}
 ${card("secPush", "Benachrichtigungen", "bell", `<div id="pushBox"></div>`)}
 ${card("secStaff", "Weiteres Gerät ausschließen", "devices", `<p class="muted small">Eigene Testgeräte und Testkonten sollen nicht mitzählen. Der Link macht das Gerät, auf dem er geöffnet wird, zu „Staff“: es zählt in keiner Zahl hier mehr mit. Dein eigenes Konto zählt ohnehin nicht.</p>
   <button class="btn" id="staffBtn">Link erzeugen</button>
   <div id="staffBox"></div>`)}
 </div>
-<p class="foot">Stand ${esc(dateTime(updated.toISOString()))} · Tage nach deutscher Zeit · ohne Admin und Staff</p>
+<p class="foot">Stand ${esc(dateTime(updated.toISOString()))} · Tage und Uhrzeiten nach deutscher Zeit · ohne Admin und Staff</p>
 </main></div>
 <nav class="tabs" aria-label="Abschnitte">${tabs}</nav>
 </div>`;
 }
 
-/** Säulen je Tag in der Breite des Behälters. key: Feld in series; Antippen zeigt den Wert */
+/** Säulen je Tag (oder je Stunde: Feld hour) in der Breite des Behälters. key: Feld in series; Antippen zeigt den Wert */
 function bars(el, series, key) {
+  const hourly = series.length > 0 && series[0].hour != null;
+  const tip = i => (hourly ? hourLabel(series[i].hour) : dayLabel(series[i].day, true));
   const plot = el.querySelector(".plot"), read = el.querySelector(".read"), axis = el.querySelector(".axis");
   const big = el.classList.contains("big");
   const w = Math.max(220, Math.round(plot.clientWidth || el.clientWidth || 300)), h = big ? (w < 500 ? 170 : 230) : 120, top = 8;
@@ -167,21 +182,23 @@ function bars(el, series, key) {
     const x = i * slot + gap / 2, yy = y(v), r = Math.min(big ? 5 : 4, bw / 2, h - yy);
     s += `<g class="col" data-i="${i}">`;
     if (v > 0) s += `<path fill="url(#${gid})" d="M${x},${h} V${yy + r} Q${x},${yy} ${x + r},${yy} H${x + bw - r} Q${x + bw},${yy} ${x + bw},${yy + r} V${h} Z"/>`;
-    s += `<rect x="${i * slot}" y="0" width="${slot}" height="${h}" fill="transparent" data-i="${i}"><title>${dayLabel(series[i].day, true)}: ${v}</title></rect></g>`;
+    s += `<rect x="${i * slot}" y="0" width="${slot}" height="${h}" fill="transparent" data-i="${i}"><title>${tip(i)}: ${v}</title></rect></g>`;
   });
   s += `<line class="base" x1="0" x2="${pw}" y1="${h + 0.5}" y2="${h + 0.5}"/></svg>`;
   plot.innerHTML = s;
   const total = vals.reduce((a, b) => a + b, 0), lastI = n - 1;
   const svg = plot.firstChild;
   const say = i => {
-    read.innerHTML = `<b>${num(vals[i])}</b> ${i === lastI ? "heute" : dayLabel(series[i].day, true)} <span>· Summe ${num(total)} · Ø ${num(Math.round((10 * total) / n) / 10)}</span>`;
+    const at = hourly ? (i === lastI ? `seit ${hourLabel(series[i].hour)}` : `${hourOf(series[i].hour)}–${(hourOf(series[i].hour) + 1) % 24} Uhr`) : i === lastI ? "heute" : dayLabel(series[i].day, true);
+    read.innerHTML = `<b>${num(vals[i])}</b> ${at} <span>· Summe ${num(total)} · Ø ${num(Math.round((10 * total) / n) / 10)}</span>`;
     for (const g of svg.querySelectorAll(".col")) g.classList.toggle("on", Number(g.dataset.i) === i);
   };
   say(lastI);
   const pick = e => { const t = e.target.closest && e.target.closest("rect[data-i]"); if (t) say(Number(t.dataset.i)); };
   svg.addEventListener("pointermove", pick); svg.addEventListener("pointerdown", pick);
   svg.addEventListener("pointerleave", () => say(lastI));
-  axis.innerHTML = `<span>${dayLabel(series[0].day)}</span><span>${dayLabel(series[Math.floor(n / 2)].day)}</span><span>heute</span>`;
+  axis.innerHTML = hourly ? `<span>${hourLabel(series[0].hour)}</span><span>${hourLabel(series[Math.floor(n / 2)].hour)}</span><span>jetzt</span>`
+    : `<span>${dayLabel(series[0].day)}</span><span>${dayLabel(series[Math.floor(n / 2)].day)}</span><span>heute</span>`;
 }
 
 export function drawCharts(root, s) {

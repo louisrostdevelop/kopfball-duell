@@ -11,10 +11,10 @@ if [[ "$F" == *.gpg ]]; then
 else dec() { gunzip -c "$F"; }; fi
 # Alles oder nichts. session_replication_role = replica schaltet Trigger und Fremdschlüssel-Prüfung für diese
 # Sitzung ab (so empfiehlt es Supabase), damit beim Einspielen der Konten keine neue Start-Ausstattung entsteht
-# und die Reihenfolge der Tabellen egal ist. Erste Saison, Grundeinstellungen und Push-Zustand aus deploy.sh weichen
-# den gesicherten.
+# und die Reihenfolge der Tabellen egal ist. Erste Saison, Grundeinstellungen, Push-Zustand und Kürzel-Zusatz aus deploy.sh
+# weichen den gesicherten (die Kürzel im Live-Verlauf bleiben so dieselben).
 { echo "set session_replication_role = replica;"
-  echo "delete from game.seasons; delete from game.config; delete from game.admin_push_state;"   # gesicherte Werte (auch spätere Anpassungen) gelten
+  echo "delete from game.seasons; delete from game.config; delete from game.admin_push_state; delete from game.feed_salt;"   # gesicherte Werte (auch spätere Anpassungen) gelten
   dec
   echo "set session_replication_role = origin;"
   echo "delete from auth.users where id in (select user_id from game.erasures);"   # seit der Sicherung gelöschte Konten bleiben gelöscht

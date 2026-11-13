@@ -8,12 +8,13 @@ import { turnstileToken } from "../adapters/server/turnstile.js";
 import { BACKEND } from "../content/backend.js";
 import { dashboard, drawCharts } from "./view.js";
 import { createPush } from "./push.js";
+import { createFeed } from "./feed.js";
 
 const $ = id => document.getElementById(id);
 const app = $("app");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const DAYS = [7, 30, 90];
-let days = 30, last = null, client = null, push = null;
+const DAYS = [1, 7, 30, 90];   // 1: die letzten 24 Stunden
+let days = 30, last = null, client = null, push = null, feed = null;
 try { days = DAYS.includes(Number(localStorage.getItem("kopfball-duell-admin-days"))) ? Number(localStorage.getItem("kopfball-duell-admin-days")) : 30; } catch (_) { /* ohne Speicher: 30 Tage */ }
 
 function gate(title, text, extra = "") {
@@ -64,6 +65,7 @@ function show() {
   $("refresh").onclick = () => { $("refresh").classList.add("busy"); load(); };
   $("staffBtn").onclick = staffLink;
   push.mount();   // nach dem Dashboard; behält Schalter und Gerätestand beim Neuzeichnen
+  feed.mount();
   spy();
   scrollTo(0, y);   // Neu laden und Zeitraum wechseln behalten die Stelle
 }
@@ -86,12 +88,16 @@ function spy() {
     const vis = es.filter(x => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
     if (vis) mark(vis.target.id === "secTop" ? "top" : vis.target.id);
   }, { rootMargin: "-20% 0px -65% 0px" });
-  for (const id of ["secGrowth", "secSources", "secFunnel", "secModes", "secOnline", "secPush", "secStaff"]) { const el = $(id); if (el) io.observe(el); }
+  for (const id of ["secLive", "secGrowth", "secSources", "secFunnel", "secModes", "secOnline", "secPush", "secStaff"]) { const el = $(id); if (el) io.observe(el); }
   const k = app.querySelector(".kpis"); if (k) { k.id = "secTop"; io.observe(k); }
 }
 
 // Zahlen alle 2 Minuten neu, solange die Seite sichtbar ist (Server erlaubt 120 Abrufe je Stunde)
 setInterval(() => { if (last && document.visibilityState === "visible") load(); }, 120000);
+// Live-Verlauf alle 30 Sekunden (Server erlaubt 600 je Stunde), beim Zurückkommen auf die Seite sofort
+const feedTick = () => { if (last && feed && $("feedBox") && document.visibilityState === "visible") feed.refresh(); };
+setInterval(feedTick, 30000);
+document.addEventListener("visibilitychange", () => { if (feed && feed.age() > 30000) feedTick(); });
 
 async function staffLink() {
   const box = $("staffBox"), btn = $("staffBtn");
@@ -114,6 +120,7 @@ async function boot() {
   const captcha = be.captchaSiteKey ? turnstileToken(be.captchaSiteKey) : null;
   client = createClient({ ...be, captcha, sessionKey: be.sessionKey });
   push = createPush({ client, vapidKey: BACKEND.vapidPublicKey });
+  feed = createFeed({ client });
   const m = /^#staff=([A-Za-z0-9]{16,128})$/.exec(location.hash || "");
   let note = "";
   if (m) {

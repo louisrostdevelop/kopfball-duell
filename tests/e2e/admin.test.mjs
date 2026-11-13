@@ -236,3 +236,88 @@ test("Spiel: Admin-Knopf nur für Admins", { skip: !hasPg && "kein Postgres" }, 
   await a.page.waitForURL(/\/admin\.html$/);
   assert.deepEqual(a.errors.filter(e => !/status of 400/.test(e)), []);
 });
+
+test("Admin-Seite: 24 Std je Stunde, Live-Verlauf mit Sitzungen und Zeitleiste", { skip: !hasPg && "kein Postgres" }, async () => {
+  const { page, ctx } = await newAdmin(VIEW.desktop);
+  await page.close();
+  // Spieler (keine Admins) mit Ereignissen: einer gerade aktiv und neu über Reddit, einer vor 5 Stunden, dazu ältere
+  const guest = async () => (await db("insert into auth.users (id, is_anonymous) values (gen_random_uuid(), true) returning id"))[0].id;
+  const fresh = await guest(), earlier = await guest();
+  await db("update game.players set created_at = now() - interval '4 minutes' where id = $1", [fresh]);
+  await db("update game.players set created_at = now() - interval '20 days' where id <> $1 and id = $2", [fresh, earlier]);
+  await db(`insert into game.events (player_id, kind, data, created_at) values
+    ($1, 'first_visit', '{"ref":"reddit"}', now() - interval '3 minutes'),
+    ($1, 'match_start', '{"mode":"cpu"}', now() - interval '2 minutes'),
+    ($1, 'match_end', '{"mode":"cpu","done":true}', now() - interval '1 minute'),
+    ($2, 'visit', '{}', now() - interval '5 hours'),
+    ($2, 'lobby', '{"action":"created"}', now() - interval '4 hours 50 minutes')`, [fresh, earlier]);
+  for (let i = 0; i < 12; i++) {
+    const g = await guest();
+    await db("update game.players set created_at = now() - interval '20 days' where id = $1", [g]);
+    await db("insert into game.events (player_id, kind, data, created_at) values ($1, 'visit', '{}', now() - make_interval(hours => 8 + $2))", [g, i]);
+  }
+  const [{ a, b }] = await db("select game.feed_name($1) a, game.feed_name($2) b", [fresh, earlier]);
+
+  const adm = await ctx.newPage();
+  const errs = [];
+  adm.on("pageerror", e => errs.push(e.message)); adm.on("console", m => { if (m.type() === "error") errs.push(m.text()); });
+  await admin(adm);
+  // Live-Karte direkt nach den Kacheln, mit eigenem Eintrag in der Navigation
+  assert.deepEqual(await adm.$$eval(".grid > .card", els => els.slice(0, 2).map(e => e.id)), ["secLive", "secGrowth"]);
+  assert.ok(await adm.locator('.nav [data-nav="secLive"]').count(), "Navigation");
+  await adm.waitForSelector("#feedBox .ses", { timeout: 10000 });
+  const ses = adm.locator(`#feedBox .ses:has(.ses-l1 b:text-is("Besucher ${a}"))`);
+  assert.equal(await ses.count(), 1, "Sitzung des neuen Spielers");
+  assert.match(await ses.locator(".ses-l1").textContent(), /neu.*über Reddit/);
+  assert.equal(await ses.locator(".ava.live").count(), 1, "gerade aktiv");
+  assert.match(await ses.locator(".ses-t").textContent(), /jetzt aktiv/);
+  assert.equal(await ses.locator(".ses-l2").textContent(), "1 Spiel gegen Computer · 1 beendet");
+  const order = await adm.$$eval("#feedBox .ses", els => els.map(e => e.dataset.k.split("|")[0]));
+  assert.ok(order.indexOf(a) >= 0 && order.indexOf(a) < order.indexOf(b), "neueste zuerst");
+  const old = adm.locator(`#feedBox .ses:has(.ses-l1 b:text-is("Besucher ${b}"))`);
+  assert.match(await old.locator(".ses-t").textContent(), /^(heute|gestern) \d\d:\d\d–\d\d:\d\d$/);
+  assert.equal(await old.locator(".ses-l2").textContent(), "1 Freundes-Lobby");
+  assert.ok(!(await adm.textContent("#feedBox")).includes(fresh), "keine Spieler-ID");
+
+  // Aufklappen: Zeitleiste mit Uhrzeiten und deutschen Texten
+  assert.equal(await ses.locator(".tl-wrap").isVisible(), false);
+  await ses.locator(".ses-row").click();
+  assert.equal(await ses.locator(".ses-row").getAttribute("aria-expanded"), "true");
+  const steps = await ses.locator(".tline li").allTextContents();
+  assert.deepEqual(steps.map(t => t.replace(/^\d\d:\d\d/, "")), ["Konto angelegt", "Erster Besuch · über Reddit", "Spiel gestartet: Gegen Computer", "Spiel zu Ende: Gegen Computer"]);
+  assert.ok(steps.every(t => /^\d\d:\d\d/.test(t)), "mit Uhrzeit");
+
+  // Ältere laden: erst 10, dann mehr
+  const n0 = await adm.locator("#feedBox .ses").count();
+  assert.equal(n0, 10, "zuerst 10 Sitzungen");
+  await adm.click("#feedMore");
+  await adm.waitForFunction(n => document.querySelectorAll("#feedBox .ses").length > n, n0);
+
+  // 24 Std: 24 Säulen, Texte je Stunde; bleibt nach Neuladen; aufgeklappte Sitzung übersteht das Neuzeichnen
+  await adm.click('#days [data-d="1"]');
+  await adm.waitForFunction(() => document.querySelectorAll("#chartActive svg rect[data-i]").length === 24);
+  assert.equal(await adm.textContent("#days button.on"), "24 Std");
+  assert.match(await adm.textContent("#chartActive h3"), /^Aktive Spieler pro Stunde · 24 Std$/);
+  assert.match(await adm.textContent("#chartNew h3"), /pro Stunde/);
+  assert.match(await adm.textContent("#chartActive .read"), /seit \d{1,2} Uhr/);
+  assert.deepEqual((await adm.$$eval("#chartActive .axis span", els => els.map(e => e.textContent))).map((t, i) => (i < 2 ? /^\d{1,2} Uhr$/.test(t) : t)), [true, true, "jetzt"]);
+  assert.match(await adm.textContent("#secModes .card-head .chip"), /24 Std/);
+  assert.equal(await ses.locator(".tl-wrap").isVisible(), true, "bleibt aufgeklappt");
+  for (const vp of [{ width: 390, height: 844 }, { width: 1366, height: 768 }]) {
+    await adm.setViewportSize(vp);
+    await adm.waitForTimeout(200);
+    const [sw, w] = await adm.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
+    assert.ok(sw <= w, `kein seitliches Scrollen bei ${vp.width} px (${sw})`);
+  }
+  // Handy: Live in der Tab-Leiste
+  await adm.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await adm.locator('.tabs [data-nav="secLive"]').isVisible(), "Live-Tab");
+  assert.equal(await adm.locator(".tabs a").count(), 5);
+  await admin(adm);
+  await adm.waitForFunction(() => document.querySelectorAll("#chartActive svg rect[data-i]").length === 24);
+  assert.equal(await adm.getAttribute('#days [data-d="1"]', "aria-pressed"), "true", "Zeitraum gemerkt");
+  await adm.waitForSelector("#feedBox .ses");
+  const [sw, w] = await adm.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
+  assert.ok(sw <= w, `kein seitliches Scrollen am Handy (${sw})`);
+  assert.deepEqual(errs, [], "ohne Konsolenfehler");
+});
