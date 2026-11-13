@@ -30,10 +30,24 @@ const reset = () => { for (const k in calls) calls[k].length = 0; };
 test("frisches Profil: gilt sofort als abgeglichen, ein vor der Anmeldung gespieltes Spiel wird nicht übernommen", async () => {
   reset();
   assert.equal(S.serverSynced, true, "beim Einstecken markiert");
+  assert.equal(acc.syncStatus(), "syncing", "noch kein Server-Stand");
   S.coins = 190;
   acc.applyState(st({ coins: 150, imported: false }));
   assert.equal(calls.importLocal.length, 0, "keine Übernahme: sonst zählte das Spiel doppelt");
   assert.equal(S.coins, 150, "Server-Stand gilt, die Spielmeldung bringt die 40 Münzen nach");
+  assert.equal(acc.syncStatus(), "ok");
+});
+
+test("Sync-Status: Abruf scheitert -> offline, nächster Stand -> ok; jeder Wechsel wird einmal gemeldet", async () => {
+  reset();
+  const seen = [];
+  acc.onSyncStatus(s => seen.push(s));
+  const p = acc.syncOnStart().catch(() => null);
+  calls.state[0].j(err("offline", 0)); await p;
+  assert.equal(acc.syncStatus(), "offline");
+  acc.applyState(st({ coins: 150 }, true));
+  assert.equal(acc.syncStatus(), "ok");
+  assert.deepEqual(seen, ["offline", "ok"]);
 });
 
 test("alter lokaler Spielstand: Server-Stand überschreibt ihn nicht, Übernahme einmal (mit Sperre), danach nachholen", async () => {

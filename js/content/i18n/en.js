@@ -1016,6 +1016,8 @@ export default {
   "stat.shots": "Shots",
   "stat.stomps": "Stomps",
   "stat.supers": "Special shots",
+  "sync.busy": "Syncing your progress",
+  "sync.offline": "Offline – your matches will be synced once you are back online.",
   "sync.buyOffline": "No connection. Buying only works online.",
   "sync.rejected": p => (p.n === 1 ? "1 match played offline was not counted." : `${p.n} matches played offline were not counted.`),
   "sync.sent": "{n} matches played offline counted",

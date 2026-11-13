@@ -1,13 +1,14 @@
 // Startseite mit Bühne (jonglierender Kopf), Tageskarten und Kopfzeile
 import { charById, CHARS, DIFFS, MODES, PAYMENTS, RARITY, rarityOf, SUPERS } from "../../content/config.js";
 import { today } from "../../core/economy.js";
-import { online as serverOn, passView } from "../../app/account.js";
+import { onSyncStatus, online as serverOn, passView, retryState, syncStatus } from "../../app/account.js";
+import { reducedMotion } from "../render/powerup-art.js";
 import { matchLen } from "../../core/physics.js";
 import { deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
 import { avatarCanvas, drawBall, drawHead } from "../render/art.js";
 import { dailyChallenge, startMode } from "../../app/modes.js";
 import { App } from "../../app/state.js";
-import { $, $$, esc, RCOL, svg } from "../dom.js";
+import { $, $$, esc, RCOL, svg, toast } from "../dom.js";
 import { goBack, registerScreen, showScreen } from "../nav.js";
 import { selectScreen } from "./select.js";
 import { audio as A, auth, has, server } from "../../app/services.js";
@@ -74,9 +75,34 @@ export function homeScreen() {
   }
 }
 
-export function refreshTop() {
-  $$(".coinNum").forEach(e => e.textContent = S.coins);
-  $$(".gemNum").forEach(e => e.textContent = S.gems || 0);
+const counting = new WeakMap();
+function countTo(el, to, anim) {
+  const from = Number(el.textContent) || 0;
+  cancelAnimationFrame(counting.get(el) || 0);
+  if (!anim || from === to || reducedMotion()) { el.textContent = to; return; }
+  const t0 = performance.now();
+  const step = now => {
+    const k = Math.min(1, (now - t0) / 600);
+    el.textContent = Math.round(from + (to - from) * (1 - (1 - k) ** 3));
+    if (k < 1) counting.set(el, requestAnimationFrame(step));
+  };
+  counting.set(el, requestAnimationFrame(step));
+}
+
+let slowSync = 0;
+function syncBadge(s = syncStatus()) {
+  const el = $("pfSync");
+  clearTimeout(slowSync);
+  el.hidden = s !== "syncing" && s !== "offline";
+  el.dataset.s = s;
+  el.setAttribute("aria-label", tx(s === "offline" ? "sync.offline" : "sync.busy"));
+  if (s === "syncing") slowSync = setTimeout(() => { if (syncStatus() === "syncing") syncBadge("offline"); }, 15000);
+}
+
+/** anim: Münzen und Juwelen zählen zum neuen Wert (nach einem Server-Abgleich) */
+export function refreshTop(anim = false) {
+  $$(".coinNum").forEach(e => countTo(e, S.coins, anim));
+  $$(".gemNum").forEach(e => countTo(e, S.gems || 0, anim));
   $("homeGems").hidden = !serverOn();
   $("lvlNum").textContent = S.level;
   $("xpFill").style.width = Math.round(S.xp / xpFor(S.level) * 100) + "%";
@@ -220,7 +246,12 @@ export function initHome() {
   $("navAch").onclick = () => { A.sfx("click"); showScreen("ach"); };
   $("navChests").onclick = () => { A.sfx("click"); showScreen("chests"); };
   $("homeStars").onclick = () => { A.sfx("click"); showScreen("ach"); };
-  $("btnProfile").onclick = () => { A.sfx("click"); showScreen("profile"); };
+  $("btnProfile").onclick = e => {
+    if (e.target.closest("#pfSync") && $("pfSync").dataset.s === "offline") { toast(tx("sync.offline"), "i-offline"); retryState(); return; }
+    A.sfx("click"); showScreen("profile");
+  };
+  onSyncStatus(syncBadge);
+  syncBadge();
   $("btnSettings").onclick = () => { A.sfx("click"); showScreen("settings"); };
   $("homeCoins").onclick = () => { A.sfx("click"); showScreen("shop"); };
   $("homeGems").onclick = () => { A.sfx("click"); setShopTab(PAYMENTS ? "gems" : "chars"); showScreen("shop"); };
