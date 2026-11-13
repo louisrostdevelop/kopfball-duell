@@ -29,8 +29,19 @@
     "post_1",
     "post_2"
   ],
+  "replay": [
+    "replay_1",
+    "replay_2",
+    "replay_3",
+    "replay_4",
+    "replay_5"
+  ],
   "roar": [
-    "roar"
+    "roar",
+    "roar_2",
+    "roar_3",
+    "roar_4",
+    "roar_5"
   ],
   "slide": [
     "slide_1",
