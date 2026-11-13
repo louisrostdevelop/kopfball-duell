@@ -184,7 +184,7 @@ export function drawShowcase(dt) {
   const cx = w / 2;
   stageFx(x, w, cx, baseY, r, t);
   // Kopf mit Lichtkante in der Farbe der Seltenheit
-  showcase.draw(x, dt, { cx, headY: baseY - r * 1.02, r, w, wx: 1.5, char: S.char, ball: S.ball, t, glow: RC[rarityOf(charById(S.char))] || RC.basis });
+  showcase.draw(x, dt, { cx, headY: baseY - r * 1.02, r, w, edge: 1.5, char: S.char, ball: S.ball, t, glow: RC[rarityOf(charById(S.char))] || RC.basis });
 }
 
 // Knopf zum Admin-Dashboard: nur Bequemlichkeit, den Zugriff prüft der Server bei jedem Abruf der Zahlen.

@@ -11,12 +11,12 @@ export function juggleStage() {
     j,
     /** pointerdown-Handler */
     tap: e => { taps.push(e && e.timeStamp ? e.timeStamp : performance.now()); },
-    /** @param {{ cx: number, headY: number, r: number, w: number, wx?: number, char: string, ball: string, t: number, glow?: number[] }} o wx: Bühnenbreite/2 in Kopfradien */
+    /** @param {{ cx: number, headY: number, r: number, w: number, edge?: number, char: string, ball: string, t: number, glow?: number[] }} o edge: halbe Breite des Podests in Kopfradien (0: keins) */
     draw(x, dt, o) {
       // Eingaben erst hier auswerten: der Zustand ist der vom letzten Bild, der Abstand dazu wird herausgerechnet
       const now = performance.now();
       for (const s of taps.splice(0)) juggleTap(j, Math.min(0.1, Math.max(0, (now - s) / 1000)));
-      const room = { lim: (o.headY - 4) / o.r - 1 - 2 * BALL_R, wx: o.wx || o.w / 2 / o.r };
+      const room = { lim: (o.headY - 4) / o.r - 1 - 2 * BALL_R, wx: o.w / 2 / o.r, edge: o.edge ?? 0 };
       for (let left = Math.min(0.05, dt); left > 1e-6; left -= SUB) juggleStep(j, Math.min(SUB, left), room);
       for (const e of j.ev.splice(0)) feedback(e);
       drawJuggle(x, j, o);

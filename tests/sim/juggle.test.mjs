@@ -1,9 +1,9 @@
 // Kopfball-Jonglieren auf der Bühne: Timing, zu spätes Tippen, Ende erst am Boden, Tempo, Platz nach oben
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { BALL_R, contactIn, createJuggle, juggleStep, juggleTap } from "../../js/ui/juggle.js";
+import { BALL_R, FLOOR, contactIn, createJuggle, juggleStep, juggleTap } from "../../js/ui/juggle.js";
 
-const DT = 1 / 120, ROOM = { lim: 2.3, wx: 3 };
+const DT = 1 / 120, ROOM = { lim: 2.3, wx: 3, edge: 1.5 };
 const fixed = () => 0.5;
 const run = (j, sec, each = () => {}) => { for (let i = 0; i < sec / DT; i++) { each(j); juggleStep(j, DT, ROOM); } };
 // tippt, sobald der Ball in `lead` Sekunden auf dem Kopf landet
@@ -60,10 +60,25 @@ test("zu früh: kein Treffer, danach kurze Sperre gegen Dauertippen", () => {
 test("nach dem Runterfallen: Antippen startet neu, sonst jongliert er wieder allein", () => {
   const j = playing();
   until(j, jj => jj.mode === "drop");
-  run(j, 0.2);
   assert.equal(juggleTap(j), "start"); assert.equal(j.mode, "play"); assert.equal(j.streak, 0);
   until(j, jj => jj.mode === "drop");
-  until(j, jj => jj.mode === "auto", 2);
+  until(j, jj => jj.mode === "auto", 4);
+});
+
+test("runtergefallen: rollt vom Podest, fällt aus dem Bild, neuer Ball kommt von oben", () => {
+  for (const edge of [1.5, 0]) {
+    const room = { ...ROOM, edge }, j = createJuggle(fixed);
+    for (let i = 0; i < 0.5 / DT; i++) juggleStep(j, DT, room);
+    juggleTap(j);
+    let low = -9, wasDrop = false, back = null;
+    for (let i = 0; i < 8 / DT && !back; i++) {
+      juggleStep(j, DT, room);
+      if (j.mode === "drop") { wasDrop = true; low = Math.max(low, j.y); }
+      if (wasDrop && j.mode === "auto") back = { y: j.y };
+    }
+    assert.ok(wasDrop && low > FLOOR + 1.5, `edge ${edge}: fällt aus dem Bild (tiefster Punkt ${low.toFixed(1)})`);
+    assert.ok(back && back.y < -(1 + BALL_R + room.lim), `edge ${edge}: neuer Ball startet über dem Bild`);
+  }
 });
 
 test("Ball fliegt nie höher als Platz da ist und landet immer auf dem Kopf", () => {

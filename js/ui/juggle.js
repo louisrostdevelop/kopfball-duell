@@ -2,12 +2,12 @@
 // Einheiten: Kopfradius = 1, Kopfmitte = (0, 0), y zeigt nach unten. Der Kopf steht fest, nur der Ball fliegt.
 export const BALL_R = 0.32, FLOOR = 0.98;
 const PERFECT = 0.055, GOOD = 0.13, LATE = 0.13, LEAD = 0.06, COOL = 0.11, WHIFF_COOL = 0.28;
-const AIR0 = 1, G_MIN = 8, RAMP = 0.03, RAMP_MAX = 0.9, HEIGHT = 2.3, STOP = 0.025, BACK_TO_AUTO = 1.6;
+const AIR0 = 1, G_MIN = 8, RAMP = 0.03, RAMP_MAX = 0.9, HEIGHT = 2.3, STOP = 0.025, GONE = 1.8, MAX_DROP = 3;
 
 /** @param {() => number} [rnd] */
 export function createJuggle(rnd = Math.random) {
   return { mode: "auto", x: 0, y: -3, vx: 0, vy: 0, a: 0, g: 10, streak: 0, best: 0, pending: null, cool: 0, contactT: -9,
-    passive: 0, t: 0, stop: 0, nod: 9, sq: 0, ring: 9, mood: "", moodT: 0, dropT: 0, lim: HEIGHT, wx: 3, ev: [], rnd };
+    passive: 0, t: 0, stop: 0, nod: 9, sq: 0, ring: 9, mood: "", moodT: 0, dropT: 0, lim: HEIGHT, wx: 3, edge: 1.5, ev: [], rnd };
 }
 
 const contactY = x => -Math.sqrt(Math.max(0, (1 + BALL_R) ** 2 - x * x));
@@ -41,9 +41,10 @@ function miss(j) {
   j.ev.push({ k: "miss", n: j.streak });
   j.streak = 0;
 }
+// neuer Ball fällt von oben ins Bild
 function respawn(j, mode) {
   j.mode = mode; j.streak = 0; j.pending = null; j.passive = 0;
-  Object.assign(j, { x: (j.rnd() - 0.5) * 0.2, y: -(1 + Math.min(j.lim, 2.2) + BALL_R), vx: 0, vy: 0 });
+  Object.assign(j, { x: (j.rnd() - 0.5) * 0.2, y: -(1 + 3 * BALL_R + j.lim), vx: 0, vy: 0 });
 }
 
 /**
@@ -69,11 +70,13 @@ export function juggleTap(j, lag = 0) {
 
 /**
  * Ein Zeitschritt.
- * @param {{ lim?: number, wx?: number }} room lim: Platz über dem Kopf, wx: halbe Bühnenbreite (beides in Kopfradien)
+ * @param {{ lim?: number, wx?: number, edge?: number }} room in Kopfradien: lim Platz über dem Kopf, wx halbe Bildbreite,
+ *   edge halbe Breite des Bodens (Podest); daneben fällt der Ball aus dem Bild
  */
 export function juggleStep(j, dt, room = {}) {
   if (room.lim) j.lim = Math.max(0.5, room.lim);
   if (room.wx) j.wx = room.wx;
+  if (room.edge !== undefined) j.edge = room.edge;
   j.t += dt; j.nod += dt; j.ring += dt; j.sq = Math.max(0, j.sq - dt * 9); j.moodT -= dt;
   if (j.stop > 0) { j.stop -= dt; return; }
   j.vy += j.g * dt; j.x += j.vx * dt; j.y += j.vy * dt; j.a += dt * 2 + j.vx * dt * 2;
@@ -89,11 +92,14 @@ export function juggleStep(j, dt, room = {}) {
       j.ev.push({ k: "bump" });
     }
   }
-  if (j.y + BALL_R > FLOOR) {
+  if (j.y + BALL_R > FLOOR && j.mode === "play") miss(j);
+  if (j.y + BALL_R > FLOOR && Math.abs(j.x) < j.edge && j.y + BALL_R < FLOOR + 0.3) {
+    // auf dem Podest: abprallen und nach außen wegrollen, bis er über die Kante fällt
     j.y = FLOOR - BALL_R;
-    if (j.mode === "play") miss(j);
-    j.vy = j.vy > 1.5 ? -j.vy * 0.45 : 0; j.vx *= 0.97;
+    j.vy = j.vy > 1.5 ? -j.vy * 0.45 : 0;
+    const out = j.x >= 0 ? 1 : -1;
+    j.vx = out * Math.max(1.2, Math.abs(j.vx) * (1 - 0.8 * dt));
   }
   if (Math.abs(j.x) > j.wx - BALL_R) { j.x = Math.sign(j.x) * (j.wx - BALL_R); j.vx = -j.vx * 0.6; }
-  if (j.mode === "drop") { j.dropT += dt; if (j.dropT > BACK_TO_AUTO) respawn(j, "auto"); }
+  if (j.mode === "drop") { j.dropT += dt; if (j.y > FLOOR + GONE || j.dropT > MAX_DROP) respawn(j, "auto"); }
 }

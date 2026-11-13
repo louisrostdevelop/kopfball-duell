@@ -10,9 +10,12 @@ import { drawBall, drawHead } from "./art.js";
 export function drawJuggle(x, j, o) {
   const { cx, headY, r, t } = o, br = r * BALL_R, floor = headY + r * FLOOR;
   const bx = cx + j.x * r, by = headY + j.y * r, hy = headY - nodOffset(j) * r;
-  // Schatten von Ball und Kopf
-  const up = Math.max(0, (floor - by) / (r * 4));
-  x.fillStyle = `rgba(0,0,0,${0.2 * (1 - Math.min(0.7, up))})`; x.beginPath(); x.ellipse(bx, floor, br * (1.1 - Math.min(0.5, up)), br * 0.22, 0, 0, Math.PI * 2); x.fill();
+  // unter der Bühnenkante blendet der Ball aus (fällt in die Tiefe); Schatten nur, solange Boden unter ihm ist
+  const up = Math.max(0, (floor - by) / (r * 4)), below = j.y - (FLOOR - BALL_R);
+  const alpha = below > 0 ? Math.max(0, 1 - below / 1.5) : 1;
+  if (below <= 0.05 && Math.abs(j.x) < Math.max(j.edge, 1)) {
+    x.fillStyle = `rgba(0,0,0,${0.2 * (1 - Math.min(0.7, up))})`; x.beginPath(); x.ellipse(bx, floor, br * (1.1 - Math.min(0.5, up)), br * 0.22, 0, 0, Math.PI * 2); x.fill();
+  }
   // Kopf, beim Treffer kurz gestaucht
   const sq = Math.sin(Math.min(1, j.sq) * Math.PI) * 0.08;
   x.save(); x.translate(cx, floor); x.scale(1 + sq, 1 - sq); x.translate(-cx, -floor);
@@ -30,5 +33,5 @@ export function drawJuggle(x, j, o) {
     x.beginPath(); x.arc(bx, by + br, br + r * 0.8 * Math.sqrt(p), 0, Math.PI * 2); x.stroke();
   }
   const stretch = j.sq > 0 ? { ang: Math.PI / 2, k: 1 - 0.3 * Math.sin((j.sq * Math.PI) / 2) } : null;
-  drawBall(x, o.ball, bx, by, br, j.a, 1, stretch, { t, vx: j.vx * r, vy: j.vy * r });
+  if (alpha > 0) drawBall(x, o.ball, bx, by, br, j.a, alpha, stretch, { t, vx: j.vx * r, vy: j.vy * r });
 }
