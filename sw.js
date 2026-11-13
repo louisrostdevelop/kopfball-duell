@@ -21,9 +21,10 @@ const CORE = [
   "js/core/sim/shoe.js", "js/core/sim/state.js", "js/core/sim/supers.js", "js/core/sim/tricks.js",
   "js/core/sim/tuning.js", "js/main.js", "js/ports/auth.js", "js/ports/devices.js", "js/ports/server.js",
   "js/ports/storage.js", "js/ports/transport.js", "js/ui/brand.js", "js/ui/controls.js", "js/ui/dom.js",
-  "js/ui/hud.js", "js/ui/install.js", "js/ui/modals.js", "js/ui/nav.js", "js/ui/render/arena-art.js",
-  "js/ui/render/art.js", "js/ui/render/balls.js", "js/ui/render/chest-art.js", "js/ui/render/classic-heads.js",
-  "js/ui/render/frames.js", "js/ui/render/goalfx.js", "js/ui/render/meme-heads.js", "js/ui/render/modeart.js",
+  "js/ui/hud.js", "js/ui/install.js", "js/ui/juggle.js", "js/ui/modals.js", "js/ui/nav.js",
+  "js/ui/render/arena-art.js", "js/ui/render/art.js", "js/ui/render/balls.js", "js/ui/render/chest-art.js",
+  "js/ui/render/classic-heads.js", "js/ui/render/frames.js", "js/ui/render/goalfx.js",
+  "js/ui/render/juggle-art.js", "js/ui/render/meme-heads.js", "js/ui/render/modeart.js",
   "js/ui/render/paint.js", "js/ui/render/powerup-art.js", "js/ui/render/powerup-fx.js",
   "js/ui/render/render.js", "js/ui/render/shoes.js", "js/ui/screens/account.js",
   "js/ui/screens/achievements.js", "js/ui/screens/board.js", "js/ui/screens/career.js",
@@ -31,7 +32,8 @@ const CORE = [
   "js/ui/screens/modes.js", "js/ui/screens/online.js", "js/ui/screens/pass.js", "js/ui/screens/profile.js",
   "js/ui/screens/rules.js", "js/ui/screens/run.js", "js/ui/screens/search.js", "js/ui/screens/select.js",
   "js/ui/screens/settings.js", "js/ui/screens/setup.js", "js/ui/screens/shop.js", "js/ui/screens/tasks.js",
-  "js/ui/sharecard.js", "manifest.webmanifest", "vendor/peerjs.min.js", "vendor/qrcode.js"
+  "js/ui/sharecard.js", "js/ui/stage-juggle.js", "manifest.webmanifest", "vendor/peerjs.min.js",
+  "vendor/qrcode.js"
 ];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE.map(u => new Request(u, { cache: "reload" })))).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

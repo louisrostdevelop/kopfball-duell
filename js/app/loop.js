@@ -10,6 +10,7 @@ import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { drawShowcase } from "../ui/screens/home.js";
+import { drawSearchJuggle } from "../ui/screens/search.js";
 import { audio as A, input as I } from "./services.js";
 import { t } from "../content/i18n.js";
 
@@ -80,6 +81,7 @@ function frame(now) {
     setTimeout(() => { if (App.endPend === pend && (App.rb || App.st) === pend.s0 && App.mode === pend.mode) { App.endPend = null; matchEnd(pend.key); } }, 900);
   }
   if (App.screen === "home") drawShowcase(dt);
+  else if (App.screen === "search") drawSearchJuggle(dt);
 }
 
 function takeEvents(st) { if (st.ev.length) for (const e of st.ev.splice(0)) onEvent(e); }

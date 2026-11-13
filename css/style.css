@@ -1182,6 +1182,7 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 
 .searchwrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-height: 70%; text-align: center; }
 .sr-me { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sr-juggle { display: block; width: 170px; height: 240px; cursor: pointer; touch-action: manipulation; }
 .sr-me b { font-family: var(--display); font-weight: 400; font-size: 22px; text-shadow: var(--o-sm); }
 .sr-mid { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .sr-mid b { font-family: var(--display); font-weight: 400; font-size: 28px; text-shadow: var(--o-sm); }
@@ -1193,7 +1194,7 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 
 @keyframes srspin { to { transform: rotate(360deg); } }
 
-@media (max-height: 520px) and (orientation: landscape) { .searchwrap { gap: 10px; flex-flow: row wrap; } .sr-ring { width: 72px; height: 72px; } }
+@media (max-height: 520px) and (orientation: landscape) { .searchwrap { gap: 10px; flex-flow: row wrap; } .sr-ring { width: 72px; height: 72px; } .sr-juggle { width: 130px; height: 170px; } }
 
 
 @media (max-height: 520px) and (orientation: landscape), (max-width: 700px) and (orientation: portrait) {

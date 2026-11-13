@@ -10,14 +10,25 @@ import { serverState } from "../../app/account.js";
 import { cleanCos } from "../../app/cosmetics.js";
 import { cosById } from "../../content/cosmetics.js";
 import { t } from "../../content/i18n.js";
+import { juggleStage } from "../stage-juggle.js";
 
 let clock = null;
+// Beim Warten jongliert der eigene Kopf (Antippen = Kopfball)
+export const searchStage = juggleStage();
+let cv = null, stageT = 0;
+function juggleCanvas() {
+  if (!cv) { cv = document.createElement("canvas"); cv.className = "sr-juggle"; cv.addEventListener("pointerdown", searchStage.tap); }
+  cv.setAttribute("aria-label", t("html.attr.deinKopfAntippenZum"));
+  return cv;
+}
 const mmss = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
 
 export function searchUI(mm) {
   if (!mm) return;
   $("srTitle").textContent = t(mm.mode === "ranked" ? "mode.ranked.name" : "mode.casual.name");
-  const av = $("srAv"); if (mm.state === "search" || !av.firstChild) { av.innerHTML = ""; av.append(avatarCanvas(S.char, 120)); }
+  const av = $("srAv");
+  if (mm.state === "search") { if (av.firstChild !== juggleCanvas()) { av.innerHTML = ""; av.append(cv); } }
+  else if (!av.firstChild || av.firstChild === cv) { av.innerHTML = ""; av.append(avatarCanvas(S.char, 120)); }
   const rating = serverState() && serverState().season && serverState().season.rating;
   $("srMe").textContent = (S.name || t("ui.you")) + (mm.mode === "ranked" ? " · " + league(rating ? rating.mmr : 1000) + " " + (rating ? rating.mmr : 1000) : "");
   const st = $("srState"), opp = $("srOpp");
@@ -42,6 +53,18 @@ export function searchUI(mm) {
   }
   if (mm.state === "search") $("srThem").hidden = true; else $("srCpu").hidden = true;
   $("srCancel").hidden = mm.state !== "search";
+}
+
+/** Jedes Bild, solange gesucht wird */
+export function drawSearchJuggle(dt) {
+  if (!cv || !cv.isConnected || !App.mm || App.mm.state !== "search") return;
+  const dpr = Math.min(2, devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
+  stageT += dt;
+  const r = Math.min(w * 0.3, h * 0.2);
+  searchStage.draw(x, dt, { cx: w / 2, headY: h - r * 1.2, r, w, char: S.char, ball: S.ball, t: stageT });
 }
 
 /** Aktivität während der Suche: wie viele außer mir suchen. Ist niemand da, nach einer Weile anbieten, solange gegen den Computer zu spielen. */

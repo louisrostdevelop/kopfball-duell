@@ -5,7 +5,8 @@ import { onSyncStatus, online as serverOn, passView, retryState, syncStatus } fr
 import { reducedMotion } from "../render/powerup-art.js";
 import { matchLen } from "../../core/physics.js";
 import { deal, owns, S, save, tasks, xpFor } from "../../app/profile.js";
-import { avatarCanvas, drawBall, drawHead } from "../render/art.js";
+import { avatarCanvas } from "../render/art.js";
+import { juggleStage } from "../stage-juggle.js";
 import { dailyChallenge, startMode } from "../../app/modes.js";
 import { App } from "../../app/state.js";
 import { $, $$, esc, RCOL, svg, toast } from "../dom.js";
@@ -20,11 +21,9 @@ import { t as tx } from "../../content/i18n.js";
 import { canInstall, installAsk } from "../install.js";
 import { canFullscreen } from "../../app/game.js";
 
-export let showcaseT = 0, showcaseTap = 0;
-export const juggle = { y: 0, vy: 0, a: 0, hits: 0 };
-
-// Antippen der Bühne: Kopf nickt, Ball fliegt hoch
-export function tapShowcase() { showcaseTap = 0.5; juggle.vy = Math.min(juggle.vy, -200); A.sfx("head"); }
+export let showcaseT = 0;
+/** Jonglieren auf der Bühne (Antippen = Kopfball) */
+export const showcase = juggleStage();
 
 export function homeScreen() {
   refreshTop();
@@ -174,7 +173,7 @@ export function drawShowcase(dt) {
   if (!w || !h) return;
   if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
   const x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
-  showcaseT += dt; showcaseTap = Math.max(0, showcaseTap - dt);
+  showcaseT += dt;
   const t = showcaseT;
   // Platz unter dem Kopf für Namensschild freihalten
   const plate = document.querySelector("#scr-home .plate"), nu = $("hsNext");
@@ -184,31 +183,8 @@ export function drawShowcase(dt) {
   const baseY = avail - r * 0.15; // Boden der Bühne
   const cx = w / 2;
   stageFx(x, w, cx, baseY, r, t);
-  // Jonglieren: Ball fällt auf den Kopf, Kopf nickt ihn wieder hoch
-  const headY = baseY - r * 1.02, top = headY - r;
-  const j = juggle, g = r * 9;
-  if (!j.init) { j.init = true; j.y = top - r * 2.4; j.vy = 0; }
-  j.vy += g * dt; j.y += j.vy * dt; j.a += dt * 3;
-  let bump = 0;
-  const br = r * 0.32;
-  if (j.y + br > top && j.vy > 0) { j.y = top - br; const hh = Math.max(r * 0.6, Math.min(r * (1.6 + 0.6 * Math.abs(Math.sin(t * 1.3))), top - br * 2 - 8)); j.vy = -Math.sqrt(2 * g * hh); j.hits++; showcaseTap = Math.max(showcaseTap, 0.25); }
-  if (showcaseTap > 0) bump = Math.sin((1 - showcaseTap / 0.5) * Math.PI) * 0.1;
-  const bx = cx + Math.sin(t * 1.9) * r * 0.12;
-  // Schatten des Balls
-  x.fillStyle = "rgba(0,0,0,.18)"; x.beginPath(); x.ellipse(bx, top + 4, br * (0.6 + 0.4 * (1 - Math.min(1, (top - j.y) / (r * 3)))), br * 0.2, 0, 0, Math.PI * 2); x.fill();
-  // Kopf
-  x.save(); x.translate(cx, baseY); x.scale(1 + bump * 0.8, 1 - bump); x.translate(-cx, -baseY);
-  const look = -Math.PI / 2 + Math.sin(t * 2) * 0.3;
   // Kopf mit Lichtkante in der Farbe der Seltenheit
-  const [gr, gg, gb] = RC[rarityOf(charById(S.char))] || RC.basis;
-  const hopt = { dir: 1, look, mood: showcaseTap > 0.3 ? "happy" : "", blink: Math.sin(t * 1.7) > 0.97, t }, hy = headY - bump * r * 0.4;
-  // Schein als Ring-Verlauf hinter dem Kopf (innen ab 0,85 r, damit er das Gesicht nicht einfärbt)
-  const gl = x.createRadialGradient(cx, hy, r * 0.85, cx, hy, r * 1.32);
-  gl.addColorStop(0, `rgba(${gr},${gg},${gb},.5)`); gl.addColorStop(1, `rgba(${gr},${gg},${gb},0)`);
-  x.fillStyle = gl; x.beginPath(); x.arc(cx, hy, r * 1.32, 0, Math.PI * 2); x.fill();
-  drawHead(x, S.char, cx, hy, r, hopt);
-  x.restore();
-  drawBall(x, S.ball, bx, j.y, br, j.a, 1, null, { t, vy: j.vy });
+  showcase.draw(x, dt, { cx, headY: baseY - r * 1.02, r, w, wx: 1.5, char: S.char, ball: S.ball, t, glow: RC[rarityOf(charById(S.char))] || RC.basis });
 }
 
 // Knopf zum Admin-Dashboard: nur Bequemlichkeit, den Zugriff prüft der Server bei jedem Abruf der Zahlen.
@@ -238,7 +214,7 @@ export function initHome() {
   $("btnPlay").onclick = () => startMode(S.mode);
   $("modeCard").onclick = () => { A.sfx("click"); showScreen("modes"); };
   $("navHeads").onclick = () => { A.sfx("click"); selectScreen({ title: tx("nav.heads"), okText: tx("ui.select"), onDone: id => { S.char = id; save(); goBack(); } }); };
-  $("showcase").onclick = tapShowcase;
+  $("showcase").addEventListener("pointerdown", showcase.tap);
   $("hsDaily").onclick = () => { A.sfx("click"); dailyBriefing(); };
   $("hsTasks").onclick = () => { A.sfx("click"); showScreen("tasks"); };
   $("navShop").onclick = () => { A.sfx("click"); showScreen("shop"); };
