@@ -155,7 +155,7 @@ export function onGoal(e) {
   fx.net(side, e.y, 1.4);
   fx.shake(24); fx.flash([COL.p1, COL.p2][e.i], 0.45); fx.hype(1);
   App.replay = App.rec.slice(-160);
-  if (!demo) A.sfx("goal");
+  if (!demo) A.sfx("goal", e.gold || e.lastSec || e.kind === "super" || e.long ? 1 : 0.6);
   if (isHuman(e.i)) I.vibrate([60, 40, 120]);
   let text = t("goal.goal");
   if (e.gold) text = t("goal.golden");

@@ -7,6 +7,8 @@
  * @property {(on: boolean, kind?: string) => void} music
  * @property {(level: number) => void} crowd
  * @property {() => void} crowdOff
+ * @property {() => void} prepareMatch   seltene Dateien (Musik zur Wiederholung) vor dem ersten Spiel nachladen
+ * @property {(key: object|null) => void} replayMusic   jedes Bild: laufende Wiederholung oder null
  * @property {(on: boolean) => void} setSfx
  * @property {(on: boolean) => void} setMusic
  */

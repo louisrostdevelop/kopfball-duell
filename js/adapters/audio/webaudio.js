@@ -7,6 +7,7 @@
 import { initSynth, play, MENU_TRACKS } from "./synth.js";
 
 let ac = null, master, mix, verbIn, sfxVerb, musVerb, musBus, crowdGain, noiseBuf, crowdNodes = [], musSrc = null;
+let cheerBus, cheerTone, crowdDuck, stingBus, bowlSfx, sting = null, lastSting = -1;
 const buses = {};
 let sfxOn = true, musOn = true, musicPlaying = false, musTimer = null, nextNote = 0, stepIdx = 0, musicMode = "menu";
 const MUS_LEVEL = 0.3;
@@ -48,10 +49,23 @@ export function unlock() {
   sfxVerb = ac.createGain(); sfxVerb.gain.value = sfxOn ? 1 : 0; sfxVerb.connect(verbIn);
   musVerb = ac.createGain(); musVerb.gain.value = musOn ? 1 : 0; musVerb.connect(verbIn);
   musBus = ac.createGain(); musBus.gain.value = musOn ? MUS_LEVEL : 0; musBus.connect(glue);
+  // Stadion-Hall für Jubel und Wiederholungs-Musik: größer und dunkler als der Raum-Hall, kurz verzögert, damit der Anschlag klar bleibt
+  const bowl = ac.createConvolver(); bowl.buffer = impulse(2.4, 3.2);
+  const bowlIn = ac.createDelay(0.1); bowlIn.delayTime.value = 0.03;
+  const bowlHp = ac.createBiquadFilter(); bowlHp.type = "highpass"; bowlHp.frequency.value = 300;
+  const bowlLp = ac.createBiquadFilter(); bowlLp.type = "lowpass"; bowlLp.frequency.value = 5500;
+  const bowlOut = ac.createGain(); bowlOut.gain.value = 0.5;
+  bowlIn.connect(bowlHp); bowlHp.connect(bowlLp); bowlLp.connect(bowl); bowl.connect(bowlOut); bowlOut.connect(glue);
+  stingBus = ac.createGain(); stingBus.gain.value = musOn ? 1 : 0; stingBus.connect(glue);
+  const stingSend = ac.createGain(); stingSend.gain.value = 0.28; stingBus.connect(stingSend); stingSend.connect(bowlIn);
+  bowlSfx = ac.createGain(); bowlSfx.gain.value = sfxOn ? 0.22 : 0; bowlSfx.connect(bowlIn);
+  cheerBus = ac.createGain(); cheerTone = ac.createBiquadFilter(); cheerTone.type = "lowpass"; cheerTone.frequency.value = 16000; cheerTone.Q.value = 0.5;
+  cheerBus.connect(cheerTone); cheerTone.connect(buses.big); cheerTone.connect(bowlSfx);
   noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
   const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   initSynth(ac, { ...buses, verb: sfxVerb, music: musBus, musVerb }, noiseBuf);
-  crowdGain = ac.createGain(); crowdGain.gain.value = 0; crowdGain.connect(buses.fx);
+  crowdDuck = ac.createGain(); crowdDuck.connect(buses.fx);
+  crowdGain = ac.createGain(); crowdGain.gain.value = 0; crowdGain.connect(crowdDuck);
   startCrowd();
   if (musicPlaying) startLoop();
   loadFiles();
@@ -79,9 +93,9 @@ function startCrowd() {
     return n;
   });
 }
-function roar(sec) {
+function roar(sec, lvl = 0.55) {
   if (!crowdGain) return; const t = ac.currentTime;
-  crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(0.55, t, 0.05); crowdGain.gain.setTargetAtTime(0.07, t + sec, 0.7);
+  crowdGain.gain.cancelScheduledValues(t); crowdGain.gain.setTargetAtTime(lvl, t, 0.05); crowdGain.gain.setTargetAtTime(0.07, t + sec, 0.7);
 }
 export function crowd(level) { if (crowdGain && ac) crowdGain.gain.setTargetAtTime(0.03 + level * 0.12, ac.currentTime, 0.4); }
 export function crowdOff() { if (crowdGain && ac) crowdGain.gain.setTargetAtTime(0, ac.currentTime, 0.3); }
@@ -91,28 +105,54 @@ export function crowdOff() { if (crowdGain && ac) crowdGain.gain.setTargetAtTime
 // .ogg oder (Safari ohne Ogg) .m4a. Fehlt eine Datei oder lässt sie sich nicht lesen, bleibt der erzeugte Sound.
 const files = {};
 const decode = b => new Promise(res => { ac.decodeAudioData(b, res, () => res(null)); });
+const LAZY = new Set(["replay"]);   // erst beim ersten Spiel (prepareMatch), nicht beim Start
+let manifest = null, lazyWanted = false, lazyDone = false;
+const fileExt = () => { const a = document.createElement("audio"); return a.canPlayType('audio/ogg; codecs="opus"') || a.canPlayType('audio/ogg; codecs="vorbis"') ? ".ogg" : ".m4a"; };
+async function loadSet(entries) {
+  const ext = fileExt();
+  await Promise.all(entries.map(async ([name, list]) => {
+    const bufs = await Promise.all(list.map(f => fetch(`audio/sfx/${f}${ext}`).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => b && decode(b)).catch(() => null)));
+    if (bufs.some(Boolean)) files[name] = bufs.filter(Boolean);
+  }));
+}
+/** Vor dem ersten Spiel: seltene Dateien (Musik zur Wiederholung) nachladen */
+export function prepareMatch() { lazyWanted = true; loadLazy(); }
+function loadLazy() {
+  if (!lazyWanted || lazyDone || !ac || !manifest) return;
+  lazyDone = true;
+  loadSet(Object.entries(manifest).filter(([name]) => LAZY.has(name))).catch(() => {});
+}
 async function loadFiles() {
   try {
-    const m = await (await fetch("audio/sfx/manifest.json")).json();
-    const a = document.createElement("audio"), ext = a.canPlayType('audio/ogg; codecs="opus"') || a.canPlayType('audio/ogg; codecs="vorbis"') ? ".ogg" : ".m4a";
+    manifest = await (await fetch("audio/sfx/manifest.json")).json();
     // Namen mit _altN sind Kandidaten zur Auswahl im Sound-Lab, das Spiel lädt sie nicht
-    await Promise.all(Object.entries(m).filter(([name]) => !/_alt\d+$/.test(name)).map(async ([name, list]) => {
-      const bufs = await Promise.all(list.map(f => fetch(`audio/sfx/${f}${ext}`).then(r => (r.ok ? r.arrayBuffer() : null)).then(b => b && decode(b)).catch(() => null)));
-      if (bufs.some(Boolean)) files[name] = bufs.filter(Boolean);
-    }));
+    await loadSet(Object.entries(manifest).filter(([name]) => !/_alt\d+$/.test(name) && !LAZY.has(name)));
+    loadLazy();
     if (files.crowd && crowdNodes.length) { crowdNodes.forEach(n => n.stop()); crowdNodes = []; playFile("crowd", 1, true, crowdGain); }
     if (files["music-menu"] && musicPlaying) { clearInterval(musTimer); musTimer = null; startLoop(); }
   } catch (_) { /* keine Liste: alles bleibt erzeugt */ }
 }
 // Kategorie einer Datei für den Pegel (wie die erzeugten Sounds)
 const fileCat = name => (/^(click|coin|tick|count|chest-item|shards)$/.test(name) ? "ui" : /^(goal|win|lose|levelup|chest-|super$|gfx-)/.test(name) ? "big" : /^(kick|hammer|chip|head|bounce|wallhit|bumper|swing|jump|land|slide|pound|stomp|squash|bump|pop)$/.test(name) ? "body" : "fx");
-/** Spielt eine Datei (zufällige Variante, Tonhöhe leicht gestreut, v = Stärke wie beim erzeugten Sound) */
-function playFile(name, v = 1, loop = false, dest = null, at = 0) {
+const FILE_TRIM = { post: -6 };   // dB je Aufnahme
+/** Pegelfaktor einer Aufnahme */
+export const fileLevel = name => Math.pow(10, (FILE_TRIM[name] || 0) / 20);
+/** Index einer zufälligen Variante, nie dieselbe wie zuletzt (last; -1 = keine) */
+export function pickVariant(n, last = -1, rnd = Math.random) {
+  if (n <= 1) return 0;
+  if (last < 0 || last >= n) return Math.floor(rnd() * n);
+  const i = Math.floor(rnd() * (n - 1));
+  return i >= last ? i + 1 : i;
+}
+const lastPick = {};
+/** Spielt eine Datei (zufällige Variante, Tonhöhe leicht gestreut, v = Stärke wie beim erzeugten Sound, vol = Pegel) */
+function playFile(name, v = 1, loop = false, dest = null, at = 0, vol = 1) {
   const list = files[name]; if (!list) return null;
   const src = ac.createBufferSource(), g = ac.createGain(), k = Math.min(1.5, Math.max(0.2, v ?? 1));
-  src.buffer = list[Math.floor(Math.random() * list.length)]; src.loop = loop;
+  const pick = pickVariant(list.length, lastPick[name] ?? -1); lastPick[name] = pick;
+  src.buffer = list[pick]; src.loop = loop;
   if (!loop) src.playbackRate.value = 0.96 + Math.random() * 0.08 + (k - 1) * 0.06;
-  g.gain.value = loop ? 1 : Math.min(1.4, 0.55 + 0.45 * k);
+  g.gain.value = (loop ? 1 : Math.min(1.4, 0.55 + 0.45 * k)) * vol;
   src.connect(g); g.connect(dest || buses[fileCat(name)]);
   if (!loop && dest === null) { const s = ac.createGain(); s.gain.value = 0.12; g.connect(s); s.connect(sfxVerb); }
   src.start(ac.currentTime + at);
@@ -122,9 +162,11 @@ function playFile(name, v = 1, loop = false, dest = null, at = 0) {
 /** Nur für das Sound-Lab (tools/sound-lab): Dateien aus audio/sfx ein- oder ausschalten, um erzeugt und aufgenommen zu vergleichen */
 let filesOn = true;
 export function useFiles(on) { filesOn = on; }
-export function setSfx(on) { sfxOn = on; if (mix) { mix.gain.value = on ? 1 : 0; sfxVerb.gain.value = on ? 1 : 0; } }
+export function setSfx(on) { sfxOn = on; if (mix) { mix.gain.value = on ? 1 : 0; sfxVerb.gain.value = on ? 1 : 0; bowlSfx.gain.value = on ? 0.22 : 0; } }
 export function setMusic(on) {
   musOn = on; if (!musBus) return;
+  if (!on) stingStop();
+  stingBus.gain.setTargetAtTime(on ? 1 : 0, ac.currentTime, 0.1);
   // geplante Werte (Ducken holt die Musik sonst nach Sekunden zurück) verwerfen
   const t = ac.currentTime;
   for (const p of [musBus.gain, musVerb.gain]) { p.cancelScheduledValues(t); p.setValueAtTime(p.value, t); }
@@ -138,10 +180,10 @@ function duck(sec) {
 export function sfx(kind, v = 1) {
   if (!ac || document.hidden) return;   // im Hintergrund nichts einreihen, sonst kommt beim Zurückkehren alles auf einmal
   if (DUCK.has(kind)) duck(kind === "goal" || kind === "chest-head" ? 1.6 : 0.9);
-  if (kind === "goal") { roar(1.2); if (filesOn && files.roar) playFile("roar", 1, false, null, 0.15); }
+  if (kind === "goal") { roar(1.2, 0.25 + 0.2 * v); if (filesOn && files.roar) playFile("roar", 1, false, cheerBus, 0.15, 0.4 + 0.35 * v); }   // v: 0,6 normales Tor, 1 großer Moment
   // Abpfiff: kurz, kurz, lang (aus den Aufnahmen der Einzelpfiffe zusammengesetzt)
   if (kind === "whistle" && filesOn && files.whistle1 && files.whistle) { playFile("whistle1"); playFile("whistle1", 1, false, null, 0.45); playFile("whistle", 1, false, null, 0.9); return; }
-  if (filesOn && files[kind]) { playFile(kind, v); return; }
+  if (filesOn && files[kind]) { playFile(kind, v, false, null, 0, fileLevel(kind)); return; }
   if (play(kind, v)) return;
   legacy(kind);
 }
@@ -189,10 +231,58 @@ export function setMenuTrack(name) {
   track = MENU_TRACKS[name];
   if (musTimer) { clearInterval(musTimer); musTimer = null; startLoop(); }
 }
+// ---------- Musik zur Torwiederholung (Jubel und Publikum gehen darunter) ----------
+const STING = 0.4, STING_DUCK = 0.45;
+const cue = { cur: null, used: new WeakSet() };
+/** Was bei Schlüssel key (die laufende Wiederholung, null = keine) zu tun ist: "start", "stop", "restart" oder null */
+export function replayCue(c, key) {
+  if (key === c.cur) return null;
+  const was = c.cur; c.cur = key;
+  if (key && !c.used.has(key)) { c.used.add(key); return was ? "restart" : "start"; }
+  return was ? "stop" : null;
+}
+/** Jedes Bild aufrufen: key = Objekt der laufenden Wiederholung oder null */
+export function replayMusic(key) {
+  const a = replayCue(cue, key || null);
+  if (!a || !ac) return;
+  if (a !== "start") stingStop();
+  if (a !== "stop") stingStart();
+}
+// Jubel und Publikum leiser und etwas dunkler, damit die Musik obenauf sitzt; zurück langsamer als hin
+function duckCheer(on) {
+  const t = ac.currentTime;
+  for (const n of [cheerBus, crowdDuck]) { n.gain.cancelScheduledValues(t); n.gain.setTargetAtTime(on ? STING_DUCK : 1, t, on ? 0.15 : 0.5); }
+  cheerTone.frequency.cancelScheduledValues(t); cheerTone.frequency.setTargetAtTime(on ? 3800 : 16000, t, on ? 0.15 : 0.5);
+}
+// Einstieg: leiser und dumpf, öffnet sich in einer halben Sekunde; Ausstieg: wird dunkler und leiser, der Hall klingt aus
+function stingStart() {
+  const list = files.replay;
+  if (!list || !musOn || !filesOn || document.hidden || ac.state !== "running") return;
+  const t = ac.currentTime, src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  lastSting = pickVariant(list.length, lastSting); src.buffer = list[lastSting];
+  f.type = "lowpass"; f.Q.value = 0.5; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(18000, t + 0.5);
+  g.gain.setValueAtTime(0, t); g.gain.setTargetAtTime(STING, t, 0.08);
+  src.connect(f); f.connect(g); g.connect(stingBus); src.start(t);
+  const me = { src, f, g };
+  src.onended = () => { if (sting === me) { sting = null; duckCheer(false); } };
+  sting = me;
+  duckCheer(true);
+}
+function stingStop() {
+  if (!sting) return;
+  const t = ac.currentTime, { src, f, g } = sting;
+  sting = null;
+  for (const p of [g.gain, f.frequency]) { p.cancelScheduledValues(t); p.setValueAtTime(p.value, t); }
+  g.gain.setTargetAtTime(0, t, 0.16); f.frequency.exponentialRampToValueAtTime(500, t + 0.6);
+  try { src.stop(t + 1); } catch (_) { /* schon gestoppt */ }
+  duckCheer(false);
+}
+
 /** Für Tests: Zustand des Mischpults (Pegel zum jetzigen Zeitpunkt) */
 export function state() {
   const v = n => (n ? n.gain.value : null);
-  return { ctx: ac ? ac.state : "none", sfxOn, musOn, musicPlaying, sfx: v(mix), sfxVerb: v(sfxVerb), music: v(musBus), musVerb: v(musVerb), loop: !!(musTimer || musSrc) };
+  return { ctx: ac ? ac.state : "none", sfxOn, musOn, musicPlaying, sfx: v(mix), sfxVerb: v(sfxVerb), music: v(musBus), musVerb: v(musVerb), loop: !!(musTimer || musSrc),
+    sting: !!sting, stingN: lastSting, stingFiles: (files.replay || []).length, cheer: v(cheerBus), cheerTone: cheerTone ? cheerTone.frequency.value : null, crowdDuck: v(crowdDuck) };
 }
 export function music(on, mode = "menu") {
   musicPlaying = on; musicMode = mode;

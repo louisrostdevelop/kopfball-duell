@@ -75,7 +75,7 @@ export function beginMatch(cfg, { resume = false } = {}) {
   $("btnEmote").hidden = cfg.mode === "local";
   $("emoteBar").hidden = true;
   document.body.classList.add("ingame");
-  A.music(false); A.crowd(0.3);
+  A.music(false); A.crowd(0.3); A.prepareMatch();
   A.sfx("count");
   if (I.isTouch) goFullscreen();
   if (!S.tutorial) { tutorial(); S.tutorial = true; save(); }

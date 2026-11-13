@@ -10,7 +10,7 @@ import { matchEnd, seriesText } from "./results.js";
 import { App, inGame, myIdx, vsCpu } from "./state.js";
 import { $, toast } from "../ui/dom.js";
 import { drawShowcase } from "../ui/screens/home.js";
-import { input as I } from "./services.js";
+import { audio as A, input as I } from "./services.js";
 import { t } from "../content/i18n.js";
 
 export let lastT = performance.now(), simT = 0;
@@ -55,6 +55,7 @@ function frame(now) {
   if (st.ph === "play" && App.mode !== "demo" && !App.rb) { App.rec.push(snap(st)); if (App.rec.length > 200) App.rec.shift(); }
   let replay = null, frac = 0;
   if (st.ph === "goal" && App.replay && st.pt < REPLAY_START && st.pt > REPLAY_END) { replay = App.replay; frac = (REPLAY_START - st.pt) / (REPLAY_START - REPLAY_END); }
+  A.replayMusic(replay && App.mode !== "demo" && inGame() && !App.paused && !rotated && !netWait ? replay : null);
   if ((st.ph === "ko" || st.ph === "cd") && !App.rb) App.rec = [];
   if (App.mode !== "demo" && !App.rb) { const me = myIdx(); if (me >= 0) App.maxDef = Math.max(App.maxDef, st.s[1 - me] - st.s[me]); }   // Rollback: rbnet.js (endgültig)
   const la = st.ph === "cd" ? 1 : st.ph === "play" && App.goT >= 0 ? clamp(1 - (simT - App.goT - 1.5) / 0.6, 0, 1) : 0;
