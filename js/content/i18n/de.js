@@ -1017,6 +1017,8 @@ export default {
   "stat.shots": "Schüsse",
   "stat.stomps": "Schubser",
   "stat.supers": "Spezialschüsse",
+  "sync.busy": "Spielstand wird abgeglichen",
+  "sync.offline": "Offline – deine Spiele werden nachgeholt, sobald die Verbindung steht.",
   "sync.buyOffline": "Keine Verbindung. Kaufen geht nur online.",
   "sync.rejected": p => (p.n === 1 ? "1 offline gespieltes Spiel wurde nicht gewertet." : `${p.n} offline gespielte Spiele wurden nicht gewertet.`),
   "sync.sent": "{n} offline gespielte Spiele gewertet",

@@ -20,6 +20,18 @@ const listeners = [];
 export const onSync = fn => { listeners.push(fn); };
 /** Server gerade erreichbar? (Käufe gehen nur dann) */
 export const reachable = () => online() && !netDown && globalThis.navigator?.onLine !== false;
+const statusFns = [];
+let status = "none";
+/** "none" (ohne Server), "syncing" (noch kein Server-Stand), "ok", "offline" */
+export const syncStatus = () => status;
+export const onSyncStatus = fn => { statusFns.push(fn); };
+function setStatus() {
+  const s = !online() ? "none" : netDown ? "offline" : last ? "ok" : "syncing";
+  if (s === status) return;
+  status = s;
+  statusFns.forEach(fn => { try { fn(s); } catch (_) { /* Anzeige */ } });
+}
+const setNet = down => { netDown = down; setStatus(); };
 // Karriere: höchste Sterne aus beiden Ständen (solange noch Offline-Spiele unterwegs sind)
 const maxMerge = (a, b) => { const o = { ...a }; for (const [k, v] of Object.entries(b || {})) o[k] = Math.max(o[k] || 0, v); return o; };
 
@@ -33,14 +45,14 @@ const IMPORT_FINAL = ["already_imported", "import_too_late", "too_large"];
 /** Stand bald frisch holen (verspätete Antwort verworfen, Übernahme fertig) */
 function refetchSoon() {
   if (refetchT) return;
-  refetchT = setTimeout(() => { refetchT = 0; server.state().then(applyState).catch(() => { netDown = true; }); }, 0);
+  refetchT = setTimeout(() => { refetchT = 0; server.state().then(applyState).catch(() => { setNet(true); }); }, 0);
 }
 /** Server-Stand ins Profil übernehmen (voll oder kurz, je nachdem was kam). Hat der Server den alten lokalen
  *  Spielstand noch nicht übernommen und gibt es hier welchen, erst übernehmen lassen (einmal, mit Sperre), statt
  *  ihn zu überschreiben: sonst ginge er verloren, wenn der erste Stand nicht über syncOnStart kommt. */
 export function applyState(st) {
   if (!st) return;
-  netDown = false;
+  setNet(false);
   // ältere Anfrage als der zuletzt übernommene Stand: verwerfen; hat sie etwas geändert, frischen Stand holen
   const rq = st[REQ];
   if (rq && rq.n < appliedReq) { if (!rq.read) refetchSoon(); return; }
@@ -56,7 +68,7 @@ function importOnce(st) {
       if (e && e.status === 400 && IMPORT_FINAL.includes(e.code)) {
         apply(st);
         if (importDropped || !Array.isArray(st.items)) refetchSoon();   // kurzer Stand (ohne Besitz) oder inzwischen Neueres
-      } else netDown = true;   // Server gestört oder offline: lokaler Stand bleibt, beim nächsten Stand nochmal
+      } else setNet(true);   // Server gestört oder offline: lokaler Stand bleibt, beim nächsten Stand nochmal
     })
     .finally(() => { importing = null; });
   return importing;
@@ -66,6 +78,7 @@ function apply(st) {
   if (rq && rq.n > appliedReq) appliedReq = rq.n;
   stateSeq++;
   last = { ...(last || {}), ...st };
+  setStatus();
   for (const k of ["coins", "gems", "level", "xp"]) if (typeof st[k] === "number") S[k] = st[k];
   if (Array.isArray(st.items)) for (const [kind, pre] of Object.entries(KINDS)) {
     const mine = st.items.filter(i => i.startsWith(pre + ":")).map(i => i.slice(pre.length + 1));
@@ -99,9 +112,10 @@ export const serverState = () => last;
 export function initAccount() {
   if (!online()) return;
   if (!S.serverSynced && !hasLocalProgress()) { S.serverSynced = true; save(); }   // frisches Profil: nichts zu übernehmen
+  setStatus();
   // Saison für neue Arenen (Pass zuerst, danach Shop): 0 = Stand noch nicht geladen, null = keine Saison
   setHooks({ buy: confirmBuy, canBuy, serverDaily: true, serverChests: true, season: () => (last ? (last.season ? last.season.id : null) : 0) });
-  globalThis.addEventListener?.("online", () => { netDown = false; syncPending(); });
+  globalThis.addEventListener?.("online", () => { setNet(false); syncPending(); });
   // Gast -> Konto (Code eingegeben oder woanders per Link bestätigt): Stand neu holen, schaltet Ranked und Co. frei
   let wasGuest = !auth.user() || auth.user().guest;
   auth.onChange(u => { if (wasGuest && u && !u.guest) server.state().then(applyState).catch(() => {}); wasGuest = !u || u.guest; });
@@ -139,7 +153,7 @@ let flushing = null, retryT = 0;
 export function syncPending() {
   if (!online() || flushing || !server.pending || !server.pending()) return flushing || Promise.resolve(null);
   flushing = server.flush().then(async out => {
-    if (out.sent || out.rejected) { try { applyState(await server.state()); } catch (_) { netDown = true; } }
+    if (out.sent || out.rejected) { try { applyState(await server.state()); } catch (_) { setNet(true); } }
     out.results.forEach(careerNotice);
     if (out.rejected) toast(t("sync.rejected", { n: out.rejected }), "i-clock");
     else if (out.sent > 1) toast(t("sync.sent", { n: out.sent }), "i-check", true);
@@ -154,7 +168,7 @@ export function syncPending() {
 export async function syncOnStart() {
   if (!online()) return null;
   let st;
-  try { st = await server.state(); } catch (e) { netDown = true; throw e; }
+  try { st = await server.state(); } catch (e) { setNet(true); throw e; }
   applyState(st);
   if (importing) await importing;
   syncPending();
@@ -170,7 +184,7 @@ export function confirmBuy(kind, id, undo) {
     .catch(e => {
       // zurückdrehen nur, wenn seit dem Kauf kein Server-Stand kam (der hat Münzen und Besitz schon richtig gesetzt)
       if (stateSeq === seq) undo();
-      if (!(e && e.status)) netDown = true;
+      if (!(e && e.status)) setNet(true);
       server.state().then(applyState).catch(() => {});
     });
 }
@@ -185,7 +199,7 @@ export async function claimDaily() {
 export async function reportMatch(r) {
   if (!online() || !r.mode) return null;
   try { const res = await server.reportMatch(r); applyState(res.state); return res; }
-  catch (e) { if (!(e && e.status)) netDown = true; return null; }   // bleibt gespeichert und geht später raus (syncPending)
+  catch (e) { if (!(e && e.status)) setNet(true); return null; }   // bleibt gespeichert und geht später raus (syncPending)
 }
 
 /** Lokaler Modus -> Server-Modus. Online-Spiele laufen über die Warteschlange und werden dort gewertet. */

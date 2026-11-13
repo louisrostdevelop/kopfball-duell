@@ -103,7 +103,7 @@ async function boot() {
   setLang(S.lang && S.lang !== "auto" ? S.lang : detectLang());   // Sprache vor dem ersten Text
   applyI18n();
   initAccount();
-  onSync(refreshTop);
+  onSync(() => refreshTop(true));
   const synced = serverOn() ? syncOnStart().catch(() => null) : null;
   // Relay-Zugangsdaten für Online-Spiele schon jetzt holen (wer per Einladungslink kommt, verbindet gleich) und
   // ablaufende rechtzeitig erneuern; ensureRelay fragt nur, wenn keine gültigen da sind
