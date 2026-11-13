@@ -45,6 +45,7 @@ export const headLevel = id => (S.heads && S.heads[id] && S.heads[id].level) || 
 /** resume: dasselbe Spiel geht nach Wiederverbinden oder Neustart weiter (für die Statistik kein neues Spiel) */
 export function beginMatch(cfg, { resume = false } = {}) {
   settlePending();   // altes Online-Spiel noch werten (neues Spiel kam in den 900 ms nach dem Abpfiff)
+  if (whistled()) matchEnded(true);   // offline in den 900 ms neu begonnen: war abgepfiffen, nicht abgebrochen
   App.leaving = null; App.endPend = null;
   App.netBye = false;   // ein „bye“ der vorigen Verbindung gilt nicht für dieses Spiel
   const orig = cfg; cfg = resolveObs(cfg);
@@ -117,9 +118,14 @@ export function updateBand() {
 /** Torjubel überspringen (Tippen, Leertaste): online mit Rollback als Eingabe, sonst direkt */
 export function skipGoal() { if (App.rb) rbSkip(); else skipCelebration(App.st); }
 
+/** Abgepfiffen, die Wertung wartet aber noch (loop.js, 900 ms): gilt für die Statistik als zu Ende gespielt */
+const whistled = () => { const p = App.endPend; return !!p && p.mode === App.mode && p.s0 === (App.rb || App.st); };
+/** Spiel verlassen (Menü, Karriere, Pokal-Übersicht): Ende melden, abgebrochen nur ohne Abpfiff */
+export function matchLeft() { matchEnded(whistled()); }
+
 export function quitToMenu() {
   settlePending();
-  matchEnded(false);   // schon abgepfiffen: längst gemeldet, dann passiert hier nichts
+  matchLeft();   // schon gewertet: längst gemeldet, dann passiert hier nichts
   stopRb();
   if (App.mode === "host" || App.mode === "guest") { Net.send({ t: "bye" }); Net.close(250); }   // „bye“: die andere Seite wartet nicht aufs Wiederverbinden
   clearSession();   // bewusst verlassen: beim nächsten Start nicht zurückverbinden

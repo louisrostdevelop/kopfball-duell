@@ -3,7 +3,7 @@
 import { execFileSync } from "node:child_process";
 
 /** Online-Tests: zwei Tabs, nachgespieltes Netz, Zeitabhängigkeiten. Laufen nacheinander (gegenseitig zu empfindlich). */
-export const NET = ["online", "resume", "rollback", "rbresume", "matchmaking", "server", "admin"];
+export const NET = ["online", "resume", "rollback", "rbresume", "matchmaking", "server", "admin", "track"];
 /** Oberfläche: läuft bei jeder Änderung an Oberfläche, Texten oder Ablauf mit (deckt jeden Modus einmal ab) */
 const UI = ["ui", "layout", "menus", "modes", "i18n"];
 const PLAY = ["offline", "controls", "career", "shoe", "bot", "powerups", "ui"];
@@ -20,14 +20,14 @@ const RULES = [
   [/^\.github\/workflows\/tests\.yml$/, "*"],              // Browser-Job selbst geändert: alles prüfen
   [/^\.github\//, []],
   [/^tools\/(balance|sound-lab|brand)\/|^tools\/botlab\.mjs$|^supabase\/ops\//, []],   // Werkzeuge, nicht ausgeliefert
-  [/^supabase\//, ["server", "matchmaking", "admin"]],
+  [/^supabase\//, ["server", "matchmaking", "admin", "track"]],
   [/^(admin\.html$|js\/admin\/|css\/admin\.css$)/, ["admin"]],   // Admin-Dashboard, eigene Seite
   // Spiellogik und Netzcode: alles, was spielt
   [/^js\/core\/(sim\/|bot\/|physics|rollback|rbpeer|rbgame)|^js\/content\/(dmath|config|tuning)/, [...NET, ...PLAY]],
   [/^js\/app\/(online|rbnet|netcode|session|game|loop|results|state)\.js$/, [...NET, "offline", "ui"]],   // state.js: Online-Protokoll (VERSION)
   [/^js\/app\/(matchmaking|activity)\.js$/, ["matchmaking", "server", "modes", "ui"]],
   [/^js\/(app\/(account|services)|adapters\/|ports\/)/, ["server", "matchmaking", "menus", "ui", "admin"]],
-  [/^js\/app\/track\.js$/, ["server", "admin"]],
+  [/^js\/app\/track\.js$/, ["server", "admin", "track"]],
   [/^js\/(content\/career|core\/career|ui\/screens\/career)/, ["career", "server", "ui"]],
   [/^js\/core\/economy\.js$/, ["career", "server", "chests", "offline", "menus", "cosmetics", "ui"]],
   [/^js\/(app\/cosmetics|content\/cosmetics|ui\/screens\/locker)|^js\/ui\/render\/(frames|shoes)/, ["cosmetics", "online", "ui"]],

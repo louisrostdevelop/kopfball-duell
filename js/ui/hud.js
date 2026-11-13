@@ -1,6 +1,6 @@
 // Knöpfe im Spiel: Pause, Fortsetzen, Neustart, Aufgeben, Vollbild, Emotes, Jubel überspringen
 import { REPLAY_START } from "../core/physics.js";
-import { beginMatch, canFullscreen, fullscreenElement, pause, quitToMenu, skipGoal, toggleFullscreen } from "../app/game.js";
+import { beginMatch, canFullscreen, fullscreenElement, matchLeft, pause, quitToMenu, skipGoal, toggleFullscreen } from "../app/game.js";
 import { backToLobby } from "../app/online.js";
 import { App, inGame } from "../app/state.js";
 import { $ } from "./dom.js";
@@ -13,7 +13,7 @@ export function initHud() {
   $("btnPause").onclick = () => { A.sfx("click"); pause(true); };
   $("btnResume").onclick = () => { A.sfx("click"); pause(false); };
   $("btnRestart").onclick = () => { A.sfx("click"); $("scr-pause").hidden = true; beginMatch({ ...App.lastCfg }); };
-  $("btnQuit").onclick = () => { A.sfx("click"); $("scr-pause").hidden = true; if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); } else if (App.run && !App.run.done && ["cup", "endless"].includes(App.mode)) { App.run.done = true; runScreen(); } else if (App.mode === "career") careerScreen(); else quitToMenu(); };
+  $("btnQuit").onclick = () => { A.sfx("click"); $("scr-pause").hidden = true; if (App.mode !== "host") matchLeft(); if (App.mode === "host") { Net.send({ t: "lobby" }); backToLobby(); } else if (App.run && !App.run.done && ["cup", "endless"].includes(App.mode)) { App.run.done = true; runScreen(); } else if (App.mode === "career") careerScreen(); else quitToMenu(); };
   $("btnFull").onclick = toggleFullscreen;
   // Vollbild-Knöpfe: oben rechts auf der Startseite und im Pausenmenü; Symbol zeigt, was ein Tipp bewirkt.
   // Nicht auf dem iPhone (kann im Browser kein Vollbild) und nicht in der installierten App.
