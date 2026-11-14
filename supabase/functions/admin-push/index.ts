@@ -10,7 +10,8 @@ import { cors, json } from "../_shared/http.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const VAPID_SUBJECT = (Deno.env.get("VAPID_SUBJECT") ?? "").trim() || "mailto:support@headstars.app";
-// Sekunden: was länger nicht zugestellt werden kann (Gerät aus), ist ohnehin überholt
+// Sekunden: was länger nicht zugestellt werden kann (Gerät aus), ist ohnehin überholt. Dringlichkeit hoch: sonst hält
+// Android die Mitteilung im Energiesparmodus zurück, bis das Gerät aufwacht oder der Browser geöffnet wird
 const TTL = 6 * 3600;
 
 const service = () => createClient(SB_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false }, db: { schema: "api" } });
@@ -52,7 +53,7 @@ async function deliver(list: Msg[]) {
   await Promise.all(list.map(async (m) => {
     try {
       await webpush.sendNotification({ endpoint: m.endpoint, keys: { p256dh: m.p256dh, auth: m.auth } },
-        JSON.stringify({ title: m.title, body: m.body, tag: m.tag, url: m.url }), { TTL, urgency: "normal" });
+        JSON.stringify({ title: m.title, body: m.body, tag: m.tag, url: m.url }), { TTL, urgency: "high" });
       ok.push(m.endpoint);
     } catch (e) {
       const status = (e as { statusCode?: number }).statusCode ?? 0;
