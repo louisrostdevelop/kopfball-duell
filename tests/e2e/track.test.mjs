@@ -1,5 +1,5 @@
 // Nutzungsstatistik der Spiele (game.events: match_start / match_end): echtes Spiel gegen den Computer mit Server.
-// Regul채r abgepfiffen = done:true, Revanche bucht nichts doppelt, Neustart und Men체 mitten im Spiel = done:false,
+// Regul채r abgepfiffen = done:true mit Spielstand aus eigener Sicht und Dauer, Revanche bucht nichts doppelt, Neustart und Men체 mitten im Spiel = done:false,
 // Abpfiff und sofort weg (in den 900 ms bis zur Wertung) z채hlt trotzdem als zu Ende gespielt, Hintergrund und
 // Drehen am Handy starten kein Spiel neu, ein neuer Spieler landet nicht von selbst in einem Spiel.
 // Gegen tools/dev-backend.mjs mit lokaler Postgres-Datenbank; ohne Postgres 체bersprungen.
@@ -79,6 +79,9 @@ test("Statistik der Spiele gegen den Computer: Abpfiff, Revanche, Neustart, Men�
   await nearEnd(page);
   await page.waitForFunction(() => window.__kd.screen === "end");
   await expectCounts(id, { start: 1, done: 1, quit: 0 }, "a) Abpfiff: done:true");
+  const [end] = await db("select data from game.events where player_id = $1 and kind = 'match_end'", [id]);
+  assert.equal(end.data.goals, 1, "a) eigene Tore"); assert.equal(end.data.conceded, 0, "a) Gegentore");
+  assert.ok(Number.isInteger(end.data.dur_s) && end.data.dur_s >= 0, "a) Dauer in ganzen Sekunden");
 
   // b) Revanche vom Ergebnis-Bildschirm: neues Spiel, kein Abbruch f체rs fertige
   await click(page, "#btnEndAgain", 100); await playing(page);
