@@ -262,7 +262,7 @@ function page(p) {
 <html lang="${p.lang}">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(c.title)}</title>
 <meta name="description" content="${esc(c.desc)}">
@@ -281,6 +281,7 @@ ${alternates(p).map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${S
 <link rel="preload" as="image" href="${poster}-640.webp" imagesrcset="${SIZES.poster.map(w => `${poster}-${w}.webp ${w}w`).join(", ")}" imagesizes="(max-width: 899px) 40vw, 100vw" fetchpriority="high">
 <link rel="preload" href="/fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/landing.css">
+<script type="module" src="/js/landing-src.js"></script>
 </head>
 <body class="lp">
 <svg class="lp-sprite" aria-hidden="true">${ICONS.map(symbol).join("")}</svg>
