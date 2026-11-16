@@ -599,6 +599,13 @@ body[data-scr="rules"] #toasts { top: auto; bottom: calc(96px + var(--sb)); flex
 .accbody { display: flex; flex-direction: column; gap: 12px; }
 .setlink { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px; font-weight: 900; font-size: 17px; color: var(--ink); text-decoration: none; border-top: 2px solid rgb(21 17 46 / 10%); }
 .setlink:first-of-type { border-top: 0; }
+.setpane .panel + .panel { margin-top: 12px; }
+
+/* Info: Rechtliches und Infoseiten nebeneinander, sobald Platz ist (quer auf dem Handy passt es sonst nicht) */
+@media (min-width: 600px) {
+  .setpane[data-pane="info"] { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  .setpane[data-pane="info"] .panel + .panel { margin-top: 0; }
+}
 .setlink svg { width: 20px; height: 20px; transform: scaleX(-1); opacity: .5; }
 #ctlTable th[scope="row"] { text-transform: none; letter-spacing: 0; font-size: 15px; opacity: 1; width: 40%; }
 .setrow { display: flex; align-items: center; gap: 12px; font-size: 17px; font-weight: 900; padding: 4px 0; }
@@ -1040,6 +1047,7 @@ body[data-scr="end"] #toasts, body[data-scr="home"] #toasts { top: auto; bottom:
 @media (max-height: 520px) and (orientation: landscape) {
   .setpane .panel { gap: 3px; }
   .setpane .setrow { min-height: 28px; padding: 0; }
+  .setpane .setlink { padding: 7px 4px; font-size: 16px; }
   .settabs { margin-bottom: 8px; }
   .setrow { min-height: 30px; }
   .challenge h3 { font-size: 18px; }

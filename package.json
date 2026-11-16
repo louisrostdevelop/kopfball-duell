@@ -12,6 +12,7 @@
     "test:db": "bash supabase/local/run-tests.sh",
     "catalog": "node tools/gen-catalog.mjs",
     "legal": "node tools/gen-legal.mjs",
+    "seo": "node tools/gen-seo.mjs",
     "lint": "eslint --max-warnings 0 . && stylelint --max-warnings 0 \"css/**/*.css\""
   },
   "devDependencies": {

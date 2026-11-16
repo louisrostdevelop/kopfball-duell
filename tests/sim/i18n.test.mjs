@@ -76,3 +76,9 @@ test("Spielinhalte sind in beiden Sprachen übersetzt", () => {
 test("Sprache vom Gerät: Deutsch für de-*, sonst Englisch", () => {
   assert.equal(I.detectLang(["de-AT"]), "de"); assert.equal(I.detectLang(["fr-FR", "en-GB"]), "en"); assert.equal(I.detectLang(["ja"]), "en");
 });
+
+test("Sprache aus dem Link (?lang=) geht vor die Gerätesprache, Unbekanntes zählt nicht", () => {
+  assert.equal(I.detectLang(["en-US"], "?src=seo-de&lang=de"), "de");
+  assert.equal(I.detectLang(["de-DE"], "?lang=en"), "en");
+  for (const q of ["?lang=fr", "?lang=constructor", "?lang=", ""]) assert.equal(I.detectLang(["de-DE"], q), "de", q);
+});
