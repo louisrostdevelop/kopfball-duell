@@ -33,6 +33,8 @@ begin
   assert (r->>'stored')::boolean, 'match_start gespeichert';
   perform api.track('match_end', '{"mode":"career","done":true}');
   perform api.track('match_end', '{"mode":"cpu","done":false,"goals":0,"conceded":3,"dur_s":47.6}');
+  perform api.track('match_start', '{"mode":"endless","diff":0}');
+  perform api.track('match_end', '{"mode":"endless","done":true,"diff":2.0}');
   perform api.track('search_end', '{"mode":"ranked","outcome":"matched","wait_s":12.6}');
   perform api.track('net_result', '{"mode":"friends","path":"relay"}');
   perform api.track('lobby', '{"action":"created"}');
@@ -48,6 +50,10 @@ begin
   perform pg_temp.fails($q$select api.track('match_end', '{"mode":"cpu","done":true,"goals":"2"}')$q$, 'bad_event');
   perform pg_temp.fails($q$select api.track('match_end', '{"mode":"cpu","done":true,"dur_s":3601}')$q$, 'bad_event');
   perform pg_temp.fails($q$select api.track('match_start', '{"mode":"cpu","goals":1}')$q$, 'bad_event');
+  perform pg_temp.fails($q$select api.track('match_start', '{"mode":"cpu","diff":4}')$q$, 'bad_event');
+  perform pg_temp.fails($q$select api.track('match_start', '{"mode":"cpu","diff":1.5}')$q$, 'bad_event');
+  perform pg_temp.fails($q$select api.track('match_end', '{"mode":"cpu","done":true,"diff":"0"}')$q$, 'bad_event');
+  perform pg_temp.fails($q$select api.track('match_end', '{"mode":"cpu","done":true,"diff":null}')$q$, 'bad_event');
   perform pg_temp.fails($q$select api.track('search_start', '{"mode":"friends"}')$q$, 'bad_event');
   perform pg_temp.fails($q$select api.track('search_end', '{"mode":"casual","outcome":"matched","wait_s":-1}')$q$, 'bad_event');
   perform pg_temp.fails($q$select api.track('search_end', '{"mode":"casual","outcome":"matched","wait_s":"5"}')$q$, 'bad_event');
@@ -68,7 +74,9 @@ begin
   assert (select data from game.events where player_id = a and kind = 'first_visit') = '{"ref":"reddit","src":"launch_post-1"}', 'Herkunft gespeichert';
   assert (select data->>'wait_s' from game.events where player_id = a and kind = 'search_end') = '13', 'Wartezeit in ganzen Sekunden';
   assert (select data from game.events where player_id = a and kind = 'match_end' and data->>'mode' = 'cpu') = '{"mode":"cpu","done":false,"goals":0,"conceded":3,"dur_s":48}', 'Spielstand und Dauer in ganzen Sekunden';
-  assert (select count(*) from game.events where player_id = a) = 9, 'nur gültige Ereignisse gespeichert';
+  assert (select data from game.events where player_id = a and kind = 'match_start' and data->>'mode' = 'endless') = '{"mode":"endless","diff":0}', 'Computer-Stärke gespeichert';
+  assert (select data->>'diff' from game.events where player_id = a and kind = 'match_end' and data->>'mode' = 'endless') = '2', 'Computer-Stärke als ganze Zahl';
+  assert (select count(*) from game.events where player_id = a) = 11, 'nur gültige Ereignisse gespeichert';
 
   -- altes Konto: erster Besuch zählt nicht (Herkunft wäre falsch)
   perform pg_temp.login(old);

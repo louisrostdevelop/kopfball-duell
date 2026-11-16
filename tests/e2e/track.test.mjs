@@ -82,6 +82,9 @@ test("Statistik der Spiele gegen den Computer: Abpfiff, Revanche, Neustart, Men�
   const [end] = await db("select data from game.events where player_id = $1 and kind = 'match_end'", [id]);
   assert.equal(end.data.goals, 1, "a) eigene Tore"); assert.equal(end.data.conceded, 0, "a) Gegentore");
   assert.ok(Number.isInteger(end.data.dur_s) && end.data.dur_s >= 0, "a) Dauer in ganzen Sekunden");
+  assert.equal(end.data.diff, 0, "a) neuer Spieler: Computer auf Locker");
+  const [began] = await db("select data from game.events where player_id = $1 and kind = 'match_start'", [id]);
+  assert.equal(began.data.diff, 0, "a) Computer-Stärke schon beim Anpfiff");
 
   // b) Revanche vom Ergebnis-Bildschirm: neues Spiel, kein Abbruch fürs fertige
   await click(page, "#btnEndAgain", 100); await playing(page);

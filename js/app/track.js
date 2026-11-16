@@ -2,7 +2,7 @@
 // nur mit Netz, ohne Warten und ohne Fehler: die Statistik darf das Spiel nie aufhalten.
 import { has, net as Net, server } from "./services.js";
 import { reachable } from "./account.js";
-import { App, myIdx } from "./state.js";
+import { App, myIdx, vsCpu } from "./state.js";
 
 export function track(kind, data = {}) {
   try {
@@ -17,6 +17,7 @@ export const statMode = (mode = App.mode) => (mode === "host" || mode === "guest
 
 let open = null;   // Modus des laufenden Spiels, bis match_end gemeldet ist
 let side = -1, t0 = 0;   // eigene Seite (-1: keine, zu zweit an einem Gerät) und Anpfiff des laufenden Spiels
+let diff = null;   // Stärke des Computergegners (0 Locker … 3 Legende); null ohne Computer und im Training (fester Torwart)
 /**
  * Spiel beginnt. resume: nach Wiederverbinden oder Neustart dasselbe Spiel, zählt nicht neu (nach einem App-Neustart
  * fehlt dann auch das Ende, so bleiben beendete nie mehr als begonnene)
@@ -26,7 +27,8 @@ export function matchStarted(mode, resume = false) {
   if (open) matchEnded(false);   // ohne Abpfiff neu begonnen (Neustart, Revanche nach Abbruch)
   open = statMode(mode);
   side = myIdx(); t0 = Date.now();
-  track("match_start", { mode: open });
+  diff = vsCpu() && App.mode !== "train" && App.cfg ? clamp(App.cfg.diff ?? 1, 0, 3) : null;
+  track("match_start", diff === null ? { mode: open } : { mode: open, diff });
 }
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round(Number(v) || 0)));
 /**
@@ -38,6 +40,7 @@ export function matchEnded(done) {
   const data = { mode: open, done: !!done, dur_s: clamp((Date.now() - t0) / 1000, 0, 3600) };
   const s = App.st && App.st.s;
   if (side >= 0 && s) { data.goals = clamp(s[side], 0, 99); data.conceded = clamp(s[1 - side], 0, 99); }
+  if (diff !== null) data.diff = diff;
   track("match_end", data);
   open = null;
 }
