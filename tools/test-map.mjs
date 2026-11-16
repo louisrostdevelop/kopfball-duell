@@ -44,6 +44,7 @@ const RULES = [
   [/^(sw\.js|manifest\.webmanifest)$/, ["offline", "ui"]],
   [/^(fonts|icons|audio|legal|vendor)\//, ["ui"]],
   [/^(og\.jpg|CNAME)$/, []],
+  [/^(de|en|landing)\/|^(robots\.txt|sitemap\.xml)$|^tools\/gen-(seo|landing-media)\.mjs$/, []],   // Infoseiten ohne Spiel: Unit-Test seo
 ];
 
 /** Tests (Namen ohne .test.mjs) für geänderte Dateien; all = alle Testnamen. Liefert { tests, why } */

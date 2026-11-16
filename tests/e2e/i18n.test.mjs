@@ -40,3 +40,14 @@ test("Englisch vom Gerät, Wechsel auf Deutsch", async () => {
   assert.equal((await page.textContent("#btnPlay")).trim(), "Spielen", "bleibt nach Neuladen");
   assert.deepEqual(errors, []);
 });
+
+test("Sprache aus dem Link der Infoseiten (?lang=) geht vor die Gerätesprache", async () => {
+  const { page, errors } = await openPage(env, { ...VIEW.desktop, locale: "en-US" }, { query: "?src=seo-de&lang=de" });
+  assert.equal((await page.textContent("#btnPlay")).trim(), "Spielen");
+  assert.equal(await page.getAttribute("html", "lang"), "de");
+  // Infoseiten in den Einstellungen verlinkt (Reiter Info)
+  await click(page, "#btnSettings", 300); await click(page, `#setTabs [data-tab="info"]`, 150);
+  const hrefs = await page.$$eval("#scr-settings .setpane[data-pane=info] a.setlink", as => as.map(a => a.getAttribute("href")));
+  for (const p of ["de/", "de/gegen-freunde/", "en/", "en/play-with-friends/"]) assert.ok(hrefs.includes(p), p);
+  assert.deepEqual(errors, []);
+});
