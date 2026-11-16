@@ -51,11 +51,12 @@ test("fremde Spielnamen: nie in Titel, H1, Beschreibung oder URL; „head soccer
   assert.ok(count <= 1, "head soccer: " + count);
 });
 
-test("Seiten ohne Skripte, eigene CSP, keine Inline-Styles; Rechtsseiten verlinkt", () => {
+test("Seiten nur mit dem eigenen Quellen-Skript, eigene CSP, keine Inline-Styles; Rechtsseiten verlinkt", () => {
   for (const p of PAGES) {
     const html = files[fileOf(p.path)];
-    assert.doesNotMatch(html, /<script|style="/);
-    assert.match(html, /http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none';/);
+    assert.deepEqual([...html.matchAll(/<script[^>]*>/g)].map(m => m[0]), ['<script type="module" src="/js/landing-src.js">'], p.path + ": nur das Quellen-Skript");
+    assert.doesNotMatch(html, /style="/);
+    assert.match(html, /http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self';/);
     for (const f of ["imprint", "privacy", "terms"]) assert.match(html, new RegExp(`href="/legal/${f}\\.html\\?lang=${p.lang}"`));
   }
 });
@@ -108,5 +109,20 @@ test("Bilder und Gameplay-Loop: jede eingebundene Datei liegt in landing/, Bilde
     assert.match(html, /<link rel="preload" as="image" [^>]*fetchpriority="high">/);
     assert.match(html, /<video [^>]*autoplay muted loop playsinline/);
     for (const m of html.matchAll(/<h2[^>]*>([^<]+)<\/h2>/g)) assert.ok(m[1].trim().length >= 3, "H2 mit Text: " + m[1]);
+  }
+});
+
+test("Quelle aus der Adresse (z. B. Anzeige) ersetzt die Quelle der Infoseite im Spiel-Link", async () => {
+  const { withSrc } = await import("../../js/landing-src.js");
+  const href = "/?src=seo-de&lang=de";
+  assert.equal(withSrc(href, "?src=gads-de-kern"), "/?src=gads-de-kern&lang=de");
+  assert.equal(withSrc(href, "?src=GADS-EN"), "/?src=gads-en&lang=de", "klein geschrieben wie track.js");
+  assert.equal(withSrc(href, ""), href, "ohne Quelle bleibt der Link");
+  assert.equal(withSrc(href, "?src=a%20b"), href, "freier Text wird ignoriert");
+  assert.equal(withSrc(href, "?src=" + "x".repeat(41)), href, "zu lang wird ignoriert");
+  for (const p of PAGES) {
+    const html = files[fileOf(p.path)];
+    assert.ok(html.includes('<script type="module" src="/js/landing-src.js"></script>'), p.path + ": Skript eingebunden");
+    assert.ok(html.includes("script-src 'self';"), p.path + ": CSP erlaubt nur eigene Skripte");
   }
 });
