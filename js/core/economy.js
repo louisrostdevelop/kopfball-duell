@@ -12,7 +12,7 @@ export const defaultProfile = () => ({
   coins: 150, xp: 0, level: 1, earned: 0,
   chars: ["kalle", "yuki", "bolt"], arenas: ["stadion", "strand"], balls: ["klassik"],
   char: "kalle", ball: "klassik", arena: "stadion",
-  name: "", diff: 1, dur: 90, pus: true, chaos: false,
+  name: "", diff: 0, dur: 90, pus: true, chaos: false,
   sfx: true, music: true, vib: true, quality: "high",
   stats: { games: 0, wins: 0, goals: 0, headGoals: 0, pus: 0, stomps: 0, supers: 0 },
   ach: {}, daily: { last: "", streak: 0 }, tutorial: false, cupBest: 0, seenNew: [], tasks: null, iosHint: false, mode: "quick", rules: {}, myPresets: [], chDone: "", endlessBest: 0, dealBought: "", shopSeen: "", career: {},
