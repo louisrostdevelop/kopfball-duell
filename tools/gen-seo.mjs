@@ -61,12 +61,12 @@ const UI = {
     otherLong: "This page in English", legal: ["Impressum", "Datenschutz", "Nutzungsbedingungen"], main: "Spielinfos",
     friends: "Gegen Freunde spielen", ctaNote: "Startet direkt im Browser, auf Handy, Tablet und PC.",
     video: "Spielszene aus Headstars: zwei Köpfe spielen Kopfball-Fußball im Stadion", online: "Online", offline: "Gegen den Computer oder zu zweit",
-    endTitle: "Anpfiff in zehn Sekunden" },
+    endTitle: "Bereit für den Anpfiff?" },
   en: { play: "Play now", facts: ["Free", "No download", "No sign-up"], faq: "FAQ", other: "Deutsch",
     otherLong: "Diese Seite auf Deutsch", legal: ["Legal Notice", "Privacy", "Terms"], main: "Game guide",
     friends: "Play with friends", ctaNote: "Starts right in your browser, on phone, tablet and PC.",
     video: "Gameplay from Headstars: two heads play header soccer in the stadium", online: "Online", offline: "Against the computer or two players",
-    endTitle: "Kick-off in ten seconds" },
+    endTitle: "Ready for kick-off?" },
 };
 
 // ---------- Bausteine aus dem Spiel ----------
@@ -150,7 +150,7 @@ function mainPage(p) {
     ],
     faq: [
       ["Ist Headstars kostenlos?", `Ja. Headstars kostet nichts. Münzen und Juwelen für neue Köpfe, Bälle und Arenen verdienst du beim Spielen.${PAYMENTS ? " Einzelne Inhalte kannst du optional kaufen." : " Käufe mit echtem Geld gibt es nicht."}`],
-      ["Muss ich etwas installieren oder ein Konto anlegen?", "Nein. Headstars läuft im Browser. Beim ersten Start legt das Spiel ein Gastkonto an, ohne E-Mail und ohne Passwort. Willst du deinen Fortschritt sichern oder auf einem anderen Gerät weiterspielen, verknüpfst du das Konto mit deiner E-Mail-Adresse. Nur für Ranked ist das Pflicht."],
+      ["Muss ich etwas installieren oder ein Konto anlegen?", "Nein. Headstars läuft im Browser. Beim ersten Start legt das Spiel ein Gastkonto an, ohne E-Mail und ohne Passwort. Willst du deinen Fortschritt sichern oder auf einem anderen Gerät weiterspielen, verknüpfst du das Konto mit deiner E-Mail-Adresse. Für Ranked und die Bestenlisten ist das nötig."],
       ["Läuft Headstars auf dem Handy?", "Ja. Auf Handy und Tablet steuerst du per Touch, am besten im Querformat. Bietet dein Browser es an, installierst du Headstars wie eine App (Einstellungen → App installieren)."],
       ["Kann ich mit Controller spielen?", "Ja. Die Belegung steht in der Tabelle unter „Steuerung“. Spielt ihr zu zweit an einem Gerät, kann jeder einen eigenen Controller nehmen."],
       ["Wie spiele ich gegen Freunde?", `Raum erstellen, Link schicken, anpfeifen. Die Anleitung Schritt für Schritt: <a href="${friends}">Online gegen Freunde spielen</a>.`],
@@ -181,7 +181,7 @@ function mainPage(p) {
     ],
     faq: [
       ["Is Headstars free?", `Yes. Headstars costs nothing. You earn coins and gems for new heads, balls and arenas by playing.${PAYMENTS ? " Some content can optionally be bought." : " There are no real-money purchases."}`],
-      ["Do I need to install anything or create an account?", "No. Headstars runs in your browser. On first start the game creates a guest account, with no email and no password. If you want to save your progress or keep playing on another device, link the account to your email address. Only Ranked requires that."],
+      ["Do I need to install anything or create an account?", "No. Headstars runs in your browser. On first start the game creates a guest account, with no email and no password. If you want to save your progress or keep playing on another device, link the account to your email address. Ranked and the leaderboards require that."],
       ["Does Headstars work on my phone?", "Yes. On phones and tablets you play with touch controls, best in landscape. If your browser offers it, you can install Headstars like an app (Settings → Install app)."],
       ["Can I play with a controller?", "Yes. The button layout is in the table under “Controls”. When two of you play on one device, each player can use their own controller."],
       ["How do I play against friends?", `Create a room, send the link, kick off. Step by step: <a href="${friends}">Play soccer with friends online</a>.`],
@@ -233,9 +233,9 @@ function friendsPage(p) {
       { id: "need", media: pic("scene-head", "scene", "Online match in Headstars: a header in front of the goal"), h2: "What you need",
         html: `<ul class="lp-list"><li>a current browser on a phone, tablet or PC,</li><li>an internet connection. The game connects your devices directly; if your network does not allow that, the connection runs through a relay server,</li><li>no account, no app and no money.</li></ul>` },
       { id: "rules", media: pic("scene-super", "scene", "A special shot in a match with custom rules"), h2: "Your rules",
-        html: `<p>If you have played head soccer games before, you know the idea: two oversized heads, one ball, two goals. In Headstars the host decides how you play: arena, obstacles, match length (${len} or first to ${esc(L["rule.len.opt.3"])} or ${esc(L["rule.len.opt.4"])}), speed, shot power, bounce, ball, goal and field size, gravity, power-ups and special shots.</p><p>After the final whistle, go straight into a rematch.</p>` },
+        html: `<p>As the host, you decide how you play: arena, obstacles, match length (${len} or first to ${esc(L["rule.len.opt.3"])} or ${esc(L["rule.len.opt.4"])}), speed, shot power, bounce, ball, goal and field size, gravity, power-ups and special shots.</p><p>After the final whistle, go straight into a rematch.</p>` },
       { id: "two", media: pic("scene-goal-en", "scene", "Goal celebration after a goal in Headstars"), h2: "Two players on one device",
-        html: `<p>Sitting next to each other? Then you don't need a link: pick “${esc(L["mode.local.name"])}” and play on one device, on one keyboard, with two controllers or on a split touchscreen.</p><p>All modes, heads and controls: <a href="${main}">Play header soccer online</a>.</p>` },
+        html: `<p>Sitting next to each other? Then you don't need a link: like in classic head soccer games, you can share one device. Pick “${esc(L["mode.local.name"])}” and play on one keyboard, with two controllers or on a split touchscreen.</p><p>All modes, heads and controls: <a href="${main}">Play header soccer online</a>.</p>` },
     ],
     faq: [
       ["Does my friend need to sign up or install anything?", "No. They open the link in their browser and they are in your lobby."],

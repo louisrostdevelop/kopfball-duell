@@ -13,7 +13,7 @@ let cur = "de";
 /** Sprache aus dem Link (?lang=de, z. B. von den Infoseiten), sonst die des Geräts, falls wir sie haben, sonst Englisch */
 export function detectLang(list = (globalThis.navigator && (navigator.languages || [navigator.language])) || [], search = globalThis.location ? location.search : "") {
   const q = new URLSearchParams(search).get("lang");
-  if (q && Object.hasOwn(LANGS, q)) return q;
+  if (q && Object.prototype.hasOwnProperty.call(LANGS, q)) return q;
   for (const l of list) { const k = String(l || "").slice(0, 2).toLowerCase(); if (LANGS[k]) return k; }
   return "en";
 }

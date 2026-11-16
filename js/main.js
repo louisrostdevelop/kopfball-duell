@@ -101,6 +101,9 @@ async function boot() {
   await auth.init();
   await initProfile(localProfileStore());
   setLang(S.lang && S.lang !== "auto" ? S.lang : detectLang());   // Sprache vor dem ersten Text
+  // ?lang= (Links der Infoseiten) gilt nur für diesen Aufruf: aus der Adresse nehmen, sonst hielte „Auto“ sie fest
+  const langQ = new URLSearchParams(location.search);
+  if (langQ.has("lang")) { langQ.delete("lang"); history.replaceState(null, "", location.pathname + (langQ.toString() ? "?" + langQ : "") + location.hash); }
   applyI18n();
   initAccount();
   onSync(() => refreshTop(true));

@@ -49,5 +49,9 @@ test("Sprache aus dem Link der Infoseiten (?lang=) geht vor die Gerätesprache",
   await click(page, "#btnSettings", 300); await click(page, `#setTabs [data-tab="info"]`, 150);
   const hrefs = await page.$$eval("#scr-settings .setpane[data-pane=info] a.setlink", as => as.map(a => a.getAttribute("href")));
   for (const p of ["de/", "de/gegen-freunde/", "en/", "en/play-with-friends/"]) assert.ok(hrefs.includes(p), p);
+  // ?lang= verschwindet aus der Adresse (Herkunft ?src= bleibt): danach gilt wieder die Gerätesprache
+  assert.equal(await page.evaluate(() => location.search), "?src=seo-de");
+  await page.reload(); await page.waitForSelector("#loading.done", { state: "attached" }); await page.waitForTimeout(300);
+  assert.equal((await page.textContent("#btnPlay")).trim(), "Play");
   assert.deepEqual(errors, []);
 });

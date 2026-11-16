@@ -1,12 +1,12 @@
-﻿// Bilder und Spielszenen fÃ¼r die Infoseiten (tools/gen-seo.mjs) aus dem echten Spiel: Renderer, Bots, MenÃ¼s.
-//   1. node tools/gen-landing-media.mjs capture <roh> [video,stills,art,steps]   Playwright-Browser nÃ¶tig. Nimmt im Ordner <roh> auf:
-//      Gameplay-Bilder je Sprache (frames-<de|en>/ + frames.txt), Kandidaten fÃ¼r Kopfball, Super-Schuss und Tor
-//      (cand-<art>-<sprache>-<n>.png), alle KÃ¶pfe, Arenen, Modus-Szenen und die Einladungs-Schritte je Sprache.
+// Bilder und Spielszenen für die Infoseiten (tools/gen-seo.mjs) aus dem echten Spiel: Renderer, Bots, Menüs.
+//   1. node tools/gen-landing-media.mjs capture <roh> [video,stills,art,steps]   Playwright-Browser nötig. Nimmt im Ordner <roh> auf:
+//      Gameplay-Bilder je Sprache (frames-<de|en>/ + frames.txt), Kandidaten für Kopfball, Super-Schuss und Tor
+//      (cand-<art>-<sprache>-<n>.png), alle Köpfe, Arenen, Modus-Szenen und die Einladungs-Schritte je Sprache.
 //   2. Kandidaten ansehen und die besten als scene-head.png, scene-super.png, scene-goal-<sprache>.png ablegen.
-//   3. node tools/gen-landing-media.mjs encode <roh>    ImageMagick (magick) und ffmpeg nÃ¶tig. Schreibt landing/:
+//   3. node tools/gen-landing-media.mjs encode <roh>    ImageMagick (magick) und ffmpeg nötig. Schreibt landing/:
 //      AVIF + WebP in mehreren Breiten, Gameplay-Loop als MP4 (H.264, läuft überall; bei gleicher Qualität kleiner als
 //      unser VP9-Versuch) je Sprache.
-// Nichts davon lÃ¤uft in den Tests; die Seiten prÃ¼fen nur, dass jede eingebundene Datei existiert.
+// Nichts davon läuft in den Tests; die Seiten prüfen nur, dass jede eingebundene Datei existiert.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -16,13 +16,13 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const OUT = join(ROOT, "landing");
 const SAVE_KEY = "kopfball-duell-save-v2";
 const LANGS = ["de", "en"];
-/** Breiten je Bildart (px). Das grÃ¶ÃŸte Bild ist hÃ¶chstens so breit wie die Aufnahme */
-/** Gameplay-Loop: Ausschnitt aus der 1920x1080-Aufnahme (B:H:X:Y) und GrÃ¶ÃŸe des Videos */
+/** Gameplay-Loop: Ausschnitt aus der 1920x1080-Aufnahme (B:H:X:Y) und Größe des Videos */
 const VIDEO_CROP = "1920:800:0:280";
 export const VIDEO = [1600, 666];
+/** Breiten je Bildart (px). Das größte Bild ist höchstens so breit wie die Aufnahme */
 export const SIZES = { scene: [640, 1024, 1600], poster: [640, 960, 1600], heads: [640, 1024, 1600], arena: [480, 800], mode: [400, 640], step: [480, 800, 1280] };
 
-// Bildwiederholung anhalten (fÃ¼r scharfe Standbilder genau im Moment eines Ereignisses) und Ereignisse beobachten
+// Bildwiederholung anhalten (für scharfe Standbilder genau im Moment eines Ereignisses) und Ereignisse beobachten
 const FREEZE = `(() => {
   const raf = window.requestAnimationFrame.bind(window); let held = [];
   window.__hold = false; window.__want = null; window.__caught = 0;
@@ -64,7 +64,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     return { ctx, page };
   };
   const png = (page, file, dataUrl) => writeFileSync(join(raw, file), Buffer.from(dataUrl.split(",")[1], "base64"));
-  // Spiel Bot gegen Bot (starke Stufe), ohne Ende, OberflÃ¤che ausgeblendet
+  // Spiel Bot gegen Bot (starke Stufe), ohne Ende, Oberfläche ausgeblendet
   const botMatch = async page => {
     await page.click("#btnPlay"); await page.waitForTimeout(300);
     await page.click("#btnKickoff"); await page.waitForTimeout(200);
@@ -76,7 +76,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     await page.waitForTimeout(3600);   // Countdown vorbei
   };
 
-  // 1. Gameplay-Loop: Bildfolge Ã¼ber das DevTools-Protokoll (schÃ¤rfer als die Playwright-Videoaufnahme)
+  // 1. Gameplay-Loop: Bildfolge über das DevTools-Protokoll (schärfer als die Playwright-Videoaufnahme)
   for (const lang of parts.includes("video") ? LANGS : []) {
     const { ctx, page } = await open(lang, { viewport: { width: 1920, height: 1080 } });
     await botMatch(page);
@@ -92,7 +92,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     console.log(`Gameplay ${lang}: ${frames.length} Bilder in ${(frames.at(-1).ts - frames[0].ts).toFixed(1)} s`);
     await ctx.close();
   }
-  // 2. Kandidaten fÃ¼r Standbilder (dpr 2): Kopfball und Super-Schuss (kurz danach), Tor (Jubel, Text je Sprache)
+  // 2. Kandidaten für Standbilder (dpr 2): Kopfball und Super-Schuss (kurz danach), Tor (Jubel, Text je Sprache)
   for (const lang of parts.includes("stills") ? LANGS : []) {
     const { ctx, page } = await open(lang, { viewport: { width: 1440, height: 810 }, deviceScaleFactor: 2 });
     await botMatch(page);
@@ -107,7 +107,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     }
     await ctx.close();
   }
-  // 3. KÃ¶pfe (einzeln und als Gruppe), Arenen, Modus-Szenen
+  // 3. Köpfe (einzeln und als Gruppe), Arenen, Modus-Szenen
   if (parts.includes("art")) {
     const { ctx, page } = await open("de", { viewport: { width: 1440, height: 810 }, deviceScaleFactor: 2 });
     const art = await page.evaluate(async () => {
@@ -128,7 +128,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     for (const [id, d] of Object.entries(art.heads)) png(page, `head-${id}.png`, d);
     png(page, "heads-group.png", art.group);
     for (const [id, d] of Object.entries(art.arenas)) png(page, `arena-${id}.png`, d);
-    // Modus-Szenen wie auf den Kacheln (Verlauf c1 â†’ c2 der Kachel), groÃŸ gezeichnet; Server-Modi gibt es lokal nicht im MenÃ¼
+    // Modus-Szenen wie auf den Kacheln (Verlauf c1 → c2 der Kachel), groß gezeichnet; Server-Modi gibt es lokal nicht im Menü
     const modes = await page.evaluate(async () => {
       const { drawModeScene } = await import("/js/ui/render/modeart.js");
       const { MODES } = await import("/js/content/config.js");
@@ -181,8 +181,8 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
 function encode(raw) {
   mkdirSync(OUT, { recursive: true });
   const magick = (...a) => execFileSync("magick", a, { stdio: "inherit" });
-  const img = (src, name, widths, { crop } = {}) => {
-    for (const w of widths) for (const [ext, q] of [["avif", 52], ["webp", 78]]) {
+  const img = (src, name, widths, { crop, formats = [["avif", 52], ["webp", 78]] } = {}) => {
+    for (const w of widths) for (const [ext, q] of formats) {
       magick(join(raw, src), ...(crop ? ["-gravity", "center", "-crop", crop, "+repage"] : []), "-resize", `${w}x>`, "-strip", "-quality", String(q), join(OUT, `${name}-${w}.${ext}`));
     }
   };
@@ -207,7 +207,7 @@ function encode(raw) {
     const vf = ["-vf", `crop=${VIDEO_CROP},fps=30,scale=${VIDEO[0]}:${VIDEO[1]}:flags=lanczos`, "-an"];
     ff(...vf, "-c:v", "libx264", "-crf", "34", "-preset", "veryslow", "-tune", "animation", "-pix_fmt", "yuv420p", "-movflags", "+faststart", join(OUT, `gameplay-${l}.mp4`));
     ff("-frames:v", "1", "-vf", `crop=${VIDEO_CROP},scale=${VIDEO[0]}:${VIDEO[1]}`, join(raw, `poster-${l}.png`));
-    img(`poster-${l}.png`, `poster-${l}`, SIZES.poster);
+    img(`poster-${l}.png`, `poster-${l}`, SIZES.poster, { formats: [["webp", 78]] });   // Poster nur als WebP: die Seiten binden es ohne <picture> ein
   }
   console.log("landing/ geschrieben");   // i18n-ok
 }
