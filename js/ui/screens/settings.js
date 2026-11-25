@@ -38,7 +38,7 @@ export function settingsScreen() {
   toggle($("tglSfx"), S.sfx, v => { S.sfx = v; A.setSfx(v); save(); });
   toggle($("tglMusic"), S.music, v => { S.music = v; A.setMusic(v); save(); });
   toggle($("tglVib"), S.vib, v => { S.vib = v; I.setVibration(v); save(); });
-  seg($("segLang"), [{ v: "auto", t: t("set.langAuto") }, ...Object.keys(LANG_NAMES).map(v => ({ v, t: v.toUpperCase() }))], S.lang || "auto", v => {
+  seg($("segLang"), [{ v: "auto", t: t("set.langAuto") }, ...Object.keys(LANG_NAMES).map(v => ({ v, t: v.toUpperCase(), title: LANG_NAMES[v] }))], S.lang || "auto", v => {
     S.lang = v; save(); setLang(v === "auto" ? detectLang() : v);
     applyI18n(); refreshTop(); settingsScreen();   // feste Texte sofort, Bildschirme beim nächsten Anzeigen
   });

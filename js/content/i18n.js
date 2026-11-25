@@ -5,9 +5,12 @@
 // Fehlt ein Schlüssel in einer Sprache, gilt Deutsch; fehlt er ganz, steht der Schlüssel da (fällt im Test auf).
 import de from "./i18n/de.js";
 import en from "./i18n/en.js";
+import vi from "./i18n/vi.js";
+import uk from "./i18n/uk.js";
+import ru from "./i18n/ru.js";
 
-export const LANGS = { de, en };
-export const LANG_NAMES = { de: "Deutsch", en: "English" };
+export const LANGS = { de, en, vi, uk, ru };
+export const LANG_NAMES = { de: "Deutsch", en: "English", vi: "Tiếng Việt", uk: "Українська", ru: "Русский" };   // i18n-ok: Eigennamen der Sprachen
 let cur = "de";
 
 /** Sprache aus dem Link (?lang=de, z. B. von den Infoseiten), sonst die des Geräts, falls wir sie haben, sonst Englisch */
