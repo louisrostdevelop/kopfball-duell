@@ -18,7 +18,8 @@ test("Infoseiten, sitemap.xml und robots.txt sind aktuell (npm run seo)", () => 
 /** hreflang-Gruppe, Sprachumschalter (Kopf, Fuß) einer erzeugten Seite */
 const linksOf = html => ({
   alt: Object.fromEntries([...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map(m => [m[1], m[2]])),
-  top: [...html.matchAll(/<a class="lp-top__lang" href="([^"]+)" hreflang="([^"]+)" lang="([^"]+)"/g)].map(m => [m[2], m[1]]),
+  top: [...html.matchAll(/<a class="lp-lang__item" href="([^"]+)" hreflang="([^"]+)" lang="([^"]+)"/g)].map(m => [m[2], m[1]]),
+  current: [...html.matchAll(/<a class="lp-lang__item" href="([^"]+)"[^>]* aria-current="page"/g)].map(m => m[1]),
   foot: [...tag(html, /<nav class="lp-foot__nav">(.*?)<\/nav>/).matchAll(/<a href="([^"]+)" hreflang="([^"]+)"/g)].map(m => [m[2], m[1]]),
 });
 /** Prüft je Seite: hreflang nennt sich selbst und jede Sprache mit derselben Seitenart (gegenseitig), x-default = EN */
@@ -29,11 +30,14 @@ function checkGroups(pages, out) {
     assert.equal((html.match(/<h1[ >]/g) || []).length, 1, p.path + ": genau eine H1");
     assert.equal(tag(html, /<link rel="canonical" href="([^"]+)">/), SITE + p.path);
     const same = pages.filter(x => x.kind === p.kind), def = same.find(x => x.lang === DEFAULT_LANG);
-    const { alt, top, foot } = linksOf(html);
+    const { alt, top, current, foot } = linksOf(html);
     assert.deepEqual(alt, { ...Object.fromEntries(same.map(x => [x.lang, SITE + x.path])), ...(def ? { "x-default": SITE + def.path } : {}) }, p.path);
     for (const x of same) assert.equal(linksOf(out[fileOf(x.path)]).alt[p.lang], SITE + p.path, x.path + " zeigt zurück auf " + p.path);
     const others = same.filter(x => x !== p).map(x => [x.lang, x.path]);
-    assert.deepEqual(top, others, p.path + ": Umschalter oben");
+    // oben: ein Knopf, die Liste nennt alle Sprachen der Seitenart, die eigene als aktuelle; unten: die anderen
+    assert.deepEqual(top, same.length > 1 ? same.map(x => [x.lang, x.path]) : [], p.path + ": Sprachwahl oben");
+    assert.deepEqual(current, same.length > 1 ? [p.path] : [], p.path + ": aktuelle Sprache markiert");
+    if (same.length > 1) assert.match(html, new RegExp(`<details class="lp-lang"><summary class="lp-top__lang lp-lang__btn">.*<span class="lp-lang__cur">${p.D.name}</span>`), p.path);
     assert.deepEqual(foot, others, p.path + ": Umschalter unten");
   }
 }
@@ -98,6 +102,14 @@ test("„Jetzt spielen“ führt ins Spiel mit Quelle und Sprache der Seite", ()
   }
 });
 
+test("Beschreibung (meta description) höchstens 155 Zeichen, damit Google sie nicht abschneidet", () => {
+  const unesc = s => s.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  for (const p of PAGES) {
+    const d = unesc(tag(files[fileOf(p.path)], /<meta name="description" content="([^"]*)">/));
+    assert.ok(d.length >= 70 && d.length <= 155, `${p.path}: ${d.length} Zeichen`);
+  }
+});
+
 test("fremde Spielnamen: nie in Titel, H1, Beschreibung oder URL; „head soccer“ höchstens einmal im Fließtext der EN-Freunde-Seite", () => {
   let count = 0;
   for (const p of PAGES) {
@@ -145,10 +157,18 @@ test("Startseite: Titel, canonical, Structured Data ohne Bewertungen, Einstellun
   assert.equal((html.match(/class="setlink" data-info=/g) || []).length, kinds.length, "keine Links je Sprache von Hand");
 });
 
-test("js/content/info-pages.js: jede Infoseite je Sprache und Art, Ersatzsprache hat jede Art", async () => {
+test("js/content/info-pages.js: jede Infoseite je Sprache und Art, sonst der Abschnitt der Hauptseite; Ersatzsprache hat jede Art", async () => {
   const { INFO_PAGES, INFO_DEFAULT } = await import("../../js/content/info-pages.js");
   assert.equal(INFO_DEFAULT, DEFAULT_LANG);
-  assert.deepEqual(Object.entries(INFO_PAGES).flatMap(([l, k]) => Object.entries(k).map(([kind, path]) => [l, kind, path])), PAGES.map(p => [p.lang, p.kind, p.path.slice(1)]));
+  const flat = Object.entries(INFO_PAGES).flatMap(([l, k]) => Object.entries(k).map(([kind, path]) => [l, kind, path]));
+  assert.deepEqual(flat.filter(([, , path]) => !path.includes("#")), PAGES.map(p => [p.lang, p.kind, p.path.slice(1)]));
+  const covered = PAGES.flatMap(p => Object.entries(p.covers).map(([kind, id]) => [p.lang, kind, `${p.path.slice(1)}#${id}`]));
+  assert.deepEqual(flat.filter(([, , path]) => path.includes("#")), covered);
+  assert.deepEqual(INFO_PAGES.pt?.friends, "pt/#com-amigos", "Portugiesisch: Freunde als Abschnitt der Hauptseite");
+  for (const [l, kind, id] of PAGES.flatMap(p => Object.entries(p.covers).map(([k, i]) => [p.lang, k, i]))) {
+    assert.ok(!PAGES.some(p => p.lang === l && p.kind === kind), `${l}: ${kind} als Seite und als Abschnitt`);
+    assert.match(files[fileOf(PAGES.find(p => p.lang === l && p.covers[kind]).path)], new RegExp(` id="${id}"`));
+  }
   const { LANGS: GAME } = await import("../../js/content/i18n.js");
   for (const l of Object.keys(INFO_PAGES)) assert.ok(GAME[l], "Infoseite ohne Spielsprache: " + l);
 });
@@ -196,6 +216,15 @@ test("Quelle aus der Adresse (z. B. Anzeige) ersetzt die Quelle der Infoseite im
   assert.equal(withSrc(href, ""), href, "ohne Quelle bleibt der Link");
   assert.equal(withSrc(href, "?src=a%20b"), href, "freier Text wird ignoriert");
   assert.equal(withSrc(href, "?src=" + "x".repeat(41)), href, "zu lang wird ignoriert");
+  // Sprachwahl: Klick daneben und Escape schließen, Klick hinein nicht
+  const { closeOnOutside } = await import("../../js/landing-src.js");
+  const on = {}, inside = {}, summary = { focused: false, focus() { this.focused = true; } };
+  const menu = { open: true, contains: t => t === inside || t === summary, querySelector: () => summary };
+  closeOnOutside(menu, { addEventListener: (type, fn) => { on[type] = fn; } });
+  on.click({ target: inside }); assert.equal(menu.open, true, "Klick in die Liste");
+  on.click({ target: {} }); assert.equal(menu.open, false, "Klick daneben");
+  menu.open = true; on.keydown({ key: "Enter" }); assert.equal(menu.open, true);
+  on.keydown({ key: "Escape" }); assert.equal(menu.open, false, "Escape"); assert.ok(summary.focused, "Fokus zurück auf den Knopf");
   for (const p of PAGES) {
     const html = files[fileOf(p.path)];
     assert.ok(html.includes('<script type="module" src="/js/landing-src.js"></script>'), p.path + ": Skript eingebunden");

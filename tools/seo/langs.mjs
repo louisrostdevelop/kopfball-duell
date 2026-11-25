@@ -3,7 +3,8 @@
 // Neue Sprache: tools/seo/<lang>.mjs nach dem Muster von en.mjs (Seiten nur für die Arten, die es dort geben soll; Form wird
 // gegen de.mjs geprüft), hier eintragen, Medien aufnehmen (tools/gen-landing-media.mjs), `npm run seo`.
 // Außerhalb des Generators bleibt nur: das Spiel übersetzen (js/content/i18n/<lang>.js). Die Links in den Einstellungen
-// (Info) zeigen von selbst auf die Infoseiten der Spielsprache (js/content/info-pages.js, erzeugt), sonst auf DEFAULT_LANG.
+// (Info) zeigen von selbst auf die Infoseiten der Spielsprache (js/content/info-pages.js, erzeugt), auf einen Abschnitt
+// ihrer Hauptseite (pages.main.covers, Muster pt.mjs) oder sonst auf DEFAULT_LANG.
 import de from "./de.mjs";
 import en from "./en.mjs";
 import es from "./es.mjs";

@@ -16,20 +16,20 @@ export default {
   pages: {
     main: { path: "/es/", src: "seo-es", build: ({ esc, pic, kbd, n, pu, path, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
       title: "Fútbol de cabezones online – juego gratis 1 vs 1 | Headstars",
-      desc: "Juego de cabezones en el navegador: 1 vs 1 contra la máquina, contra rivales de todo el mundo o contra tus amigos con un link. Gratis, sin descargas y sin registro.",
+      desc: "Juego de cabezones en el navegador: 1 vs 1 contra la máquina, rivales de todo el mundo o tus amigos con un link. Gratis, sin descargas y sin registro.",
       h1: "Fútbol de cabezones online",
       lead: "Partidos uno contra uno con cabezas gigantes: corre, salta, cabecea y dispara. Contra la máquina, contra gente de todo el mundo o contra tus amigos, directo en el navegador.",
       sections: [
         { id: "jugar", media: pic("scene-head", "scene", "Cabezazo en Headstars: un cabezón salta y cabecea el balón hacia la portería"), h2: "Cabecea, dispara y bárrete",
           html: `<p>Un juego de cabezones como tiene que ser: dos jugadores, un balón y dos porterías. Cómo sale el tiro depende del momento en que le pegas: con el balón quieto sale bombeado, a la altura de la cabeza va raso, y en el aire le pegas de volea.</p>
-<p>En el piso te barres, en el aire caes en bomba, y cuanto más alto saltas, más fuerte cae. Si calculas bien el salto, cabeceas el balón en pleno vuelo y directo a la portería.</p>` },
+<p>En el piso te barres, en el aire caes en bomba, y cuanto más alto saltas, más fuerte es el golpe. Si calculas bien el salto, cabeceas el balón en pleno vuelo y directo a la portería.</p>` },
         { id: "cabezones", media: pic("heads-group", "heads", `Los ${n.heads} cabezones de Headstars uno al lado del otro`, { cls: "lp-cutout" }), h2: `${n.heads} cabezones, cada uno con su tiro especial`,
           html: `<p>Cada cabeza juega distinto: una es más rápida, otra salta más alto, otra le pega con más fuerza. Cuando se llena tu barra de súper, sueltas su tiro especial.</p>`, after: headChips(), wide: true },
         { id: "tiros-especiales", media: pic("scene-super", "scene", "Un tiro especial cruza la cancha en Headstars"), h2: "Tiros especiales y power-ups",
           html: `<p>${esc(L["super.fire.name"])}, ${esc(L["super.ice.name"])}, ${esc(L["super.thunder.name"])}: un tiro especial puede cambiar todo el partido. Además aparecen en la cancha ${n.pus} power-ups distintos, como ${pu[0]}, ${pu[1]} o ${pu[2]}.</p>
 <p>En ${esc(L["mode.quick.name"])} y contra amigos decides tú si salen power-ups, cada cuánto, y si se permiten los tiros especiales.</p>` },
         { id: "arenas", wide: true, media: arenaMosaic(), h2: `${n.arenas} arenas con su propia física`,
-          html: `<p>En la ${esc(L["arena.eis.name"])} te resbalas, en la ${esc(L["arena.mond.name"])} saltas altísimo y en la ${esc(L["arena.strand.name"])} la arena frena el balón. ${n.start} arenas están desde el principio, ${n.byLevel} las desbloqueas subiendo de nivel y ${n.bySeason} más llegan con las temporadas.</p>` },
+          html: `<p>En la ${esc(L["arena.eis.name"])} te resbalas, en la ${esc(L["arena.mond.name"])} saltas altísimo y en la ${esc(L["arena.strand.name"])} la arena frena el balón. ${n.start} arenas vienen desbloqueadas, ${n.byLevel} las desbloqueas subiendo de nivel y ${n.bySeason} más llegan con las temporadas.</p>` },
         { panel: true, id: "modos", h2: "Modos de juego", html: modes() },
         { id: "dos-jugadores", media: pic("scene-goal-es", "scene", "Festejo de gol en Headstars"), h2: "Para 2 jugadores o con amigos online",
           html: `<p>¿Están juntos? Elijan “${esc(L["mode.local.name"])}” y jueguen en un solo dispositivo: en el mismo teclado, con dos controles o en la pantalla táctil dividida a la mitad. El clásico juego de fútbol para dos, sin instalar nada.</p>
@@ -48,7 +48,7 @@ export default {
     }) },
     friends: { path: "/es/jugar-con-amigos/", src: "seo-es-amigos", build: ({ esc, pic, path, steps, len, lock }) => ({
       title: "Fútbol online con amigos: juega por link, sin registro | Headstars",
-      desc: "Juega fútbol de cabezones online con tus amigos: crea una sala, manda el link y a jugar. 1 vs 1 en el navegador del celular, la tablet o la PC, gratis y sin registro.",
+      desc: "Fútbol de cabezones online con tus amigos: crea una sala, manda el link y a jugar. 1 vs 1 en el navegador del celular o la PC, gratis y sin registro.",
       h1: "Juega fútbol online con tus amigos, solo con un link",
       lead: "Le mandas un link a tu amigo, lo abre y ya están jugando. Sin descargas, sin registro y sin app, incluso del celular contra la PC.",
       sections: [

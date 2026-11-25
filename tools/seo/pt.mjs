@@ -14,14 +14,15 @@ export default {
     video: "Partida de Headstars: duas cabeças jogam futebol de cabeça no estádio", online: "Online", offline: "Contra o computador ou em dois",
     endTitle: "Pronto para o apito inicial?", action: "Ação" },
   pages: {
-    main: { path: "/pt/", src: "seo-pt", build: ({ esc, pic, kbd, n, pu, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
+    /** covers: Seitenarten, die hier nur ein Abschnitt sind (Anker), für die Einstellungs-Links im Spiel */
+    main: { path: "/pt/", src: "seo-pt", covers: { friends: "com-amigos" }, build: ({ esc, pic, kbd, n, pu, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
       title: "Jogo de futebol de cabeça online e grátis | Headstars",
-      desc: "Futebol de cabeça no navegador: 1 contra 1 contra o computador, contra jogadores do mundo todo ou com seus amigos por link. Grátis, sem download e sem cadastro.",
+      desc: "Futebol de cabeça no navegador: 1 contra 1 contra o computador, jogadores do mundo todo ou seus amigos por link. Grátis, sem download e sem cadastro.",
       h1: "Futebol de cabeça online",
       lead: "Partidas de um contra um com cabeças gigantes: corra, pule, cabeceie e chute. Contra o computador, contra gente do mundo todo ou com seus amigos, direto no navegador.",
       sections: [
         { id: "jogar", media: pic("scene-head", "scene", "Cabeçada no Headstars: uma cabeça pula e cabeceia a bola em direção ao gol"), h2: "Cabeceie, chute e dê carrinho",
-          html: `<p>Dois jogadores, uma bola e dois gols. O jeito que a bola sai depende do momento do toque: com a bola parada sai um chute por cobertura, na altura da cabeça ela vai reta, e no ar vira voleio.</p>
+          html: `<p>Dois jogadores, uma bola e dois gols. O jeito que a bola sai depende do momento do toque: com a bola parada ela sai de cobertura, na altura da cabeça ela vai reta, e no ar vira voleio.</p>
 <p>No chão você dá carrinho, no ar desce com um pisão: quanto mais alto, mais forte. Acertou o tempo do pulo? Aí você cabeceia a bola no ar direto pro gol.</p>` },
         { id: "cabecas", media: pic("heads-group", "heads", `As ${n.heads} cabeças do Headstars lado a lado`, { cls: "lp-cutout" }), h2: `${n.heads} cabeças, cada uma com seu chute especial`,
           html: `<p>Cada cabeça joga de um jeito: uma é mais rápida, outra pula mais alto, outra chuta mais forte. Quando a sua barra de super enche, você solta o chute especial dela.</p>`, after: headChips(), wide: true },

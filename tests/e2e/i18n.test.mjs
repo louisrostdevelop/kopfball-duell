@@ -49,10 +49,10 @@ test("Sprache aus dem Link der Infoseiten (?lang=) geht vor die Gerätesprache",
   await click(page, "#btnSettings", 300); await click(page, `#setTabs [data-tab="info"]`, 150);
   const links = () => page.$$eval("#scr-settings a[data-info]", as => as.map(a => [a.getAttribute("href"), a.getAttribute("hreflang"), a.textContent.trim()]));
   assert.deepEqual(await links(), [["de/", "de", "Spielinfos"], ["de/gegen-freunde/", "de", "Gegen Freunde spielen"]]);
-  // Sprache ohne eigene Freunde-Seite: dort die englische, mit Hinweis
+  // Sprache ohne eigene Freunde-Seite: der Abschnitt ihrer Hauptseite
   await click(page, `#setTabs [data-tab="general"]`, 150); await click(page, "#segLang button:nth-child(5)", 300);   // PT
   await click(page, `#setTabs [data-tab="info"]`, 150);
-  assert.deepEqual(await links(), [["pt/", "pt", "Guia do jogo"], ["en/play-with-friends/", "en", "Jogar com amigos (em inglês)"]]);
+  assert.deepEqual(await links(), [["pt/", "pt", "Guia do jogo"], ["pt/#com-amigos", "pt", "Jogar com amigos"]]);
   await click(page, `#setTabs [data-tab="general"]`, 150); await click(page, "#segLang button:nth-child(1)", 300);   // zurück auf Automatisch
   // ?lang= verschwindet aus der Adresse (Herkunft ?src= bleibt): danach gilt wieder die Gerätesprache
   assert.equal(await page.evaluate(() => location.search), "?src=seo-de");

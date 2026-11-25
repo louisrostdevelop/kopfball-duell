@@ -15,7 +15,7 @@ export default {
   pages: {
     main: { path: "/de/", src: "seo-de", build: ({ esc, pic, kbd, n, pu, path, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
       title: "Kopfball-Fußball online spielen – kostenlos im Browser | Headstars",
-      desc: "Kopfball-Fußball im Browser: 1 gegen 1 gegen den Computer, gegen Spieler aus aller Welt oder per Link gegen Freunde. Kostenlos, ohne Download, ohne Anmeldung.",
+      desc: "Kopfball-Fußball im Browser: 1 gegen 1 gegen den Computer, Spieler aus aller Welt oder per Link gegen Freunde. Kostenlos, ohne Download, ohne Anmeldung.",
       h1: "Kopfball-Fußball online spielen",
       lead: "Eins gegen eins mit großen Köpfen: laufen, springen, köpfen, schießen. Gegen den Computer, gegen Gegner aus aller Welt oder gegen deine Freunde, direkt im Browser.",
       sections: [
@@ -46,7 +46,7 @@ export default {
     }) },
     friends: { path: "/de/gegen-freunde/", src: "seo-de-freunde", build: ({ esc, pic, path, steps, len, lock }) => ({
       title: "Fußball online gegen Freunde – per Link, ohne Anmeldung | Headstars",
-      desc: "Online gegen Freunde spielen per Link: Raum erstellen, Link schicken, anpfeifen. Kopfball-Fußball im Browser auf Handy, Tablet und PC, kostenlos und ohne Anmeldung.",
+      desc: "Online gegen Freunde per Link: Raum erstellen, Link schicken, anpfeifen. Kopfball-Fußball im Browser auf Handy, Tablet und PC, kostenlos, ohne Anmeldung.",
       h1: "Fußball online gegen Freunde – einfach per Link",
       lead: "Schick deinem Freund einen Link, er tippt drauf und ihr spielt. Kein Download, keine Anmeldung, keine App, auch vom Handy gegen den PC.",
       sections: [

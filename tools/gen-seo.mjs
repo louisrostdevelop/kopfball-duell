@@ -37,6 +37,7 @@ function checkLang(D) {
   for (const [kind, x] of Object.entries(D.pages)) {
     if (!REF.pages[kind]) throw new Error(`${where}: unbekannte Seitenart ${kind}`);
     if (!/^\/[a-z0-9/-]+\/$/.test(x.path || "") || !/^[a-z0-9_-]{1,40}$/.test(x.src || "") || typeof x.build !== "function") throw new Error(`${where}: pages.${kind} braucht path, src (Kennung wie js/app/track.js) und build`);
+    for (const [k, id] of Object.entries(x.covers || {})) if (!REF.pages[k] || D.pages[k] || !/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${where}: pages.${kind}.covers.${k} braucht eine Seitenart, die es in der Sprache nicht gibt, und eine Abschnitts-id`);
   }
 }
 /** Was build() liefert: Titel, Beschreibung, H1, Einleitung, Abschnitte, FAQ, alles mit Text */
@@ -53,7 +54,7 @@ function checkContent(c, at) {
 export function pagesOf(langs) {
   if (new Set(langs.map(D => D.lang)).size !== langs.length) throw new Error("Sprache doppelt in tools/seo/langs.mjs");
   langs.forEach(checkLang);
-  return langs.flatMap(D => Object.entries(D.pages).map(([kind, x]) => ({ path: x.path, lang: D.lang, src: x.src, kind, build: x.build, D })));
+  return langs.flatMap(D => Object.entries(D.pages).map(([kind, x]) => ({ path: x.path, lang: D.lang, src: x.src, kind, build: x.build, covers: x.covers || {}, D })));
 }
 export const PAGES = pagesOf(LANGS);
 /** Oberste Ordner der Infoseiten (für .github/workflows/pages.yml: node tools/gen-seo.mjs --dirs) */
@@ -158,11 +159,13 @@ ${s.html}
 </section>`;
 
 // ---------- Seite ----------
-/** Sprachumschalter: dieselbe Seite in jeder anderen Sprache, die sie hat */
-function langLinks(others, u) {
-  const link = o => `<a class="lp-top__lang" href="${o.path}" hreflang="${o.lang}" lang="${o.lang}" title="${esc(o.D.thisPage)}">${icon("i-globe")}${esc(o.D.name)}</a>`;
-  if (others.length < 2) return others.map(link).join("");
-  return `<nav class="lp-top__langs" aria-label="${esc(u.langs)}">${others.map(link).join("")}</nav>`;
+/** Sprachumschalter: ein Knopf mit der aktuellen Sprache, darunter dieselbe Seite in jeder Sprache, die sie hat (echte Links,
+ *  ohne Skript über <details> bedienbar; js/landing-src.js schließt bei Klick daneben und Escape) */
+function langMenu(p, same, u) {
+  if (same.length < 2) return "";
+  const item = o => `<li><a class="lp-lang__item" href="${o.path}" hreflang="${o.lang}" lang="${o.lang}"${o === p ? ` aria-current="page"` : ` title="${esc(o.D.thisPage)}"`}>${esc(o.D.name)}${o === p ? `<span class="lp-lang__check" aria-hidden="true"></span>` : ""}</a></li>`;
+  return `<nav class="lp-top__langs" aria-label="${esc(u.langs)}"><details class="lp-lang"><summary class="lp-top__lang lp-lang__btn">${icon("i-globe")}<span class="lp-sr">${esc(u.langs)}: </span><span class="lp-lang__cur">${esc(p.D.name)}</span><span class="lp-lang__caret" aria-hidden="true"></span></summary>
+<ul class="lp-lang__list">${same.map(item).join("")}</ul></details></nav>`;
 }
 
 function page(p, pages) {
@@ -204,7 +207,7 @@ ${alternates(p, pages).map(([l, h]) => `<link rel="alternate" hreflang="${l}" hr
 <svg class="lp-sprite" aria-hidden="true">${ICONS.map(symbol).join("")}</svg>
 <header class="lp-top">
 <a class="lp-top__brand" href="${playUrl(p)}"><img src="/icons/wordmark.webp" width="600" height="200" alt="Headstars"></a>
-${langLinks(others, u)}
+${langMenu(p, group(p, pages), u)}
 </header>
 <main>
 <section class="lp-hero">
@@ -254,11 +257,13 @@ ${[url("/"), ...pages.map(p => url(p.path, alternates(p, pages)))].join("\n")}
 export function infoPages(pages = PAGES) {
   const by = {};
   for (const p of pages) (by[p.lang] ||= {})[p.kind] = p.path.slice(1);
+  // Seitenart, die eine Sprache nur als Abschnitt hat: Hauptseite mit Anker (z. B. pt/#com-amigos)
+  for (const p of pages) for (const [kind, id] of Object.entries(p.covers)) by[p.lang][kind] ??= `${p.path.slice(1)}#${id}`;
   for (const kind of new Set(pages.map(p => p.kind))) if (!by[DEFAULT_LANG]?.[kind]) throw new Error(`tools/seo/${DEFAULT_LANG}.mjs: Seite „${kind}“ fehlt (Ersatz für die Einstellungs-Links)`);
   return `// ERZEUGT von tools/gen-seo.mjs. Nicht von Hand ändern: npm run seo.
 /** Infoseiten je Sprache und Art, Pfad relativ zur Startseite (Einstellungen → Info) */
 export const INFO_PAGES = ${JSON.stringify(by, null, 2)};
-/** Sprache, deren Seiten einspringen, wenn die Spielsprache eine Art nicht hat */
+/** Sprache, deren Seiten einspringen, wenn die Spielsprache eine Art weder als Seite noch als Abschnitt hat */
 export const INFO_DEFAULT = "${DEFAULT_LANG}";
 `;
 }
@@ -270,6 +275,7 @@ export function seoFiles(langs = LANGS) {
   const html = p => {
     const out = page(p, pages);
     if (out.includes("undefined")) throw new Error(`${fileOf(p.path)}: „undefined“ im HTML (Text in tools/seo/${p.lang}.mjs oder Spieltext-Schlüssel in js/content/i18n/${p.lang}.js fehlt)`);
+    for (const id of Object.values(p.covers)) if (!out.includes(` id="${id}"`)) throw new Error(`${fileOf(p.path)}: Abschnitt #${id} fehlt (pages.${p.kind}.covers in tools/seo/${p.lang}.mjs)`);
     return out;
   };
   return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), html(p)])), "sitemap.xml": sitemap(pages), "robots.txt": robots(), "js/content/info-pages.js": infoPages(pages) };

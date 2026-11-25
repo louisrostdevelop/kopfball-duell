@@ -60,13 +60,37 @@ body.lp {
 }
 .lp-top__lang:hover { background: rgb(8 16 63 / 80%); border-color: var(--lp-on-blue); }
 
-/* eine Zeile, egal wie viele Sprachen: was nicht passt, wischt man seitlich (der Hero rechnet mit einer Zeile Kopf) */
-.lp-top__langs {
-  display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
-  padding: 4px; margin: -4px;
+/* Sprachwahl: ein Knopf (aktuelle Sprache), darunter die Liste aller Sprachen. <details> geht ohne Skript; der Kopf bleibt
+   einzeilig, egal wie viele Sprachen (der Hero rechnet mit einer Zeile Kopf) */
+.lp-top__langs { display: flex; justify-content: flex-end; min-width: 0; }
+.lp-lang { position: relative; min-width: 0; }
+.lp-lang__btn { max-width: 100%; cursor: pointer; list-style: none; user-select: none; }
+.lp-lang__btn::-webkit-details-marker { display: none; }
+.lp-lang__btn:focus-visible { outline: 4px solid var(--yellow); outline-offset: 3px; }
+.lp-lang[open] .lp-lang__btn { background: rgb(8 16 63 / 80%); border-color: var(--lp-on-blue); }
+.lp-lang__cur { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-lang__caret { flex: none; border: 5px solid transparent; border-top: 6px solid currentcolor; border-bottom: 0; transition: transform .2s var(--lp-ease); }
+.lp-lang[open] .lp-lang__caret { transform: rotate(180deg); }
+
+.lp-lang__list {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 100%; max-width: calc(100vw - 2 * var(--lp-gut)); max-height: calc(100svh - 90px);
+  overflow-y: auto; margin: 0; padding: 6px; list-style: none; border-radius: 18px; background: rgb(8 16 63 / 96%);
+  border: 2px solid rgb(255 255 255 / 35%); box-shadow: 0 14px 34px rgb(3 5 24 / 60%);
 }
-.lp-top__langs .lp-top__lang { flex: none; }
-.lp-top__langs .lp-top__lang:first-child { margin-left: auto; }
+
+.lp .lp-lang__item {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 900; line-height: 1.3; white-space: nowrap; color: var(--lp-on-blue); text-decoration: none;
+}
+.lp .lp-lang__item:hover { background: rgb(255 255 255 / 12%); }
+.lp .lp-lang__item[aria-current] { background: rgb(255 255 255 / 8%); }
+.lp-lang__check { flex: none; width: 7px; height: 12px; margin-right: 3px; border: solid var(--yellow); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+
+@media (max-width: 360px) {
+  .lp-top { gap: 8px; }
+  .lp-top__brand { width: 118px; }
+  .lp-lang__btn { padding-inline: 11px; }
+}
 
 /* ---------- Hero: Spielszene über den ganzen ersten Bildschirm ---------- */
 .lp-hero { position: relative; isolation: isolate; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }

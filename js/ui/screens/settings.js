@@ -20,7 +20,7 @@ const ACTIONS = () => [
   ["ctl.emotes", [kbd("1") + "–" + kbd("4"), "–"], "–", t("ctl.emoteBtn")],
 ];
 
-/** Links auf die Infoseiten (data-info = Seitenart): Seite der Spielsprache, sonst die englische mit Hinweis im Text */
+/** Links auf die Infoseiten (data-info = Seitenart): Seite oder Abschnitt in der Spielsprache, sonst die englische mit Hinweis */
 function infoLinks() {
   document.querySelectorAll("#scr-settings a[data-info]").forEach(a => {
     const kind = a.dataset.info, own = INFO_PAGES[lang()]?.[kind], l = own ? lang() : INFO_DEFAULT;
