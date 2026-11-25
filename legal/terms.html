@@ -7,13 +7,16 @@
 <title>Nutzungsbedingungen / Terms of Use – Headstars</title>
 <link rel="stylesheet" href="style.css">
 <script>
-// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser. Ohne Skript stehen beide Fassungen untereinander.
+// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser; gibt es die Seite darin nicht, Englisch.
+// Ohne Skript stehen alle Fassungen untereinander.
 (function () {
-  var ok = function (x) { return x === "de" || x === "en"; }, l = null;
-  try { l = new URLSearchParams(location.search).get("lang"); } catch (e) { l = null; }
-  if (!ok(l)) { try { l = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { l = null; } }
-  if (!ok(l)) { var ls = navigator.languages || [navigator.language]; l = "en"; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
-  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l);
+  var L = ["de","en","es","uk"], T = {"de":"Nutzungsbedingungen – Headstars","en":"Terms of Use – Headstars","es":"Términos de uso – Headstars","uk":"Умови користування – Headstars"}, w = null, l = "en";
+  var ok = function (x) { return L.indexOf(x) >= 0; };
+  try { w = new URLSearchParams(location.search).get("lang"); } catch (e) { w = null; }
+  if (!w) { try { w = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { w = null; } }
+  if (w && w !== "auto") { if (ok(w)) l = w; }
+  else { var ls = navigator.languages || [navigator.language]; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
+  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l); document.title = T[l];
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("nav a[href$='.html']").forEach(function (a) { a.href = a.getAttribute("href") + "?lang=" + l; });
   });
@@ -23,10 +26,10 @@
 <body>
 <main>
 <section data-l="de" lang="de">
-<nav data-l="de"><a href="../">← Zurück zum Spiel</a><a href="imprint.html">Impressum</a><a href="privacy.html">Datenschutzerklärung</a><a href="?lang=en" lang="en">English</a></nav>
+<nav data-l="de"><a href="../">← Zurück zum Spiel</a><a href="imprint.html">Impressum</a><a href="privacy.html">Datenschutzerklärung</a><a href="?lang=en" lang="en">English</a><a href="?lang=es" lang="es">Español</a><a href="?lang=uk" lang="uk">Українська</a></nav>
 <div class="card">
 <h1>Nutzungsbedingungen</h1>
-<p class="meta">Headstars · Stand: 16.11.2026</p>
+<p class="meta">Headstars · Stand: 25.11.2026</p>
 <h2>1. Geltungsbereich</h2>
 <p>Diese Bedingungen gelten für die Nutzung des Browserspiels Headstars („das Spiel“), angeboten von Louis-Deniel Rost („wir“, siehe <a href="imprint.html">Impressum</a>). Mit dem Spielen akzeptierst du sie. Zwingende Verbraucherschutzvorschriften deines Wohnsitzlandes bleiben unberührt.</p>
 <h2>2. Das Spiel</h2>
@@ -85,10 +88,11 @@
 </div>
 </section>
 <section data-l="en" lang="en">
-<nav data-l="en"><a href="../">← Back to the game</a><a href="imprint.html">Legal Notice</a><a href="privacy.html">Privacy Policy</a><a href="?lang=de" lang="de">Deutsch</a></nav>
+<nav data-l="en"><a href="../">← Back to the game</a><a href="imprint.html">Legal Notice</a><a href="privacy.html">Privacy Policy</a><a href="?lang=de" lang="de">Deutsch</a><a href="?lang=es" lang="es">Español</a><a href="?lang=uk" lang="uk">Українська</a></nav>
 <div class="card">
 <h1>Terms of Use</h1>
-<p class="meta">Headstars · Last updated: 2026-11-16</p>
+<p class="meta">Headstars · Last updated: 2026-11-25</p>
+<p class="meta">This is a translation. If the versions differ, the <a href="?lang=de" lang="de">German version</a> prevails.</p>
 <h2>1. Scope</h2>
 <p>These terms apply to the use of the browser game Headstars (the "Game") provided by Louis-Deniel Rost ("we", see <a href="imprint.html">Legal Notice</a>). By playing you accept them. Mandatory consumer protection law of your country of residence remains unaffected.</p>
 <h2>2. The Game</h2>
@@ -144,6 +148,132 @@
 <p>We may change these terms with effect for the future if there is a valid reason, such as new features or changes in the law. We will inform you in the Game. Changes that put you at a significant disadvantage only apply once you agree to them; if you do not agree, you can delete your account at any time.</p>
 <h2>13. Final provisions</h2>
 <p>German law applies, excluding the UN Convention on Contracts for the International Sale of Goods; for consumers only insofar as this does not deprive them of the protection of the mandatory law of their country of residence. If any provision is invalid, the rest remain valid. We are neither willing nor obliged to take part in dispute resolution proceedings before a consumer arbitration board.</p>
+</div>
+</section>
+<section data-l="es" lang="es">
+<nav data-l="es"><a href="../">← Volver al juego</a><a href="imprint.html">Aviso legal</a><a href="privacy.html">Política de privacidad</a><a href="?lang=de" lang="de">Deutsch</a><a href="?lang=en" lang="en">English</a><a href="?lang=uk" lang="uk">Українська</a></nav>
+<div class="card">
+<h1>Términos de uso</h1>
+<p class="meta">Headstars · Última actualización: 25/11/2026</p>
+<p class="meta">Esto es una traducción. Si las versiones difieren, prevalece la <a href="?lang=de" lang="de">versión alemana</a>.</p>
+<h2>1. Ámbito de aplicación</h2>
+<p>Estos términos se aplican al uso del juego de navegador Headstars («el juego»), ofrecido por Louis-Deniel Rost («nosotros», véase el <a href="imprint.html">aviso legal</a>). Al jugar, los aceptas. Las disposiciones imperativas de protección del consumidor de tu país de residencia no se ven afectadas.</p>
+<h2>2. El juego</h2>
+<ul>
+<li>El juego es gratuito. Lo ofrecemos tal cual y lo seguimos desarrollando; en ese proceso pueden cambiar las funciones, los contenidos y el equilibrio del juego.</li>
+<li>Las partidas en línea se juegan directamente entre los dispositivos de los jugadores (peer-to-peer). Por ello, los dispositivos de los demás jugadores ven técnicamente tu dirección IP. No controlamos el contenido ni el comportamiento de otros jugadores.</li>
+<li>Eres responsable de la seguridad de tu dispositivo y de tu navegador (p. ej., actualizaciones).</li>
+</ul>
+<h2>3. Edad</h2>
+<p>El juego está dirigido a jugadores a partir de 16 años. Los menores de esa edad necesitan el consentimiento de sus padres para tener una cuenta y jugar en línea.</p>
+<h2>4. Cuenta</h2>
+<ul>
+<li>Puedes jugar como invitado. Una cuenta de invitado está ligada a tu navegador; si borras los datos del navegador, puede perderse. Las cuentas de invitado sin compras se borran tras 90 días sin actividad.</li>
+<li>Si guardas tu cuenta con una dirección de correo electrónico, inicias sesión con un código que recibes por correo. Protege el acceso a tu buzón; lo que ocurra a través de tu cuenta se te atribuye en la medida en que seas responsable de ello.</li>
+<li>Cada cuenta es personal. No está permitido vender, intercambiar ni ceder cuentas.</li>
+<li>Puedes borrar tu cuenta en cualquier momento en el juego (Perfil → Cuenta).</li>
+</ul>
+<h2>5. Reglas para un juego limpio y seguro</h2>
+<p>Está prohibido en particular:</p>
+<ul>
+<li>Hacer trampas: bots, scripts, macros, programas de trucos, datos de juego o de red manipulados, aprovechar errores, resultados pactados o varias cuentas para obtener ventajas.</li>
+<li>Atacar el juego, nuestros servidores u otros jugadores: transmitir software malicioso o datos dañinos, ataques de sobrecarga, eludir medidas de seguridad, acceder sin autorización a sistemas o datos, espiar las direcciones IP de otros jugadores o usarlas para ataques.</li>
+<li>Accesos automatizados (p. ej., extracción de datos), salvo que sean necesarios para jugar con normalidad.</li>
+<li>Nombres de jugador ofensivos, discriminatorios, extremistas o ilícitos por otro motivo, acosar a otros jugadores y hacerse pasar por otra persona, también por nosotros.</li>
+<li>El uso comercial sin nuestro consentimiento, por ejemplo el comercio de cuentas u objetos o subir de nivel a otros a cambio de dinero («boosting»).</li>
+<li>Cualquier uso que infrinja la ley o derechos de terceros.</li>
+</ul>
+<p>Por favor, comunica los errores y las vulnerabilidades de seguridad a <a href="mailto:support@headstars.app">support@headstars.app</a> en lugar de aprovecharlos.</p>
+<h2>6. Consecuencias de las infracciones</h2>
+<p>En caso de infracción, según su gravedad, podemos: no contar resultados, restablecer el progreso, retirar recompensas obtenidas de forma desleal, cambiar tu nombre de jugador, o suspender temporalmente o borrar tu cuenta. En infracciones graves, también sin aviso previo. El servidor comprueba los resultados de las partidas en línea; los informes contradictorios o inverosímiles pueden no contarse. Si infringes estas reglas o derechos de terceros de forma culposa, respondes del daño causado y nos eximes de las reclamaciones de terceros que se deriven de ello, incluidos los costes razonables de defensa jurídica.</p>
+<h2>7. Derechos sobre el juego</h2>
+<p>Todos los derechos sobre el juego (programa, gráficos, personajes, sonidos, nombre y logotipo) nos pertenecen a nosotros o a nuestros licenciantes. Puedes jugar al juego de forma privada y no comercial. Se permiten vídeos, streams y capturas de pantalla del juego. Copiar, modificar, redistribuir o recrear el juego o partes de él solo está permitido en la medida en que la ley lo autorice de forma imperativa.</p>
+<h2>8. Objetos y monedas virtuales</h2>
+<ul>
+<li>El juego tiene dos monedas virtuales: monedas y gemas. Ambas se obtienen solo en el juego, no con dinero real.</li>
+<li>Las monedas virtuales y los objetos (cabezas, balones, estadios, cosméticos, pase de temporada, niveles de cabeza) son una licencia intransferible y revocable para usarlos en el juego. No tienen valor monetario, no se pueden canjear por dinero, vender ni transferir, y no se reembolsan al borrar la cuenta, salvo que la ley disponga otra cosa.</li>
+<li>Los niveles de cabeza mejoran los atributos de una cabeza en el juego hasta en un 25 %. La búsqueda de rival se basa únicamente en la puntuación.</li>
+<li>Podemos cambiar el equilibrio, los precios y los contenidos del juego.</li>
+</ul>
+
+<h2>9. Disponibilidad</h2>
+<p>Nos esforzamos por mantener el juego disponible, pero no garantizamos una disponibilidad ininterrumpida ni libre de errores. El mantenimiento, las averías y los servicios de terceros (p. ej., internet, servidores, servicios de conexión para partidas en línea) pueden limitar el uso. Podemos cerrar el juego con un preaviso de al menos 30 días en el juego.</p>
+<h2>10. Salud</h2>
+<p>El juego contiene movimientos rápidos y efectos de luz. Si eres propenso a sufrir ataques provocados por la luz, consulta a un médico antes de jugar. Haz pausas con regularidad y deja de jugar inmediatamente si sientes mareo o malestar.</p>
+<h2>11. Responsabilidad</h2>
+<ul>
+<li>Respondemos de forma ilimitada en caso de dolo y negligencia grave, de daños a la vida, la integridad física o la salud, conforme a la Ley alemana de responsabilidad por productos defectuosos (Produkthaftungsgesetz) y en la medida en que hayamos asumido una garantía.</li>
+<li>Por lo demás, en caso de negligencia leve solo respondemos por el incumplimiento de obligaciones esenciales, es decir, aquellas que hacen posible la ejecución del contrato y en cuyo cumplimiento puedes confiar habitualmente, y solo por el daño típico y previsible. En la medida en que ofrecemos el juego de forma gratuita, no respondemos por negligencia leve.</li>
+<li>No somos responsables del comportamiento de otros jugadores ni de servicios de terceros en los que no podemos influir, salvo que nos sea imputable alguna culpa.</li>
+<li>Estas reglas se aplican también a la pérdida de partidas guardadas o de objetos virtuales y a la responsabilidad personal de nuestros auxiliares.</li>
+</ul>
+<h2>12. Cambios en estos términos</h2>
+<p>Podemos modificar estos términos con efecto para el futuro si existe un motivo justificado, por ejemplo nuevas funciones o cambios en la ley. Te informaremos de los cambios en el juego. Los cambios que te perjudiquen de forma significativa solo se aplican si los aceptas; si no los aceptas, puedes borrar tu cuenta en cualquier momento.</p>
+<h2>13. Disposiciones finales</h2>
+<p>Se aplica el derecho alemán, con exclusión de la Convención de las Naciones Unidas sobre los Contratos de Compraventa Internacional de Mercaderías; para los consumidores, solo en la medida en que no se les prive de la protección de las disposiciones imperativas de su país de residencia. Si una disposición es ineficaz, las demás siguen siendo válidas. No estamos dispuestos ni obligados a participar en procedimientos de resolución de litigios ante una entidad de resolución alternativa de litigios de consumo.</p>
+</div>
+</section>
+<section data-l="uk" lang="uk">
+<nav data-l="uk"><a href="../">← Назад до гри</a><a href="imprint.html">Відомості про власника</a><a href="privacy.html">Політика конфіденційності</a><a href="?lang=de" lang="de">Deutsch</a><a href="?lang=en" lang="en">English</a><a href="?lang=es" lang="es">Español</a></nav>
+<div class="card">
+<h1>Умови користування</h1>
+<p class="meta">Headstars · Станом на: 25.11.2026</p>
+<p class="meta">Це переклад. У разі розбіжностей переважну силу має <a href="?lang=de" lang="de">німецька версія</a>.</p>
+<h2>1. Сфера дії</h2>
+<p>Ці умови діють для користування браузерною грою Headstars («гра»), яку пропонує Louis-Deniel Rost («ми», див. <a href="imprint.html">відомості про власника</a>). Граючи, ти приймаєш їх. Імперативні норми про захист прав споживачів країни твого проживання залишаються чинними.</p>
+<h2>2. Гра</h2>
+<ul>
+<li>Гра безкоштовна. Ми надаємо її такою, якою вона є, і постійно розвиваємо. Тому функції, вміст і ігровий баланс можуть змінюватися.</li>
+<li>Онлайн-матчі відбуваються безпосередньо між пристроями гравців (peer-to-peer). Тому пристрої інших гравців технічно бачать твою IP-адресу. Ми не контролюємо вміст і поведінку інших гравців.</li>
+<li>За безпеку свого пристрою та браузера (наприклад, оновлення) відповідаєш ти.</li>
+</ul>
+<h2>3. Вік</h2>
+<p>Гра призначена для гравців від 16 років. Молодшим для акаунта та онлайн-матчів потрібна згода батьків.</p>
+<h2>4. Акаунт</h2>
+<ul>
+<li>Ти можеш грати як гість. Гостьовий акаунт прив’язаний до твого браузера; якщо ти видалиш дані браузера, його можна втратити. Гостьові акаунти без покупок видаляються через 90 днів без активності.</li>
+<li>Якщо ти збережеш акаунт з адресою електронної пошти, ти входиш за допомогою коду з листа. Захищай доступ до своєї поштової скриньки; дії, вчинені через твій акаунт, вважаються твоїми, якщо ти за них відповідаєш.</li>
+<li>Кожен акаунт є особистим. Продаж, обмін або передача акаунтів заборонені.</li>
+<li>Ти можеш будь-коли видалити свій акаунт у грі (Профіль → Акаунт).</li>
+</ul>
+<h2>5. Правила чесної та безпечної гри</h2>
+<p>Зокрема, заборонено:</p>
+<ul>
+<li>Шахрайство: боти, скрипти, макроси, чит-програми, змінені ігрові чи мережеві дані, використання помилок, домовлені результати або кілька акаунтів для отримання переваг.</li>
+<li>Атаки на гру, наші сервери або інших гравців: передавання шкідливого програмного забезпечення чи шкідливих даних, атаки перевантаження, обхід заходів безпеки, несанкціонований доступ до систем або даних, вистежування IP-адрес інших гравців або їх використання для атак.</li>
+<li>Автоматизований доступ (наприклад, збирання даних), якщо він не потрібен для звичайної гри.</li>
+<li>Образливі, дискримінаційні, екстремістські чи інакше протиправні імена гравців, переслідування інших гравців і видавання себе за іншу особу, зокрема за нас.</li>
+<li>Комерційне використання без нашої згоди, наприклад торгівля акаунтами чи предметами або платне «прокачування».</li>
+<li>Будь-яке використання, що порушує закони або права третіх осіб.</li>
+</ul>
+<p>Будь ласка, повідомляй про помилки та вразливості безпеки на <a href="mailto:support@headstars.app">support@headstars.app</a>, а не використовуй їх.</p>
+<h2>6. Наслідки порушень</h2>
+<p>У разі порушення ми можемо залежно від його тяжкості: не зараховувати результати, скинути прогрес, вилучити нечесно отримані нагороди, змінити твоє ім’я гравця, тимчасово заблокувати або видалити твій акаунт. У разі серйозних порушень — також без попереднього попередження. Результати онлайн-матчів перевіряє сервер; суперечливі або неправдоподібні повідомлення можуть не зараховуватися. Якщо ти з власної вини порушуєш ці правила або права третіх осіб, ти відповідаєш за заподіяну шкоду та звільняєш нас від пов’язаних із цим претензій третіх осіб, включно з обґрунтованими витратами на юридичний захист.</p>
+<h2>7. Права на гру</h2>
+<p>Усі права на гру (програму, графіку, персонажів, звуки, назву й логотип) належать нам або нашим ліцензіарам. Ти можеш грати в гру приватно та некомерційно. Відео, стріми та знімки екрана з гри дозволені. Копіювання, змінення, поширення або відтворення гри чи її частин дозволене лише тією мірою, якою це імперативно дозволяє закон.</p>
+<h2>8. Віртуальні предмети та валюти</h2>
+<ul>
+<li>У грі є дві віртуальні валюти: монети й самоцвіти. Обидві можна отримати лише в грі, а не за справжні гроші.</li>
+<li>Віртуальні валюти та предмети (голови, м’ячі, арени, косметика, сезонний пропуск, рівні голів) є непередаваною відкличною ліцензією на використання в грі. Вони не мають грошової вартості, їх не можна обміняти на гроші, продати чи передати, і вони не відшкодовуються під час видалення акаунта, якщо закон не передбачає іншого.</li>
+<li>Рівні голови покращують характеристики голови в грі щонайбільше на 25 %. Пошук суперника залежить лише від рейтингу.</li>
+<li>Ми можемо змінювати баланс, ціни та вміст гри.</li>
+</ul>
+
+<h2>9. Доступність</h2>
+<p>Ми намагаємося підтримувати доступність гри, але не гарантуємо безперервної чи безпомилкової доступності. Технічне обслуговування, збої та сервіси третіх осіб (наприклад, інтернет, сервери, сервіси з’єднання для онлайн-матчів) можуть обмежувати користування. Ми можемо припинити роботу гри, повідомивши про це в грі щонайменше за 30 днів.</p>
+<h2>10. Здоров’я</h2>
+<p>Гра містить швидкі рухи та світлові ефекти. Якщо в тебе є схильність до нападів, спричинених світловими ефектами, перед грою порадься з лікарем. Регулярно роби перерви й одразу припини гру, якщо відчуєш запаморочення чи нездужання.</p>
+<h2>11. Відповідальність</h2>
+<ul>
+<li>Ми несемо необмежену відповідальність у разі умислу та грубої необережності, у разі шкоди життю, тілу чи здоров’ю, відповідно до Закону Німеччини про відповідальність за продукцію (Produkthaftungsgesetz) і в тих випадках, коли ми надали гарантію.</li>
+<li>В інших випадках за легкої необережності ми відповідаємо лише за порушення істотних обов’язків, тобто таких, що взагалі уможливлюють виконання договору і на дотримання яких ти зазвичай можеш покладатися, і лише за типову, передбачувану шкоду. Тією мірою, якою ми надаємо гру безоплатно, за легку необережність ми не відповідаємо.</li>
+<li>Ми не відповідаємо за поведінку інших гравців і за сервіси третіх осіб, на які не можемо вплинути, якщо в цьому немає нашої вини.</li>
+<li>Ці правила діють також щодо втрати ігрового прогресу чи віртуальних предметів і щодо особистої відповідальності наших помічників.</li>
+</ul>
+<h2>12. Зміни цих умов</h2>
+<p>Ми можемо змінювати ці умови з дією на майбутнє, якщо для цього є вагома причина, наприклад нові функції або зміни законодавства. Про зміни ми повідомляємо тебе в грі. Зміни, що суттєво погіршують твоє становище, діють лише після твоєї згоди; якщо ти не погоджуєшся, ти можеш будь-коли видалити свій акаунт.</p>
+<h2>13. Прикінцеві положення</h2>
+<p>Застосовується право Німеччини за винятком Конвенції ООН про договори міжнародної купівлі-продажу товарів; для споживачів — лише тією мірою, якою це не позбавляє їх захисту імперативних норм країни їхнього проживання. Якщо якесь положення недійсне, решта положень залишаються чинними. Ми не готові й не зобов’язані брати участь у процедурах вирішення спорів перед органом з позасудового врегулювання споживчих спорів.</p>
 </div>
 </section>
 </main>

@@ -39,6 +39,8 @@ export function setLang(l) {
   return cur;
 }
 export const lang = () => cur;
+/** Rechtsseite in der Spielsprache (legal/*.html wählt per ?lang= die Fassung, ohne eigene Englisch) */
+export const legalHref = doc => `legal/${doc}.html?lang=${cur}`;
 
 export function t(key, p) {
   let v = LANGS[cur][key];

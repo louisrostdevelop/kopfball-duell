@@ -7,13 +7,16 @@
 <title>Datenschutzerklärung / Privacy Policy – Headstars</title>
 <link rel="stylesheet" href="style.css">
 <script>
-// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser. Ohne Skript stehen beide Fassungen untereinander.
+// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser; gibt es die Seite darin nicht, Englisch.
+// Ohne Skript stehen alle Fassungen untereinander.
 (function () {
-  var ok = function (x) { return x === "de" || x === "en"; }, l = null;
-  try { l = new URLSearchParams(location.search).get("lang"); } catch (e) { l = null; }
-  if (!ok(l)) { try { l = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { l = null; } }
-  if (!ok(l)) { var ls = navigator.languages || [navigator.language]; l = "en"; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
-  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l);
+  var L = ["de","en","es","uk"], T = {"de":"Datenschutzerklärung – Headstars","en":"Privacy Policy – Headstars","es":"Política de privacidad – Headstars","uk":"Політика конфіденційності – Headstars"}, w = null, l = "en";
+  var ok = function (x) { return L.indexOf(x) >= 0; };
+  try { w = new URLSearchParams(location.search).get("lang"); } catch (e) { w = null; }
+  if (!w) { try { w = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { w = null; } }
+  if (w && w !== "auto") { if (ok(w)) l = w; }
+  else { var ls = navigator.languages || [navigator.language]; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
+  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l); document.title = T[l];
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("nav a[href$='.html']").forEach(function (a) { a.href = a.getAttribute("href") + "?lang=" + l; });
   });
@@ -23,10 +26,10 @@
 <body>
 <main>
 <section data-l="de" lang="de">
-<nav data-l="de"><a href="../">← Zurück zum Spiel</a><a href="imprint.html">Impressum</a><a href="terms.html">Nutzungsbedingungen</a><a href="?lang=en" lang="en">English</a></nav>
+<nav data-l="de"><a href="../">← Zurück zum Spiel</a><a href="imprint.html">Impressum</a><a href="terms.html">Nutzungsbedingungen</a><a href="?lang=en" lang="en">English</a><a href="?lang=es" lang="es">Español</a><a href="?lang=uk" lang="uk">Українська</a></nav>
 <div class="card">
 <h1>Datenschutzerklärung</h1>
-<p class="meta">Headstars · Stand: 16.11.2026</p>
+<p class="meta">Headstars · Stand: 25.11.2026</p>
 <h2>Verantwortlicher</h2>
 <p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Deutschland<br>E-Mail: <a href="mailto:support@headstars.app">support@headstars.app</a></p>
 <h2>Kurz gesagt</h2>
@@ -50,15 +53,21 @@
 <p class="box"><b>Widerspruchsrecht:</b> Verarbeiten wir Daten auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO), kannst du dem aus Gründen, die sich aus deiner besonderen Situation ergeben, jederzeit widersprechen (Art. 21 DSGVO).</p>
 <h2>Keine automatisierten Entscheidungen</h2>
 <p>Wir treffen keine Entscheidungen, die ausschließlich auf automatisierter Verarbeitung beruhen und dir gegenüber rechtliche Wirkung entfalten (Art. 22 DSGVO).</p>
+<h2>Hinweise für einzelne Länder</h2>
+<p>Für Spieler in diesen Ländern gilt ergänzend:</p>
+<p><b>Chile.</b> Ab seinem Inkrafttreten gilt das chilenische Gesetz Nr. 21.719 zum Schutz personenbezogener Daten. Du kannst dich bei der chilenischen Datenschutzbehörde (Agencia de Protección de Datos Personales) beschweren. Wir haben keinen Sitz in Chile; du und die Behörde erreichen uns unter <a href="mailto:support@headstars.app">support@headstars.app</a>.</p>
+<p><b>Kolumbien.</b> Soweit das kolumbianische Gesetz 1581 von 2012 für uns gilt, ist diese Erklärung zugleich unsere Richtlinie zur Verarbeitung personenbezogener Daten (Política de tratamiento), und mit „Spielen“ erteilst du nach dem Hinweis auf diese Erklärung die nach diesem Gesetz nötige Erlaubnis (Autorización), deine Daten wie hier beschrieben zu verarbeiten. Zuständige Behörde ist die Superintendencia de Industria y Comercio (SIC).</p>
+<p><b>Mexiko.</b> Soweit das mexikanische Bundesgesetz zum Schutz personenbezogener Daten in Privatbesitz (LFPDPPP) für uns gilt, machst du deine Rechte auf Auskunft, Berichtigung, Löschung und Widerspruch (ARCO-Rechte) unter <a href="mailto:support@headstars.app">support@headstars.app</a> geltend. Zuständige Behörde ist die Secretaría Anticorrupción y Buen Gobierno.</p>
 <h2>Änderungen</h2>
 <p>Wir passen diese Erklärung an, wenn sich das Spiel oder die Rechtslage ändert. Es gilt die Fassung auf dieser Seite.</p>
 </div>
 </section>
 <section data-l="en" lang="en">
-<nav data-l="en"><a href="../">← Back to the game</a><a href="imprint.html">Legal Notice</a><a href="terms.html">Terms of Use</a><a href="?lang=de" lang="de">Deutsch</a></nav>
+<nav data-l="en"><a href="../">← Back to the game</a><a href="imprint.html">Legal Notice</a><a href="terms.html">Terms of Use</a><a href="?lang=de" lang="de">Deutsch</a><a href="?lang=es" lang="es">Español</a><a href="?lang=uk" lang="uk">Українська</a></nav>
 <div class="card">
 <h1>Privacy Policy</h1>
-<p class="meta">Headstars · Last updated: 2026-11-16</p>
+<p class="meta">Headstars · Last updated: 2026-11-25</p>
+<p class="meta">This is a translation. If the versions differ, the <a href="?lang=de" lang="de">German version</a> prevails.</p>
 <h2>Controller</h2>
 <p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Germany<br>Email: <a href="mailto:support@headstars.app">support@headstars.app</a></p>
 <h2>In short</h2>
@@ -82,8 +91,89 @@
 <p class="box"><b>Right to object:</b> Where we process data based on legitimate interests (Art. 6(1)(f) GDPR), you may object at any time on grounds relating to your particular situation (Art. 21 GDPR).</p>
 <h2>No automated decisions</h2>
 <p>We do not make decisions based solely on automated processing that have legal effects on you (Art. 22 GDPR).</p>
+<h2>Notes for specific countries</h2>
+<p>For players in these countries, the following also applies:</p>
+<p><b>Chile.</b> Once in force, Chilean Law No. 21.719 on the protection of personal data applies. You can lodge a complaint with the Chilean data protection authority (Agencia de Protección de Datos Personales). We have no establishment in Chile; you and the authority can reach us at <a href="mailto:support@headstars.app">support@headstars.app</a>.</p>
+<p><b>Colombia.</b> Insofar as Colombian Law 1581 of 2012 applies to us, this policy is also our policy on the processing of personal data (Política de tratamiento), and by tapping "Play" after being referred to this policy, you give the authorisation (Autorización) required under that law for us to process your data as described here. The competent authority is the Superintendencia de Industria y Comercio (SIC).</p>
+<p><b>Mexico.</b> Insofar as the Mexican Federal Law on the Protection of Personal Data Held by Private Parties (LFPDPPP) applies to us, you can exercise your rights of access, rectification, cancellation and objection (ARCO rights) by writing to <a href="mailto:support@headstars.app">support@headstars.app</a>. The competent authority is the Secretaría Anticorrupción y Buen Gobierno.</p>
 <h2>Changes</h2>
 <p>We update this policy when the game or the law changes. The version on this page applies.</p>
+</div>
+</section>
+<section data-l="es" lang="es">
+<nav data-l="es"><a href="../">← Volver al juego</a><a href="imprint.html">Aviso legal</a><a href="terms.html">Términos de uso</a><a href="?lang=de" lang="de">Deutsch</a><a href="?lang=en" lang="en">English</a><a href="?lang=uk" lang="uk">Українська</a></nav>
+<div class="card">
+<h1>Política de privacidad</h1>
+<p class="meta">Headstars · Última actualización: 25/11/2026</p>
+<p class="meta">Esto es una traducción. Si las versiones difieren, prevalece la <a href="?lang=de" lang="de">versión alemana</a>.</p>
+<h2>Responsable</h2>
+<p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Alemania<br>Correo electrónico: <a href="mailto:support@headstars.app">support@headstars.app</a></p>
+<h2>En resumen</h2>
+<p>Puedes jugar sin registrarte. No usamos cookies, ni seguimiento de terceros, ni publicidad, y solo tratamos lo que el juego y su mejora necesitan.</p>
+<h2>Qué tratamos y para qué</h2>
+<p><b>Sitio web.</b> Al abrir el sitio, nuestro proveedor de alojamiento trata los datos de conexión técnicamente necesarios (p. ej., dirección IP y hora) para servir la página y protegerla. Base jurídica: interés legítimo en un sitio web seguro y que funcione (art. 6.1.f) RGPD).</p>
+<p><b>Progreso guardado en tu dispositivo.</b> El juego guarda tu progreso y tus ajustes en el almacenamiento de tu navegador. Esto es técnicamente necesario para el juego (§ 25, apdo. 2, n.º 2, TDDDG, ley alemana de protección de datos en las telecomunicaciones y los servicios digitales). Puedes borrar estos datos en tu navegador en cualquier momento.</p>
+<p><b>Cuenta de juego.</b> En el primer inicio, el juego crea una cuenta de invitado con un identificador aleatorio. Se guardan tus datos de juego (p. ej., nombre de jugador, progreso, objetos y resultados) y, si guardas tu cuenta, tu dirección de correo electrónico. Otros jugadores ven tu nombre de jugador, tu nivel y tu puntuación, por ejemplo en las clasificaciones. Finalidad: ofrecer el juego, guardar tu progreso, hacer posibles partidas justas e impedir abusos. Base jurídica: contrato (art. 6.1.b) RGPD) y, para la prevención de abusos, nuestro interés legítimo (letra f).</p>
+<p><b>Partidas en línea.</b> Las partidas en línea se juegan directamente entre los dispositivos de los dos jugadores. Por eso, el dispositivo de tu rival recibe tu dirección IP. Para establecer la conexión, el juego usa dos tipos de servicios: un servidor de intermediación de PeerJS (PeerJS Cloud, 0.peerjs.com), que trata tu dirección IP y un identificador de conexión aleatorio para poner en contacto los dos dispositivos, y servidores STUN de Cloudflare (Cloudflare, Inc., EE. UU.; stun.cloudflare.com) y de Google (Google LLC, EE. UU.; stun.l.google.com), que comunican a tu dispositivo su dirección IP pública y para ello tratan esa dirección. El contenido del juego no pasa por ninguno de estos servicios. Si tu red no permite una conexión directa, los datos de juego cifrados pasan por un servidor de retransmisión (relay) de Cloudflare (Cloudflare, Inc., EE. UU.), que para ello trata tu dirección IP, pero no puede leer el contenido. Base jurídica: contrato (art. 6.1.b) RGPD).</p>
+<p><b>Estadísticas de uso.</b> Con una cuenta de juego, el juego registra eventos de uso concretos, vinculados solo al identificador aleatorio de tu cuenta: la primera visita con el origen aproximado del enlace (p. ej., «enlace de invitación», «buscador» o un identificador del enlace, nunca la dirección de la página de procedencia), una visita por día, los modos jugados con la dificultad de la máquina, así como el marcador y la duración al final de una partida, la búsqueda de rival (rival encontrado, búsqueda cancelada, tiempo de espera) y si una conexión en línea se estableció de forma directa, a través del relay o no llegó a establecerse. Para ello no guardamos tu dirección IP ni datos del navegador. Solo evaluamos los eventos de forma agregada (p. ej., «cuántos jugadores nuevos llegaron ayer a través de un enlace de invitación»). Finalidad: operar y mejorar el juego. Base jurídica: interés legítimo (art. 6.1.f) RGPD). Pasados 30 días borramos los eventos; solo quedan totales diarios sin relación con ninguna persona.</p>
+<p><b>Correo electrónico.</b> Para guardar tu cuenta y para iniciar sesión te enviamos un código por correo electrónico. Si nos escribes, usamos tu mensaje solo para responderte. Base jurídica: contrato o interés legítimo (art. 6.1.b) y f) RGPD). No enviamos boletines.</p>
+<p><b>Protección contra bots.</b> Al crear una cuenta de invitado, Cloudflare Turnstile (Cloudflare, Inc., EE. UU.) comprueba, a partir de características técnicas de tu navegador y de tu conexión (p. ej., dirección IP, datos del navegador y del dispositivo), si juega una persona. Para ello, el juego carga un script de Cloudflare. Sin esta comprobación no se puede crear una cuenta de invitado; en ese caso solo puedes jugar sin funciones en línea. Base jurídica: interés legítimo en proteger el servicio frente a registros automatizados (art. 6.1.f) RGPD); el acceso a tu dispositivo es estrictamente necesario para ello (§ 25, apdo. 2, n.º 2, TDDDG). Más información: <a href="https://www.cloudflare.com/privacypolicy/">política de privacidad de Cloudflare</a>.</p>
+<h2>Destinatarios</h2>
+<p>Recurrimos a proveedores de servicios para el alojamiento y el dominio, el servidor del juego (servidores en la UE), el envío de correos electrónicos y el establecimiento de la conexión y el relay en las partidas en línea (PeerJS, Cloudflare, Google), la protección contra bots (Cloudflare). Solo tratan datos en la medida necesaria para su tarea. Algunos tienen su sede en EE. UU. La transferencia se basa en la decisión de adecuación de la Comisión Europea para el Marco de Privacidad de Datos UE-EE. UU. (EU-U.S. Data Privacy Framework) o en cláusulas contractuales tipo (arts. 45 y 46 RGPD) y, en lo demás, en que es necesaria para la conexión que solicitas (art. 49.1.b) RGPD).</p>
+<h2>Plazo de conservación</h2>
+<p>Solo guardamos los datos mientras sea necesario para su finalidad: las cuentas de invitado sin compras las borramos tras 90 días sin actividad; las cuentas guardadas, en cuanto las borras. Las partidas en línea individuales las borramos a los 12 meses; tu puntuación y tus estadísticas se mantienen. Los eventos de uso los borramos a los 30 días (después solo quedan totales diarios). Los registros técnicos y los datos de seguridad los borramos al poco tiempo, y las copias de seguridad, a más tardar a los 30 días.</p>
+<h2>¿Tienes que facilitar datos?</h2>
+<p>No. Sin cuenta de juego solo puedes jugar sin funciones en línea; sin dirección de correo electrónico no puedes guardar tu cuenta.</p>
+<h2>Tus derechos</h2>
+<p>Tienes derecho de acceso, rectificación, supresión, limitación del tratamiento y portabilidad de los datos (arts. 15 a 18 y 20 RGPD). Tu cuenta con todos los datos de juego la borras tú mismo en el juego, en Perfil → Cuenta. Para todo lo demás, escribe a <a href="mailto:support@headstars.app">support@headstars.app</a>. Además, puedes presentar una reclamación ante una autoridad de control de protección de datos, por ejemplo ante la competente para nosotros: el Comisionado del Estado de Renania-Palatinado para la Protección de Datos y la Libertad de Información (LfDI Rheinland-Pfalz), Hintere Bleiche 34, 55116 Mainz, Alemania.</p>
+<p class="box"><b>Derecho de oposición:</b> Cuando tratamos datos sobre la base de intereses legítimos (art. 6.1.f) RGPD), puedes oponerte en cualquier momento por motivos relacionados con tu situación particular (art. 21 RGPD).</p>
+<h2>Sin decisiones automatizadas</h2>
+<p>No tomamos decisiones basadas únicamente en el tratamiento automatizado que produzcan efectos jurídicos sobre ti (art. 22 RGPD).</p>
+<h2>Información para determinados países</h2>
+<p>Para los jugadores de estos países se aplica además lo siguiente:</p>
+<p><b>Chile.</b> Desde su entrada en vigor se aplica la Ley n.º 21.719 sobre protección de datos personales. Puedes presentar una reclamación ante la Agencia de Protección de Datos Personales. No tenemos sede en Chile; tanto tú como la Agencia pueden escribirnos a <a href="mailto:support@headstars.app">support@headstars.app</a>.</p>
+<p><b>Colombia.</b> En la medida en que la Ley 1581 de 2012 nos sea aplicable, esta política es también nuestra política de tratamiento de datos personales (Política de tratamiento) y, al tocar «Jugar» después del aviso sobre esta política, otorgas la autorización exigida por esa ley para que tratemos tus datos como se describe aquí. La autoridad competente es la Superintendencia de Industria y Comercio (SIC).</p>
+<p><b>México.</b> En la medida en que la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) nos sea aplicable, puedes ejercer tus derechos de acceso, rectificación, cancelación y oposición (derechos ARCO) escribiendo a <a href="mailto:support@headstars.app">support@headstars.app</a>. La autoridad competente es la Secretaría Anticorrupción y Buen Gobierno.</p>
+<h2>Cambios</h2>
+<p>Adaptamos esta política cuando cambian el juego o la situación legal. Se aplica la versión publicada en esta página.</p>
+</div>
+</section>
+<section data-l="uk" lang="uk">
+<nav data-l="uk"><a href="../">← Назад до гри</a><a href="imprint.html">Відомості про власника</a><a href="terms.html">Умови користування</a><a href="?lang=de" lang="de">Deutsch</a><a href="?lang=en" lang="en">English</a><a href="?lang=es" lang="es">Español</a></nav>
+<div class="card">
+<h1>Політика конфіденційності</h1>
+<p class="meta">Headstars · Станом на: 25.11.2026</p>
+<p class="meta">Це переклад. У разі розбіжностей переважну силу має <a href="?lang=de" lang="de">німецька версія</a>.</p>
+<h2>Відповідальна особа</h2>
+<p>Louis-Deniel Rost<br>c/o flexdienst – #10303<br>Kurt-Schumacher-Straße 76<br>67663 Kaiserslautern<br>Німеччина<br>Ел. пошта: <a href="mailto:support@headstars.app">support@headstars.app</a></p>
+<h2>Коротко</h2>
+<p>Ти можеш грати без реєстрації. Ми не використовуємо файли cookie, стороннє відстеження та рекламу й обробляємо лише те, що потрібно для гри та її вдосконалення.</p>
+<h2>Що ми обробляємо і для чого</h2>
+<p><b>Вебсайт.</b> Коли ти відкриваєш сайт, наш хостинг-провайдер обробляє технічно необхідні дані з’єднання (наприклад, IP-адресу та час), щоб доставити сторінку й захистити її. Правова підстава: законний інтерес у справному та безпечному вебсайті (ст. 6 ч. 1 літ. f GDPR).</p>
+<p><b>Прогрес на твоєму пристрої.</b> Прогрес і налаштування гра зберігає в сховищі твого браузера. Це технічно необхідно для гри (§ 25 ч. 2 п. 2 TDDDG, німецький закон про захист даних у телекомунікаціях і цифрових сервісах). Ти можеш будь-коли видалити ці дані у своєму браузері.</p>
+<p><b>Ігровий акаунт.</b> Під час першого запуску гра створює гостьовий акаунт із випадковим ідентифікатором. Зберігаються твої ігрові дані (наприклад, ім’я гравця, прогрес, предмети та результати), а якщо ти збережеш акаунт, — і твоя адреса електронної пошти. Ім’я гравця, рівень і рейтинг бачать інші гравці, наприклад у таблицях лідерів. Мета: надавати гру, зберігати твій прогрес, забезпечувати чесні матчі й запобігати зловживанням. Правова підстава: договір (ст. 6 ч. 1 літ. b GDPR), для захисту від зловживань — наш законний інтерес (літ. f).</p>
+<p><b>Онлайн-матчі.</b> Онлайн-матчі відбуваються безпосередньо між пристроями двох гравців. Тому пристрій твого суперника отримує твою IP-адресу. Для встановлення з’єднання гра використовує два види сервісів: сервер-посередник PeerJS (PeerJS Cloud, 0.peerjs.com), який обробляє твою IP-адресу та випадковий ідентифікатор з’єднання, щоб з’єднати два пристрої, і STUN-сервери Cloudflare (Cloudflare, Inc., США; stun.cloudflare.com) та Google (Google LLC, США; stun.l.google.com), які повідомляють твоєму пристрою його публічну IP-адресу і для цього обробляють цю адресу. Ігровий вміст не проходить через жоден із цих сервісів. Якщо твоя мережа не дозволяє прямого з’єднання, зашифровані ігрові дані проходять через ретрансляційний сервер (relay) Cloudflare (Cloudflare, Inc., США), який для цього обробляє твою IP-адресу, але не може прочитати вміст. Правова підстава: договір (ст. 6 ч. 1 літ. b GDPR).</p>
+<p><b>Статистика використання.</b> Якщо є ігровий акаунт, гра фіксує окремі події використання, пов’язані лише з випадковим ідентифікатором твого акаунта: перший візит із приблизним джерелом посилання (наприклад, «посилання-запрошення», «пошукова система» або ідентифікатор із посилання, але ніколи не адреса сторінки, з якої відбувся перехід), один візит на день, зіграні режими зі складністю комп’ютерного суперника, а також рахунок і тривалість наприкінці матчу, пошук суперника (знайдено, скасовано, час очікування) і те, чи було онлайн-з’єднання прямим, через relay чи не встановилося взагалі. IP-адресу та дані браузера ми для цього не зберігаємо. Ми аналізуємо події лише в узагальненому вигляді (наприклад, «скільки нових гравців прийшло вчора за посиланням-запрошенням»). Мета: забезпечувати роботу гри та вдосконалювати її. Правова підстава: законний інтерес (ст. 6 ч. 1 літ. f GDPR). Через 30 днів ми видаляємо події; залишаються лише денні підсумки без зв’язку з будь-якою особою.</p>
+<p><b>Електронна пошта.</b> Щоб зберегти акаунт і для входу, ми надсилаємо тобі код електронною поштою. Якщо ти нам пишеш, ми використовуємо твоє повідомлення лише для відповіді тобі. Правова підстава: договір або законний інтерес (ст. 6 ч. 1 літ. b, f GDPR). Розсилок ми не надсилаємо.</p>
+<p><b>Захист від ботів.</b> Під час створення гостьового акаунта Cloudflare Turnstile (Cloudflare, Inc., США) за технічними ознаками твого браузера та з’єднання (наприклад, IP-адреса, дані браузера та пристрою) перевіряє, чи грає людина. Для цього гра завантажує скрипт від Cloudflare. Без цієї перевірки гостьовий акаунт створити не можна, тоді ти можеш грати лише без онлайн-функцій. Правова підстава: законний інтерес у захисті сервісу від автоматизованих реєстрацій (ст. 6 ч. 1 літ. f GDPR); доступ до твого пристрою для цього є безумовно необхідним (§ 25 ч. 2 п. 2 TDDDG). Докладніше: <a href="https://www.cloudflare.com/privacypolicy/">політика конфіденційності Cloudflare</a>.</p>
+<h2>Одержувачі</h2>
+<p>Ми залучаємо постачальників послуг для хостингу й домену, ігрового сервера (сервери в ЄС), надсилання електронних листів, а також для встановлення з’єднання та relay в онлайн-матчах (PeerJS, Cloudflare, Google), для захисту від ботів (Cloudflare). Вони обробляють дані лише в обсязі, потрібному для їхнього завдання. Деякі з них розташовані в США. Передача ґрунтується на рішенні Європейської комісії про адекватність для EU-U.S. Data Privacy Framework або на стандартних договірних положеннях (ст. 45, 46 GDPR), а в іншому — на тому, що вона необхідна для з’єднання, якого ти бажаєш (ст. 49 ч. 1 літ. b GDPR).</p>
+<h2>Строк зберігання</h2>
+<p>Ми зберігаємо дані лише стільки, скільки потрібно для мети: гостьові акаунти без покупок видаляємо через 90 днів без активності, збережені акаунти — щойно ти їх видалиш. Окремі онлайн-матчі видаляємо через 12 місяців; твій рейтинг і статистика залишаються. Події використання видаляємо через 30 днів (після цього лише денні підсумки). Технічні журнали та дані безпеки видаляємо через короткий час, резервні копії — щонайпізніше через 30 днів.</p>
+<h2>Чи мусиш ти надавати дані?</h2>
+<p>Ні. Без ігрового акаунта ти можеш грати лише без онлайн-функцій, без адреси електронної пошти не можеш зберегти акаунт.</p>
+<h2>Твої права</h2>
+<p>Ти маєш право на доступ, виправлення, видалення, обмеження обробки та перенесення даних (ст. 15–18 і 20 GDPR). Свій акаунт з усіма ігровими даними ти видаляєш самостійно в грі в розділі Профіль → Акаунт. З усіх інших питань пиши на <a href="mailto:support@headstars.app">support@headstars.app</a>. Крім того, ти можеш подати скаргу до наглядового органу із захисту даних, наприклад до компетентного щодо нас: Уповноважений землі Рейнланд-Пфальц із захисту даних і свободи інформації (LfDI Rheinland-Pfalz), Hintere Bleiche 34, 55116 Mainz, Німеччина.</p>
+<p class="box"><b>Право на заперечення:</b> Якщо ми обробляємо дані на підставі законних інтересів (ст. 6 ч. 1 літ. f GDPR), ти можеш будь-коли заперечити проти цього з причин, пов’язаних із твоєю особливою ситуацією (ст. 21 GDPR).</p>
+<h2>Жодних автоматизованих рішень</h2>
+<p>Ми не ухвалюємо рішень, що ґрунтуються виключно на автоматизованій обробці й мають щодо тебе юридичні наслідки (ст. 22 GDPR).</p>
+<h2>Інформація для окремих країн</h2>
+<p>Для гравців у цих країнах додатково діє таке:</p>
+<p><b>Чилі.</b> Від набрання ним чинності діє чилійський Закон № 21.719 про захист персональних даних. Ти можеш подати скаргу до чилійського органу із захисту даних (Agencia de Protección de Datos Personales). Ми не маємо місцезнаходження в Чилі; ти й цей орган можете зв’язатися з нами за адресою <a href="mailto:support@headstars.app">support@headstars.app</a>.</p>
+<p><b>Колумбія.</b> Якщо до нас застосовується колумбійський Закон 1581 від 2012 року, ця політика водночас є нашими правилами обробки персональних даних (Política de tratamiento), а натискаючи «Грати» після вказівки на цю політику, ти надаєш необхідний за цим законом дозвіл (Autorización) на обробку твоїх даних так, як описано тут. Компетентний орган — Superintendencia de Industria y Comercio (SIC).</p>
+<p><b>Мексика.</b> Якщо до нас застосовується мексиканський Федеральний закон про захист персональних даних, що перебувають у володінні приватних осіб (LFPDPPP), свої права на доступ, виправлення, видалення та заперечення (права ARCO) ти можеш реалізувати, написавши на <a href="mailto:support@headstars.app">support@headstars.app</a>. Компетентний орган — Secretaría Anticorrupción y Buen Gobierno.</p>
+<h2>Зміни</h2>
+<p>Ми оновлюємо цю політику, коли змінюється гра або правова ситуація. Діє редакція, опублікована на цій сторінці.</p>
 </div>
 </section>
 </main>
