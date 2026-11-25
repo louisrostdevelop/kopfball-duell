@@ -7,13 +7,16 @@
 <title>Impressum / Legal Notice – Headstars</title>
 <link rel="stylesheet" href="style.css">
 <script>
-// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser. Ohne Skript stehen beide Fassungen untereinander.
+// Sprache: ?lang=, sonst die Spielsprache, sonst der Browser; gibt es die Seite darin nicht, Englisch.
+// Ohne Skript stehen alle Fassungen untereinander.
 (function () {
-  var ok = function (x) { return x === "de" || x === "en"; }, l = null;
-  try { l = new URLSearchParams(location.search).get("lang"); } catch (e) { l = null; }
-  if (!ok(l)) { try { l = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { l = null; } }
-  if (!ok(l)) { var ls = navigator.languages || [navigator.language]; l = "en"; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
-  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l);
+  var L = ["de","en"], T = {"de":"Impressum – Headstars","en":"Legal Notice – Headstars"}, w = null, l = "en";
+  var ok = function (x) { return L.indexOf(x) >= 0; };
+  try { w = new URLSearchParams(location.search).get("lang"); } catch (e) { w = null; }
+  if (!w) { try { w = (JSON.parse(localStorage.getItem("kopfball-duell-save-v2") || "{}") || {}).lang; } catch (e) { w = null; } }
+  if (w && w !== "auto") { if (ok(w)) l = w; }
+  else { var ls = navigator.languages || [navigator.language]; for (var i = 0; i < ls.length; i++) { var k = String(ls[i] || "").slice(0, 2).toLowerCase(); if (ok(k)) { l = k; break; } } }
+  document.documentElement.lang = l; document.documentElement.setAttribute("data-show", l); document.title = T[l];
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("nav a[href$='.html']").forEach(function (a) { a.href = a.getAttribute("href") + "?lang=" + l; });
   });

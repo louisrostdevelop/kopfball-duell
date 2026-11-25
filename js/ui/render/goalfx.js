@@ -4,9 +4,9 @@
 // Torschützen (me), nur optisch. Beide Spieler sehen alles.
 import { G, GOAL_W, COL, clamp, rand } from "../../content/config.js";
 import { GOALFX_TEXT as TX } from "../../content/cosmetics.js";
+import { displayFont } from "../../content/i18n.js";
 
 const TAU = Math.PI * 2, INK = COL.ink;
-const FONT = "'Lilita One', Impact, sans-serif";
 const emojiFont = px => `${Math.round(px)}px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`;
 const eo = k => 1 - (1 - clamp(k, 0, 1)) ** 3;
 const ob = k => { const x = clamp(k, 0, 1) - 1; return 1 + 2.7 * x ** 3 + 1.7 * x ** 2; };
@@ -17,7 +17,7 @@ const at = s => ({ x: s.x + s.dir * 270, y: G - 290 });
 const hn = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
 /** Großer Comic-Schriftzug: weißer Rand, dunkle Kontur, Schatten */
-export function bigText(ctx, txt, x, y, size, col, rot = 0, sc = 1, font = FONT) {
+export function bigText(ctx, txt, x, y, size, col, rot = 0, sc = 1, font = displayFont()) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(sc, sc);
   ctx.font = `${size}px ${font}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
   ctx.lineWidth = size * 0.26; ctx.strokeStyle = "#fff"; ctx.strokeText(txt, 0, 0);
@@ -201,7 +201,7 @@ export const GFX = {
       for (const w of s.words) {
         const k = t - w.t0; if (k < 0) continue;
         ctx.save(); ctx.globalAlpha = f; ctx.translate(w.x, w.y); ctx.rotate(w.rot); const sc = ob(k / 0.2); ctx.scale(sc, sc);
-        ctx.font = "56px 'Comic Sans MS', 'Comic Neue', 'Chalkboard SE', 'Lilita One', cursive"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+        ctx.font = `56px 'Comic Sans MS', 'Comic Neue', 'Chalkboard SE', ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
         ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.strokeText(w.txt, 0, 0); ctx.fillStyle = w.col; ctx.fillText(w.txt, 0, 0);
         ctx.restore();
       }
@@ -299,7 +299,7 @@ export const GFX = {
     front(ctx, s) {
       const words = TX.glitch, word = words[Math.floor(s.t * 4) % words.length];
       const { x: cx, y: cy } = at(s), sp = 60, x0 = cx - (word.length - 1) * sp / 2, step = Math.floor(s.t * 12);
-      ctx.save(); ctx.globalAlpha = fade(s); ctx.font = `80px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+      ctx.save(); ctx.globalAlpha = fade(s); ctx.font = `80px ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
       [...word].forEach((ch, j) => {
         const melt = Math.max(0, s.t - 0.7) * (0.15 + ((j * 37) % 5) * 0.06), x = x0 + j * sp + (hn(step * 7 + j) < 0.15 ? (hn(step + j) - 0.5) * 16 : 0), y = cy + Math.sin(s.t * 6 + j) * 10 + melt * 60;
         ctx.save(); ctx.translate(x, y); ctx.scale(1 - melt * 0.25, 1 + melt);

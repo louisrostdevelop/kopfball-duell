@@ -12,7 +12,7 @@ import { audio as A } from "../../app/services.js";
 import { registerScreen, showScreen } from "../nav.js";
 import { equip as wear, isEquipped } from "../../app/cosmetics.js";
 import { buyCos, buyWithGems, cosOfferNow, online as serverOn, retryState, shopProducts, startCheckout } from "../../app/account.js";
-import { money, t } from "../../content/i18n.js";
+import { legalHref, money, t } from "../../content/i18n.js";
 import { today } from "../../core/economy.js";
 
 export let shopTab = "chars";
@@ -106,7 +106,7 @@ async function gemShop() {
   const guest = S.guest !== false;
   $("dealBox").innerHTML = guest
     ? `<div class="shopnote">${t("shop.needAccount")} <button class="btn small green" id="shopAcc">${t("shop.createAccount")}</button></div>`
-    : `<div class="shopnote">${t("shop.stripeNote")} <a href="legal/terms.html" target="_blank" rel="noopener">${t("legal.terms")}</a></div>`;
+    : `<div class="shopnote">${t("shop.stripeNote")} <a href="${legalHref("terms")}" target="_blank" rel="noopener">${t("legal.terms")}</a></div>`;
   list.filter(p => p.id !== "premium_pass").forEach(p => {
     const d = document.createElement("div"); d.className = "sitem gempack" + (p.id === "starter" ? " starter" : "");
     // Mehr Juwelen pro Euro als im kleinsten Paket?

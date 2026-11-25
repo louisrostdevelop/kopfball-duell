@@ -6,7 +6,7 @@ import { cosById } from "../../content/cosmetics.js";
 import { GFX, REACT, REACT_DUR } from "./goalfx.js";
 import { makeArenaArt } from "./arena-art.js";
 import { barY, shoePos, shoeGeo, pr, superTarget, SHOE } from "../../core/physics.js";
-import { t as trn } from "../../content/i18n.js";
+import { displayFont, t as trn } from "../../content/i18n.js";
 import { drawBadge } from "./powerup-art.js";
 import * as PX from "./powerup-fx.js";
 
@@ -223,10 +223,10 @@ function drawParts(addPass) {
       case "shard": case "rock": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath(); ctx.moveTo(0, -p.size); ctx.lineTo(p.size * 0.6, p.size * 0.5); ctx.lineTo(-p.size * 0.6, p.size * 0.5); ctx.closePath(); ctx.fillStyle = p.col; ctx.fill(); if (p.type === "shard") { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke(); } ctx.restore(); break;
       case "flame": { const r = p.size * (0.4 + a * 0.8); const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r); g.addColorStop(0, "rgba(255,240,180,.95)"); g.addColorStop(0.4, p.col); g.addColorStop(1, "rgba(255,60,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill(); break; }
       case "bolt": ctx.strokeStyle = p.col; ctx.lineWidth = 5; ctx.beginPath(); p.pts.forEach(([x, y], n) => n ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke(); break;
-      case "glyph": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.font = `${Math.round(p.size)}px 'Lilita One', Impact, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = p.size * 0.16; ctx.strokeStyle = INK; ctx.strokeText(p.text, 0, 0); ctx.fillStyle = p.col; ctx.fillText(p.text, 0, 0); ctx.restore(); break;
+      case "glyph": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.font = `${Math.round(p.size)}px ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = p.size * 0.16; ctx.strokeStyle = INK; ctx.strokeText(p.text, 0, 0); ctx.fillStyle = p.col; ctx.fillText(p.text, 0, 0); ctx.restore(); break;
       case "emoji": ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.font = `${Math.round(p.size)}px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#000"; ctx.fillText(p.text, 0, 0); ctx.restore(); break; // Farb-Emoji übernehmen die Deckkraft von fillStyle
       case "pix": ctx.fillStyle = p.col; ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size); break;
-      case "text": ctx.font = `${p.size}px 'Lilita One', Impact, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.lineJoin = "round"; ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.col; ctx.fillText(p.text, p.x, p.y); break;
+      case "text": ctx.font = `${p.size}px ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.lineJoin = "round"; ctx.lineWidth = 6; ctx.strokeStyle = INK; ctx.strokeText(p.text, p.x, p.y); ctx.fillStyle = p.col; ctx.fillText(p.text, p.x, p.y); break;
     }
   }
   ctx.globalAlpha = 1;
@@ -448,7 +448,7 @@ function bgNeon(b, R) {
       x += w + 6;
     }
   });
-  b.font = "34px 'Lilita One', Impact"; b.textAlign = "center";
+  b.font = `34px ${displayFont()}`; b.textAlign = "center";
   [["HEAD", 260, 200, "#22d3ee"], ["STARS", W - 260, 180, "#ff4fd8"]].forEach(([t, x, y, c]) => { b.shadowColor = c; b.shadowBlur = 24; b.fillStyle = c; b.fillText(t, x, y); });
   b.shadowBlur = 0;
   b.fillStyle = "#120828"; b.fillRect(R.x0, FT - 10, R.x1 - R.x0, G - FT + 10);
@@ -524,7 +524,7 @@ function boards(st, t) {
   const y = FT - 38, h = 28;
   ctx.save(); ctx.beginPath(); ctx.rect(-900, y, W + 1800, h); ctx.clip();
   ctx.fillStyle = st.arena === "eis" ? "#0b2533" : "#08102a"; ctx.fillRect(-900, y, W + 1800, h);
-  ctx.font = "17px 'Lilita One', Impact"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  ctx.font = `17px ${displayFont()}`; ctx.textBaseline = "middle"; ctx.textAlign = "left";
   const msg = "HEADSTARS  •  ", /* i18n-ok: Marke */ sp = ctx.measureText(msg).width + 24, off = (t * 50) % sp;
   ctx.fillStyle = st.arena === "eis" ? "rgba(140,220,255,.7)" : "rgba(160,190,255,.55)";
   for (let i = -9; i < 18; i++) ctx.fillText(msg, i * sp - off, y + h / 2 + 1);
@@ -890,7 +890,7 @@ function drawPlayer(st, p, t, label) {
     ctx.save(); ctx.globalAlpha = label.a;
     ctx.fillStyle = col; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineJoin = "round";
     ctx.beginPath(); ctx.moveTo(p.x - 9, my + 6); ctx.lineTo(p.x + 9, my + 6); ctx.lineTo(p.x, my + 16); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.font = "15px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.font = `15px ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
     ctx.lineWidth = 5; ctx.strokeText(label.t, p.x, my + 2); ctx.fillText(label.t, p.x, my + 2);
     ctx.restore();
   }
@@ -899,7 +899,7 @@ function drawPlayer(st, p, t, label) {
     const ex = p.x + p.dir * r * 0.7, ey = p.y - r - 62;
     const ec = cosById(p.emo), txt = ec?.kind === "emote" ? ec.label : null;
     ctx.save(); ctx.globalAlpha = a; ctx.translate(ex, ey); ctx.scale(pop, pop);
-    ctx.font = txt || p.emo.length > 2 ? "22px 'Lilita One', Impact" : "30px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'";
+    ctx.font = txt || p.emo.length > 2 ? `22px ${displayFont()}` : "30px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'";
     const bw = txt ? Math.max(68, ctx.measureText(txt).width + 28) : 68;
     ctx.fillStyle = "#fff"; ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.lineJoin = "round";
     roundRect(-bw / 2, -26, bw, 48, 18); ctx.fill(); ctx.stroke();
@@ -1123,7 +1123,7 @@ function drawObstacles(st, view, t) {
         ctx.fillStyle = g; roundRect(x0, y, w, h + 6, 10); ctx.fill(); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.stroke();
         ctx.fillStyle = S.edge; ctx.globalAlpha = ar === "neon" ? 0.9 : 0.75; roundRect(x0 + 4, y + 3, w - 8, 6, 3); ctx.fill(); ctx.globalAlpha = 1;
         if (ar === "eis") { ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0 + w * 0.2, y + 16); ctx.lineTo(x0 + w * 0.32, y + h * 0.6); ctx.moveTo(x0 + w * 0.7, y + 20); ctx.lineTo(x0 + w * 0.62, y + h * 0.5); ctx.stroke(); }
-        if (ar === "stadion") { ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.font = "15px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("KD", x, y + h * 0.55); }
+        if (ar === "stadion") { ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.font = `15px ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("KD", x, y + h * 0.55); }
       }
     } else if (o.t === "plat") {
       const x0 = x - o.w / 2, w = o.w, h = o.h;
@@ -1252,7 +1252,7 @@ function hud(st, t, names, opts) {
       pill(i ? mx + mw - fw : mx, bY, fw, bh, bh / 2, full ? (Math.sin(t * 12) > 0 ? COL.gold : "#fff8c0") : TEAM[i]);
     }
     if (full) {
-      ctx.font = "12px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.fillStyle = INK;
+      ctx.font = `12px ${displayFont()}`; ctx.textAlign = "center"; ctx.fillStyle = INK;
       ctx.fillText(p.armed > 0 ? trn("hud.ready") : trn("hud.super"), mx + mw / 2, bY + bh / 2 + 1);
     }
     }
@@ -1271,22 +1271,22 @@ function hud(st, t, names, opts) {
     if (show.length < buffs.length) {
       const bx = cx + d * (Wd / 2 - 24 - show.length * 36);
       ctx.beginPath(); ctx.arc(bx, by, 13, 0, TAU); ctx.fillStyle = "rgba(8,14,40,.88)"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.stroke();
-      ctx.font = "13px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("+" + (buffs.length - show.length), bx, by + 1);
+      ctx.font = `13px ${displayFont()}`; ctx.textAlign = "center"; ctx.fillStyle = "#fff"; ctx.fillText("+" + (buffs.length - show.length), bx, by + 1);
     }
     ctx.globalAlpha = 1;
   });
   // Spielstand und Zeit
   ctx.textAlign = "center";
   pill(cx - 70, y + 4, 140, Hh - 8, 12, "rgba(255,255,255,.06)");
-  ctx.font = "34px 'Lilita One', Impact, sans-serif";
+  ctx.font = `34px ${displayFont()}`;
   ctx.fillStyle = COL.p1; ctx.fillText(st.s[0], cx - 40, y + 25);
   ctx.fillStyle = COL.p2; ctx.fillText(st.s[1], cx + 40, y + 25);
-  ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.font = "22px 'Lilita One', Impact"; ctx.fillText("–", cx, y + 23);
+  ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.font = `22px ${displayFont()}`; ctx.fillText("–", cx, y + 23);
   let tt;
-  if (st.gold) { tt = trn("hud.golden"); ctx.fillStyle = Math.sin(t * 6) > 0 ? COL.gold : "#fff"; ctx.font = "11px 'Lilita One', Impact"; }
-  else if (st.train) { tt = "TRAINING"; ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "13px 'Lilita One', Impact"; }
-  else if (st.rules && st.rules.win) { tt = "BIS " + st.rules.win; ctx.fillStyle = COL.gold; ctx.font = "15px 'Lilita One', Impact"; }
-  else { const sec = Math.ceil(st.t); tt = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); ctx.fillStyle = sec <= 10 && st.ph === "play" ? (Math.sin(t * 10) > 0 ? "#ff6a6a" : "#fff") : "rgba(255,255,255,.85)"; ctx.font = "15px 'Lilita One', Impact"; }
+  if (st.gold) { tt = trn("hud.golden"); ctx.fillStyle = Math.sin(t * 6) > 0 ? COL.gold : "#fff"; ctx.font = `11px ${displayFont()}`; }
+  else if (st.train) { tt = trn("mode.train.name").toUpperCase(); ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = `13px ${displayFont()}`; }
+  else if (st.rules && st.rules.win) { tt = trn("home.upTo", { n: st.rules.win }).toUpperCase(); ctx.fillStyle = COL.gold; ctx.font = `15px ${displayFont()}`; }
+  else { const sec = Math.ceil(st.t); tt = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); ctx.fillStyle = sec <= 10 && st.ph === "play" ? (Math.sin(t * 10) > 0 ? "#ff6a6a" : "#fff") : "rgba(255,255,255,.85)"; ctx.font = `15px ${displayFont()}`; }
   ctx.fillText(tt, cx, y + 44);
   if (sub) { ctx.font = "800 15px Nunito, sans-serif"; ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.fillText(sub, cx, y + Hh + 16); }
   ctx.restore();
@@ -1302,12 +1302,12 @@ function drawCallouts(dt) {
     const y = visTop() + 190;
     ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, y); ctx.scale(pop * c.size, pop * c.size); ctx.transform(1, 0, -0.18, 1, 0, 0);
     ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
-    ctx.font = "88px 'Lilita One', Impact, sans-serif";
+    ctx.font = `88px ${displayFont()}`;
     ctx.lineWidth = 24; ctx.strokeStyle = "#fff"; ctx.strokeText(c.text, 0, 0);
     ctx.lineWidth = 13; ctx.strokeStyle = INK; ctx.strokeText(c.text, 0, 0);
     ctx.fillStyle = INK; ctx.fillText(c.text, 6, 6);
     ctx.fillStyle = c.col; ctx.fillText(c.text, 0, 0);
-    if (c.sub) { ctx.font = "30px 'Lilita One', Impact"; ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.strokeText(c.sub, 0, 74); ctx.fillStyle = "#fff"; ctx.fillText(c.sub, 0, 74); }
+    if (c.sub) { ctx.font = `30px ${displayFont()}`; ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.strokeText(c.sub, 0, 74); ctx.fillStyle = "#fff"; ctx.fillText(c.sub, 0, 74); }
     ctx.restore();
   }
 }
@@ -1324,7 +1324,7 @@ function vsIntro(st, names, e) {
     ctx.fillStyle = "#fff"; ctx.fillRect(-186, -46, 372, 92);
     const g = ctx.createLinearGradient(0, -40, 0, 40); g.addColorStop(0, shade(TEAM[i], 0.15)); g.addColorStop(1, shade(TEAM[i], -0.3));
     ctx.fillStyle = g; ctx.fillRect(-180, -40, 360, 80);
-    ctx.font = "34px 'Lilita One', Impact"; ctx.textAlign = i ? "left" : "right"; ctx.textBaseline = "middle"; ctx.fillStyle = INK;
+    ctx.font = `34px ${displayFont()}`; ctx.textAlign = i ? "left" : "right"; ctx.textBaseline = "middle"; ctx.fillStyle = INK;
     ctx.fillText((names[i] || "").toUpperCase().slice(0, 10), i ? -100 : 100, 3);
     ctx.restore();
     ctx.drawImage(avatar(st.p[i].ch, 90, ""), x + (i ? 70 : -190), y - 64, 116, 116);
@@ -1333,7 +1333,7 @@ function vsIntro(st, names, e) {
   const vk = clamp((e - 0.3) / 0.25, 0, 1) * (1 - out);
   if (vk > 0) {
     ctx.save(); ctx.translate(W / 2, y + 4); ctx.scale(0.6 + vk * 0.4, 0.6 + vk * 0.4); ctx.globalAlpha = vk;
-    ctx.font = "76px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    ctx.font = `76px ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
     ctx.lineWidth = 22; ctx.strokeStyle = "#fff"; ctx.strokeText("VS", 0, 0); ctx.lineWidth = 12; ctx.strokeStyle = INK; ctx.strokeText("VS", 0, 0);
     ctx.fillStyle = COL.gold; ctx.fillText("VS", 0, 0); ctx.restore();
   }
@@ -1500,10 +1500,10 @@ export function render(st, t, opts) {
     if (lab) {
       const f = st.ph === "ko" ? 1 : (st.pt % 1);
       ctx.save(); ctx.translate(W / 2, visTop() + 220); const sc = 0.8 + f * 0.45; ctx.scale(sc, sc); ctx.transform(1, 0, -0.15, 1, 0, 0);
-      ctx.font = (lab.length > 2 ? 66 : 130) + "px 'Lilita One', Impact"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+      ctx.font = (lab.length > 2 ? 66 : 130) + `px ${displayFont()}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
       ctx.lineWidth = 26; ctx.strokeStyle = "#fff"; ctx.strokeText(lab, 0, 0); ctx.lineWidth = 15; ctx.strokeStyle = INK; ctx.strokeText(lab, 0, 0);
       ctx.fillStyle = st.gold ? COL.gold : "#fff"; ctx.fillText(lab, 0, 0);
-      if (st.gold && st.ph === "cd") { ctx.font = "28px 'Lilita One', Impact"; ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.strokeText(trn("hud.nextGoalWins"), 0, 66); ctx.fillStyle = "#fff"; ctx.fillText(trn("hud.nextGoalWins"), 0, 66); }
+      if (st.gold && st.ph === "cd") { ctx.font = `28px ${displayFont()}`; ctx.lineWidth = 9; ctx.strokeStyle = INK; ctx.strokeText(trn("hud.nextGoalWins"), 0, 66); ctx.fillStyle = "#fff"; ctx.fillText(trn("hud.nextGoalWins"), 0, 66); }
       ctx.restore();
     }
   }
@@ -1513,7 +1513,7 @@ export function render(st, t, opts) {
   if (rep) {
     const bar = Math.min(cw, ch) * 0.07;
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cw, bar); ctx.fillRect(0, ch - bar, cw, bar);
-    ctx.font = `${Math.round(bar * 0.42)}px 'Lilita One', Impact`; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.font = `${Math.round(bar * 0.42)}px ${displayFont()}`; ctx.textAlign = "left"; ctx.textBaseline = "middle";
     ctx.fillStyle = Math.sin(t * 6) > 0 ? "#ff3b30" : "#661010"; ctx.beginPath(); ctx.arc(24 + bar * 0.2, bar / 2, bar * 0.16, 0, TAU); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.fillText(trn("fx.replay"), 30 + bar * 0.45, bar / 2 + 1);
     ctx.textAlign = "right"; ctx.font = `800 ${Math.round(bar * 0.36)}px Nunito, sans-serif`; ctx.fillStyle = "rgba(255,255,255,.7)";

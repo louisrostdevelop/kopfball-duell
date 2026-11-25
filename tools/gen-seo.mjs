@@ -1,18 +1,18 @@
-// Erzeugt die Infoseiten für Suchmaschinen (de/, de/gegen-freunde/, en/, en/play-with-friends/), sitemap.xml und
-// robots.txt. Zahlen und Namen (Köpfe, Supers, Arenen, Modi, Sperren) kommen aus dem Spiel, damit die Seiten stimmen,
-// wenn sich das Spiel ändert. Nach einer Änderung: `npm run seo`. Ein Test prüft, dass die Dateien aktuell sind.
+// Erzeugt die Infoseiten für Suchmaschinen (je Sprache aus tools/seo/langs.mjs, z. B. de/, de/gegen-freunde/, en/,
+// en/play-with-friends/), sitemap.xml, robots.txt und die Liste der Infoseiten fürs Spiel (js/content/info-pages.js). Zahlen und Namen (Köpfe, Supers, Arenen, Modi, Sperren) kommen aus dem
+// Spiel, damit die Seiten stimmen, wenn sich das Spiel ändert. Nach einer Änderung: `npm run seo`. Ein Test prüft, dass die
+// Dateien aktuell sind. Texte je Sprache: tools/seo/<lang>.mjs; hier nur Aufbau und Bausteine.
 // Bilder und Gameplay-Loop: landing/ (tools/gen-landing-media.mjs, aus dem echten Spiel aufgenommen).
 // Aussehen: css/landing.css (Design-Tokens des Spiels). Fremde Spielnamen nie in Titel, Überschrift oder URL.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ARENAS, CHARS, MODES, PAYMENTS, POWERUPS } from "../js/content/config.js";
-import de from "../js/content/i18n/de.js";
-import en from "../js/content/i18n/en.js";
 import { SIZES, VIDEO } from "./gen-landing-media.mjs";
+import { DEFAULT_LANG, LANGS } from "./seo/langs.mjs";
+import REF from "./seo/de.mjs";
 
 export const SITE = "https://headstars.app";
-const I18N = { de, en };
 // Sperren der Online-Modi stehen in js/app/matchmaking.js (zieht Browser-Code nach, daher hier nur gelesen)
 const mm = readFileSync(new URL("../js/app/matchmaking.js", import.meta.url), "utf8").match(/MIN_LEVEL = \{ casual: (\d+), ranked: (\d+) \}/);
 if (!mm) throw new Error("MIN_LEVEL in js/app/matchmaking.js nicht gefunden");
@@ -20,28 +20,61 @@ const MIN_LEVEL = { casual: +mm[1], ranked: +mm[2] };
 // Symbole aus dem Spiel (index.html), damit die Seiten dieselben Icons zeigen
 const INDEX = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const symbol = id => { const m = INDEX.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`)); if (!m) throw new Error("Symbol fehlt: " + id); return m[0]; };
+/** Schrift der Überschriften je Sprache (css/landing.css: uk/ru in Nunito 900, Lilita One hat die Zeichen nicht), vorab geladen */
+const DISPLAY_FONTS = { uk: ["nunito-900-cyrillic"], ru: ["nunito-900-cyrillic"] };
 const ICONS = ["i-play", "i-users", "i-globe", "i-trophy", "i-star", "i-cal", "i-inf", "i-target", "i-crown", "i-share", "i-bolt", "i-stadium"];
 
-/** Seiten: Pfad, Sprache, Kennung für „Jetzt spielen“ (?src=), Gegenstück in der anderen Sprache (hreflang) */
-export const PAGES = [
-  { path: "/de/", lang: "de", src: "seo-de", kind: "main", alt: "/en/" },
-  { path: "/de/gegen-freunde/", lang: "de", src: "seo-de-freunde", kind: "friends", alt: "/en/play-with-friends/" },
-  { path: "/en/", lang: "en", src: "seo-en", kind: "main", alt: "/de/" },
-  { path: "/en/play-with-friends/", lang: "en", src: "seo-en-friends", kind: "friends", alt: "/de/gegen-freunde/" },
-];
+/** Form einer Sprachdatei wie tools/seo/de.mjs: dieselben Felder (ui, media …), Listen gleich lang, Texte nicht leer, nur
+ *  Seitenarten, die es auf Deutsch gibt. Fehlt etwas, bricht der Lauf ab statt „undefined“ auf die Seite zu schreiben. */
+const { lang: _lang, L: _L, pages: _pages, ...SHAPE } = REF;   // Spieltexte prüft der Lauf über „undefined“ im HTML
+function checkLang(D) {
+  const where = `tools/seo/${D.lang}.mjs`;
+  const same = (a, b, at) => {
+    if (Array.isArray(b)) { if (!Array.isArray(a) || a.length !== b.length) throw new Error(`${where}: ${at} braucht ${b.length} Einträge`); a.forEach((x, i) => same(x, b[i], `${at}[${i}]`)); }
+    else if (b && typeof b === "object") { if (!a || typeof a !== "object") throw new Error(`${where}: ${at} fehlt`); for (const k of Object.keys(b)) same(a[k], b[k], at ? `${at}.${k}` : k); }
+    else if (typeof a !== typeof b || a === "") throw new Error(`${where}: ${at} fehlt oder leer`);
+  };
+  if (!/^[a-z]{2}$/.test(D.lang)) throw new Error(`Sprachkürzel ungültig: ${D.lang}`);
+  same(D, SHAPE, "");
+  for (const [kind, x] of Object.entries(D.pages)) {
+    if (!REF.pages[kind]) throw new Error(`${where}: unbekannte Seitenart ${kind}`);
+    if (!/^\/[a-z0-9/-]+\/$/.test(x.path || "") || !/^[a-z0-9_-]{1,40}$/.test(x.src || "") || typeof x.build !== "function") throw new Error(`${where}: pages.${kind} braucht path, src (Kennung wie js/app/track.js) und build`);
+    for (const [k, id] of Object.entries(x.covers || {})) if (!REF.pages[k] || D.pages[k] || !/^[a-z][a-z0-9-]*$/.test(id)) throw new Error(`${where}: pages.${kind}.covers.${k} braucht eine Seitenart, die es in der Sprache nicht gibt, und eine Abschnitts-id`);
+  }
+}
+/** Was build() liefert: Titel, Beschreibung, H1, Einleitung, Abschnitte, FAQ, alles mit Text */
+function checkContent(c, at) {
+  const text = (v, k) => { if (typeof v !== "string" || !v.trim()) throw new Error(`${at}: ${k} fehlt oder leer`); };
+  for (const k of ["title", "desc", "h1", "lead"]) text(c[k], k);
+  if (!Array.isArray(c.sections) || !c.sections.length) throw new Error(`${at}: sections fehlt`);
+  c.sections.forEach((s, i) => { for (const k of ["id", "h2", "html", ...(s.panel ? [] : ["media"])]) text(s[k], `sections[${i}].${k}`); });
+  if (!Array.isArray(c.faq)) throw new Error(`${at}: faq fehlt`);
+  c.faq.forEach((f, i) => { text(f[0], `faq[${i}] Frage`); text(f[1], `faq[${i}] Antwort`); });
+}
+
+/** Seiten aller Sprachen: Pfad, Sprache, Art (main, friends), Kennung für „Jetzt spielen“ (?src=), Daten der Sprache */
+export function pagesOf(langs) {
+  if (new Set(langs.map(D => D.lang)).size !== langs.length) throw new Error("Sprache doppelt in tools/seo/langs.mjs");
+  langs.forEach(checkLang);
+  return langs.flatMap(D => Object.entries(D.pages).map(([kind, x]) => ({ path: x.path, lang: D.lang, src: x.src, kind, build: x.build, covers: x.covers || {}, D })));
+}
+export const PAGES = pagesOf(LANGS);
+/** Oberste Ordner der Infoseiten (für .github/workflows/pages.yml: node tools/gen-seo.mjs --dirs) */
+export const pageDirs = (pages = PAGES) => [...new Set(pages.map(p => p.path.split("/")[1]))];
 /** Datei zur URL (GitHub Pages liefert für /de/ die Datei de/index.html) */
 export const fileOf = path => path.slice(1) + "index.html";
-/** hreflang-Gruppe einer Seite: beide Sprachen, x-default = Englisch */
-export function alternates(p) {
-  const de_ = p.lang === "de" ? p.path : p.alt, en_ = p.lang === "en" ? p.path : p.alt;
-  return [["de", de_], ["en", en_], ["x-default", en_]];
+/** Dieselbe Seitenart in allen Sprachen, die sie haben (die Seite selbst eingeschlossen) */
+const group = (p, pages) => pages.filter(x => x.kind === p.kind);
+/** hreflang-Gruppe einer Seite: jede Sprache mit dieser Seitenart, x-default = Englisch */
+export function alternates(p, pages = PAGES) {
+  const g = group(p, pages), def = g.find(x => x.lang === DEFAULT_LANG);
+  return [...g.map(x => [x.lang, x.path]), ...(def ? [["x-default", def.path]] : [])];
 }
 
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const playUrl = p => `/?src=${p.src}&amp;lang=${p.lang}`;
 const kbd = s => `<kbd>${esc(s)}</kbd>`;
 const icon = (id, cls = "lp-ico") => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
-const pair = (p, kind) => PAGES.find(x => x.lang === p.lang && x.kind === kind).path;
 
 // ---------- Bilder ----------
 /** Seitenverhältnis der Aufnahmen (Breite x Höhe der größten Fassung) */
@@ -56,20 +89,7 @@ function pic(name, kind, alt, { sizes = "(min-width: 960px) 52vw, 100vw", cls = 
 /** Alle Dateien, die eine Seite aus landing/ einbindet (für den Test) */
 export const mediaOf = html => [...new Set([...html.matchAll(/\/landing\/[\w.-]+/g)].map(m => m[0].slice(1)))];
 
-const UI = {
-  de: { play: "Jetzt spielen", facts: ["Kostenlos", "Ohne Download", "Ohne Anmeldung"], faq: "Häufige Fragen", other: "English",
-    otherLong: "This page in English", legal: ["Impressum", "Datenschutz", "Nutzungsbedingungen"], main: "Spielinfos",
-    friends: "Gegen Freunde spielen", ctaNote: "Startet direkt im Browser, auf Handy, Tablet und PC.",
-    video: "Spielszene aus Headstars: zwei Köpfe spielen Kopfball-Fußball im Stadion", online: "Online", offline: "Gegen den Computer oder zu zweit",
-    endTitle: "Bereit für den Anpfiff?" },
-  en: { play: "Play now", facts: ["Free", "No download", "No sign-up"], faq: "FAQ", other: "Deutsch",
-    otherLong: "Diese Seite auf Deutsch", legal: ["Legal Notice", "Privacy", "Terms"], main: "Game guide",
-    friends: "Play with friends", ctaNote: "Starts right in your browser, on phone, tablet and PC.",
-    video: "Gameplay from Headstars: two heads play header soccer in the stadium", online: "Online", offline: "Against the computer or two players",
-    endTitle: "Ready for kick-off?" },
-};
-
-// ---------- Bausteine aus dem Spiel ----------
+// ---------- Bausteine aus dem Spiel (L = Spieltexte der Sprache) ----------
 const n = { heads: CHARS.length, arenas: ARENAS.length, pus: Object.keys(POWERUPS).length,
   start: ARENAS.filter(a => !a.level && !a.season).length, byLevel: ARENAS.filter(a => a.level).length, bySeason: ARENAS.filter(a => a.season).length };
 const lockNote = (L, id) => {
@@ -77,24 +97,17 @@ const lockNote = (L, id) => {
   if (id === "ranked") return L["lock.level"].replace("{n}", MIN_LEVEL.ranked) + ", " + L["lock.account"];
   return "";
 };
-function modeCards(lang, side) {
-  const L = I18N[lang];
+function modeCards(L, side) {
   return `<ul class="lp-modes">${MODES.filter(m => m.side === side).map(m => {
     const lock = lockNote(L, m.id), name = L[`mode.${m.id}.name`];
     return `<li class="lp-mode">${pic("mode-" + m.id, "mode", "", { sizes: "(min-width: 960px) 300px, 50vw", cls: "lp-mode__art" })}<div class="lp-mode__body"><h4 class="lp-mode__name">${icon(m.icon)}${esc(name)}</h4><p class="lp-mode__desc">${esc(L[`mode.${m.id}.desc`])}</p>${lock ? `<p class="lp-mode__lock">${esc(lock)}</p>` : ""}</div></li>`;
   }).join("")}</ul>`;
 }
-function headChips(lang) {
-  const L = I18N[lang];
-  return `<ul class="lp-heads">${CHARS.map(c => `<li class="lp-head">${pic("head-" + c.id, "head", "", { sizes: "56px", cls: "lp-head__img" })}<span class="lp-head__name">${esc(c.name)}</span><span class="lp-head__super">${esc(L[`super.${c.super}.name`])}</span></li>`).join("")}</ul>`;
-}
-function arenaMosaic(lang) {
-  const L = I18N[lang];
-  return `<ul class="lp-arenas">${ARENAS.map(a => `<li class="lp-arena">${pic("arena-" + a.id, "arena", "", { sizes: "(min-width: 960px) 240px, 45vw" })}<span class="lp-arena__name">${esc(L[`arena.${a.id}.name`])}</span></li>`).join("")}</ul>`;
-}
+const headChips = L => `<ul class="lp-heads">${CHARS.map(c => `<li class="lp-head">${pic("head-" + c.id, "head", "", { sizes: "56px", cls: "lp-head__img" })}<span class="lp-head__name">${esc(c.name)}</span><span class="lp-head__super">${esc(L[`super.${c.super}.name`])}</span></li>`).join("")}</ul>`;
+const arenaMosaic = L => `<ul class="lp-arenas">${ARENAS.map(a => `<li class="lp-arena">${pic("arena-" + a.id, "arena", "", { sizes: "(min-width: 960px) 240px, 45vw" })}<span class="lp-arena__name">${esc(L[`arena.${a.id}.name`])}</span></li>`).join("")}</ul>`;
 // Steuerung wie in den Einstellungen des Spiels (js/ui/screens/settings.js)
-function controls(lang) {
-  const L = I18N[lang], s = k => L["html.settings." + k];
+function controls(L, u) {
+  const s = k => L["html.settings." + k];
   const rows = [
     [s("laufen"), kbd("A") + kbd("D"), s("stick"), s("linksZiehen")],
     [s("springen"), kbd("W"), "A", s("linksHoch")],
@@ -103,9 +116,34 @@ function controls(lang) {
     [s("super"), kbd("E"), s("yRb"), L["ctl.superBtn"]],
   ];
   return `<div class="lp-keys"><table class="lp-keys__table">
-<thead><tr><th scope="col"><span class="lp-sr">${lang === "de" ? "Aktion" : "Action"}</span></th><th scope="col">${esc(L["ctl.keyboard"])}</th><th scope="col">${esc(s("controller"))}</th><th scope="col">${esc(s("touch"))}</th></tr></thead>
+<thead><tr><th scope="col"><span class="lp-sr">${u.action}</span></th><th scope="col">${esc(L["ctl.keyboard"])}</th><th scope="col">${esc(s("controller"))}</th><th scope="col">${esc(s("touch"))}</th></tr></thead>
 <tbody>${rows.map(([a, k, p, t]) => `<tr><th scope="row">${esc(a)}</th><td>${k}</td><td>${p === "A" ? kbd("A") : esc(p)}</td><td>${esc(t)}</td></tr>`).join("")}</tbody>
 </table></div>`;
+}
+
+/** Was die Seitentexte (build in tools/seo/<lang>.mjs) bekommen: Bausteine in der Sprache der Seite */
+function helpers(p, pages) {
+  const { L, ui: u } = p.D;
+  return {
+    esc, pic, kbd, n, PAYMENTS,
+    /** drei Power-ups als Beispiele */
+    pu: ["boot", "time", "portal"].map(k => esc(L[`pu.${k}.name`])),
+    /** die ersten drei Spiellängen */
+    len: esc(["0", "1", "2"].map(i => L["rule.len.opt." + i]).join(", ")),
+    /** Pfad der Seite dieser Art in derselben Sprache (Fehler, wenn es sie nicht gibt) */
+    path: kind => {
+      const x = pages.find(y => y.lang === p.lang && y.kind === kind);
+      if (!x) throw new Error(`${p.path}: verlinkt „${kind}“, die Sprache ${p.lang} hat diese Seite nicht`);
+      return x.path;
+    },
+    lock: id => lockNote(L, id),
+    modes: () => `<h3 class="lp-h3">${u.online}</h3>\n${modeCards(L, "on")}\n<h3 class="lp-h3">${u.offline}</h3>\n${modeCards(L, "off")}`,
+    headChips: () => headChips(L),
+    arenaMosaic: () => arenaMosaic(L),
+    controls: () => controls(L, u),
+    /** Einladungs-Schritte mit Bildern step-<lang>-<n> */
+    steps: (list, alts) => `<ol class="lp-steps">${list.map(([h, t], i) => `<li class="lp-step">${pic(`step-${p.lang}-${i + 1}`, "step", alts[i], { sizes: "(min-width: 960px) 380px, 100vw", cls: "lp-step__img" })}<div class="lp-step__body"><h3 class="lp-step__title"><span class="lp-step__num" aria-hidden="true">${i + 1}</span>${esc(h)}</h3><p>${t}</p></div></li>`).join("")}</ol>`,
+  };
 }
 
 // ---------- Abschnitte ----------
@@ -122,136 +160,30 @@ const panel = s => `<section class="lp-panel" id="${s.id}">
 ${s.html}
 </section>`;
 
-function mainPage(p) {
-  const L = I18N[p.lang], U = UI[p.lang], pu = ["boot", "time", "portal"].map(k => esc(L[`pu.${k}.name`])), friends = pair(p, "friends");
-  const modes = `<h3 class="lp-h3">${U.online}</h3>\n${modeCards(p.lang, "on")}\n<h3 class="lp-h3">${U.offline}</h3>\n${modeCards(p.lang, "off")}`;
-  if (p.lang === "de") return {
-    title: "Kopfball-Fußball online spielen – kostenlos im Browser | Headstars",
-    desc: "Kopfball-Fußball im Browser: 1 gegen 1 gegen den Computer, gegen Spieler aus aller Welt oder per Link gegen Freunde. Kostenlos, ohne Download, ohne Anmeldung.",
-    h1: "Kopfball-Fußball online spielen",
-    lead: "Eins gegen eins mit großen Köpfen: laufen, springen, köpfen, schießen. Gegen den Computer, gegen Gegner aus aller Welt oder gegen deine Freunde, direkt im Browser.",
-    sections: [
-      { id: "spielen", media: pic("scene-head", "scene", "Kopfball in Headstars: ein Kopf springt hoch und köpft den Ball Richtung Tor"), h2: "Köpfen, schießen, grätschen",
-        html: `<p>Zwei Spieler, ein Ball, zwei Tore. Wie der Ball fliegt, hängt vom Moment des Treffers ab: Ein ruhender Ball geht im Bogen, ein Ball in Kopfhöhe flach, und in der Luft wird daraus ein Volley.</p>
-<p>Am Boden grätschst du, in der Luft landest du mit einer Arschbombe, je höher, desto härter. Wer das Timing raus hat, köpft den Ball aus der Luft ins Tor.</p>` },
-      { id: "koepfe", media: pic("heads-group", "heads", `Alle ${n.heads} Köpfe aus Headstars nebeneinander`, { cls: "lp-cutout" }), h2: `${n.heads} Köpfe, jeder mit eigenem Super-Schuss`,
-        html: `<p>Jeder Kopf spielt sich anders: schneller, sprungstärker oder mit mehr Wucht im Schuss. Ist deine Super-Leiste voll, zündest du seinen Super-Schuss.</p>`, after: headChips("de"), wide: true },
-      { id: "supers", media: pic("scene-super", "scene", "Ein Super-Schuss fliegt über das Spielfeld in Headstars"), h2: "Super-Schüsse und Power-ups",
-        html: `<p>Feuerball, Eisschuss, Donnerkeil: Ein Super-Schuss kann ein Spiel drehen. Dazu tauchen ${n.pus} verschiedene Power-ups auf dem Feld auf, etwa ${pu[0]}, ${pu[1]} oder ${pu[2]}.</p>
-<p>Im schnellen Spiel und gegen Freunde stellst du selbst ein, ob und wie oft Power-ups kommen und ob Super-Schüsse erlaubt sind.</p>` },
-      { id: "arenen", wide: true, media: arenaMosaic("de"), h2: `${n.arenas} Arenen mit eigener Physik`,
-        html: `<p>In der ${esc(L["arena.eis.name"])} rutschst du, auf dem ${esc(L["arena.mond.name"])} springst du riesig, und am ${esc(L["arena.strand.name"])} bremst der Sand den Ball. ${n.start} Arenen sind von Anfang an da, ${n.byLevel} schaltest du über dein Level frei, ${n.bySeason} weitere kommen mit den Saisons.</p>` },
-      { panel: true, id: "modi", h2: "Spielmodi", html: modes },
-      { id: "freunde", media: pic("scene-goal-de", "scene", "Torjubel in Headstars nach einem Treffer"), h2: "Zu zweit oder online gegen Freunde",
-        html: `<p>Sitzt ihr nebeneinander, spielt ihr im Modus „${esc(L["mode.local.name"])}“ an einem Gerät: an einer Tastatur, mit zwei Controllern oder auf einem geteilten Touchscreen.</p>
-<p>Seid ihr nicht am selben Ort, reicht ein Link: Raum erstellen, Link schicken, anpfeifen. <a href="${friends}">So spielst du online gegen Freunde</a>.</p>` },
-      { panel: true, id: "steuerung", h2: "Steuerung", html: `${controls("de")}
-<p>Springen kurz tippen: halb hoch, halten: voll. Spielt ihr zu zweit an einer Tastatur, nimmt Spieler 2 ${kbd("←")}${kbd("→")} zum Laufen, ${kbd("↑")} zum Springen, ${kbd("↓")} für die Grätsche, ${kbd("Enter")} zum Schießen und ${kbd(".")} für den Super-Schuss. Auf dem Handy spielst du am besten quer.</p>` },
-    ],
-    faq: [
-      ["Ist Headstars kostenlos?", `Ja. Headstars kostet nichts. Münzen und Juwelen für neue Köpfe, Bälle und Arenen verdienst du beim Spielen.${PAYMENTS ? " Einzelne Inhalte kannst du optional kaufen." : " Käufe mit echtem Geld gibt es nicht."}`],
-      ["Muss ich etwas installieren oder ein Konto anlegen?", "Nein. Headstars läuft im Browser. Beim ersten Start legt das Spiel ein Gastkonto an, ohne E-Mail und ohne Passwort. Willst du deinen Fortschritt sichern oder auf einem anderen Gerät weiterspielen, verknüpfst du das Konto mit deiner E-Mail-Adresse. Für Ranked und die Bestenlisten ist das nötig."],
-      ["Läuft Headstars auf dem Handy?", "Ja. Auf Handy und Tablet steuerst du per Touch, am besten im Querformat. Bietet dein Browser es an, installierst du Headstars wie eine App (Einstellungen → App installieren)."],
-      ["Kann ich mit Controller spielen?", "Ja. Die Belegung steht in der Tabelle unter „Steuerung“. Spielt ihr zu zweit an einem Gerät, kann jeder einen eigenen Controller nehmen."],
-      ["Wie spiele ich gegen Freunde?", `Raum erstellen, Link schicken, anpfeifen. Die Anleitung Schritt für Schritt: <a href="${friends}">Online gegen Freunde spielen</a>.`],
-    ],
-  };
-  return {
-    title: "Header Soccer Online – Free 1v1 Browser Game | Headstars",
-    desc: "A 1v1 header soccer game in your browser: play the computer, players from around the world or a friend by link. Free, no download, no sign-up.",
-    h1: "Play header soccer online",
-    lead: "One-on-one soccer with oversized heads: run, jump, head and shoot. Against the computer, opponents from around the world or your friends, right in your browser.",
-    sections: [
-      { id: "play", media: pic("scene-head", "scene", "A header in Headstars: a head jumps and heads the ball towards the goal"), h2: "Head it, shoot it, slide in",
-        html: `<p>Two players, one ball, two goals. How the ball flies depends on the moment you hit it: a ball at rest goes up in an arc, a ball at head height flies low, and in the air you hit a volley.</p>
-<p>On the ground you slide tackle, in the air you come down with a ground pound, and the higher you are, the harder it lands. Get the timing right and you head the ball straight out of the air into the goal.</p>` },
-      { id: "heads", media: pic("heads-group", "heads", `All ${n.heads} heads from Headstars side by side`, { cls: "lp-cutout" }), h2: `${n.heads} heads, each with its own special shot`,
-        html: `<p>Every head plays differently: faster, jumping higher or shooting harder. Once your super meter is full, you unleash its special shot.</p>`, after: headChips("en"), wide: true },
-      { id: "supers", media: pic("scene-super", "scene", "A special shot flies across the pitch in Headstars"), h2: "Special shots and power-ups",
-        html: `<p>Fireball, Ice Shot, Thunderbolt: one special shot can turn a match around. On top of that, ${n.pus} different power-ups appear on the pitch, such as ${pu[0]}, ${pu[1]} or ${pu[2]}.</p>
-<p>In quick matches and against friends you decide whether and how often power-ups appear and whether special shots are allowed.</p>` },
-      { id: "arenas", wide: true, media: arenaMosaic("en"), h2: `${n.arenas} arenas with their own physics`,
-        html: `<p>You slide around the ${esc(L["arena.eis.name"])}, jump sky-high on the ${esc(L["arena.mond.name"])}, and on the ${esc(L["arena.strand.name"])} the sand slows the ball down. ${n.start} arenas are there from the start, you unlock ${n.byLevel} through your level, and ${n.bySeason} more come with the seasons.</p>` },
-      { panel: true, id: "modes", h2: "Game modes", html: modes },
-      { id: "friends", media: pic("scene-goal-en", "scene", "Goal celebration in Headstars after a goal"), h2: "Two players or online with friends",
-        html: `<p>Sitting next to each other? Pick “${esc(L["mode.local.name"])}” and play on one device: on one keyboard, with two controllers or on a split touchscreen.</p>
-<p>Not in the same place? A link is all it takes: create a room, send the link, kick off. <a href="${friends}">How to play online with friends</a>.</p>` },
-      { panel: true, id: "controls", h2: "Controls", html: `${controls("en")}
-<p>Tap jump for half height, hold it to jump fully. When two of you share a keyboard, player 2 uses ${kbd("←")}${kbd("→")} to run, ${kbd("↑")} to jump, ${kbd("↓")} to slide, ${kbd("Enter")} to shoot and ${kbd(".")} for the special shot. On a phone, play in landscape.</p>` },
-    ],
-    faq: [
-      ["Is Headstars free?", `Yes. Headstars costs nothing. You earn coins and gems for new heads, balls and arenas by playing.${PAYMENTS ? " Some content can optionally be bought." : " There are no real-money purchases."}`],
-      ["Do I need to install anything or create an account?", "No. Headstars runs in your browser. On first start the game creates a guest account, with no email and no password. If you want to save your progress or keep playing on another device, link the account to your email address. Ranked and the leaderboards require that."],
-      ["Does Headstars work on my phone?", "Yes. On phones and tablets you play with touch controls, best in landscape. If your browser offers it, you can install Headstars like an app (Settings → Install app)."],
-      ["Can I play with a controller?", "Yes. The button layout is in the table under “Controls”. When two of you play on one device, each player can use their own controller."],
-      ["How do I play against friends?", `Create a room, send the link, kick off. Step by step: <a href="${friends}">Play soccer with friends online</a>.`],
-    ],
-  };
-}
-
-function friendsPage(p) {
-  const L = I18N[p.lang], main = pair(p, "main"), len = esc(["0", "1", "2"].map(i => L["rule.len.opt." + i]).join(", "));
-  const steps = (list, alts) => `<ol class="lp-steps">${list.map(([h, t], i) => `<li class="lp-step">${pic(`step-${p.lang}-${i + 1}`, "step", alts[i], { sizes: "(min-width: 960px) 380px, 100vw", cls: "lp-step__img" })}<div class="lp-step__body"><h3 class="lp-step__title"><span class="lp-step__num" aria-hidden="true">${i + 1}</span>${esc(h)}</h3><p>${t}</p></div></li>`).join("")}</ol>`;
-  if (p.lang === "de") return {
-    title: "Fußball online gegen Freunde – per Link, ohne Anmeldung | Headstars",
-    desc: "Online gegen Freunde spielen per Link: Raum erstellen, Link schicken, anpfeifen. Kopfball-Fußball im Browser auf Handy, Tablet und PC, kostenlos und ohne Anmeldung.",
-    h1: "Fußball online gegen Freunde – einfach per Link",
-    lead: "Schick deinem Freund einen Link, er tippt drauf und ihr spielt. Kein Download, keine Anmeldung, keine App, auch vom Handy gegen den PC.",
-    sections: [
-      { panel: true, id: "so-gehts", h2: "So geht's in drei Schritten", html: steps([
-        ["Raum erstellen", `Tippe auf „Jetzt spielen“. Wähle unter „${esc(L["html.home.modus"])}“ den Modus „${esc(L["mode.online.name"])}“, tippe auf „${esc(L["html.home.spielen"])}“ und dann auf „${esc(L["html.online.raumErstellen"])}“.`],
-        ["Link schicken", "Du bekommst einen Link, einen QR-Code und einen vierstelligen Raumcode. Schick den Link über deinen Messenger, oder lass deinen Freund den QR-Code scannen."],
-        ["Anpfiff", "Dein Freund öffnet den Link und landet direkt in deiner Lobby. Jeder wählt seinen Kopf, du stellst Arena und Regeln ein und pfeifst an."],
-      ], ["Online-Menü von Headstars mit dem Knopf „Raum erstellen“", "Lobby mit Raumcode, QR-Code und Knopf „Link teilen“", "Lobby, nachdem der Freund über den Link beigetreten ist"]) },
-      { id: "brauchst", media: pic("scene-head", "scene", "Online-Spiel in Headstars: Kopfball vor dem Tor"), h2: "Was ihr braucht",
-        html: `<ul class="lp-list"><li>einen aktuellen Browser auf Handy, Tablet oder PC,</li><li>eine Internetverbindung. Das Spiel verbindet eure Geräte direkt; lässt euer Netz das nicht zu, läuft die Verbindung über einen Relay-Server,</li><li>kein Konto, keine App und kein Geld.</li></ul>` },
-      { id: "regeln", media: pic("scene-super", "scene", "Super-Schuss in einem Spiel mit eigenen Regeln"), h2: "Eure Regeln",
-        html: `<p>Als Gastgeber legst du fest, wie gespielt wird: Arena, Hindernisse, Spiellänge (${len} oder bis ${esc(L["rule.len.opt.3"])} bzw. ${esc(L["rule.len.opt.4"])}), Tempo, Schussstärke, Abprall, Ball-, Tor- und Feldgröße, Schwerkraft, Power-ups und Super-Schüsse.</p><p>Nach dem Abpfiff geht es mit einer Revanche direkt weiter.</p>` },
-      { id: "zu-zweit", media: pic("scene-goal-de", "scene", "Torjubel nach einem Treffer in Headstars"), h2: "Zu zweit an einem Gerät",
-        html: `<p>Sitzt ihr nebeneinander, braucht ihr keinen Link: Im Modus „${esc(L["mode.local.name"])}“ spielt ihr an einem Gerät, an einer Tastatur, mit zwei Controllern oder auf einem geteilten Touchscreen.</p><p>Alle Modi, Köpfe und die Steuerung: <a href="${main}">Kopfball-Fußball online spielen</a>.</p>` },
-    ],
-    faq: [
-      ["Muss sich mein Freund anmelden oder etwas installieren?", "Nein. Er öffnet den Link im Browser und ist in deiner Lobby."],
-      ["Kann ich vom Handy gegen jemanden am PC spielen?", "Ja. Headstars läuft auf allen Geräten im Browser, und ihr spielt über dieselbe Lobby."],
-      ["Was, wenn der Link nicht ankommt?", `Dein Freund wählt im Spiel ebenfalls „${esc(L["mode.online.name"])}“ und gibt unter „${esc(L["html.online.codeVonDeinemKumpel"])}“ den vierstelligen Raumcode ein.`],
-      ["Was passiert, wenn die Verbindung abreißt?", "Das Spiel hält an und wartet kurz auf die Gegenseite. Kommt sie zurück, geht es an derselben Stelle weiter."],
-      ["Kann ich auch gegen fremde Spieler antreten?", `Ja, in ${esc(L["mode.casual.name"])} (${esc(lockNote(L, "casual"))}) und ${esc(L["mode.ranked.name"])} (${esc(lockNote(L, "ranked"))}). Mehr dazu unter <a href="${main}">Spielmodi</a>.`],
-      ["Kostet das Online-Spiel etwas?", "Nein. Headstars ist kostenlos, auch online."],
-    ],
-  };
-  return {
-    title: "Play Soccer with Friends Online via Link | Headstars",
-    desc: "Play soccer online with friends via link: create a room, send the link, kick off. 1v1 in the browser on phone, tablet and PC, free and without sign-up.",
-    h1: "Play soccer with friends online – just send a link",
-    lead: "Send your friend a link, they tap it, and you play. No download, no sign-up, no app, even from your phone against a PC.",
-    sections: [
-      { panel: true, id: "how", h2: "Three steps to kick-off", html: steps([
-        ["Create a room", `Tap “Play now”. Under “${esc(L["html.home.modus"])}” pick “${esc(L["mode.online.name"])}”, tap “${esc(L["html.home.spielen"])}” and then “${esc(L["html.online.raumErstellen"])}”.`],
-        ["Send the link", "You get a link, a QR code and a four-character room code. Send the link through your messenger, or let your friend scan the QR code."],
-        ["Kick off", "Your friend opens the link and lands right in your lobby. Each of you picks a head, you choose the arena and rules, and you kick off."],
-      ], ["Headstars online menu with the “Create room” button", "Lobby with room code, QR code and “Share link” button", "Lobby after the friend joined through the link"]) },
-      { id: "need", media: pic("scene-head", "scene", "Online match in Headstars: a header in front of the goal"), h2: "What you need",
-        html: `<ul class="lp-list"><li>a current browser on a phone, tablet or PC,</li><li>an internet connection. The game connects your devices directly; if your network does not allow that, the connection runs through a relay server,</li><li>no account, no app and no money.</li></ul>` },
-      { id: "rules", media: pic("scene-super", "scene", "A special shot in a match with custom rules"), h2: "Your rules",
-        html: `<p>As the host, you decide how you play: arena, obstacles, match length (${len} or first to ${esc(L["rule.len.opt.3"])} or ${esc(L["rule.len.opt.4"])}), speed, shot power, bounce, ball, goal and field size, gravity, power-ups and special shots.</p><p>After the final whistle, go straight into a rematch.</p>` },
-      { id: "two", media: pic("scene-goal-en", "scene", "Goal celebration after a goal in Headstars"), h2: "Two players on one device",
-        html: `<p>Sitting next to each other? Then you don't need a link: like in classic head soccer games, you can share one device. Pick “${esc(L["mode.local.name"])}” and play on one keyboard, with two controllers or on a split touchscreen.</p><p>All modes, heads and controls: <a href="${main}">Play header soccer online</a>.</p>` },
-    ],
-    faq: [
-      ["Does my friend need to sign up or install anything?", "No. They open the link in their browser and they are in your lobby."],
-      ["Can I play from my phone against someone on a PC?", "Yes. Headstars runs in the browser on every device, and you meet in the same lobby."],
-      ["What if the link doesn't arrive?", `Your friend also picks “${esc(L["mode.online.name"])}” in the game and enters the four-character room code under “${esc(L["html.online.codeVonDeinemKumpel"])}”.`],
-      ["What happens if the connection drops?", "The game pauses and waits briefly for the other side. If it comes back, you continue right where you left off."],
-      ["Can I play against strangers too?", `Yes, in ${esc(L["mode.casual.name"])} (${esc(lockNote(L, "casual"))}) and ${esc(L["mode.ranked.name"])} (${esc(lockNote(L, "ranked"))}). More under <a href="${main}">game modes</a>.`],
-      ["Does playing online cost anything?", "No. Headstars is free, online too."],
-    ],
-  };
-}
-
 // ---------- Seite ----------
-function page(p) {
-  const c = p.kind === "main" ? mainPage(p) : friendsPage(p), u = UI[p.lang], other = PAGES.find(x => x.path === p.alt);
-  const sibling = PAGES.find(x => x.lang === p.lang && x !== p);
+/** Sprachumschalter: ein Knopf mit der aktuellen Sprache, darunter dieselbe Seite in jeder Sprache, die sie hat (echte Links,
+ *  ohne Skript über <details> bedienbar; js/landing-src.js schließt bei Klick daneben und Escape) */
+/** Ziele des Sprachumschalters: dieselbe Seitenart in jeder Sprache; hat eine Sprache sie nur als Abschnitt ihrer
+ *  Hauptseite (covers), dann die Hauptseite mit Anker (z. B. /uk/#z-druzyamy). hreflang nennt weiter nur echte Gegenstücke. */
+export function langTargets(p, pages = PAGES) {
+  return [...new Set(pages.map(x => x.lang))].flatMap(l => {
+    const own = pages.find(x => x.lang === l && x.kind === p.kind);
+    if (own) return [own];
+    const main = pages.find(x => x.lang === l && x.covers[p.kind]);
+    return main ? [{ ...main, path: `${main.path}#${main.covers[p.kind]}` }] : [];
+  });
+}
+function langMenu(p, same, u) {
+  if (same.length < 2) return "";
+  const item = o => `<li><a class="lp-lang__item" href="${o.path}" hreflang="${o.lang}" lang="${o.lang}"${o.path === p.path ? ` aria-current="page"` : ` title="${esc(o.D.thisPage)}"`}>${esc(o.D.name)}${o.path === p.path ? `<span class="lp-lang__check" aria-hidden="true"></span>` : ""}</a></li>`;
+  return `<nav class="lp-top__langs" aria-label="${esc(u.langs)}"><details class="lp-lang"><summary class="lp-top__lang lp-lang__btn">${icon("i-globe")}<span class="lp-sr">${esc(u.langs)}: </span><span class="lp-lang__cur">${esc(p.D.name)}</span><span class="lp-lang__caret" aria-hidden="true"></span></summary>
+<ul class="lp-lang__list">${same.map(item).join("")}</ul></details></nav>`;
+}
+
+function page(p, pages) {
+  const c = p.build(helpers(p, pages)), u = p.D.ui;
+  checkContent(c, `tools/seo/${p.lang}.mjs pages.${p.kind}`);
+  const others = langTargets(p, pages).filter(x => x.path !== p.path), siblings = pages.filter(x => x.lang === p.lang && x !== p);
   const cta = (cls = "") => `<a class="lp-btn${cls}" href="${playUrl(p)}">${icon("i-play", "lp-btn__ico")}<span>${u.play}</span></a>`;
   const legal = ["imprint", "privacy", "terms"].map((f, i) => `<a href="/legal/${f}.html?lang=${p.lang}">${u.legal[i]}</a>`).join("");
   const poster = `/landing/poster-${p.lang}`;
@@ -267,19 +199,19 @@ function page(p) {
 <title>${esc(c.title)}</title>
 <meta name="description" content="${esc(c.desc)}">
 <link rel="canonical" href="${SITE}${p.path}">
-${alternates(p).map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${SITE}${h}">`).join("\n")}
+${alternates(p, pages).map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${SITE}${h}">`).join("\n")}
 <meta name="theme-color" content="#0d2275">
 <meta property="og:title" content="${esc(c.h1)}">
 <meta property="og:description" content="${esc(c.desc)}">
 <meta property="og:image" content="${SITE}/og.jpg">
 <meta property="og:url" content="${SITE}${p.path}">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="${p.lang === "de" ? "de_DE" : "en_US"}">
+<meta property="og:locale" content="${p.D.locale}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preload" as="image" href="${poster}-640.webp" imagesrcset="${SIZES.poster.map(w => `${poster}-${w}.webp ${w}w`).join(", ")}" imagesizes="(max-width: 899px) 40vw, 100vw" fetchpriority="high">
-<link rel="preload" href="/fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
+${(DISPLAY_FONTS[p.lang] || ["lilita"]).map(f => `<link rel="preload" href="/fonts/${f}.woff2" as="font" type="font/woff2" crossorigin>`).join("\n")}
 <link rel="stylesheet" href="/css/landing.css">
 <script type="module" src="/js/landing-src.js"></script>
 </head>
@@ -287,7 +219,7 @@ ${alternates(p).map(([l, h]) => `<link rel="alternate" hreflang="${l}" href="${S
 <svg class="lp-sprite" aria-hidden="true">${ICONS.map(symbol).join("")}</svg>
 <header class="lp-top">
 <a class="lp-top__brand" href="${playUrl(p)}"><img src="/icons/wordmark.webp" width="600" height="200" alt="Headstars"></a>
-<a class="lp-top__lang" href="${other.path}" hreflang="${other.lang}" lang="${other.lang}" title="${esc(u.otherLong)}">${icon("i-globe")}${u.other}</a>
+${langMenu(p, langTargets(p, pages), u)}
 </header>
 <main>
 <section class="lp-hero">
@@ -316,7 +248,7 @@ ${cta(" lp-btn--hero")}
 </main>
 <div class="lp-sticky">${cta()}</div>
 <footer class="lp-foot">
-<nav class="lp-foot__nav"><a href="${sibling.path}">${sibling.kind === "main" ? u.main : u.friends}</a><a href="${other.path}" hreflang="${other.lang}" lang="${other.lang}">${u.other}</a>${legal}</nav>
+<nav class="lp-foot__nav">${siblings.map(s => `<a href="${s.path}">${u[s.kind]}</a>`).join("")}${others.map(o => `<a href="${o.path}" hreflang="${o.lang}" lang="${o.lang}">${esc(o.D.name)}</a>`).join("")}${legal}</nav>
 </footer>
 </body>
 </html>
@@ -324,26 +256,49 @@ ${cta(" lp-btn--hero")}
 }
 
 /** Startseite plus alle Infoseiten, je Seite mit hreflang-Gruppe */
-export function sitemap() {
+export function sitemap(pages = PAGES) {
   const url = (loc, alt = []) => `<url><loc>${SITE}${loc}</loc>${alt.map(([l, h]) => `\n  <xhtml:link rel="alternate" hreflang="${l}" href="${SITE}${h}"/>`).join("")}</url>`;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${[url("/"), ...PAGES.map(p => url(p.path, alternates(p)))].join("\n")}
+${[url("/"), ...pages.map(p => url(p.path, alternates(p, pages)))].join("\n")}
 </urlset>
+`;
+}
+/** Infoseiten je Sprache und Art für die Links in den Einstellungen des Spiels (js/ui/screens/settings.js): Pfade relativ
+ *  zur Startseite; jede Art gibt es in DEFAULT_LANG, das ist der Ersatz für Sprachen ohne eigene Seite dieser Art */
+export function infoPages(pages = PAGES) {
+  const by = {};
+  for (const p of pages) (by[p.lang] ||= {})[p.kind] = p.path.slice(1);
+  // Seitenart, die eine Sprache nur als Abschnitt hat: Hauptseite mit Anker (z. B. uk/#z-druzyamy)
+  for (const p of pages) for (const [kind, id] of Object.entries(p.covers)) by[p.lang][kind] ??= `${p.path.slice(1)}#${id}`;
+  for (const kind of new Set(pages.map(p => p.kind))) if (!by[DEFAULT_LANG]?.[kind]) throw new Error(`tools/seo/${DEFAULT_LANG}.mjs: Seite „${kind}“ fehlt (Ersatz für die Einstellungs-Links)`);
+  return `// ERZEUGT von tools/gen-seo.mjs. Nicht von Hand ändern: npm run seo.
+/** Infoseiten je Sprache und Art, Pfad relativ zur Startseite (Einstellungen → Info) */
+export const INFO_PAGES = ${JSON.stringify(by, null, 2)};
+/** Sprache, deren Seiten einspringen, wenn die Spielsprache eine Art weder als Seite noch als Abschnitt hat */
+export const INFO_DEFAULT = "${DEFAULT_LANG}";
 `;
 }
 export const robots = () => `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`;
 
-/** Alle erzeugten Dateien: Pfad relativ zum Projekt → Inhalt */
-export function seoFiles() {
-  return { ...Object.fromEntries(PAGES.map(p => [fileOf(p.path), page(p)])), "sitemap.xml": sitemap(), "robots.txt": robots() };
+/** Alle erzeugten Dateien: Pfad relativ zum Projekt → Inhalt (langs: Sprachen wie in tools/seo/langs.mjs) */
+export function seoFiles(langs = LANGS) {
+  const pages = pagesOf(langs);
+  const html = p => {
+    const out = page(p, pages);
+    if (out.includes("undefined")) throw new Error(`${fileOf(p.path)}: „undefined“ im HTML (Text in tools/seo/${p.lang}.mjs oder Spieltext-Schlüssel in js/content/i18n/${p.lang}.js fehlt)`);
+    for (const id of Object.values(p.covers)) if (!out.includes(` id="${id}"`)) throw new Error(`${fileOf(p.path)}: Abschnitt #${id} fehlt (pages.${p.kind}.covers in tools/seo/${p.lang}.mjs)`);
+    return out;
+  };
+  return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), html(p)])), "sitemap.xml": sitemap(pages), "robots.txt": robots(), "js/content/info-pages.js": infoPages(pages) };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2] === "--dirs") console.log(pageDirs().join(" "));   // i18n-ok
+else if (process.argv[1] === fileURLToPath(import.meta.url)) {
   for (const [f, body] of Object.entries(seoFiles())) {
     const to = new URL("../" + f, import.meta.url);
     mkdirSync(dirname(fileURLToPath(to)), { recursive: true });
     writeFileSync(to, body);
   }
-  console.log("Infoseiten, sitemap.xml und robots.txt geschrieben");   // i18n-ok
+  console.log("Infoseiten, sitemap.xml, robots.txt und js/content/info-pages.js geschrieben");   // i18n-ok
 }

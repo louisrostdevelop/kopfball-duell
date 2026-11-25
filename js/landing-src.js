@@ -12,6 +12,18 @@ export function withSrc(href, search) {
   return u.pathname + u.search;
 }
 
+/** Sprachwahl (<details> im Kopf): Klick daneben oder Escape schließt sie; ohne Skript schließt erneutes Tippen */
+export function closeOnOutside(menu, doc) {
+  doc.addEventListener("click", e => { if (menu.open && !menu.contains(e.target)) menu.open = false; });
+  doc.addEventListener("keydown", e => {
+    if (e.key !== "Escape" || !menu.open) return;
+    menu.open = false;
+    menu.querySelector("summary").focus();
+  });
+}
+
 if (typeof document !== "undefined") {
   for (const a of document.querySelectorAll('a[href^="/?src="]')) a.setAttribute("href", withSrc(a.getAttribute("href"), location.search));
+  const menu = document.querySelector(".lp-lang");
+  if (menu) closeOnOutside(menu, document);
 }

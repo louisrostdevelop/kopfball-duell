@@ -47,8 +47,21 @@ test("Sprache aus dem Link der Infoseiten (?lang=) geht vor die Gerätesprache",
   assert.equal(await page.getAttribute("html", "lang"), "de");
   // Infoseiten in den Einstellungen verlinkt (Reiter Info)
   await click(page, "#btnSettings", 300); await click(page, `#setTabs [data-tab="info"]`, 150);
-  const hrefs = await page.$$eval("#scr-settings .setpane[data-pane=info] a.setlink", as => as.map(a => a.getAttribute("href")));
-  for (const p of ["de/", "de/gegen-freunde/", "en/", "en/play-with-friends/"]) assert.ok(hrefs.includes(p), p);
+  const links = () => page.$$eval("#scr-settings a[data-info]", as => as.map(a => [a.getAttribute("href"), a.getAttribute("hreflang"), a.textContent.trim()]));
+  assert.deepEqual(await links(), [["de/", "de", "Spielinfos"], ["de/gegen-freunde/", "de", "Gegen Freunde spielen"]]);
+  // Sprache ohne eigene Freunde-Seite: der Abschnitt ihrer Hauptseite
+  await click(page, `#setTabs [data-tab="general"]`, 150); await click(page, "#segLang button:nth-child(6)", 300);   // UA
+  await click(page, `#setTabs [data-tab="info"]`, 150);
+  assert.deepEqual(await links(), [["uk/", "uk", "Про гру"], ["uk/#z-druzyamy", "uk", "Гра з друзями"]]);
+  // Rechtsseiten in der Spielsprache (legal/*.html wählt per ?lang= die Fassung, sonst Englisch)
+  const legal = () => page.$$eval("a[data-legal]", as => [...new Set(as.map(a => a.getAttribute("href")))]);
+  assert.deepEqual(await legal(), ["legal/terms.html?lang=uk", "legal/privacy.html?lang=uk", "legal/imprint.html?lang=uk"]);
+  // Spielsprache ohne Infoseiten (pt, ru zurückgestellt): die englischen, mit Hinweis
+  await click(page, `#setTabs [data-tab="general"]`, 150); await click(page, "#segLang button:nth-child(5)", 300);   // PT
+  await click(page, `#setTabs [data-tab="info"]`, 150);
+  assert.deepEqual(await links(), [["en/", "en", "Guia do jogo (em inglês)"], ["en/play-with-friends/", "en", "Jogar com amigos (em inglês)"]]);
+  assert.ok((await legal()).every(h => h.endsWith("?lang=pt")), "Spielsprache geht mit, die Seite fällt auf Englisch zurück");
+  await click(page, `#setTabs [data-tab="general"]`, 150); await click(page, "#segLang button:nth-child(1)", 300);   // zurück auf Automatisch
   // ?lang= verschwindet aus der Adresse (Herkunft ?src= bleibt): danach gilt wieder die Gerätesprache
   assert.equal(await page.evaluate(() => location.search), "?src=seo-de");
   await page.reload(); await page.waitForSelector("#loading.done", { state: "attached" }); await page.waitForTimeout(300);

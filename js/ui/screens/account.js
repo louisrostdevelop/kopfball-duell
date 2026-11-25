@@ -5,7 +5,7 @@ import { $, esc, toast } from "../dom.js";
 import { S, reset as resetProfile } from "../../app/profile.js";
 import { deleteAccount, online as serverOn } from "../../app/account.js";
 import { audio as A, auth } from "../../app/services.js";
-import { t } from "../../content/i18n.js";
+import { legalHref, t } from "../../content/i18n.js";
 import { standalone } from "../install.js";
 
 let view = "main";   // main | login
@@ -30,7 +30,7 @@ const code = () => ($("accCode").value || "").replace(/\D/g, "");
 const appHint = () => (standalone() ? `<p class="hint accnote" id="accAppHint">${t("acc.appHint")}</p>` : "");
 const showCode = () => { const c = $("accCode"); if (c && c.scrollIntoView) c.scrollIntoView({ block: "nearest" }); };   // Code-Feld sofort im Blick
 // Hinweis auf Nutzungsbedingungen und Datenschutz direkt am Knopf (Einbeziehung nach § 305 Abs. 2 BGB)
-const legalNote = () => `<p class="hint accnote">${t("legal.acceptSecure", { terms: `<a href="legal/terms.html" target="_blank" rel="noopener">${t("legal.terms")}</a>`, privacy: `<a href="legal/privacy.html" target="_blank" rel="noopener">${t("legal.privacy")}</a>` })}</p>`;
+const legalNote = () => `<p class="hint accnote">${t("legal.acceptSecure", { terms: `<a href="${legalHref("terms")}" target="_blank" rel="noopener">${t("legal.terms")}</a>`, privacy: `<a href="${legalHref("privacy")}" target="_blank" rel="noopener">${t("legal.privacy")}</a>` })}</p>`;
 
 // Sichern woanders bestätigt (Link in einem anderen Browser geöffnet): beim Öffnen des Kontos und beim Zurückkommen in
 // die App Stand vom Server holen; ändert sich der Konto-Zustand, Anzeige neu (sonst nicht, Eingaben bleiben stehen)

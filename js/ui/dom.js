@@ -1,6 +1,6 @@
 // Kleine DOM-Helfer: Elemente, Umschalter, Hinweise, Dialoge, Teilen, Fokus für Controller
 import { audio as A, input as I } from "../app/services.js";
-import { t } from "../content/i18n.js";
+import { legalHref, t } from "../content/i18n.js";
 
 export const $ = id => document.getElementById(id);
 
@@ -37,7 +37,7 @@ export function copyText(s) {
 export function seg(el, opts, cur, on) {
   el.innerHTML = "";
   opts.forEach(o => {
-    const b = document.createElement("button"); b.textContent = o.t; b.classList.toggle("on", o.v === cur); b.disabled = !!o.dis;
+    const b = document.createElement("button"); b.textContent = o.t; b.classList.toggle("on", o.v === cur); b.disabled = !!o.dis; if (o.title) b.title = o.title;
     b.onclick = () => { A.sfx("click"); $$("button", el).forEach(x => x.classList.remove("on")); b.classList.add("on"); on(o.v); };
     el.append(b);
   });
@@ -100,8 +100,10 @@ export function moveFocus(scr, [dx, dy]) {
   if (best) { best.focus(); best.scrollIntoView({ block: "nearest" }); A.sfx("tick"); }
 }
 
-/** Feste Texte im HTML übersetzen: data-i18n="schlüssel" (Text) und data-i18n-attr="attr:schlüssel;attr2:schlüssel2" */
+/** Feste Texte im HTML übersetzen: data-i18n="schlüssel" (Text) und data-i18n-attr="attr:schlüssel;attr2:schlüssel2";
+ *  Links mit data-legal="terms" zeigen auf die Rechtsseite in der Spielsprache */
 export function applyI18n(root = document) {
+  root.querySelectorAll("a[data-legal]").forEach(a => a.setAttribute("href", legalHref(a.dataset.legal)));
   root.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   root.querySelectorAll("[data-i18n-attr]").forEach(el => {
     for (const pair of el.dataset.i18nAttr.split(";")) { const [a, k] = pair.split(":"); if (a && k) el.setAttribute(a, t(k)); }

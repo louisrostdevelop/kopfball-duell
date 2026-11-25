@@ -7,6 +7,18 @@
 
 @font-face { font-family: Nunito; src: url("../fonts/nunito-900.woff2") format("woff2"); font-weight: 900; font-display: swap; }
 
+/* Kyrillisch: lädt nur, wenn solche Zeichen auf der Seite stehen (unicode-range) */
+
+@font-face { font-family: Nunito; src: url("../fonts/nunito-800-cyrillic.woff2") format("woff2"); font-weight: 800; font-display: swap; unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+
+@font-face { font-family: Nunito; src: url("../fonts/nunito-900-cyrillic.woff2") format("woff2"); font-weight: 900; font-display: swap; unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+
+/* Überschriften auf Russisch und Ukrainisch: Lilita One hat diese Zeichen nicht, dafür Nunito 900 (jede Stärke, ohne künstliches Fett) */
+
+@font-face { font-family: "Nunito Display"; src: url("../fonts/nunito-900.woff2") format("woff2"); font-weight: 1 1000; font-display: swap; }
+
+@font-face { font-family: "Nunito Display"; src: url("../fonts/nunito-900-cyrillic.woff2") format("woff2"); font-weight: 1 1000; font-display: swap; unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+
 :root {
   /* aus css/style.css */
   --ink: #15112e; --ink2: #2a2457;
@@ -30,6 +42,9 @@
 
   color-scheme: dark;
 }
+
+:root:lang(uk), :root:lang(ru) { --display: "Nunito Display", "Arial Black", sans-serif; }
+
 * { box-sizing: border-box; }
 ::selection { background: var(--yellow); color: var(--ink); }
 
@@ -51,7 +66,7 @@ body.lp {
   position: absolute; inset: 0 0 auto; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: max(14px, env(safe-area-inset-top)) max(var(--lp-gut), env(safe-area-inset-right)) 0 max(var(--lp-gut), env(safe-area-inset-left));
 }
-.lp-top__brand { width: clamp(132px, 16vw, 210px); filter: drop-shadow(0 4px 0 rgb(8 12 40 / 45%)); }
+.lp-top__brand { flex: none; width: clamp(132px, 16vw, 210px); filter: drop-shadow(0 4px 0 rgb(8 12 40 / 45%)); }
 .lp-top__brand img { width: 100%; height: auto; }
 
 .lp-top__lang {
@@ -59,6 +74,38 @@ body.lp {
   color: var(--lp-on-blue) !important; text-decoration: none; background: rgb(8 16 63 / 55%); border: 2px solid rgb(255 255 255 / 35%);
 }
 .lp-top__lang:hover { background: rgb(8 16 63 / 80%); border-color: var(--lp-on-blue); }
+
+/* Sprachwahl: ein Knopf (aktuelle Sprache), darunter die Liste aller Sprachen. <details> geht ohne Skript; der Kopf bleibt
+   einzeilig, egal wie viele Sprachen (der Hero rechnet mit einer Zeile Kopf) */
+.lp-top__langs { display: flex; justify-content: flex-end; min-width: 0; }
+.lp-lang { position: relative; min-width: 0; }
+.lp-lang__btn { max-width: 100%; cursor: pointer; list-style: none; user-select: none; }
+.lp-lang__btn::-webkit-details-marker { display: none; }
+.lp-lang__btn:focus-visible { outline: 4px solid var(--yellow); outline-offset: 3px; }
+.lp-lang[open] .lp-lang__btn { background: rgb(8 16 63 / 80%); border-color: var(--lp-on-blue); }
+.lp-lang__cur { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-lang__caret { flex: none; border: 5px solid transparent; border-top: 6px solid currentcolor; border-bottom: 0; transition: transform .2s var(--lp-ease); }
+.lp-lang[open] .lp-lang__caret { transform: rotate(180deg); }
+
+.lp-lang__list {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 100%; max-width: calc(100vw - 2 * var(--lp-gut)); max-height: calc(100svh - 90px);
+  overflow-y: auto; margin: 0; padding: 6px; list-style: none; border-radius: 18px; background: var(--lp-night);
+  border: 2px solid rgb(255 255 255 / 35%); box-shadow: 0 14px 34px rgb(3 5 24 / 60%);
+}
+
+.lp .lp-lang__item {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 14px; border-radius: 12px;
+  font-size: 15px; font-weight: 900; line-height: 1.3; white-space: nowrap; color: var(--lp-on-blue); text-decoration: none;
+}
+.lp .lp-lang__item:hover { background: rgb(255 255 255 / 12%); }
+.lp .lp-lang__item[aria-current] { background: rgb(255 255 255 / 8%); }
+.lp-lang__check { flex: none; width: 7px; height: 12px; margin-right: 3px; border: solid var(--yellow); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+
+@media (max-width: 360px) {
+  .lp-top { gap: 8px; }
+  .lp-top__brand { width: 118px; }
+  .lp-lang__btn { padding-inline: 11px; }
+}
 
 /* ---------- Hero: Spielszene über den ganzen ersten Bildschirm ---------- */
 .lp-hero { position: relative; isolation: isolate; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
