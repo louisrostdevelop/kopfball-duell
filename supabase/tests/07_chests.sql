@@ -205,8 +205,16 @@ begin
   perform pg_temp.login(v);
   perform pg_temp.expect_error(format('select api.buy_item(%L, ''coins'', ''cos-buy-0002'')', it), 'not_in_offer');
   perform pg_temp.logout();
-  it := (select x from unnest(game.cos_offer()) x join game.items i on i.id = x where i.rarity <> 'legend' and x not in (select item_id from game.inventory where player_id = v) limit 1);
+  -- Das Angebot wechselt wöchentlich (game.week()); Seltenes darüber braucht ein Level (shop_level), also vorher prüfen und anheben
+  it := (select x from unnest(game.cos_offer()) with ordinality o(x, pos) where x not in (select item_id from game.inventory where player_id = v) order by pos limit 1);
   if it is not null then
+    n := coalesce((game.cfg('shop_level')->>(select rarity from game.items where id = it))::integer, 1);
+    if n > 4 then
+      perform pg_temp.login(v);
+      perform pg_temp.expect_error(format('select api.buy_item(%L, ''coins'', ''cos-buy-0004'')', it), 'level_required');
+      perform pg_temp.logout();
+      update game.players set level = n where id = v;
+    end if;
     perform pg_temp.login(v); r := api.buy_item(it, 'coins', 'cos-buy-0003'); perform pg_temp.logout();
     assert exists (select 1 from game.inventory where player_id = v and item_id = it), 'Angebot gekauft';
   end if;
