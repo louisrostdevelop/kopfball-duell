@@ -1,6 +1,5 @@
 // Русский. Те же ключи, что в de.js. Плейсхолдеры: {name}.
-/** pl(5, "матч", "матча", "матчей") -> "5 матчей" (1 / 2–4 / 5+, von Hand: Intl fehlt in QuickJS, das die Simulation mitprüft) */
-const pl = (n, one, few, many) => { const v = Math.trunc(Number(String(n).replace(/[^\d.]/g, "")) || 0), d = v % 10, h = v % 100; return `${n} ${d === 1 && h !== 11 ? one : d >= 2 && d <= 4 && (h < 12 || h > 14) ? few : many}`; };
+import { pl } from "./plural.js";
 export default {
   // ---------- Игровой контент ----------
   "brand.name": "Headstars",   // i18n-ok: Marke
@@ -148,7 +147,7 @@ export default {
   "ach.longshot.name": "Дальний удар",
   "ach.longshot.desc": "Забей со своей половины поля.",
   "ach.comeback.name": "Камбэк",
-  "ach.comeback.desc": "Выиграй, отыгравшись после 0:2.",
+  "ach.comeback.desc": "Выиграй, отыгравшись после отставания в 2 гола.",
   "ach.cup.name": "Герой кубка",
   "ach.cup.desc": "Выиграй кубок.",
   "ach.legend.name": "Убийца легенд",
@@ -757,7 +756,7 @@ export default {
   "league.legend": "Легенда",
   "league.platinum": "Платина",
   "league.silver": "Серебро",
-  "legal.imprint": "Выходные данные",
+  "legal.imprint": "Правовая информация",
   "legal.acceptPlay": "Нажимая «Играть», ты принимаешь",
   "legal.acceptOnline": "Играя онлайн, ты принимаешь",
   "legal.acceptSecure": "Сохраняя прогресс, ты принимаешь {terms}. Информация о защите данных: {privacy}.",
@@ -1001,7 +1000,7 @@ export default {
   "shop.fromSeason": "после сезона {n}",
   "shop.gems": p => pl(p.n, "кристалл", "кристалла", "кристаллов"),
   "shop.gemsPlus": p => `+${pl(p.n, "кристалл", "кристалла", "кристаллов")}`,
-  "shop.morePerEuro": "на {n} % больше за евро",
+  "shop.morePerEuro": "На {n} % больше за евро",
   "shop.offerChanged": "Предложение недели только что сменилось.",
   "shop.needAccount": "Для покупок нужен аккаунт, чтобы ничего не потерялось.",
   "shop.notYet": "Сейчас купить нельзя, попробуй позже.",

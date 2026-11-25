@@ -1,6 +1,5 @@
 // Українська. Ті самі ключі, що й у de.js. Плейсхолдери: {name}.
-/** pl(5, "матч", "матчі", "матчів") -> "5 матчів" (1 / 2–4 / 5+, von Hand: Intl fehlt in QuickJS, das die Simulation mitprüft) */
-const pl = (n, one, few, many) => { const v = Math.trunc(Number(String(n).replace(/[^\d.]/g, "")) || 0), d = v % 10, h = v % 100; return `${n} ${d === 1 && h !== 11 ? one : d >= 2 && d <= 4 && (h < 12 || h > 14) ? few : many}`; };
+import { pl } from "./plural.js";
 export default {
   // ---------- Ігровий контент ----------
   "brand.name": "Headstars",   // i18n-ok: Marke

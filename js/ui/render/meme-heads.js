@@ -1,4 +1,4 @@
-// Meme- und Szene-Köpfe (Emo, Rapper, Raver, Gamer, NPC, Steinkopf, Krypto-Bro, Sigma, Kinn-Chad, Brezelini).
+// Meme- und Szene-Köpfe (Emo, Rapper, Raver, Gamer, NPC, Stonehead, Crypto Bro, Sigma, Chin Chad, Brezelini).
 // Gleicher Aufbau wie drawHead in art.js (Hinterkopf -> Sticker-Rand -> Haut -> Gesicht -> Vorderteil), aber jeder
 // Stil bringt eine eigene Gesichts-Beschreibung mit (face), weil der Witz dieser Köpfe im Blick steckt.
 // Die alten Köpfe zeichnet weiter art.js; drawHead leitet nur Stile aus MEME_STYLES hierher um.
@@ -171,7 +171,7 @@ export function mouthStd(ctx, mx, my, r, dir, lw, mood, k) {
   }
 }
 
-// Selbstsicheres Grinsen (Chad, Krypto-Bro, Sigma)
+// Selbstsicheres Grinsen (Chad, Crypto Bro, Sigma)
 export function smirk(ctx, mx, my, r, dir, lw, mood, teeth) {
   if (mood === "sad") { ctx.beginPath(); ctx.moveTo(mx - r * 0.2, my + r * 0.04); ctx.lineTo(mx + r * 0.2, my + r * 0.04); stroke(ctx, lw); return; }
   if (mood === "angry" || (teeth && mood === "happy")) {
@@ -404,7 +404,7 @@ export const MEME_STYLES = {
     },
   },
 
-  // Steinkopf: Moai mit Augenhöhlen, langer Nase, langem Kinn
+  // Stonehead: Moai mit Augenhöhlen, langer Nase, langem Kinn
   moai: {
     back(ctx, c, x, y, r, dir, lw) {
       jawBack(ctx, moaiJaw(ctx, x, y, r), lw);
@@ -433,7 +433,7 @@ export const MEME_STYLES = {
     },
   },
 
-  // Krypto-Bro: Föhnwelle, Sonnenbrille mit Laser-Augen beim Schuss, Goldkette mit Pfeil nach oben
+  // Crypto Bro: Föhnwelle, Sonnenbrille mit Laser-Augen beim Schuss, Goldkette mit Pfeil nach oben
   crypto: {
     face: {
       eye: "shades", eyeY: -0.04,
@@ -508,7 +508,7 @@ export const MEME_STYLES = {
     },
   },
 
-  // Kinn-Chad: V-Kiefer mit kantigem Kinn, kurzer Bart, Wangenknochen, hoch gegelte Haare, breites Zahngrinsen
+  // Chin Chad: V-Kiefer mit kantigem Kinn, kurzer Bart, Wangenknochen, hoch gegelte Haare, breites Zahngrinsen
   chad: {
     back(ctx, c, x, y, r, dir, lw) { jawBack(ctx, chadJaw(ctx, x, y, r, dir), lw); },
     face: {

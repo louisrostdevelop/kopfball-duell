@@ -5,7 +5,7 @@ import { $, applyI18n, seg, toggle } from "../dom.js";
 import { audio as A, input as I } from "../../app/services.js";
 import { registerScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
-import { detectLang, LANG_NAMES, lang, setLang, t } from "../../content/i18n.js";
+import { detectLang, LANG_NAMES, LANG_SHORT, lang, setLang, t } from "../../content/i18n.js";
 import { INFO_DEFAULT, INFO_PAGES } from "../../content/info-pages.js";
 
 let tab = "general", ctl = null;
@@ -49,7 +49,7 @@ export function settingsScreen() {
   toggle($("tglSfx"), S.sfx, v => { S.sfx = v; A.setSfx(v); save(); });
   toggle($("tglMusic"), S.music, v => { S.music = v; A.setMusic(v); save(); });
   toggle($("tglVib"), S.vib, v => { S.vib = v; I.setVibration(v); save(); });
-  seg($("segLang"), [{ v: "auto", t: t("set.langAuto") }, ...Object.keys(LANG_NAMES).map(v => ({ v, t: v.toUpperCase(), title: LANG_NAMES[v] }))], S.lang || "auto", v => {
+  seg($("segLang"), [{ v: "auto", t: t("set.langAuto") }, ...Object.keys(LANG_NAMES).map(v => ({ v, t: LANG_SHORT[v] || v.toUpperCase(), title: LANG_NAMES[v] }))], S.lang || "auto", v => {
     S.lang = v; save(); setLang(v === "auto" ? detectLang() : v);
     applyI18n(); refreshTop(); settingsScreen();   // feste Texte sofort, Bildschirme beim nächsten Anzeigen
   });

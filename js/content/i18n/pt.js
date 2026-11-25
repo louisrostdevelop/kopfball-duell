@@ -701,7 +701,7 @@ export default {
   "html.settings.spieler1": "Jogador 1",
   "html.settings.spieler2": "Jogador 2",
   "html.settings.springen": "Pular",
-  "html.settings.springenKurzTippenHalb": "Pulo com toque curto: meia altura, segurando: altura total. Para baixo no chão: carrinho, no ar: pisão, quanto mais alto, mais forte. Chute: um toque balança a perna, a força vem do momento do contato. Bola parada = chute por cobertura, bola na altura da cabeça = chute reto, no ar = voleio. Emotes com 1 a 4.",
+  "html.settings.springenKurzTippenHalb": "Pulo com toque curto: meia altura, segurando: altura total. Para baixo no chão: carrinho, no ar: pisão, quanto mais alto, mais forte. Chute: um toque balança a perna, a força vem do momento do contato. Bola parada = sai de cobertura, bola na altura da cabeça = chute reto, no ar = voleio. Emotes com 1 a 4.",
   "html.settings.steuerung": "Controles",
   "html.settings.stick": "Analógico",
   "html.settings.stick2": "Analógico ↓",

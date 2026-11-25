@@ -95,7 +95,7 @@ body.lp {
 
 .lp-lang__list {
   position: absolute; top: calc(100% + 8px); right: 0; min-width: 100%; max-width: calc(100vw - 2 * var(--lp-gut)); max-height: calc(100svh - 90px);
-  overflow-y: auto; margin: 0; padding: 6px; list-style: none; border-radius: 18px; background: rgb(8 16 63 / 96%);
+  overflow-y: auto; margin: 0; padding: 6px; list-style: none; border-radius: 18px; background: var(--lp-night);
   border: 2px solid rgb(255 255 255 / 35%); box-shadow: 0 14px 34px rgb(3 5 24 / 60%);
 }
 

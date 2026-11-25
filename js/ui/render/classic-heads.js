@@ -1,4 +1,4 @@
-// Die zwölf Grund-Köpfe (Kalle bis Kaiser), im selben Aufbau und mit denselben Werkzeugen wie die Meme-Köpfe:
+// Die zwölf Grund-Köpfe (Kalle bis King), im selben Aufbau und mit denselben Werkzeugen wie die Meme-Köpfe:
 // Haare als eigene Formen mit Sticker-Rand außerhalb des Kopfes, Glanzlicht, Accessoires mit Kontur und Glanz.
 // Gezeichnet wird in einem gespiegelten Koordinatensystem: Ursprung in der Kopfmitte, +x zeigt nach vorn (Blickrichtung),
 // Maße in Vielfachen von r. Die Augen liegen bei y ≈ −0,02 r, die Brauen bei ≈ −0,32 r: Haare bleiben darüber.
@@ -163,7 +163,7 @@ export const CLASSIC_STYLES = {
     },
   },
 
-  // Flummi: pinke Haare mit seitlichem Pony (Augen frei), hoher Pferdeschwanz mit Haargummi, Kaugummiblase
+  // Bouncy: pinke Haare mit seitlichem Pony (Augen frei), hoher Pferdeschwanz mit Haargummi, Kaugummiblase
   ponytail: {
     back(ctx, c, x, y, r, dir, lw, o) {
       const sw = Math.sin((o.t || 0) * 6) * 0.08;
@@ -316,7 +316,7 @@ export const CLASSIC_STYLES = {
     },
   },
 
-  // Kaiser: goldene Krone mit Edelsteinen, weiße gewellte Haare an den Seiten, gezwirbelter Schnurrbart
+  // King: goldene Krone mit Edelsteinen, weiße gewellte Haare an den Seiten, gezwirbelter Schnurrbart
   crown: {
     face: {
       brow: "heavy", browW: 0.85, browCol: c => shade(c.hair, -0.25),

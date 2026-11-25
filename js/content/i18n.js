@@ -13,6 +13,8 @@ import ru from "./i18n/ru.js";
 
 export const LANGS = { de, en, es, pt, vi, uk, ru };
 export const LANG_NAMES = { de: "Deutsch", en: "English", es: "Español", pt: "Português", vi: "Tiếng Việt", uk: "Українська", ru: "Русский" };   // i18n-ok: Eigennamen der Sprachen
+/** Kürzel im Sprachwähler, wo es vom Sprachcode abweicht (uk = Ukrainisch, gezeigt wie das Landeskürzel) */
+export const LANG_SHORT = { uk: "UA" };   // i18n-ok: Kürzel
 let cur = "de";
 
 /** Sprache aus dem Link (?lang=de, z. B. von den Infoseiten), sonst die des Geräts, falls wir sie haben, sonst Englisch */
