@@ -50,16 +50,30 @@ function checkGroups(pages, out) {
 test("je Seite: Sprache, H1, canonical auf sich selbst, hreflang-Gruppe gegenseitig mit x-default, Sprachumschalter", () => {
   assert.deepEqual(PAGES.filter(p => ["de", "en"].includes(p.lang)).map(p => [p.lang, p.kind]), [["de", "main"], ["de", "friends"], ["en", "main"], ["en", "friends"]]);
   checkGroups(PAGES, files);
-  // Freunde-Seite: Sprachwahl mit allen Sprachen (pt nur als Abschnitt), hreflang nur mit echten Freunde-Seiten
+  // Freunde-Seite: Sprachwahl mit allen Sprachen (uk nur als Abschnitt), hreflang nur mit echten Freunde-Seiten
   const fr = files["de/gegen-freunde/index.html"];
   assert.equal(linksOf(fr).top.length, LANGS.length);
-  assert.ok(linksOf(fr).top.some(([l, h]) => l === "pt" && h === "/pt/#com-amigos"));
-  assert.ok(!("pt" in linksOf(fr).alt));
+  assert.ok(linksOf(fr).top.some(([l, h]) => l === "uk" && h === "/uk/#z-druzyamy"));
+  assert.ok(!("uk" in linksOf(fr).alt));
+});
+
+test("veröffentlicht: de, en, es, uk; pt und ru zurückgestellt (Dateien bleiben gültig), vi gibt es nicht mehr", async () => {
+  assert.deepEqual(LANGS.map(D => D.lang), ["de", "en", "es", "uk"]);
+  assert.deepEqual(pageDirs(), ["de", "en", "es", "uk"]);
+  for (const l of ["pt", "ru", "vi"]) {
+    assert.ok(!Object.keys(files).some(f => f.startsWith(l + "/")), l + ": keine Seite");
+    assert.ok(!existsSync(new URL(`../../${l}/`, import.meta.url)), l + "/: Ordner entfernt");
+    assert.doesNotMatch(files["sitemap.xml"] + Object.values(files).join(""), new RegExp(`hreflang="${l}"|/${l}/`), l + ": kein Link, kein hreflang");
+  }
+  const held = await Promise.all(["pt", "ru"].map(async l => (await import(`../../tools/seo/${l}.mjs`)).default));
+  const out = seoFiles([...LANGS, ...held]);
+  assert.ok(out["pt/index.html"] && out["ru/index.html"], "zurückgestellte Sprachdateien erzeugen weiter vollständige Seiten");
+  assert.ok(!existsSync(new URL("../../tools/seo/vi.mjs", import.meta.url)));
 });
 
 test("Sprachcodes = Spielsprachen (uk, nie das Landeskürzel ua); og:locale mit Land", async () => {
   const { LANGS: GAME } = await import("../../js/content/i18n.js");
-  const LOCALE = { de: "de_DE", en: "en_US", es: "es_419", pt: "pt_BR", vi: "vi_VN", uk: "uk_UA", ru: "ru_RU" };
+  const LOCALE = { de: "de_DE", en: "en_US", es: "es_419", uk: "uk_UA" };
   for (const p of PAGES) {
     const html = files[fileOf(p.path)];
     assert.ok(Object.hasOwn(GAME, p.lang), p.lang + " ist keine Spielsprache");
@@ -187,7 +201,8 @@ test("js/content/info-pages.js: jede Infoseite je Sprache und Art, sonst der Abs
   assert.deepEqual(flat.filter(([, , path]) => !path.includes("#")), PAGES.map(p => [p.lang, p.kind, p.path.slice(1)]));
   const covered = PAGES.flatMap(p => Object.entries(p.covers).map(([kind, id]) => [p.lang, kind, `${p.path.slice(1)}#${id}`]));
   assert.deepEqual(flat.filter(([, , path]) => path.includes("#")), covered);
-  assert.deepEqual(INFO_PAGES.pt?.friends, "pt/#com-amigos", "Portugiesisch: Freunde als Abschnitt der Hauptseite");
+  assert.deepEqual(INFO_PAGES.uk?.friends, "uk/#z-druzyamy", "Ukrainisch: Freunde als Abschnitt der Hauptseite");
+  for (const l of ["pt", "ru"]) assert.ok(!(l in INFO_PAGES), l + ": zurückgestellt, Einstellungs-Links fallen auf " + INFO_DEFAULT + " zurück");
   for (const [l, kind, id] of PAGES.flatMap(p => Object.entries(p.covers).map(([k, i]) => [p.lang, k, i]))) {
     assert.ok(!PAGES.some(p => p.lang === l && p.kind === kind), `${l}: ${kind} als Seite und als Abschnitt`);
     assert.match(files[fileOf(PAGES.find(p => p.lang === l && p.covers[kind]).path)], new RegExp(` id="${id}"`));

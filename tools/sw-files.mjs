@@ -9,8 +9,8 @@ const walk = dir => readdirSync(dir).flatMap(f => { const p = join(dir, f); retu
 export function coreFiles() {
   // js/admin: Admin-Dashboard (admin.html) braucht Netz, also nicht vorab speichern
   const js = walk(join(ROOT, "js")).filter(f => f.endsWith(".js") && !relative(ROOT, f).split("\\").join("/").startsWith("js/admin/"));
-  // Schrift-Teilmengen für Kyrillisch/Vietnamesisch nicht vorab: lädt nur, wer die Sprache nutzt (danach im Cache)
-  const fonts = walk(join(ROOT, "fonts")).filter(f => f.endsWith(".woff2") && !/-(cyrillic|vietnamese)\.woff2$/.test(f));
+  // Schrift-Teilmengen für Kyrillisch nicht vorab: lädt nur, wer die Sprache nutzt (danach im Cache)
+  const fonts = walk(join(ROOT, "fonts")).filter(f => f.endsWith(".woff2") && !/-cyrillic\.woff2$/.test(f));
   const rest = ["vendor/peerjs.min.js", "vendor/qrcode.js", "icons/icon-192.png", "icons/wordmark.webp", "manifest.webmanifest", "css/style.css", "index.html"].map(f => join(ROOT, f));
   return ["./", ...[...rest, ...js, ...fonts].map(f => relative(ROOT, f).split("\\").join("/")).sort()];
 }

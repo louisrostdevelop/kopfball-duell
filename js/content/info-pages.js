@@ -13,21 +13,9 @@ export const INFO_PAGES = {
     "main": "es/",
     "friends": "es/jugar-con-amigos/"
   },
-  "pt": {
-    "main": "pt/",
-    "friends": "pt/#com-amigos"
-  },
-  "vi": {
-    "main": "vi/",
-    "friends": "vi/#choi-voi-ban-be"
-  },
   "uk": {
     "main": "uk/",
     "friends": "uk/#z-druzyamy"
-  },
-  "ru": {
-    "main": "ru/",
-    "friends": "ru/#s-druzyami"
   }
 };
 /** Sprache, deren Seiten einspringen, wenn die Spielsprache eine Art weder als Seite noch als Abschnitt hat */

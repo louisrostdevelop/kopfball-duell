@@ -1,3 +1,5 @@
+// Zurückgestellt: nicht in tools/seo/langs.mjs, die Seite wird nicht erzeugt. Zum Veröffentlichen dort eintragen, Medien aufnehmen
+// (tools/gen-landing-media.mjs), `npm run seo`.
 // Infoseite auf Russisch („ты“ wie im Spiel): Pfad, Oberfläche und Seitentexte (Aufbau und Bausteine: tools/gen-seo.mjs,
 // Liste: tools/seo/langs.mjs). Nur die Hauptseite; „футбол головами“ als Gattung, „на двоих“ und „с друзьями“ sind Abschnitte.
 import L from "../../js/content/i18n/ru.js";

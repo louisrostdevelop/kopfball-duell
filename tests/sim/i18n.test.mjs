@@ -88,7 +88,8 @@ test("Spielinhalte sind in allen Sprachen übersetzt", () => {
 test("Sprache vom Gerät, wenn wir sie haben, sonst Englisch", () => {
   assert.equal(I.detectLang(["de-AT"]), "de"); assert.equal(I.detectLang(["fr-FR", "en-GB"]), "en"); assert.equal(I.detectLang(["ja"]), "en");
   assert.equal(I.detectLang(["es-MX"]), "es"); assert.equal(I.detectLang(["es-AR"]), "es"); assert.equal(I.detectLang(["pt-BR"]), "pt");
-  for (const l of ["vi-VN", "uk-UA", "ru-RU"]) assert.equal(I.detectLang([l]), l.slice(0, 2));
+  for (const l of ["uk-UA", "ru-RU"]) assert.equal(I.detectLang([l]), l.slice(0, 2));
+  assert.equal(I.detectLang(["vi-VN"]), "en", "Vietnamesisch gibt es nicht");
 });
 
 test("Sprache aus dem Link (?lang=) geht vor die Gerätesprache, Unbekanntes zählt nicht", () => {

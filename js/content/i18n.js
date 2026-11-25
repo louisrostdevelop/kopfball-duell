@@ -7,12 +7,11 @@ import de from "./i18n/de.js";
 import en from "./i18n/en.js";
 import es from "./i18n/es.js";
 import pt from "./i18n/pt.js";
-import vi from "./i18n/vi.js";
 import uk from "./i18n/uk.js";
 import ru from "./i18n/ru.js";
 
-export const LANGS = { de, en, es, pt, vi, uk, ru };
-export const LANG_NAMES = { de: "Deutsch", en: "English", es: "Español", pt: "Português", vi: "Tiếng Việt", uk: "Українська", ru: "Русский" };   // i18n-ok: Eigennamen der Sprachen
+export const LANGS = { de, en, es, pt, uk, ru };
+export const LANG_NAMES = { de: "Deutsch", en: "English", es: "Español", pt: "Português", uk: "Українська", ru: "Русский" };   // i18n-ok: Eigennamen der Sprachen
 /** Kürzel im Sprachwähler, wo es vom Sprachcode abweicht (uk = Ukrainisch, gezeigt wie das Landeskürzel) */
 export const LANG_SHORT = { uk: "UA" };   // i18n-ok: Kürzel
 let cur = "de";
@@ -25,7 +24,7 @@ export function detectLang(list = (globalThis.navigator && (navigator.languages 
   return "en";
 }
 /** Sprachen, deren Zeichen Lilita One nicht hat: Überschriften dort in Nunito 900 (css/style.css, :lang) */
-const NUNITO_DISPLAY = new Set(["vi", "uk", "ru"]);
+const NUNITO_DISPLAY = new Set(["uk", "ru"]);
 /** Schrift für Überschriften im Canvas (ctx.font = `20px ${displayFont()}`) */
 export const displayFont = () => (NUNITO_DISPLAY.has(cur) ? "'Nunito Display', 'Arial Black', sans-serif" : "'Lilita One', Impact, sans-serif");
 export function setLang(l) {
@@ -35,7 +34,7 @@ export function setLang(l) {
     // Canvas lädt Schriften nicht selbst nach: die Teilmengen dieser Sprache vorab holen
     // (zurück auf eine Latein-Sprache: Lilita One, sonst zeichnet der Canvas kurz in Impact)
     const fonts = NUNITO_DISPLAY.has(cur) ? ["20px 'Nunito Display'", "800 20px Nunito", "900 20px Nunito"] : ["20px 'Lilita One'"];
-    if (document.fonts) for (const f of fonts) document.fonts.load(f, cur === "vi" ? "ăạ" : NUNITO_DISPLAY.has(cur) ? "Жї" : "Ab").catch(() => {});
+    if (document.fonts) for (const f of fonts) document.fonts.load(f, NUNITO_DISPLAY.has(cur) ? "Жї" : "Ab").catch(() => {});
   }
   return cur;
 }

@@ -20,8 +20,8 @@ const MIN_LEVEL = { casual: +mm[1], ranked: +mm[2] };
 // Symbole aus dem Spiel (index.html), damit die Seiten dieselben Icons zeigen
 const INDEX = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const symbol = id => { const m = INDEX.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`)); if (!m) throw new Error("Symbol fehlt: " + id); return m[0]; };
-/** Schrift der Überschriften je Sprache (css/landing.css: vi/uk/ru in Nunito 900, Lilita One hat die Zeichen nicht), vorab geladen */
-const DISPLAY_FONTS = { vi: ["nunito-900", "nunito-900-vietnamese"], uk: ["nunito-900-cyrillic"], ru: ["nunito-900-cyrillic"] };
+/** Schrift der Überschriften je Sprache (css/landing.css: uk/ru in Nunito 900, Lilita One hat die Zeichen nicht), vorab geladen */
+const DISPLAY_FONTS = { uk: ["nunito-900-cyrillic"], ru: ["nunito-900-cyrillic"] };
 const ICONS = ["i-play", "i-users", "i-globe", "i-trophy", "i-star", "i-cal", "i-inf", "i-target", "i-crown", "i-share", "i-bolt", "i-stadium"];
 
 /** Form einer Sprachdatei wie tools/seo/de.mjs: dieselben Felder (ui, media …), Listen gleich lang, Texte nicht leer, nur
@@ -164,7 +164,7 @@ ${s.html}
 /** Sprachumschalter: ein Knopf mit der aktuellen Sprache, darunter dieselbe Seite in jeder Sprache, die sie hat (echte Links,
  *  ohne Skript über <details> bedienbar; js/landing-src.js schließt bei Klick daneben und Escape) */
 /** Ziele des Sprachumschalters: dieselbe Seitenart in jeder Sprache; hat eine Sprache sie nur als Abschnitt ihrer
- *  Hauptseite (covers), dann die Hauptseite mit Anker (z. B. /pt/#com-amigos). hreflang nennt weiter nur echte Gegenstücke. */
+ *  Hauptseite (covers), dann die Hauptseite mit Anker (z. B. /uk/#z-druzyamy). hreflang nennt weiter nur echte Gegenstücke. */
 export function langTargets(p, pages = PAGES) {
   return [...new Set(pages.map(x => x.lang))].flatMap(l => {
     const own = pages.find(x => x.lang === l && x.kind === p.kind);
@@ -269,7 +269,7 @@ ${[url("/"), ...pages.map(p => url(p.path, alternates(p, pages)))].join("\n")}
 export function infoPages(pages = PAGES) {
   const by = {};
   for (const p of pages) (by[p.lang] ||= {})[p.kind] = p.path.slice(1);
-  // Seitenart, die eine Sprache nur als Abschnitt hat: Hauptseite mit Anker (z. B. pt/#com-amigos)
+  // Seitenart, die eine Sprache nur als Abschnitt hat: Hauptseite mit Anker (z. B. uk/#z-druzyamy)
   for (const p of pages) for (const [kind, id] of Object.entries(p.covers)) by[p.lang][kind] ??= `${p.path.slice(1)}#${id}`;
   for (const kind of new Set(pages.map(p => p.kind))) if (!by[DEFAULT_LANG]?.[kind]) throw new Error(`tools/seo/${DEFAULT_LANG}.mjs: Seite „${kind}“ fehlt (Ersatz für die Einstellungs-Links)`);
   return `// ERZEUGT von tools/gen-seo.mjs. Nicht von Hand ändern: npm run seo.

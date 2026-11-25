@@ -1,3 +1,5 @@
+// Zurückgestellt: nicht in tools/seo/langs.mjs, die Seite wird nicht erzeugt. Zum Veröffentlichen dort eintragen, Medien aufnehmen
+// (tools/gen-landing-media.mjs), `npm run seo`.
 // Infoseite auf Portugiesisch (Brasilien, „você“; deckt Portugal mit ab): Pfad, Oberfläche und Seitentexte (Aufbau und
 // Bausteine: tools/gen-seo.mjs, Liste: tools/seo/langs.mjs). Nur die Hauptseite; „com amigos“ und „2 jogadores“ sind Abschnitte.
 import L from "../../js/content/i18n/pt.js";

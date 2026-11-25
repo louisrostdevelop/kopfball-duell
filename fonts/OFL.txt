@@ -6,8 +6,8 @@ lilita.woff2
   Copyright (c) 2011 Juan Montoreano (juan@remolacha.biz), with Reserved Font Name "Lilita".
 
 nunito-700.woff2, nunito-800.woff2, nunito-900.woff2 (Latin),
-nunito-{700,800,900}-cyrillic.woff2, nunito-{700,800,900}-vietnamese.woff2
-  Nunito (Teilmengen von Google Fonts, nur bei Russisch, Ukrainisch, Vietnamesisch geladen)
+nunito-{700,800,900}-cyrillic.woff2
+  Nunito (Teilmengen von Google Fonts, nur bei Russisch und Ukrainisch geladen)
   Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
 
 Both fonts are licensed under the SIL Open Font License, Version 1.1.
