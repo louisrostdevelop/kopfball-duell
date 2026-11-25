@@ -1,7 +1,8 @@
 // Bilder und Spielszenen für die Infoseiten (tools/gen-seo.mjs) aus dem echten Spiel: Renderer, Bots, Menüs.
-//   1. node tools/gen-landing-media.mjs capture <roh> [video,stills,art,steps]   Playwright-Browser nötig. Nimmt im Ordner <roh> auf:
-//      Gameplay-Bilder je Sprache (frames-<de|en>/ + frames.txt), Kandidaten für Kopfball, Super-Schuss und Tor
-//      (cand-<art>-<sprache>-<n>.png), alle Köpfe, Arenen, Modus-Szenen und die Einladungs-Schritte je Sprache.
+//   1. node tools/gen-landing-media.mjs capture <roh> [video,stills,art,steps] [de,en,…]   Playwright-Browser nötig. Nimmt im Ordner <roh> auf:
+//      Gameplay-Bilder je Sprache (frames-<sprache>/ + frames.txt), Kandidaten für Kopfball, Super-Schuss und Tor
+//      (cand-<art>-<sprache>-<n>.png), alle Köpfe, Arenen, Modus-Szenen und die Einladungs-Schritte je Sprache mit
+//      Freunde-Seite. Sprachen: tools/seo/langs.mjs, sonst nur die genannten.
 //   2. Kandidaten ansehen und die besten als scene-head.png, scene-super.png, scene-goal-<sprache>.png ablegen.
 //   3. node tools/gen-landing-media.mjs encode <roh>    ImageMagick (magick) und ffmpeg nötig. Schreibt landing/:
 //      AVIF + WebP in mehreren Breiten, Gameplay-Loop als MP4 (H.264, läuft überall; bei gleicher Qualität kleiner als
@@ -11,11 +12,15 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { LANGS as SEO_LANGS } from "./seo/langs.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const OUT = join(ROOT, "landing");
 const SAVE_KEY = "kopfball-duell-save-v2";
-const LANGS = ["de", "en"];
+/** Sprachen der Infoseiten; sprachneutrale Bilder (Kopfball, Super-Schuss, Köpfe, Arenen, Modi) kommen aus NEUTRAL */
+const LANGS = SEO_LANGS.map(D => D.lang), MEDIA = Object.fromEntries(SEO_LANGS.map(D => [D.lang, D.media]));
+const WITH_STEPS = SEO_LANGS.filter(D => D.pages.friends).map(D => D.lang);
+const NEUTRAL = "de";
 /** Gameplay-Loop: Ausschnitt aus der 1920x1080-Aufnahme (B:H:X:Y) und Größe des Videos */
 const VIDEO_CROP = "1920:800:0:280";
 export const VIDEO = [1600, 666];
@@ -44,7 +49,8 @@ const FREEZE = `(() => {
 })();`;
 const HIDE_UI = "body > :not(#cv) { visibility: hidden !important; } #cv { filter: none !important; transform: none !important; }";
 
-async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
+async function capture(raw, parts = ["video", "stills", "art", "steps"], langs = LANGS) {
+  for (const l of langs) if (!MEDIA[l]) throw new Error("Sprache fehlt in tools/seo/langs.mjs: " + l);
   const { chromium } = await import("playwright");
   const { serve } = await import("./serve.mjs");
   mkdirSync(raw, { recursive: true });
@@ -52,7 +58,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
   const browser = await chromium.launch();
   const today = new Date().toISOString().slice(0, 10);
   const open = async (lang, view, { mock = false } = {}) => {
-    const ctx = await browser.newContext({ locale: lang === "de" ? "de-DE" : "en-US", ...view });
+    const ctx = await browser.newContext({ locale: MEDIA[lang].locale, ...view });
     await ctx.route("**/vendor/peerjs.min.js", r => r.fulfill({ body: "", contentType: "text/javascript" }));
     if (mock) await ctx.addInitScript({ path: join(ROOT, "tests/e2e/mockpeer.js") });
     await ctx.addInitScript(([k, v]) => { if (localStorage.getItem(k) === null) localStorage.setItem(k, v); }, [SAVE_KEY, JSON.stringify({ tutorial: true, daily: { last: today, streak: 1 } })]);
@@ -77,7 +83,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
   };
 
   // 1. Gameplay-Loop: Bildfolge über das DevTools-Protokoll (schärfer als die Playwright-Videoaufnahme)
-  for (const lang of parts.includes("video") ? LANGS : []) {
+  for (const lang of parts.includes("video") ? langs : []) {
     const { ctx, page } = await open(lang, { viewport: { width: 1920, height: 1080 } });
     await botMatch(page);
     const dir = join(raw, "frames-" + lang); mkdirSync(dir, { recursive: true });
@@ -93,10 +99,10 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     await ctx.close();
   }
   // 2. Kandidaten für Standbilder (dpr 2): Kopfball und Super-Schuss (kurz danach), Tor (Jubel, Text je Sprache)
-  for (const lang of parts.includes("stills") ? LANGS : []) {
+  for (const lang of parts.includes("stills") ? langs : []) {
     const { ctx, page } = await open(lang, { viewport: { width: 1440, height: 810 }, deviceScaleFactor: 2 });
     await botMatch(page);
-    for (const [kind, delay, n] of lang === "de" ? [["heads", 0, 10], ["supers", 260, 8], ["goals", 450, 4]] : [["goals", 450, 4]]) {
+    for (const [kind, delay, n] of lang === NEUTRAL ? [["heads", 0, 10], ["supers", 260, 8], ["goals", 450, 4]] : [["goals", 450, 4]]) {
       await page.evaluate(w => { window.__want = w; }, { kind, delay });
       for (let i = 0; i < n; i++) {
         try { await page.waitForFunction(() => window.__hold, null, { timeout: 90000, polling: 50 }); } catch { break; }
@@ -109,7 +115,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
   }
   // 3. Köpfe (einzeln und als Gruppe), Arenen, Modus-Szenen
   if (parts.includes("art")) {
-    const { ctx, page } = await open("de", { viewport: { width: 1440, height: 810 }, deviceScaleFactor: 2 });
+    const { ctx, page } = await open(NEUTRAL, { viewport: { width: 1440, height: 810 }, deviceScaleFactor: 2 });
     const art = await page.evaluate(async () => {
       const { avatarCanvas, drawHead } = await import("/js/ui/render/art.js");
       const { arenaThumb } = await import("/js/ui/render/render.js");
@@ -147,10 +153,10 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     for (const [id, d] of Object.entries(modes)) png(page, `mode-${id}.png`, d);
     await ctx.close();
   }
-  // 4. Einladungs-Schritte je Sprache: Online-Bildschirm, Lobby mit Link und QR-Code, Freund ist da
-  for (const lang of parts.includes("steps") ? LANGS : []) {
+  // 4. Einladungs-Schritte je Sprache mit Freunde-Seite: Online-Bildschirm, Lobby mit Link und QR-Code, Freund ist da
+  for (const lang of parts.includes("steps") ? langs.filter(l => WITH_STEPS.includes(l)) : []) {
     const { ctx, page } = await open(lang, { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1.5 }, { mock: true });
-    await page.evaluate(async n => { const p = await import("/js/app/profile.js"); p.S.name = n; }, lang === "de" ? "Lena" : "Sam");
+    await page.evaluate(async n => { const p = await import("/js/app/profile.js"); p.S.name = n; }, MEDIA[lang].host);
     await page.click("#modeCard"); await page.waitForTimeout(300);
     if (await page.isVisible("#modeTabs [data-tab=on]")) { await page.click("#modeTabs [data-tab=on]"); await page.waitForTimeout(300); }
     await page.click("#modeGrid [data-mode=online]"); await page.waitForTimeout(300);
@@ -168,7 +174,7 @@ async function capture(raw, parts = ["video", "stills", "art", "steps"]) {
     await page.screenshot({ path: join(raw, `step-${lang}-2.png`) });
     // Freund mit eigenem Namen (die Seite teilt den Speicher mit dem Gastgeber)
     const g = await ctx.newPage();
-    await g.addInitScript(([k, n]) => { const s = JSON.parse(localStorage.getItem(k) || "{}"); s.name = n; s.char = "yuki"; localStorage.setItem(k, JSON.stringify(s)); }, [SAVE_KEY, lang === "de" ? "Tom" : "Alex"]);
+    await g.addInitScript(([k, n]) => { const s = JSON.parse(localStorage.getItem(k) || "{}"); s.name = n; s.char = "yuki"; localStorage.setItem(k, JSON.stringify(s)); }, [SAVE_KEY, MEDIA[lang].guest]);
     await g.goto(`${url}/index.html?lang=${lang}&join=${code}`); await g.waitForTimeout(2800);
     await page.waitForTimeout(600); await showLive(); await page.waitForTimeout(300);
     await page.screenshot({ path: join(raw, `step-${lang}-3.png`) });
@@ -196,7 +202,7 @@ function encode(raw) {
     if ((m = f.match(/^head-(\w+)\.png$/))) img(f, "head-" + m[1], [256]);
     else if ((m = f.match(/^arena-(\w+)\.png$/))) img(f, "arena-" + m[1], SIZES.arena);
     else if ((m = f.match(/^mode-(\w+)\.png$/))) img(f, "mode-" + m[1], SIZES.mode);
-    else if ((m = f.match(/^step-(de|en)-(\d)\.png$/))) img(f, `step-${m[1]}-${m[2]}`, SIZES.step);
+    else if ((m = f.match(/^step-([a-z]{2})-(\d)\.png$/))) img(f, `step-${m[1]}-${m[2]}`, SIZES.step);
   }
   // Gameplay-Loop: 10 s ab Sekunde 1, 30 Bilder/s, ohne Ton, nur das Spielfeld (Himmel und Anzeige oben abgeschnitten,
   // VIDEO_CROP); Standbild (Poster) = erstes Bild
@@ -213,7 +219,7 @@ function encode(raw) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [cmd, dir, only] = process.argv.slice(2);
-  if (!dir || !["capture", "encode"].includes(cmd)) { console.error("node tools/gen-landing-media.mjs capture|encode <roh-ordner>"); process.exit(2); }   // i18n-ok
-  if (cmd === "capture") await capture(dir, only ? only.split(",") : undefined); else encode(dir);
+  const [cmd, dir, only, langs] = process.argv.slice(2);
+  if (!dir || !["capture", "encode"].includes(cmd)) { console.error("node tools/gen-landing-media.mjs capture|encode <roh-ordner> [teile] [sprachen]"); process.exit(2); }   // i18n-ok
+  if (cmd === "capture") await capture(dir, only ? only.split(",") : undefined, langs ? langs.split(",") : undefined); else encode(dir);
 }

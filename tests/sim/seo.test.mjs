@@ -3,7 +3,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-const { seoFiles, PAGES, SITE, fileOf, mediaOf } = await import("../../tools/gen-seo.mjs");
+const { seoFiles, pagesOf, alternates, PAGES, SITE, fileOf, mediaOf } = await import("../../tools/gen-seo.mjs");
+const { LANGS, DEFAULT_LANG } = await import("../../tools/seo/langs.mjs");
 const read = f => readFileSync(new URL("../../" + f, import.meta.url), "utf8");
 const files = seoFiles();
 const tag = (html, re) => (html.match(re) || [])[1] || "";
@@ -13,22 +14,56 @@ test("Infoseiten, sitemap.xml und robots.txt sind aktuell (npm run seo)", () => 
   for (const [f, body] of Object.entries(files)) assert.equal(read(f), body, f + " veraltet: npm run seo");
 });
 
-test("je Seite: Sprache, H1, canonical auf sich selbst, hreflang-Gruppe gegenseitig mit x-default", () => {
-  for (const p of PAGES) {
-    const html = files[fileOf(p.path)];
+/** hreflang-Gruppe, Sprachumschalter (Kopf, Fuß) einer erzeugten Seite */
+const linksOf = html => ({
+  alt: Object.fromEntries([...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map(m => [m[1], m[2]])),
+  top: [...html.matchAll(/<a class="lp-top__lang" href="([^"]+)" hreflang="([^"]+)" lang="([^"]+)"/g)].map(m => [m[2], m[1]]),
+  foot: [...tag(html, /<nav class="lp-foot__nav">(.*?)<\/nav>/).matchAll(/<a href="([^"]+)" hreflang="([^"]+)"/g)].map(m => [m[2], m[1]]),
+});
+/** Prüft je Seite: hreflang nennt sich selbst und jede Sprache mit derselben Seitenart (gegenseitig), x-default = EN */
+function checkGroups(pages, out) {
+  for (const p of pages) {
+    const html = out[fileOf(p.path)];
     assert.match(html, new RegExp(`<html lang="${p.lang}">`));
     assert.equal((html.match(/<h1[ >]/g) || []).length, 1, p.path + ": genau eine H1");
     assert.equal(tag(html, /<link rel="canonical" href="([^"]+)">/), SITE + p.path);
-    const alt = Object.fromEntries([...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map(m => [m[1], m[2]]));
-    const other = PAGES.find(x => x.path === p.alt);
-    assert.equal(other.alt, p.path, "Gegenstück zeigt zurück");
-    assert.deepEqual(alt, { [p.lang]: SITE + p.path, [other.lang]: SITE + other.path, "x-default": SITE + (p.lang === "en" ? p.path : other.path) });
+    const same = pages.filter(x => x.kind === p.kind), def = same.find(x => x.lang === DEFAULT_LANG);
+    const { alt, top, foot } = linksOf(html);
+    assert.deepEqual(alt, { ...Object.fromEntries(same.map(x => [x.lang, SITE + x.path])), ...(def ? { "x-default": SITE + def.path } : {}) }, p.path);
+    for (const x of same) assert.equal(linksOf(out[fileOf(x.path)]).alt[p.lang], SITE + p.path, x.path + " zeigt zurück auf " + p.path);
+    const others = same.filter(x => x !== p).map(x => [x.lang, x.path]);
+    assert.deepEqual(top, others, p.path + ": Umschalter oben");
+    assert.deepEqual(foot, others, p.path + ": Umschalter unten");
   }
+}
+
+test("je Seite: Sprache, H1, canonical auf sich selbst, hreflang-Gruppe gegenseitig mit x-default, Sprachumschalter", () => {
+  assert.deepEqual(PAGES.filter(p => ["de", "en"].includes(p.lang)).map(p => [p.lang, p.kind]), [["de", "main"], ["de", "friends"], ["en", "main"], ["en", "friends"]]);
+  checkGroups(PAGES, files);
+});
+
+test("dritte Sprache mit nur der Hauptseite: hreflang vollständig und gegenseitig, Freunde-Seiten ohne sie", () => {
+  const en = LANGS.find(D => D.lang === "en");
+  const xx = { ...en, lang: "xx", name: "Testisch", thisPage: "Testseite", pages: { main: { path: "/xx/", src: "seo-xx",
+    build: h => ({ ...en.pages.main.build({ ...h, path: kind => (kind === "main" ? "/xx/" : "/en/play-with-friends/") }), title: "Testseite | Headstars" }) } } };
+  const langs = [...LANGS, xx], pages = pagesOf(langs), out = seoFiles(langs);
+  checkGroups(pages, out);
+  const main = pages.filter(p => p.kind === "main"), friends = pages.filter(p => p.kind === "friends");
+  for (const p of main) assert.deepEqual(alternates(p, pages).map(a => a[0]), ["de", "en", "xx", "x-default"], p.path);
+  for (const p of friends) assert.deepEqual(alternates(p, pages).map(a => a[0]), ["de", "en", "x-default"], p.path);
+  const xhtml = out["xx/index.html"];
+  assert.match(xhtml, /<nav class="lp-top__langs" aria-label="Languages">/, "mehrere Sprachen: Liste im Kopf");
+  assert.doesNotMatch(tag(xhtml, /<nav class="lp-foot__nav">(.*?)<\/nav>/), /play-with-friends/, "keine eigene Freunde-Seite: kein Link im Fuß");
+  assert.ok(out["sitemap.xml"].includes(`<loc>${SITE}/xx/</loc>`), "Sitemap nennt die neue Seite");
+  assert.equal((out["sitemap.xml"].match(/<xhtml:link /g) || []).length, pages.reduce((s, p) => s + alternates(p, pages).length, 0));
+  assert.throws(() => seoFiles([...LANGS, { ...xx, pages: { main: { ...xx.pages.main, build: en.pages.main.build } } }]), /verlinkt „friends“/, "Link auf fehlende Seite fällt auf");
+  assert.throws(() => pagesOf([...LANGS, en]), /doppelt/);
 });
 
 test("„Jetzt spielen“ führt ins Spiel mit Quelle und Sprache der Seite", () => {
   const srcs = PAGES.map(p => p.src);
-  assert.deepEqual(srcs, ["seo-de", "seo-de-freunde", "seo-en", "seo-en-friends"]);
+  assert.deepEqual(srcs.slice(0, 4), ["seo-de", "seo-de-freunde", "seo-en", "seo-en-friends"]);
+  assert.equal(new Set(srcs).size, srcs.length, "jede Seite mit eigener Kennung");
   for (const p of PAGES) {
     const html = files[fileOf(p.path)];
     const ctas = [...html.matchAll(/<a class="lp-btn[^"]*" href="([^"]+)">/g)].map(m => m[1]);
@@ -64,7 +99,7 @@ test("Seiten nur mit dem eigenen Quellen-Skript, eigene CSP, keine Inline-Styles
 test("sitemap.xml: Startseite und alle Infoseiten mit hreflang; robots.txt nennt sie", () => {
   const sm = files["sitemap.xml"];
   for (const loc of ["/", ...PAGES.map(p => p.path)]) assert.match(sm, new RegExp(`<loc>${SITE}${loc}</loc>`));
-  assert.equal((sm.match(/<xhtml:link /g) || []).length, PAGES.length * 3);
+  assert.equal((sm.match(/<xhtml:link /g) || []).length, PAGES.reduce((s, p) => s + alternates(p).length, 0));
   assert.match(files["robots.txt"], new RegExp(`^Sitemap: ${SITE}/sitemap\\.xml$`, "m"));
 });
 
@@ -84,7 +119,7 @@ test("Startseite: Titel, canonical, Structured Data ohne Bewertungen, Links zu a
 
 test("Infoseiten werden veröffentlicht", () => {
   const cp = read(".github/workflows/pages.yml").match(/cp -r ([^\n]+) _site\//)[1].split(/\s+/);
-  for (const f of ["de", "en", "landing", "robots.txt", "sitemap.xml"]) assert.ok(cp.includes(f), f);
+  for (const f of [...LANGS.map(D => D.lang), "landing", "robots.txt", "sitemap.xml"]) assert.ok(cp.includes(f), f);
 });
 
 test("css/landing.css übernimmt die Tokens aus css/style.css unverändert", () => {

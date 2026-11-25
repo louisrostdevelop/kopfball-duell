@@ -59,6 +59,7 @@ body.lp {
   color: var(--lp-on-blue) !important; text-decoration: none; background: rgb(8 16 63 / 55%); border: 2px solid rgb(255 255 255 / 35%);
 }
 .lp-top__lang:hover { background: rgb(8 16 63 / 80%); border-color: var(--lp-on-blue); }
+.lp-top__langs { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 
 /* ---------- Hero: Spielszene über den ganzen ersten Bildschirm ---------- */
 .lp-hero { position: relative; isolation: isolate; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
