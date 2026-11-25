@@ -59,9 +59,10 @@ test("Online: Lobby bis Revanche", async t => {
     assert.deepEqual(await B.evaluate(() => [window.__kd.cfg.cos[0].shoes, window.__kd.cfg.cos[0].goalfx]), ["shoes:2", "goalfx:3"]);
     // (🔥 wäre auch der Torjubel, deshalb GG als zweites Emote)
     await B.evaluate(async () => { const g = await import("/js/app/game.js"); g.sendEmote("😂"); g.sendEmote("GG"); });
-    let seen = "";
-    for (let i = 0; i < 15 && seen !== "😂"; i++) { await A.waitForTimeout(100); seen = await A.evaluate(() => window.__kd.st.p[1].emo); }
-    assert.equal(seen, "😂");
+    // Fein abtasten und alles Gesehene sammeln: Fällt gerade ein Tor, kann der automatische Torjubel (🔥) das Emote kurz danach überschreiben
+    const seen = new Set();
+    for (let i = 0; i < 100 && !seen.has("😂"); i++) { await A.waitForTimeout(20); seen.add(await A.evaluate(() => window.__kd.st.p[1].emo)); }
+    assert.ok(seen.has("😂"), "Emote kam nicht an: " + [...seen].join(" "));
     await A.waitForTimeout(400);
     assert.notEqual(await A.evaluate(() => window.__kd.st.p[1].emo), "GG", "zweites Emote innerhalb von 3 s verworfen");
     await A.evaluate(async () => { (await import("/js/app/game.js")).sendEmote("emoji:5"); });
