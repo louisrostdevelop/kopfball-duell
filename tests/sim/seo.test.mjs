@@ -269,3 +269,43 @@ test("Quelle aus der Adresse (z. B. Anzeige) ersetzt die Quelle der Infoseite im
     assert.ok(html.includes("script-src 'self';"), p.path + ": CSP erlaubt nur eigene Skripte");
   }
 });
+
+test("404.html: erzeugt, noindex, ohne canonical/hreflang, nur absolute Pfade, je Sprache eine Fassung, wird veröffentlicht", async () => {
+  const html = files["404.html"];
+  assert.ok(existsSync(new URL("../../404.html", import.meta.url)), "404.html liegt im Projekt (npm run seo)");
+  assert.match(html, /<meta name="robots" content="noindex">/);
+  assert.doesNotMatch(html, /rel="canonical"|hreflang=|og:url/);
+  assert.doesNotMatch(files["sitemap.xml"], /404/);
+  // GitHub Pages liefert sie unter jeder Adresse aus (z. B. /fr/xyz): relative Pfade gingen ins Leere
+  const urls = [...html.matchAll(/ (?:href|src)="([^"]+)"/g)].map(m => m[1]).concat([...html.matchAll(/ srcset="([^"]+)"/g)].flatMap(m => m[1].split(", ").map(x => x.split(" ")[0])));
+  assert.ok(urls.length > 10);
+  for (const u of urls) assert.match(u, /^(\/(?!\/)|#)/, "absoluter Pfad: " + u);
+  for (const f of mediaOf(html)) assert.ok(existsSync(new URL("../../" + f, import.meta.url)), "fehlt " + f);
+  // je Infoseiten-Sprache Text und Fuß; ohne Skript sichtbar nur DEFAULT_LANG
+  const langs = [...new Set(PAGES.map(p => p.lang))];
+  const blocks = [...html.matchAll(/<(div|footer) class="[^"]+" lang="([a-z]{2})" data-nf[^>]*>/g)].map(m => [m[1], m[2], !m[0].includes(" hidden")]);
+  assert.deepEqual(blocks, ["div", "footer"].flatMap(t => langs.map(l => [t, l, l === DEFAULT_LANG])));
+  assert.match(html, new RegExp(`<html lang="${DEFAULT_LANG}">`));
+  assert.equal((html.match(/<h1[ >]/g) || []).length, langs.length);
+  for (const p of PAGES) assert.ok(html.includes(`href="${p.path}"`), "verlinkt " + p.path);
+  for (const h of [...html.matchAll(/<a class="lp-(?:btn[^"]*|top__brand)" href="([^"]+)">/g)].map(m => m[1])) assert.equal(h, "/?src=404");
+  assert.equal((html.match(/class="lp-btn lp-btn--hero"/g) || []).length, langs.length);
+  // veröffentlicht, aber nicht vorab im Service Worker: offline bekommt eine unbekannte Adresse das Spiel, keine 404
+  const cp = read(".github/workflows/pages.yml").match(/cp -r ([^\n]+) _site\//)[1].split(/\s+/);
+  assert.ok(cp.includes("404.html"));
+  assert.doesNotMatch(read("sw.js").match(/const CORE = \[[\s\S]*?\];/)[0], /404/);
+  // Sprachwahl im Browser
+  const { pickLang, showLang } = await import("../../js/landing-src.js");
+  assert.equal(pickLang(langs, ["fr-FR", "de-AT", "en"], "en"), "de");
+  assert.equal(pickLang(langs, ["UK"], "en"), "uk");
+  assert.equal(pickLang(langs, ["fr", "it"], "en"), "en", "keine Fassung: Englisch");
+  assert.equal(pickLang(langs, [], "en"), "en");
+  const el = (lang, title) => ({ lang, hidden: lang !== "en", getAttribute: k => (k === "data-title" ? title : null) });
+  const els = [el("de", "Seite nicht gefunden"), el("en", "Page not found"), el("de"), el("en")];
+  const doc = { title: "Page not found", documentElement: { lang: "en" }, querySelectorAll: () => els };
+  showLang(doc, "de");
+  assert.deepEqual(els.map(e => e.hidden), [false, true, false, true]);
+  assert.equal(doc.documentElement.lang, "de"); assert.equal(doc.title, "Seite nicht gefunden");
+  showLang(doc, "fr");
+  assert.equal(doc.documentElement.lang, "de", "unbekannte Sprache ändert nichts");
+});

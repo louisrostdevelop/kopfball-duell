@@ -12,6 +12,8 @@ export default {
     ctaNote: "Startet direkt im Browser, auf Handy, Tablet und PC.",
     video: "Spielszene aus Headstars: zwei Köpfe spielen Kopfball-Fußball im Stadion", online: "Online", offline: "Gegen den Computer oder zu zweit",
     endTitle: "Bereit für den Anpfiff?", action: "Aktion" },
+  /** 404.html (tools/gen-seo.mjs): unbekannte Adresse */
+  notFound: { title: "Seite nicht gefunden | Headstars", h1: "Seite nicht gefunden", lead: "Diese Adresse gibt es nicht (mehr). Das Spiel und die Infoseiten sind nur einen Klick entfernt." },
   pages: {
     main: { path: "/de/", src: "seo-de", build: ({ esc, pic, kbd, n, pu, path, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
       title: "Kopfball-Fußball online spielen – kostenlos im Browser | Headstars",

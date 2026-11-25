@@ -15,6 +15,8 @@ export default {
     ctaNote: "Запускається одразу в браузері: на телефоні, планшеті й комп’ютері.",
     video: "Матч у Headstars: дві голови грають у футбол головами на стадіоні", online: "Онлайн", offline: "Проти комп’ютера або удвох",
     endTitle: "Готовий до стартового свистка?", action: "Дія" },
+  /** 404.html (tools/gen-seo.mjs): unbekannte Adresse */
+  notFound: { title: "Сторінку не знайдено | Headstars", h1: "Сторінку не знайдено", lead: "Такої адреси немає або вже немає. Гра й сторінки про неї за один клік." },
   pages: {
     /** covers: Seitenarten, die hier nur ein Abschnitt sind (Anker), für die Einstellungs-Links im Spiel */
     main: { path: "/uk/", src: "seo-uk", covers: { friends: "z-druzyamy" }, build: ({ esc, pic, kbd, n, pu, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({

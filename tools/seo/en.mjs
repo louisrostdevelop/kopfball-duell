@@ -12,6 +12,8 @@ export default {
     ctaNote: "Starts right in your browser, on phone, tablet and PC.",
     video: "Gameplay from Headstars: two heads play header soccer in the stadium", online: "Online", offline: "Against the computer or two players",
     endTitle: "Ready for kick-off?", action: "Action" },
+  /** 404.html (tools/gen-seo.mjs): unbekannte Adresse */
+  notFound: { title: "Page not found | Headstars", h1: "Page not found", lead: "This address does not exist (anymore). The game and the guides are just one click away." },
   pages: {
     main: { path: "/en/", src: "seo-en", build: ({ esc, pic, kbd, n, pu, path, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
       title: "Header Soccer Online – Free 1v1 Browser Game | Headstars",
