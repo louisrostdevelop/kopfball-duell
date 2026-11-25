@@ -5,9 +5,11 @@
 // Fehlt ein Schlüssel in einer Sprache, gilt Deutsch; fehlt er ganz, steht der Schlüssel da (fällt im Test auf).
 import de from "./i18n/de.js";
 import en from "./i18n/en.js";
+import es from "./i18n/es.js";
+import pt from "./i18n/pt.js";
 
-export const LANGS = { de, en };
-export const LANG_NAMES = { de: "Deutsch", en: "English" };
+export const LANGS = { de, en, es, pt };
+export const LANG_NAMES = { de: "Deutsch", en: "English", es: "Español", pt: "Português" };
 let cur = "de";
 
 /** Sprache aus dem Link (?lang=de, z. B. von den Infoseiten), sonst die des Geräts, falls wir sie haben, sonst Englisch */

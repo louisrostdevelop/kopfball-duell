@@ -11,15 +11,18 @@ const C = await import("../../js/content/config.js");
 const { LAYOUTS } = await import("../../js/content/layouts.js");
 const ROOT = new URL("../../", import.meta.url).pathname;
 const files = dir => readdirSync(join(ROOT, dir)).flatMap(f => { const p = join(dir, f); return statSync(join(ROOT, p)).isDirectory() ? files(p) : p.endsWith(".js") ? [p] : []; });
-const de = I.LANGS.de, en = I.LANGS.en;
+const de = I.LANGS.de;
 const ph = v => (typeof v === "string" ? [...v.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(",") : "fn");
 
-test("Deutsch und Englisch haben dieselben Schlüssel, keine leeren Texte, gleiche Platzhalter", () => {
-  assert.deepEqual(Object.keys(en).sort(), Object.keys(de).sort());
-  for (const [k, v] of Object.entries(de)) {
-    assert.ok(typeof v === "function" || v.trim(), "leer: " + k);
-    assert.equal(ph(en[k]), ph(v), "Platzhalter verschieden: " + k);
-    if (typeof v === "function") assert.equal(typeof en[k], "function", k);
+test("jede Sprache in LANGS hat dieselben Schlüssel wie Deutsch, keine leeren Texte, gleiche Platzhalter", () => {
+  for (const [l, tr] of Object.entries(I.LANGS)) {
+    assert.ok(I.LANG_NAMES[l], "kein Name im Sprachwähler: " + l);
+    assert.deepEqual(Object.keys(tr).sort(), Object.keys(de).sort(), l);
+    for (const [k, v] of Object.entries(de)) {
+      assert.ok(typeof tr[k] === "function" || tr[k].trim(), `${l}: leer: ${k}`);
+      assert.equal(ph(tr[k]), ph(v), `${l}: Platzhalter verschieden: ${k}`);
+      if (typeof v === "function") assert.equal(typeof tr[k], "function", `${l}: ${k}`);
+    }
   }
 });
 
@@ -59,8 +62,8 @@ test("index.html: alle sichtbaren Texte und Beschriftungen laufen über data-i18
   assert.deepEqual(keys.filter(k => !(k in de)), []);
 });
 
-test("Spielinhalte sind in beiden Sprachen übersetzt", () => {
-  for (const l of ["de", "en"]) {
+test("Spielinhalte sind in allen Sprachen übersetzt", () => {
+  for (const l of Object.keys(I.LANGS)) {
     I.setLang(l);
     const texts = [...C.MODES.flatMap(m => [m.name, m.desc, ...m.tags]), ...C.ARENAS.flatMap(a => [a.name, a.desc]), ...C.BALLS.map(b => b.name),
       ...Object.values(C.SUPERS).flatMap(s => [s.name, s.desc]), ...C.ACHIEVEMENTS.flatMap(a => [a.name, a.desc]), ...C.DIFFS.map(d => d.name),
@@ -73,12 +76,14 @@ test("Spielinhalte sind in beiden Sprachen übersetzt", () => {
   I.setLang("de"); assert.equal(C.MODES.find(m => m.id === "quick").name, "Schnelles Spiel");
 });
 
-test("Sprache vom Gerät: Deutsch für de-*, sonst Englisch", () => {
+test("Sprache vom Gerät: eigene Sprache für de-*, es-*, pt-*, sonst Englisch", () => {
   assert.equal(I.detectLang(["de-AT"]), "de"); assert.equal(I.detectLang(["fr-FR", "en-GB"]), "en"); assert.equal(I.detectLang(["ja"]), "en");
+  assert.equal(I.detectLang(["es-MX"]), "es"); assert.equal(I.detectLang(["es-AR"]), "es"); assert.equal(I.detectLang(["pt-BR"]), "pt");
 });
 
 test("Sprache aus dem Link (?lang=) geht vor die Gerätesprache, Unbekanntes zählt nicht", () => {
   assert.equal(I.detectLang(["en-US"], "?src=seo-de&lang=de"), "de");
   assert.equal(I.detectLang(["de-DE"], "?lang=en"), "en");
+  assert.equal(I.detectLang(["de-DE"], "?lang=es"), "es"); assert.equal(I.detectLang(["en-US"], "?lang=pt"), "pt");
   for (const q of ["?lang=fr", "?lang=constructor", "?lang=", ""]) assert.equal(I.detectLang(["de-DE"], q), "de", q);
 });

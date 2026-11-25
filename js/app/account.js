@@ -234,7 +234,7 @@ export async function buyCos(id, currency = "coins") {
 /** Echtgeld-Produkte vom Server (mit "buyable" für diesen Spieler) */
 export const shopProducts = () => server.shop();
 /** Zur Bezahlseite (Stripe). Kommt mit ?kauf=ok oder ?kauf=abgebrochen zurück. */
-export async function startCheckout(product) { if (!PAYMENTS) throw new Error("payments off"); location.href = await server.checkout(product, lang()); }
+export async function startCheckout(product) { if (!PAYMENTS) throw new Error("payments off"); location.href = await server.checkout(product, lang() === "de" ? "de" : "en"); }   // Kasse kennt nur de/en
 /** Nach der Rückkehr von der Bezahlseite: ein paar Mal nachsehen, bis die Juwelen da sind */
 export async function awaitPurchase(before, tries = 10) {
   for (let i = 0; i < tries; i++) {
