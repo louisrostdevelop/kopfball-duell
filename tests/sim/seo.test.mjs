@@ -47,6 +47,19 @@ test("je Seite: Sprache, H1, canonical auf sich selbst, hreflang-Gruppe gegensei
   checkGroups(PAGES, files);
 });
 
+test("Sprachcodes = Spielsprachen (uk, nie das Landeskürzel ua); og:locale mit Land", async () => {
+  const { LANGS: GAME } = await import("../../js/content/i18n.js");
+  const LOCALE = { de: "de_DE", en: "en_US", es: "es_419", pt: "pt_BR", vi: "vi_VN", uk: "uk_UA", ru: "ru_RU" };
+  for (const p of PAGES) {
+    const html = files[fileOf(p.path)];
+    assert.ok(Object.hasOwn(GAME, p.lang), p.lang + " ist keine Spielsprache");
+    assert.equal(p.path.split("/")[1], p.lang, p.path + ": Ordner = Sprachcode");
+    if (LOCALE[p.lang]) assert.equal(tag(html, /<meta property="og:locale" content="([^"]+)">/), LOCALE[p.lang], p.path);
+    for (const m of html.matchAll(/(?:hreflang|lang)="([^"]+)"/g)) assert.ok(m[1] === "x-default" || Object.hasOwn(GAME, m[1]), `${p.path}: Sprachcode ${m[1]}`);
+  }
+  assert.doesNotMatch(files["sitemap.xml"], /hreflang="ua"|\/ua\//);
+});
+
 test("dritte Sprache mit nur der Hauptseite: hreflang vollständig und gegenseitig, Freunde-Seiten ohne sie", () => {
   const en = LANGS.find(D => D.lang === "en");
   const xx = { ...en, lang: "xx", name: "Testisch", thisPage: "Testseite", pages: { main: { path: "/xx/", src: "seo-xx",

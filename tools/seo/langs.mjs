@@ -9,8 +9,11 @@ import de from "./de.mjs";
 import en from "./en.mjs";
 import es from "./es.mjs";
 import pt from "./pt.mjs";
+import vi from "./vi.mjs";
+import uk from "./uk.mjs";
+import ru from "./ru.mjs";
 
-export const LANGS = [de, en, es, pt];
+export const LANGS = [de, en, es, pt, vi, uk, ru];
 /** Sprache für x-default */
 export const DEFAULT_LANG = "en";
 /** Sprache, in der die sprachneutralen Bilder aufgenommen werden (Kopfball, Super-Schuss, Köpfe, Arenen, Modi) */
