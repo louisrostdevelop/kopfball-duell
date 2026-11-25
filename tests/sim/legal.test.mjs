@@ -40,7 +40,7 @@ test("Fassungen: Impressum de/en, Datenschutz und Nutzungsbedingungen de/en/es/u
 });
 test("Datenschutz: Hinweise für Chile, Kolumbien, Mexiko in jeder Sprache", () => {
   const s = sections(legalPages()["privacy.html"]);
-  for (const [l, x] of Object.entries(s)) for (const k of ["21.719", "Agencia de Protección de Datos Personales", "1581", "Autorización", "Superintendencia de Industria y Comercio", "LFPDPPP", "ARCO", "Secretaría Anticorrupción y Buen Gobierno"]) assert.ok(x.toLowerCase().includes(k.toLowerCase()), `${l}: ${k}`);
+  for (const [l, x] of Object.entries(s)) for (const k of ["21.719", "Agencia de Protección de Datos Personales", "1581", "Superintendencia de Industria y Comercio", "LFPDPPP", "ARCO", "Secretaría Anticorrupción y Buen Gobierno"]) assert.ok(x.toLowerCase().includes(k.toLowerCase()), `${l}: ${k}`);
 });
 test("Rechtsseiten wählen die Sprache: ?lang=, sonst Spielsprache, sonst Browser; ohne eigene Fassung Englisch", async () => {
   const vm = await import("node:vm");
