@@ -16,7 +16,11 @@ export function serve(port = 0) {
       if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
       const body = await readFile(file);
       res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream" }).end(body);
-    } catch { res.writeHead(404).end(); }
+    } catch {
+      // wie GitHub Pages: unbekannte Adresse bekommt 404.html mit Status 404
+      const page = await readFile(join(ROOT, "404.html")).catch(() => null);
+      res.writeHead(404, page ? { "content-type": "text/html" } : {}).end(page ?? undefined);
+    }
   });
   return new Promise(ok => { server.listen(port, "127.0.0.1", () => ok({ server, url: `http://127.0.0.1:${server.address().port}` })); });
 }

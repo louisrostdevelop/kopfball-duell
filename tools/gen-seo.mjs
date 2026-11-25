@@ -1,5 +1,5 @@
 // Erzeugt die Infoseiten für Suchmaschinen (je Sprache aus tools/seo/langs.mjs, z. B. de/, de/gegen-freunde/, en/,
-// en/play-with-friends/), sitemap.xml, robots.txt und die Liste der Infoseiten fürs Spiel (js/content/info-pages.js). Zahlen und Namen (Köpfe, Supers, Arenen, Modi, Sperren) kommen aus dem
+// en/play-with-friends/), 404.html, sitemap.xml, robots.txt und die Liste der Infoseiten fürs Spiel (js/content/info-pages.js). Zahlen und Namen (Köpfe, Supers, Arenen, Modi, Sperren) kommen aus dem
 // Spiel, damit die Seiten stimmen, wenn sich das Spiel ändert. Nach einer Änderung: `npm run seo`. Ein Test prüft, dass die
 // Dateien aktuell sind. Texte je Sprache: tools/seo/<lang>.mjs; hier nur Aufbau und Bausteine.
 // Bilder und Gameplay-Loop: landing/ (tools/gen-landing-media.mjs, aus dem echten Spiel aufgenommen).
@@ -279,6 +279,60 @@ export const INFO_PAGES = ${JSON.stringify(by, null, 2)};
 export const INFO_DEFAULT = "${DEFAULT_LANG}";
 `;
 }
+/** 404.html: GitHub Pages liefert sie für jede unbekannte Adresse (auch /fr/xyz), daher nur absolute Pfade. Eine Fassung je
+ *  Sprache der Infoseiten (data-nf); ohne Skript DEFAULT_LANG, js/landing-src.js zeigt die der Browsersprache.
+ *  noindex, ohne canonical und hreflang, nicht in der Sitemap. */
+export function notFound(pages = PAGES) {
+  const langs = [...new Set(pages.map(p => p.lang))], play = "/?src=404";
+  const hide = l => (l === DEFAULT_LANG ? "" : " hidden");
+  const fallback = pages.find(p => p.lang === DEFAULT_LANG).D;
+  const parts = l => {
+    const own = pages.filter(p => p.lang === l), { ui: u, notFound: t } = own[0].D;
+    // Infoseiten der Sprache, Seitenarten nur als Abschnitt (covers) mit Anker wie die Einstellungs-Links
+    const links = [...own.map(p => [p.path, u[p.kind]]), ...own.flatMap(p => Object.entries(p.covers).map(([k, id]) => [`${p.path}#${id}`, u[k]]))];
+    const legal = ["imprint", "privacy", "terms"].map((f, i) => `<a href="/legal/${f}.html?lang=${l}">${u.legal[i]}</a>`).join("");
+    return {
+      main: `<div class="lp-nf__body" lang="${l}" data-nf data-title="${esc(t.title)}"${hide(l)}>
+<h1 class="lp-hero__title">${esc(t.h1)}</h1>
+<p class="lp-hero__lead">${esc(t.lead)}</p>
+<div class="lp-hero__cta"><a class="lp-btn lp-btn--hero" href="${play}">${icon("i-play", "lp-btn__ico")}<span>${u.play}</span></a></div>
+<ul class="lp-nf__links">${links.map(([h, name]) => `<li><a class="lp-nf__link" href="${h}">${esc(name)}</a></li>`).join("")}</ul>
+</div>`,
+      foot: `<footer class="lp-foot" lang="${l}" data-nf${hide(l)}><nav class="lp-foot__nav">${legal}</nav></footer>`,
+    };
+  };
+  const all = langs.map(parts);
+  return `<!doctype html>
+<!-- ERZEUGT von tools/gen-seo.mjs. Nicht von Hand ändern: dort anpassen, dann npm run seo. -->
+<html lang="${DEFAULT_LANG}">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${esc(fallback.notFound.title)}</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0d2275">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preload" href="/fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/landing.css">
+<script type="module" src="/js/landing-src.js" blocking="render"></script>
+</head>
+<body class="lp lp--bare">
+<svg class="lp-sprite" aria-hidden="true">${symbol("i-play")}</svg>
+<header class="lp-top">
+<a class="lp-top__brand" href="${play}"><img src="/icons/wordmark.webp" width="600" height="200" alt="Headstars"></a>
+</header>
+<main class="lp-nf">
+${pic("scene-head", "scene", "", { sizes: "100vw", cls: "lp-nf__bg", eager: true })}
+<p class="lp-nf__code" aria-hidden="true">404</p>
+${all.map(x => x.main).join("\n")}
+</main>
+${all.map(x => x.foot).join("\n")}
+</body>
+</html>
+`;
+}
 export const robots = () => `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`;
 
 /** Alle erzeugten Dateien: Pfad relativ zum Projekt → Inhalt (langs: Sprachen wie in tools/seo/langs.mjs) */
@@ -290,7 +344,7 @@ export function seoFiles(langs = LANGS) {
     for (const id of Object.values(p.covers)) if (!out.includes(` id="${id}"`)) throw new Error(`${fileOf(p.path)}: Abschnitt #${id} fehlt (pages.${p.kind}.covers in tools/seo/${p.lang}.mjs)`);
     return out;
   };
-  return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), html(p)])), "sitemap.xml": sitemap(pages), "robots.txt": robots(), "js/content/info-pages.js": infoPages(pages) };
+  return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), html(p)])), "404.html": notFound(pages), "sitemap.xml": sitemap(pages), "robots.txt": robots(), "js/content/info-pages.js": infoPages(pages) };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2] === "--dirs") console.log(pageDirs().join(" "));   // i18n-ok

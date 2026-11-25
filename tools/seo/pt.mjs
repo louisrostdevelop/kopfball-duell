@@ -15,6 +15,8 @@ export default {
     ctaNote: "Começa direto no navegador, no celular, no tablet e no PC.",
     video: "Partida de Headstars: duas cabeças jogam futebol de cabeça no estádio", online: "Online", offline: "Contra o computador ou a dois",
     endTitle: "Pronto para o apito inicial?", action: "Ação" },
+  /** 404.html (tools/gen-seo.mjs): unbekannte Adresse */
+  notFound: { title: "Página não encontrada | Headstars", h1: "Página não encontrada", lead: "Este endereço não existe ou não existe mais. O jogo e as páginas informativas estão a um clique." },
   pages: {
     /** covers: Seitenarten, die hier nur ein Abschnitt sind (Anker), für die Einstellungs-Links im Spiel */
     main: { path: "/pt/", src: "seo-pt", covers: { friends: "com-amigos" }, build: ({ esc, pic, kbd, n, pu, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({

@@ -13,6 +13,8 @@ export default {
     ctaNote: "Arranca directo en el navegador, en celular, tablet y PC.",
     video: "Partido de Headstars: dos cabezones juegan fútbol de cabeza en el estadio", online: "En línea", offline: "Contra la máquina o de a dos",
     endTitle: "¿Listo para el pitazo inicial?", action: "Acción" },
+  /** 404.html (tools/gen-seo.mjs): unbekannte Adresse */
+  notFound: { title: "Página no encontrada | Headstars", h1: "Página no encontrada", lead: "Esta dirección no existe o ya no existe. El juego y las páginas informativas están a un clic." },
   pages: {
     main: { path: "/es/", src: "seo-es", build: ({ esc, pic, kbd, n, pu, path, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
       title: "Fútbol de cabezones online – juego gratis 1 vs 1 | Headstars",

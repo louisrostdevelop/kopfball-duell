@@ -16,6 +16,8 @@ export default {
     ctaNote: "Запускается сразу в браузере — на телефоне, планшете и компьютере.",
     video: "Матч в Headstars: две головы играют в футбол головами на стадионе", online: "Онлайн", offline: "Против компьютера или вдвоём",
     endTitle: "Готов к стартовому свистку?", action: "Действие" },
+  /** 404.html (tools/gen-seo.mjs): unbekannte Adresse */
+  notFound: { title: "Страница не найдена | Headstars", h1: "Страница не найдена", lead: "Такого адреса нет или уже нет. Игра и страницы о ней в один клик." },
   pages: {
     /** covers: Seitenarten, die hier nur ein Abschnitt sind (Anker), für die Einstellungs-Links im Spiel */
     main: { path: "/ru/", src: "seo-ru", covers: { friends: "s-druzyami" }, build: ({ esc, pic, kbd, n, pu, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({
