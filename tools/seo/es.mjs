@@ -11,7 +11,7 @@ export default {
   ui: { play: "Jugar ahora", facts: ["Gratis", "Sin descargas", "Sin registro"], faq: "Preguntas frecuentes",
     legal: ["Aviso legal", "Privacidad", "Términos"], main: "Sobre el juego", friends: "Jugar con amigos", langs: "Idiomas",
     ctaNote: "Arranca directo en el navegador, en celular, tablet y PC.",
-    video: "Partido de Headstars: dos cabezones juegan fútbol de cabeza en el estadio", online: "Online", offline: "Contra la máquina o de a dos",
+    video: "Partido de Headstars: dos cabezones juegan fútbol de cabeza en el estadio", online: "En línea", offline: "Contra la máquina o de a dos",
     endTitle: "¿Listo para el pitazo inicial?", action: "Acción" },
   pages: {
     main: { path: "/es/", src: "seo-es", build: ({ esc, pic, kbd, n, pu, path, modes, headChips, arenaMosaic, controls, PAYMENTS }) => ({

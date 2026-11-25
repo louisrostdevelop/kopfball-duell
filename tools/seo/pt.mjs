@@ -11,7 +11,7 @@ export default {
   ui: { play: "Jogar agora", facts: ["Grátis", "Sem download", "Sem cadastro"], faq: "Perguntas frequentes",
     legal: ["Aviso legal", "Privacidade", "Termos"], main: "Sobre o jogo", friends: "Jogar com amigos", langs: "Idiomas",
     ctaNote: "Começa direto no navegador, no celular, no tablet e no PC.",
-    video: "Partida de Headstars: duas cabeças jogam futebol de cabeça no estádio", online: "Online", offline: "Contra o computador ou em dois",
+    video: "Partida de Headstars: duas cabeças jogam futebol de cabeça no estádio", online: "Online", offline: "Contra o computador ou a dois",
     endTitle: "Pronto para o apito inicial?", action: "Ação" },
   pages: {
     /** covers: Seitenarten, die hier nur ein Abschnitt sind (Anker), für die Einstellungs-Links im Spiel */
@@ -39,13 +39,13 @@ export default {
           html: `<p>Estão lado a lado? Então nem precisa de link: escolham “${esc(L["mode.local.name"])}” e joguem no mesmo aparelho, no mesmo teclado, com dois controles ou na tela de toque dividida ao meio.</p>
 <p>É o clássico jogo de futebol de cabeça para 2 jogadores, sem instalar nada.</p>` },
         { panel: true, id: "controles", h2: "Controles", html: `${controls()}
-<p>Toque rápido no pulo: meia altura; segurando: pulo completo. Jogando em dois no mesmo teclado, o jogador 2 usa ${kbd("←")}${kbd("→")} para correr, ${kbd("↑")} para pular, ${kbd("↓")} para o carrinho, ${kbd("Enter")} para chutar e ${kbd(".")} para o chute especial. No celular, jogue com a tela na horizontal.</p>` },
+<p>Toque rápido no pulo: meia altura; segurando: pulo completo. Jogando a dois no mesmo teclado, o jogador 2 usa ${kbd("←")}${kbd("→")} para correr, ${kbd("↑")} para pular, ${kbd("↓")} para o carrinho, ${kbd("Enter")} para chutar e ${kbd(".")} para o chute especial. No celular, jogue com a tela na horizontal.</p>` },
       ],
       faq: [
         ["O Headstars é grátis?", `Sim. O Headstars não custa nada. Moedas e joias para novas cabeças, bolas e arenas você ganha jogando.${PAYMENTS ? " Alguns conteúdos podem ser comprados, se você quiser." : " Não há compras com dinheiro real."}`],
         ["Preciso baixar alguma coisa ou criar conta?", `Não. O Headstars roda no navegador. Na primeira vez, o jogo cria uma conta de convidado, sem e-mail e sem senha. Se quiser salvar seu progresso ou continuar em outro aparelho, vincule a conta ao seu e-mail. Para a ${esc(L["mode.ranked.name"])} e os rankings, isso é obrigatório.`],
         ["Dá para jogar no celular?", `Sim. No celular e no tablet você joga pelo toque, de preferência com a tela na horizontal. Se o seu navegador oferecer, dá para instalar o Headstars como app (${esc(L["html.settings.einstellungen"])} → ${esc(L["install.title"])}).`],
-        ["Dá para jogar com controle?", "Sim. Os botões estão na tabela em “Controles”. Jogando em dois no mesmo aparelho, cada um pode usar seu próprio controle."],
+        ["Dá para jogar com controle?", "Sim. Os botões estão na tabela em “Controles”. Jogando a dois no mesmo aparelho, cada um pode usar seu próprio controle."],
         ["Como jogar com amigos online?", `Crie uma sala, mande o link e pronto. Passo a passo em <a href="#com-amigos">Jogar com amigos online</a>.`],
         ["Dá para jogar em 2 jogadores no mesmo computador?", `Sim. No modo “${esc(L["mode.local.name"])}”, vocês dividem o teclado ou usam dois controles. Online, cada um joga do seu aparelho.`],
         ["E se o link não chegar?", `Seu amigo também escolhe “${esc(L["mode.online.name"])}” no jogo e digita o código de sala de quatro caracteres em “${esc(L["html.online.codeVonDeinemKumpel"])}”.`],
