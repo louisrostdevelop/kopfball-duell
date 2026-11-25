@@ -13,7 +13,7 @@ import { App, inGame } from "./app/state.js";
 import { initRender, resize, setQuality } from "./ui/render/render.js";
 import { onKey, onPad } from "./ui/controls.js";
 import { $, applyI18n, toast } from "./ui/dom.js";
-import { detectLang, setLang, t } from "./content/i18n.js";
+import { detectLang, displayFont, setLang, t } from "./content/i18n.js";
 import { captchaBlockedModal, dailyModal, foreignLinkModal, linkErrorModal } from "./ui/modals.js";
 import { canInstall, initInstall, install, standalone } from "./ui/install.js";
 import { initNav, showScreen } from "./ui/nav.js";
@@ -134,7 +134,7 @@ async function boot() {
   $("netWaitLeave").onclick = giveUpWaiting;
   const unlockOnce = () => { webAudio.unlock(); if (!inGame()) webAudio.music(true, "menu"); window.removeEventListener("pointerdown", unlockOnce); window.removeEventListener("keydown", unlockOnce); };
   window.addEventListener("pointerdown", unlockOnce); window.addEventListener("keydown", unlockOnce);
-  const fontsReady = document.fonts ? Promise.all(["400 20px 'Lilita One'", "800 20px Nunito", "900 20px Nunito"].map(f => document.fonts.load(f).catch(() => {}))) : Promise.resolve();
+  const fontsReady = document.fonts ? Promise.all([`400 20px ${displayFont()}`, "800 20px Nunito", "900 20px Nunito"].map(f => document.fonts.load(f).catch(() => {}))) : Promise.resolve();
   Promise.race([fontsReady, new Promise(r => { setTimeout(r, 1500); })]).then(() => {
     $("loading").classList.add("done"); resize(); homeScreen();
     return takeResumable().catch(() => null);

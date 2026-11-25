@@ -5,7 +5,7 @@
 import { W, G, GOAL_W, HR, BAR_T, POWERUPS } from "../../content/config.js";
 import { pr, shoeGeo } from "../../core/physics.js";
 import { PU } from "../../core/sim/tuning.js";
-import { t as trn } from "../../content/i18n.js";
+import { displayFont, t as trn } from "../../content/i18n.js";
 import { drawHead } from "./art.js";
 import { FAM_HI, drawBadge, drawChip, drawOrb, endPulse, famCol, famOf, hexA, reducedMotion, star, starPath } from "./powerup-art.js";
 import { INK, TAU, circ } from "./paint.js";
@@ -79,7 +79,7 @@ function drawPP(c, add) {
         c.fillStyle = k > 0.5 ? "#ffd36b" : p.col; c.fill(); break;
       }
       case "text":
-        c.font = `${p.size}px 'Lilita One', Impact, sans-serif`; c.textAlign = "center"; c.textBaseline = "alphabetic"; c.lineJoin = "round";
+        c.font = `${p.size}px ${displayFont()}`; c.textAlign = "center"; c.textBaseline = "alphabetic"; c.lineJoin = "round";
         c.lineWidth = 6; c.strokeStyle = INK; c.strokeText(p.text, 0, 0); c.fillStyle = p.col; c.fillText(p.text, 0, 0); break;
     }
   }
@@ -728,7 +728,7 @@ export function drawPuBanner(c, y0) {
   const a = Math.min(1, tt * 6) * (tt > BANNER_DUR - 0.3 ? Math.max(0, (BANNER_DUR - tt) / 0.3) : 1);
   const name = String(info.name || k).toUpperCase(), tag = String(info.tag || ""), by = y0 + 44 - (reducedMotion() ? 0 : (1 - Math.min(1, tt * 5)) * 30);
   c.save(); c.globalAlpha = a; c.translate(W / 2, by); c.rotate(-0.04); c.scale(s, s);
-  c.textAlign = "center"; c.textBaseline = "alphabetic"; c.lineJoin = "round"; c.font = "44px 'Lilita One', Impact, sans-serif";
+  c.textAlign = "center"; c.textBaseline = "alphabetic"; c.lineJoin = "round"; c.font = `44px ${displayFont()}`;
   const hw = Math.max(c.measureText(name).width, tag ? tag.length * 9 : 0) / 2 + 8;
   bannerBox = { x0: W / 2 - hw, x1: W / 2 + hw, y0: by - 44, y1: by + (tag ? 38 : 10) };
   c.lineWidth = 11; c.strokeStyle = INK; c.strokeText(name, 0, 0); c.lineWidth = 4.5; c.strokeStyle = "#fff"; c.strokeText(name, 0, 0); c.fillStyle = col; c.fillText(name, 0, 0);

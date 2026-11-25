@@ -20,7 +20,19 @@ export function detectLang(list = (globalThis.navigator && (navigator.languages 
   for (const l of list) { const k = String(l || "").slice(0, 2).toLowerCase(); if (LANGS[k]) return k; }
   return "en";
 }
-export function setLang(l) { cur = LANGS[l] ? l : "de"; if (globalThis.document) document.documentElement.lang = cur; return cur; }
+/** Sprachen, deren Zeichen Lilita One nicht hat: Überschriften dort in Nunito 900 (css/style.css, :lang) */
+const NUNITO_DISPLAY = new Set(["vi", "uk", "ru"]);
+/** Schrift für Überschriften im Canvas (ctx.font = `20px ${displayFont()}`) */
+export const displayFont = () => (NUNITO_DISPLAY.has(cur) ? "'Nunito Display', 'Arial Black', sans-serif" : "'Lilita One', Impact, sans-serif");
+export function setLang(l) {
+  cur = LANGS[l] ? l : "de";
+  if (globalThis.document) {
+    document.documentElement.lang = cur;
+    // Canvas lädt Schriften nicht selbst nach: die Teilmengen dieser Sprache vorab holen
+    if (NUNITO_DISPLAY.has(cur) && document.fonts) for (const f of ["20px 'Nunito Display'", "800 20px Nunito", "900 20px Nunito"]) document.fonts.load(f, cur === "vi" ? "ăạ" : "Жї").catch(() => {});
+  }
+  return cur;
+}
 export const lang = () => cur;
 
 export function t(key, p) {
