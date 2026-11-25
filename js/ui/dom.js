@@ -37,7 +37,7 @@ export function copyText(s) {
 export function seg(el, opts, cur, on) {
   el.innerHTML = "";
   opts.forEach(o => {
-    const b = document.createElement("button"); b.textContent = o.t; b.classList.toggle("on", o.v === cur); b.disabled = !!o.dis;
+    const b = document.createElement("button"); b.textContent = o.t; b.classList.toggle("on", o.v === cur); b.disabled = !!o.dis; if (o.title) b.title = o.title;
     b.onclick = () => { A.sfx("click"); $$("button", el).forEach(x => x.classList.remove("on")); b.classList.add("on"); on(o.v); };
     el.append(b);
   });

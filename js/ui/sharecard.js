@@ -2,16 +2,15 @@
 // Namen, großes Ergebnis, Ausgang aus Sicht des Teilenden und die Adresse. Stil wie Startseite und Ladebildschirm.
 import { avatarCanvas } from "./render/art.js";
 import { BRAND } from "./brand.js";
-import { t } from "../content/i18n.js";
+import { displayFont, t } from "../content/i18n.js";
 
 const W = 1080, H = 1350, B = BRAND;
-const FONT = "'Lilita One', 'Arial Black', Impact, sans-serif";
 
 const loadImg = src => new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
 
 /** Text mit dunkler Kontur und Kante nach unten (wie die Knöpfe im Spiel) */
 function bold(x, s, cx, cy, size, fill, { align = "center", edge = 0.07 } = {}) {
-  x.font = `${size}px ${FONT}`; x.textAlign = align; x.textBaseline = "alphabetic"; x.lineJoin = "round";
+  x.font = `${size}px ${displayFont()}`; x.textAlign = align; x.textBaseline = "alphabetic"; x.lineJoin = "round";
   x.lineWidth = size * 0.17; x.strokeStyle = B.ink; x.fillStyle = B.ink;
   x.strokeText(s, cx, cy + size * edge); x.fillText(s, cx, cy + size * edge);
   x.strokeText(s, cx, cy);
@@ -20,7 +19,7 @@ function bold(x, s, cx, cy, size, fill, { align = "center", edge = 0.07 } = {}) 
 
 /** Name passend kürzen */
 function fit(x, s, size, max) {
-  x.font = `${size}px ${FONT}`;
+  x.font = `${size}px ${displayFont()}`;
   while (s.length > 3 && x.measureText(s).width > max) s = s.slice(0, -2) + "…";
   return s;
 }
@@ -31,7 +30,7 @@ function fit(x, s, size, max) {
  * @returns {Promise<Blob>}
  */
 export async function shareCard(o) {
-  if (document.fonts) await Promise.all([document.fonts.load(`80px ${FONT}`), document.fonts.load("900 40px Nunito")]).catch(() => {});
+  if (document.fonts) await Promise.all([document.fonts.load(`80px ${displayFont()}`), document.fonts.load("900 40px Nunito")]).catch(() => {});
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const x = c.getContext("2d");
   // Hintergrund: Lichtkegel und unscharfe Stadionlichter
@@ -88,7 +87,7 @@ export async function shareCard(o) {
   const cta = t("share.card.cta");
   x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = B.ink;
   x.font = `900 40px Nunito, sans-serif`; x.fillText(cta, W / 2, by + 44, bw - 80);
-  x.font = `62px ${FONT}`; x.fillText(o.url, W / 2, by + 92);
+  x.font = `62px ${displayFont()}`; x.fillText(o.url, W / 2, by + 92);
 
   return await new Promise(ok => { c.toBlob(ok, "image/png"); });
 }

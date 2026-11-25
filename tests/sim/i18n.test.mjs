@@ -1,4 +1,4 @@
-// Mehrsprachigkeit: beide Sprachen vollständig, keine fest eingebauten Texte in Code und HTML
+// Mehrsprachigkeit: alle Sprachen vollständig, keine fest eingebauten Texte in Code und HTML
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -14,14 +14,23 @@ const files = dir => readdirSync(join(ROOT, dir)).flatMap(f => { const p = join(
 const de = I.LANGS.de;
 const ph = v => (typeof v === "string" ? [...v.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(",") : "fn");
 
-test("jede Sprache in LANGS hat dieselben Schlüssel wie Deutsch, keine leeren Texte, gleiche Platzhalter", () => {
-  for (const [l, tr] of Object.entries(I.LANGS)) {
+test("alle Sprachen haben die Schlüssel von Deutsch, keine leeren Texte, gleiche Platzhalter", () => {
+  for (const [l, x] of Object.entries(I.LANGS)) {
     assert.ok(I.LANG_NAMES[l], "kein Name im Sprachwähler: " + l);
-    assert.deepEqual(Object.keys(tr).sort(), Object.keys(de).sort(), l);
+    assert.deepEqual(Object.keys(x).sort(), Object.keys(de).sort(), l);
     for (const [k, v] of Object.entries(de)) {
-      assert.ok(typeof tr[k] === "function" || tr[k].trim(), `${l}: leer: ${k}`);
-      assert.equal(ph(tr[k]), ph(v), `${l}: Platzhalter verschieden: ${k}`);
-      if (typeof v === "function") assert.equal(typeof tr[k], "function", `${l}: ${k}`);
+      const w = x[k];
+      assert.ok(typeof v === "function" || v.trim(), "leer: " + k);
+      if (typeof v === "function") { assert.equal(typeof w, "function", `${l}: ${k}`); continue; }
+      if (typeof w === "string") { assert.ok(w.trim(), `${l} leer: ${k}`); assert.equal(ph(w), ph(v), `${l} Platzhalter verschieden: ${k}`); continue; }
+      // Funktion statt Text (Pluralformen): setzt jeden Platzhalter selbst ein, für jede Zahl
+      const names = ph(v).split(",").filter(Boolean);
+      for (const n of [1, 2, 5, 11, 21, 22]) {
+        const p = Object.fromEntries(names.map((q, i) => [q, q === "n" ? n : 900 + i]));
+        const out = w(p);
+        assert.ok(typeof out === "string" && !/\{\w+\}/.test(out), `${l}: ${k}`);
+        for (const val of Object.values(p)) assert.ok(out.includes(String(val)), `${l} Platzhalter fehlt: ${k} -> ${out}`);
+      }
     }
   }
 });
@@ -76,9 +85,10 @@ test("Spielinhalte sind in allen Sprachen übersetzt", () => {
   I.setLang("de"); assert.equal(C.MODES.find(m => m.id === "quick").name, "Schnelles Spiel");
 });
 
-test("Sprache vom Gerät: eigene Sprache für de-*, es-*, pt-*, sonst Englisch", () => {
+test("Sprache vom Gerät, wenn wir sie haben, sonst Englisch", () => {
   assert.equal(I.detectLang(["de-AT"]), "de"); assert.equal(I.detectLang(["fr-FR", "en-GB"]), "en"); assert.equal(I.detectLang(["ja"]), "en");
   assert.equal(I.detectLang(["es-MX"]), "es"); assert.equal(I.detectLang(["es-AR"]), "es"); assert.equal(I.detectLang(["pt-BR"]), "pt");
+  for (const l of ["vi-VN", "uk-UA", "ru-RU"]) assert.equal(I.detectLang([l]), l.slice(0, 2));
 });
 
 test("Sprache aus dem Link (?lang=) geht vor die Gerätesprache, Unbekanntes zählt nicht", () => {

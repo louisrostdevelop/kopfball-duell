@@ -3,9 +3,9 @@
 // d: { you, opp, mate, ball, tier, record, day, code }
 import { drawBall, drawHead } from "./art.js";
 import { INK } from "./paint.js";
+import { displayFont } from "../../content/i18n.js";
 
 const W = 120, H = 90;
-const DISPLAY = '"Lilita One", "Arial Black", sans-serif';
 
 /** Szene `id` in die Leinwand malen (Größe in CSS-Pixeln, dpr = Pixeldichte) */
 export function drawModeScene(cv, id, d, dpr = Math.min(2, window.devicePixelRatio || 1)) {
@@ -57,7 +57,7 @@ function speed(x, cx, cy) {
   x.restore();
 }
 function text(x, str, cx, cy, size, fill = INK) {
-  x.font = `${size}px ${DISPLAY}`; x.textAlign = "center"; x.textBaseline = "alphabetic"; x.fillStyle = fill; x.fillText(str, cx, cy);
+  x.font = `${size}px ${displayFont()}`; x.textAlign = "center"; x.textBaseline = "alphabetic"; x.fillStyle = fill; x.fillText(str, cx, cy);
 }
 function trophy(x, s, cx, cy, k) {
   x.save(); x.translate(cx, cy); x.scale(k, k);
