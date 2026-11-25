@@ -33,7 +33,9 @@ export function setLang(l) {
   if (globalThis.document) {
     document.documentElement.lang = cur;
     // Canvas lädt Schriften nicht selbst nach: die Teilmengen dieser Sprache vorab holen
-    if (NUNITO_DISPLAY.has(cur) && document.fonts) for (const f of ["20px 'Nunito Display'", "800 20px Nunito", "900 20px Nunito"]) document.fonts.load(f, cur === "vi" ? "ăạ" : "Жї").catch(() => {});
+    // (zurück auf eine Latein-Sprache: Lilita One, sonst zeichnet der Canvas kurz in Impact)
+    const fonts = NUNITO_DISPLAY.has(cur) ? ["20px 'Nunito Display'", "800 20px Nunito", "900 20px Nunito"] : ["20px 'Lilita One'"];
+    if (document.fonts) for (const f of fonts) document.fonts.load(f, cur === "vi" ? "ăạ" : NUNITO_DISPLAY.has(cur) ? "Жї" : "Ab").catch(() => {});
   }
   return cur;
 }

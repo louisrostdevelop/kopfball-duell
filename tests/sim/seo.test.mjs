@@ -33,11 +33,16 @@ function checkGroups(pages, out) {
     const { alt, top, current, foot } = linksOf(html);
     assert.deepEqual(alt, { ...Object.fromEntries(same.map(x => [x.lang, SITE + x.path])), ...(def ? { "x-default": SITE + def.path } : {}) }, p.path);
     for (const x of same) assert.equal(linksOf(out[fileOf(x.path)]).alt[p.lang], SITE + p.path, x.path + " zeigt zurück auf " + p.path);
-    const others = same.filter(x => x !== p).map(x => [x.lang, x.path]);
-    // oben: ein Knopf, die Liste nennt alle Sprachen der Seitenart, die eigene als aktuelle; unten: die anderen
-    assert.deepEqual(top, same.length > 1 ? same.map(x => [x.lang, x.path]) : [], p.path + ": Sprachwahl oben");
-    assert.deepEqual(current, same.length > 1 ? [p.path] : [], p.path + ": aktuelle Sprache markiert");
-    if (same.length > 1) assert.match(html, new RegExp(`<details class="lp-lang"><summary class="lp-top__lang lp-lang__btn">.*<span class="lp-lang__cur">${p.D.name}</span>`), p.path);
+    // Sprachwahl: jede Sprache mit dieser Seitenart, sonst ihre Hauptseite mit Abschnitts-Anker (covers), sonst nicht
+    const menu = [...new Set(pages.map(x => x.lang))].flatMap(l => {
+      const own = same.find(x => x.lang === l), main = pages.find(x => x.lang === l && x.covers[p.kind]);
+      return own ? [[l, own.path]] : main ? [[l, `${main.path}#${main.covers[p.kind]}`]] : [];
+    });
+    const others = menu.filter(([, path]) => path !== p.path);
+    // oben: ein Knopf, die Liste nennt alle Sprachen, die eigene als aktuelle; unten: die anderen
+    assert.deepEqual(top, menu.length > 1 ? menu : [], p.path + ": Sprachwahl oben");
+    assert.deepEqual(current, menu.length > 1 ? [p.path] : [], p.path + ": aktuelle Sprache markiert");
+    if (menu.length > 1) assert.match(html, new RegExp(`<details class="lp-lang"><summary class="lp-top__lang lp-lang__btn">.*<span class="lp-lang__cur">${p.D.name}</span>`), p.path);
     assert.deepEqual(foot, others, p.path + ": Umschalter unten");
   }
 }
@@ -45,6 +50,11 @@ function checkGroups(pages, out) {
 test("je Seite: Sprache, H1, canonical auf sich selbst, hreflang-Gruppe gegenseitig mit x-default, Sprachumschalter", () => {
   assert.deepEqual(PAGES.filter(p => ["de", "en"].includes(p.lang)).map(p => [p.lang, p.kind]), [["de", "main"], ["de", "friends"], ["en", "main"], ["en", "friends"]]);
   checkGroups(PAGES, files);
+  // Freunde-Seite: Sprachwahl mit allen Sprachen (pt nur als Abschnitt), hreflang nur mit echten Freunde-Seiten
+  const fr = files["de/gegen-freunde/index.html"];
+  assert.equal(linksOf(fr).top.length, LANGS.length);
+  assert.ok(linksOf(fr).top.some(([l, h]) => l === "pt" && h === "/pt/#com-amigos"));
+  assert.ok(!("pt" in linksOf(fr).alt));
 });
 
 test("Sprachcodes = Spielsprachen (uk, nie das Landeskürzel ua); og:locale mit Land", async () => {

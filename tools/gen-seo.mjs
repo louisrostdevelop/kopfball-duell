@@ -20,6 +20,8 @@ const MIN_LEVEL = { casual: +mm[1], ranked: +mm[2] };
 // Symbole aus dem Spiel (index.html), damit die Seiten dieselben Icons zeigen
 const INDEX = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const symbol = id => { const m = INDEX.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`)); if (!m) throw new Error("Symbol fehlt: " + id); return m[0]; };
+/** Schrift der Überschriften je Sprache (css/landing.css: vi/uk/ru in Nunito 900, Lilita One hat die Zeichen nicht), vorab geladen */
+const DISPLAY_FONTS = { vi: ["nunito-900", "nunito-900-vietnamese"], uk: ["nunito-900-cyrillic"], ru: ["nunito-900-cyrillic"] };
 const ICONS = ["i-play", "i-users", "i-globe", "i-trophy", "i-star", "i-cal", "i-inf", "i-target", "i-crown", "i-share", "i-bolt", "i-stadium"];
 
 /** Form einer Sprachdatei wie tools/seo/de.mjs: dieselben Felder (ui, media …), Listen gleich lang, Texte nicht leer, nur
@@ -161,9 +163,19 @@ ${s.html}
 // ---------- Seite ----------
 /** Sprachumschalter: ein Knopf mit der aktuellen Sprache, darunter dieselbe Seite in jeder Sprache, die sie hat (echte Links,
  *  ohne Skript über <details> bedienbar; js/landing-src.js schließt bei Klick daneben und Escape) */
+/** Ziele des Sprachumschalters: dieselbe Seitenart in jeder Sprache; hat eine Sprache sie nur als Abschnitt ihrer
+ *  Hauptseite (covers), dann die Hauptseite mit Anker (z. B. /pt/#com-amigos). hreflang nennt weiter nur echte Gegenstücke. */
+export function langTargets(p, pages = PAGES) {
+  return [...new Set(pages.map(x => x.lang))].flatMap(l => {
+    const own = pages.find(x => x.lang === l && x.kind === p.kind);
+    if (own) return [own];
+    const main = pages.find(x => x.lang === l && x.covers[p.kind]);
+    return main ? [{ ...main, path: `${main.path}#${main.covers[p.kind]}` }] : [];
+  });
+}
 function langMenu(p, same, u) {
   if (same.length < 2) return "";
-  const item = o => `<li><a class="lp-lang__item" href="${o.path}" hreflang="${o.lang}" lang="${o.lang}"${o === p ? ` aria-current="page"` : ` title="${esc(o.D.thisPage)}"`}>${esc(o.D.name)}${o === p ? `<span class="lp-lang__check" aria-hidden="true"></span>` : ""}</a></li>`;
+  const item = o => `<li><a class="lp-lang__item" href="${o.path}" hreflang="${o.lang}" lang="${o.lang}"${o.path === p.path ? ` aria-current="page"` : ` title="${esc(o.D.thisPage)}"`}>${esc(o.D.name)}${o.path === p.path ? `<span class="lp-lang__check" aria-hidden="true"></span>` : ""}</a></li>`;
   return `<nav class="lp-top__langs" aria-label="${esc(u.langs)}"><details class="lp-lang"><summary class="lp-top__lang lp-lang__btn">${icon("i-globe")}<span class="lp-sr">${esc(u.langs)}: </span><span class="lp-lang__cur">${esc(p.D.name)}</span><span class="lp-lang__caret" aria-hidden="true"></span></summary>
 <ul class="lp-lang__list">${same.map(item).join("")}</ul></details></nav>`;
 }
@@ -171,7 +183,7 @@ function langMenu(p, same, u) {
 function page(p, pages) {
   const c = p.build(helpers(p, pages)), u = p.D.ui;
   checkContent(c, `tools/seo/${p.lang}.mjs pages.${p.kind}`);
-  const others = group(p, pages).filter(x => x !== p), siblings = pages.filter(x => x.lang === p.lang && x !== p);
+  const others = langTargets(p, pages).filter(x => x.path !== p.path), siblings = pages.filter(x => x.lang === p.lang && x !== p);
   const cta = (cls = "") => `<a class="lp-btn${cls}" href="${playUrl(p)}">${icon("i-play", "lp-btn__ico")}<span>${u.play}</span></a>`;
   const legal = ["imprint", "privacy", "terms"].map((f, i) => `<a href="/legal/${f}.html?lang=${p.lang}">${u.legal[i]}</a>`).join("");
   const poster = `/landing/poster-${p.lang}`;
@@ -199,7 +211,7 @@ ${alternates(p, pages).map(([l, h]) => `<link rel="alternate" hreflang="${l}" hr
 <link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preload" as="image" href="${poster}-640.webp" imagesrcset="${SIZES.poster.map(w => `${poster}-${w}.webp ${w}w`).join(", ")}" imagesizes="(max-width: 899px) 40vw, 100vw" fetchpriority="high">
-<link rel="preload" href="/fonts/lilita.woff2" as="font" type="font/woff2" crossorigin>
+${(DISPLAY_FONTS[p.lang] || ["lilita"]).map(f => `<link rel="preload" href="/fonts/${f}.woff2" as="font" type="font/woff2" crossorigin>`).join("\n")}
 <link rel="stylesheet" href="/css/landing.css">
 <script type="module" src="/js/landing-src.js"></script>
 </head>
@@ -207,7 +219,7 @@ ${alternates(p, pages).map(([l, h]) => `<link rel="alternate" hreflang="${l}" hr
 <svg class="lp-sprite" aria-hidden="true">${ICONS.map(symbol).join("")}</svg>
 <header class="lp-top">
 <a class="lp-top__brand" href="${playUrl(p)}"><img src="/icons/wordmark.webp" width="600" height="200" alt="Headstars"></a>
-${langMenu(p, group(p, pages), u)}
+${langMenu(p, langTargets(p, pages), u)}
 </header>
 <main>
 <section class="lp-hero">
