@@ -1,5 +1,5 @@
 // Erzeugt die Infoseiten für Suchmaschinen (je Sprache aus tools/seo/langs.mjs, z. B. de/, de/gegen-freunde/, en/,
-// en/play-with-friends/), sitemap.xml und robots.txt. Zahlen und Namen (Köpfe, Supers, Arenen, Modi, Sperren) kommen aus dem
+// en/play-with-friends/), sitemap.xml, robots.txt und die Liste der Infoseiten fürs Spiel (js/content/info-pages.js). Zahlen und Namen (Köpfe, Supers, Arenen, Modi, Sperren) kommen aus dem
 // Spiel, damit die Seiten stimmen, wenn sich das Spiel ändert. Nach einer Änderung: `npm run seo`. Ein Test prüft, dass die
 // Dateien aktuell sind. Texte je Sprache: tools/seo/<lang>.mjs; hier nur Aufbau und Bausteine.
 // Bilder und Gameplay-Loop: landing/ (tools/gen-landing-media.mjs, aus dem echten Spiel aufgenommen).
@@ -249,6 +249,19 @@ ${[url("/"), ...pages.map(p => url(p.path, alternates(p, pages)))].join("\n")}
 </urlset>
 `;
 }
+/** Infoseiten je Sprache und Art für die Links in den Einstellungen des Spiels (js/ui/screens/settings.js): Pfade relativ
+ *  zur Startseite; jede Art gibt es in DEFAULT_LANG, das ist der Ersatz für Sprachen ohne eigene Seite dieser Art */
+export function infoPages(pages = PAGES) {
+  const by = {};
+  for (const p of pages) (by[p.lang] ||= {})[p.kind] = p.path.slice(1);
+  for (const kind of new Set(pages.map(p => p.kind))) if (!by[DEFAULT_LANG]?.[kind]) throw new Error(`tools/seo/${DEFAULT_LANG}.mjs: Seite „${kind}“ fehlt (Ersatz für die Einstellungs-Links)`);
+  return `// ERZEUGT von tools/gen-seo.mjs. Nicht von Hand ändern: npm run seo.
+/** Infoseiten je Sprache und Art, Pfad relativ zur Startseite (Einstellungen → Info) */
+export const INFO_PAGES = ${JSON.stringify(by, null, 2)};
+/** Sprache, deren Seiten einspringen, wenn die Spielsprache eine Art nicht hat */
+export const INFO_DEFAULT = "${DEFAULT_LANG}";
+`;
+}
 export const robots = () => `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`;
 
 /** Alle erzeugten Dateien: Pfad relativ zum Projekt → Inhalt (langs: Sprachen wie in tools/seo/langs.mjs) */
@@ -259,7 +272,7 @@ export function seoFiles(langs = LANGS) {
     if (out.includes("undefined")) throw new Error(`${fileOf(p.path)}: „undefined“ im HTML (Text in tools/seo/${p.lang}.mjs oder Spieltext-Schlüssel in js/content/i18n/${p.lang}.js fehlt)`);
     return out;
   };
-  return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), html(p)])), "sitemap.xml": sitemap(pages), "robots.txt": robots() };
+  return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), html(p)])), "sitemap.xml": sitemap(pages), "robots.txt": robots(), "js/content/info-pages.js": infoPages(pages) };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2] === "--dirs") console.log(pageDirs().join(" "));   // i18n-ok
@@ -269,5 +282,5 @@ else if (process.argv[1] === fileURLToPath(import.meta.url)) {
     mkdirSync(dirname(fileURLToPath(to)), { recursive: true });
     writeFileSync(to, body);
   }
-  console.log("Infoseiten, sitemap.xml und robots.txt geschrieben");   // i18n-ok
+  console.log("Infoseiten, sitemap.xml, robots.txt und js/content/info-pages.js geschrieben");   // i18n-ok
 }

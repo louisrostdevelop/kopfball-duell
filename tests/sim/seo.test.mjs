@@ -50,8 +50,9 @@ test("dritte Sprache mit nur der Hauptseite: hreflang vollständig und gegenseit
   const langs = [...LANGS, xx], pages = pagesOf(langs), out = seoFiles(langs);
   checkGroups(pages, out);
   const main = pages.filter(p => p.kind === "main"), friends = pages.filter(p => p.kind === "friends");
-  for (const p of main) assert.deepEqual(alternates(p, pages).map(a => a[0]), ["de", "en", "xx", "x-default"], p.path);
-  for (const p of friends) assert.deepEqual(alternates(p, pages).map(a => a[0]), ["de", "en", "x-default"], p.path);
+  const withFriends = LANGS.filter(D => D.pages.friends).map(D => D.lang);
+  for (const p of main) assert.deepEqual(alternates(p, pages).map(a => a[0]), [...LANGS.map(D => D.lang), "xx", "x-default"], p.path);
+  for (const p of friends) assert.deepEqual(alternates(p, pages).map(a => a[0]), [...withFriends, "x-default"], p.path);
   const xhtml = out["xx/index.html"];
   assert.match(xhtml, /<nav class="lp-top__langs" aria-label="Languages">/, "mehrere Sprachen: Liste im Kopf");
   assert.doesNotMatch(tag(xhtml, /<nav class="lp-foot__nav">(.*?)<\/nav>/), /play-with-friends/, "keine eigene Freunde-Seite: kein Link im Fuß");
@@ -127,7 +128,7 @@ test("sitemap.xml: Startseite und alle Infoseiten mit hreflang; robots.txt nennt
   assert.match(files["robots.txt"], new RegExp(`^Sitemap: ${SITE}/sitemap\\.xml$`, "m"));
 });
 
-test("Startseite: Titel, canonical, Structured Data ohne Bewertungen, Links zu allen Infoseiten", () => {
+test("Startseite: Titel, canonical, Structured Data ohne Bewertungen, Einstellungs-Links auf die Infoseiten", () => {
   const html = read("index.html");
   assert.match(tag(html, /<title>([^<]*)<\/title>/), /^Headstars – Kopfball-Fußball/);
   assert.doesNotMatch(tag(html, /<title>([^<]*)<\/title>/), FOREIGN);
@@ -138,7 +139,18 @@ test("Startseite: Titel, canonical, Structured Data ohne Bewertungen, Links zu a
   assert.ok(game["@type"].includes("WebApplication"));
   assert.equal(game.offers.price, 0);
   assert.ok(!("aggregateRating" in game) && !("review" in game), "keine erfundenen Bewertungen");
-  for (const p of PAGES) assert.match(html, new RegExp(`class="setlink" href="${p.path.slice(1)}"`));
+  // je Seitenart ein Link, ohne Skript auf die Seite von DEFAULT_LANG; das Spiel setzt die der Spielsprache aus info-pages.js
+  const kinds = [...new Set(PAGES.map(p => p.kind))];
+  for (const kind of kinds) assert.match(html, new RegExp(`class="setlink" data-info="${kind}" href="${PAGES.find(p => p.kind === kind && p.lang === DEFAULT_LANG).path.slice(1)}" hreflang="${DEFAULT_LANG}"`), kind);
+  assert.equal((html.match(/class="setlink" data-info=/g) || []).length, kinds.length, "keine Links je Sprache von Hand");
+});
+
+test("js/content/info-pages.js: jede Infoseite je Sprache und Art, Ersatzsprache hat jede Art", async () => {
+  const { INFO_PAGES, INFO_DEFAULT } = await import("../../js/content/info-pages.js");
+  assert.equal(INFO_DEFAULT, DEFAULT_LANG);
+  assert.deepEqual(Object.entries(INFO_PAGES).flatMap(([l, k]) => Object.entries(k).map(([kind, path]) => [l, kind, path])), PAGES.map(p => [p.lang, p.kind, p.path.slice(1)]));
+  const { LANGS: GAME } = await import("../../js/content/i18n.js");
+  for (const l of Object.keys(INFO_PAGES)) assert.ok(GAME[l], "Infoseite ohne Spielsprache: " + l);
 });
 
 test("Infoseiten werden veröffentlicht: Sprachordner kommen aus tools/seo/langs.mjs", () => {

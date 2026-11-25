@@ -51,7 +51,7 @@ body.lp {
   position: absolute; inset: 0 0 auto; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: max(14px, env(safe-area-inset-top)) max(var(--lp-gut), env(safe-area-inset-right)) 0 max(var(--lp-gut), env(safe-area-inset-left));
 }
-.lp-top__brand { width: clamp(132px, 16vw, 210px); filter: drop-shadow(0 4px 0 rgb(8 12 40 / 45%)); }
+.lp-top__brand { flex: none; width: clamp(132px, 16vw, 210px); filter: drop-shadow(0 4px 0 rgb(8 12 40 / 45%)); }
 .lp-top__brand img { width: 100%; height: auto; }
 
 .lp-top__lang {
@@ -59,7 +59,14 @@ body.lp {
   color: var(--lp-on-blue) !important; text-decoration: none; background: rgb(8 16 63 / 55%); border: 2px solid rgb(255 255 255 / 35%);
 }
 .lp-top__lang:hover { background: rgb(8 16 63 / 80%); border-color: var(--lp-on-blue); }
-.lp-top__langs { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+
+/* eine Zeile, egal wie viele Sprachen: was nicht passt, wischt man seitlich (der Hero rechnet mit einer Zeile Kopf) */
+.lp-top__langs {
+  display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+  padding: 4px; margin: -4px;
+}
+.lp-top__langs .lp-top__lang { flex: none; }
+.lp-top__langs .lp-top__lang:first-child { margin-left: auto; }
 
 /* ---------- Hero: Spielszene über den ganzen ersten Bildschirm ---------- */
 .lp-hero { position: relative; isolation: isolate; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }

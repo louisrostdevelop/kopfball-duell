@@ -1,11 +1,12 @@
-// Einstellungen in Tabs: Allgemein, Steuerung (Tabelle fürs Gerät), Info (Rechtliches)
+// Einstellungen in Tabs: Allgemein, Steuerung (Tabelle fürs Gerät), Info (Rechtliches, Infoseiten)
 import { S, save } from "../../app/profile.js";
 import { setQuality } from "../render/render.js";
 import { $, applyI18n, seg, toggle } from "../dom.js";
 import { audio as A, input as I } from "../../app/services.js";
 import { registerScreen } from "../nav.js";
 import { refreshTop } from "./home.js";
-import { detectLang, LANG_NAMES, setLang, t } from "../../content/i18n.js";
+import { detectLang, LANG_NAMES, lang, setLang, t } from "../../content/i18n.js";
+import { INFO_DEFAULT, INFO_PAGES } from "../../content/info-pages.js";
 
 let tab = "general", ctl = null;
 const kbd = s => `<kbd>${s}</kbd>`;
@@ -18,6 +19,16 @@ const ACTIONS = () => [
   ["html.settings.super", [kbd("E"), kbd(".")], kbd("Y") + kbd("RB"), t("ctl.superBtn")],
   ["ctl.emotes", [kbd("1") + "–" + kbd("4"), "–"], "–", t("ctl.emoteBtn")],
 ];
+
+/** Links auf die Infoseiten (data-info = Seitenart): Seite der Spielsprache, sonst die englische mit Hinweis im Text */
+function infoLinks() {
+  document.querySelectorAll("#scr-settings a[data-info]").forEach(a => {
+    const kind = a.dataset.info, own = INFO_PAGES[lang()]?.[kind], l = own ? lang() : INFO_DEFAULT;
+    const name = t(kind === "main" ? "set.infoMain" : "set.infoFriends");
+    a.setAttribute("href", INFO_PAGES[l][kind]); a.setAttribute("hreflang", l);
+    a.querySelector("span").textContent = own ? name : t("set.infoInDefault", { page: name });
+  });
+}
 
 function controls() {
   ctl ??= document.body.classList.contains("is-touch") ? "touch" : "keys";
@@ -43,6 +54,7 @@ export function settingsScreen() {
     applyI18n(); refreshTop(); settingsScreen();   // feste Texte sofort, Bildschirme beim nächsten Anzeigen
   });
   seg($("segQual"), [{ v: "high", t: t("set.qHigh") }, { v: "low", t: t("set.qLow") }], S.quality, v => { S.quality = v; setQuality(v); save(); });
+  infoLinks();
   showTab(tab);
 }
 

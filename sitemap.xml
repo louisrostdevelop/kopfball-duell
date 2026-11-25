@@ -4,17 +4,40 @@
 <url><loc>https://headstars.app/de/</loc>
   <xhtml:link rel="alternate" hreflang="de" href="https://headstars.app/de/"/>
   <xhtml:link rel="alternate" hreflang="en" href="https://headstars.app/en/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://headstars.app/es/"/>
+  <xhtml:link rel="alternate" hreflang="pt" href="https://headstars.app/pt/"/>
   <xhtml:link rel="alternate" hreflang="x-default" href="https://headstars.app/en/"/></url>
 <url><loc>https://headstars.app/de/gegen-freunde/</loc>
   <xhtml:link rel="alternate" hreflang="de" href="https://headstars.app/de/gegen-freunde/"/>
   <xhtml:link rel="alternate" hreflang="en" href="https://headstars.app/en/play-with-friends/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://headstars.app/es/jugar-con-amigos/"/>
   <xhtml:link rel="alternate" hreflang="x-default" href="https://headstars.app/en/play-with-friends/"/></url>
 <url><loc>https://headstars.app/en/</loc>
   <xhtml:link rel="alternate" hreflang="de" href="https://headstars.app/de/"/>
   <xhtml:link rel="alternate" hreflang="en" href="https://headstars.app/en/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://headstars.app/es/"/>
+  <xhtml:link rel="alternate" hreflang="pt" href="https://headstars.app/pt/"/>
   <xhtml:link rel="alternate" hreflang="x-default" href="https://headstars.app/en/"/></url>
 <url><loc>https://headstars.app/en/play-with-friends/</loc>
   <xhtml:link rel="alternate" hreflang="de" href="https://headstars.app/de/gegen-freunde/"/>
   <xhtml:link rel="alternate" hreflang="en" href="https://headstars.app/en/play-with-friends/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://headstars.app/es/jugar-con-amigos/"/>
   <xhtml:link rel="alternate" hreflang="x-default" href="https://headstars.app/en/play-with-friends/"/></url>
+<url><loc>https://headstars.app/es/</loc>
+  <xhtml:link rel="alternate" hreflang="de" href="https://headstars.app/de/"/>
+  <xhtml:link rel="alternate" hreflang="en" href="https://headstars.app/en/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://headstars.app/es/"/>
+  <xhtml:link rel="alternate" hreflang="pt" href="https://headstars.app/pt/"/>
+  <xhtml:link rel="alternate" hreflang="x-default" href="https://headstars.app/en/"/></url>
+<url><loc>https://headstars.app/es/jugar-con-amigos/</loc>
+  <xhtml:link rel="alternate" hreflang="de" href="https://headstars.app/de/gegen-freunde/"/>
+  <xhtml:link rel="alternate" hreflang="en" href="https://headstars.app/en/play-with-friends/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://headstars.app/es/jugar-con-amigos/"/>
+  <xhtml:link rel="alternate" hreflang="x-default" href="https://headstars.app/en/play-with-friends/"/></url>
+<url><loc>https://headstars.app/pt/</loc>
+  <xhtml:link rel="alternate" hreflang="de" href="https://headstars.app/de/"/>
+  <xhtml:link rel="alternate" hreflang="en" href="https://headstars.app/en/"/>
+  <xhtml:link rel="alternate" hreflang="es" href="https://headstars.app/es/"/>
+  <xhtml:link rel="alternate" hreflang="pt" href="https://headstars.app/pt/"/>
+  <xhtml:link rel="alternate" hreflang="x-default" href="https://headstars.app/en/"/></url>
 </urlset>
