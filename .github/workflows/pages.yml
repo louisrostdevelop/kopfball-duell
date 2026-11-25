@@ -33,7 +33,8 @@ jobs:
       - name: Seite zusammenstellen
         run: |
           mkdir _site
-          cp -r index.html admin.html sw.js manifest.webmanifest og.jpg CNAME LICENSE robots.txt sitemap.xml js css fonts icons vendor legal audio de en landing _site/
+          langs="$(node tools/gen-seo.mjs --dirs)"   # Ordner der Infoseiten (tools/seo/langs.mjs)
+          cp -r index.html admin.html sw.js manifest.webmanifest og.jpg CNAME LICENSE robots.txt sitemap.xml js css fonts icons vendor legal audio $langs landing _site/
           touch _site/.nojekyll
           du -sh _site
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0

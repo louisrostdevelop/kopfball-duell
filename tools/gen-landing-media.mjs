@@ -12,7 +12,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LANGS as SEO_LANGS } from "./seo/langs.mjs";
+import { NEUTRAL_LANG as NEUTRAL, LANGS as SEO_LANGS } from "./seo/langs.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const OUT = join(ROOT, "landing");
@@ -20,7 +20,6 @@ const SAVE_KEY = "kopfball-duell-save-v2";
 /** Sprachen der Infoseiten; sprachneutrale Bilder (Kopfball, Super-Schuss, Köpfe, Arenen, Modi) kommen aus NEUTRAL */
 const LANGS = SEO_LANGS.map(D => D.lang), MEDIA = Object.fromEntries(SEO_LANGS.map(D => [D.lang, D.media]));
 const WITH_STEPS = SEO_LANGS.filter(D => D.pages.friends).map(D => D.lang);
-const NEUTRAL = "de";
 /** Gameplay-Loop: Ausschnitt aus der 1920x1080-Aufnahme (B:H:X:Y) und Größe des Videos */
 const VIDEO_CROP = "1920:800:0:280";
 export const VIDEO = [1600, 666];

@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { ARENAS, CHARS, MODES, PAYMENTS, POWERUPS } from "../js/content/config.js";
 import { SIZES, VIDEO } from "./gen-landing-media.mjs";
 import { DEFAULT_LANG, LANGS } from "./seo/langs.mjs";
+import REF from "./seo/de.mjs";
 
 export const SITE = "https://headstars.app";
 // Sperren der Online-Modi stehen in js/app/matchmaking.js (zieht Browser-Code nach, daher hier nur gelesen)
@@ -21,12 +22,42 @@ const INDEX = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const symbol = id => { const m = INDEX.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`)); if (!m) throw new Error("Symbol fehlt: " + id); return m[0]; };
 const ICONS = ["i-play", "i-users", "i-globe", "i-trophy", "i-star", "i-cal", "i-inf", "i-target", "i-crown", "i-share", "i-bolt", "i-stadium"];
 
+/** Form einer Sprachdatei wie tools/seo/de.mjs: dieselben Felder (ui, media …), Listen gleich lang, Texte nicht leer, nur
+ *  Seitenarten, die es auf Deutsch gibt. Fehlt etwas, bricht der Lauf ab statt „undefined“ auf die Seite zu schreiben. */
+const { lang: _lang, L: _L, pages: _pages, ...SHAPE } = REF;   // Spieltexte prüft der Lauf über „undefined“ im HTML
+function checkLang(D) {
+  const where = `tools/seo/${D.lang}.mjs`;
+  const same = (a, b, at) => {
+    if (Array.isArray(b)) { if (!Array.isArray(a) || a.length !== b.length) throw new Error(`${where}: ${at} braucht ${b.length} Einträge`); a.forEach((x, i) => same(x, b[i], `${at}[${i}]`)); }
+    else if (b && typeof b === "object") { if (!a || typeof a !== "object") throw new Error(`${where}: ${at} fehlt`); for (const k of Object.keys(b)) same(a[k], b[k], at ? `${at}.${k}` : k); }
+    else if (typeof a !== typeof b || a === "") throw new Error(`${where}: ${at} fehlt oder leer`);
+  };
+  if (!/^[a-z]{2}$/.test(D.lang)) throw new Error(`Sprachkürzel ungültig: ${D.lang}`);
+  same(D, SHAPE, "");
+  for (const [kind, x] of Object.entries(D.pages)) {
+    if (!REF.pages[kind]) throw new Error(`${where}: unbekannte Seitenart ${kind}`);
+    if (!/^\/[a-z0-9/-]+\/$/.test(x.path || "") || !/^[a-z0-9_-]{1,40}$/.test(x.src || "") || typeof x.build !== "function") throw new Error(`${where}: pages.${kind} braucht path, src (Kennung wie js/app/track.js) und build`);
+  }
+}
+/** Was build() liefert: Titel, Beschreibung, H1, Einleitung, Abschnitte, FAQ, alles mit Text */
+function checkContent(c, at) {
+  const text = (v, k) => { if (typeof v !== "string" || !v.trim()) throw new Error(`${at}: ${k} fehlt oder leer`); };
+  for (const k of ["title", "desc", "h1", "lead"]) text(c[k], k);
+  if (!Array.isArray(c.sections) || !c.sections.length) throw new Error(`${at}: sections fehlt`);
+  c.sections.forEach((s, i) => { for (const k of ["id", "h2", "html", ...(s.panel ? [] : ["media"])]) text(s[k], `sections[${i}].${k}`); });
+  if (!Array.isArray(c.faq)) throw new Error(`${at}: faq fehlt`);
+  c.faq.forEach((f, i) => { text(f[0], `faq[${i}] Frage`); text(f[1], `faq[${i}] Antwort`); });
+}
+
 /** Seiten aller Sprachen: Pfad, Sprache, Art (main, friends), Kennung für „Jetzt spielen“ (?src=), Daten der Sprache */
 export function pagesOf(langs) {
   if (new Set(langs.map(D => D.lang)).size !== langs.length) throw new Error("Sprache doppelt in tools/seo/langs.mjs");
+  langs.forEach(checkLang);
   return langs.flatMap(D => Object.entries(D.pages).map(([kind, x]) => ({ path: x.path, lang: D.lang, src: x.src, kind, build: x.build, D })));
 }
 export const PAGES = pagesOf(LANGS);
+/** Oberste Ordner der Infoseiten (für .github/workflows/pages.yml: node tools/gen-seo.mjs --dirs) */
+export const pageDirs = (pages = PAGES) => [...new Set(pages.map(p => p.path.split("/")[1]))];
 /** Datei zur URL (GitHub Pages liefert für /de/ die Datei de/index.html) */
 export const fileOf = path => path.slice(1) + "index.html";
 /** Dieselbe Seitenart in allen Sprachen, die sie haben (die Seite selbst eingeschlossen) */
@@ -136,6 +167,7 @@ function langLinks(others, u) {
 
 function page(p, pages) {
   const c = p.build(helpers(p, pages)), u = p.D.ui;
+  checkContent(c, `tools/seo/${p.lang}.mjs pages.${p.kind}`);
   const others = group(p, pages).filter(x => x !== p), siblings = pages.filter(x => x.lang === p.lang && x !== p);
   const cta = (cls = "") => `<a class="lp-btn${cls}" href="${playUrl(p)}">${icon("i-play", "lp-btn__ico")}<span>${u.play}</span></a>`;
   const legal = ["imprint", "privacy", "terms"].map((f, i) => `<a href="/legal/${f}.html?lang=${p.lang}">${u.legal[i]}</a>`).join("");
@@ -222,10 +254,16 @@ export const robots = () => `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap
 /** Alle erzeugten Dateien: Pfad relativ zum Projekt → Inhalt (langs: Sprachen wie in tools/seo/langs.mjs) */
 export function seoFiles(langs = LANGS) {
   const pages = pagesOf(langs);
-  return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), page(p, pages)])), "sitemap.xml": sitemap(pages), "robots.txt": robots() };
+  const html = p => {
+    const out = page(p, pages);
+    if (out.includes("undefined")) throw new Error(`${fileOf(p.path)}: „undefined“ im HTML (Text in tools/seo/${p.lang}.mjs oder Spieltext-Schlüssel in js/content/i18n/${p.lang}.js fehlt)`);
+    return out;
+  };
+  return { ...Object.fromEntries(pages.map(p => [fileOf(p.path), html(p)])), "sitemap.xml": sitemap(pages), "robots.txt": robots() };
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] === fileURLToPath(import.meta.url) && process.argv[2] === "--dirs") console.log(pageDirs().join(" "));   // i18n-ok
+else if (process.argv[1] === fileURLToPath(import.meta.url)) {
   for (const [f, body] of Object.entries(seoFiles())) {
     const to = new URL("../" + f, import.meta.url);
     mkdirSync(dirname(fileURLToPath(to)), { recursive: true });

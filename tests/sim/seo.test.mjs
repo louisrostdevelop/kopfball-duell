@@ -2,9 +2,10 @@
 // keine fremden Spielnamen in Titel/Überschrift/URL, Startseite mit canonical und Structured Data ohne Bewertungen
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-const { seoFiles, pagesOf, alternates, PAGES, SITE, fileOf, mediaOf } = await import("../../tools/gen-seo.mjs");
-const { LANGS, DEFAULT_LANG } = await import("../../tools/seo/langs.mjs");
+const { seoFiles, pagesOf, pageDirs, alternates, PAGES, SITE, fileOf, mediaOf } = await import("../../tools/gen-seo.mjs");
+const { LANGS, DEFAULT_LANG, NEUTRAL_LANG } = await import("../../tools/seo/langs.mjs");
 const read = f => readFileSync(new URL("../../" + f, import.meta.url), "utf8");
 const files = seoFiles();
 const tag = (html, re) => (html.match(re) || [])[1] || "";
@@ -58,6 +59,29 @@ test("dritte Sprache mit nur der Hauptseite: hreflang vollständig und gegenseit
   assert.equal((out["sitemap.xml"].match(/<xhtml:link /g) || []).length, pages.reduce((s, p) => s + alternates(p, pages).length, 0));
   assert.throws(() => seoFiles([...LANGS, { ...xx, pages: { main: { ...xx.pages.main, build: en.pages.main.build } } }]), /verlinkt „friends“/, "Link auf fehlende Seite fällt auf");
   assert.throws(() => pagesOf([...LANGS, en]), /doppelt/);
+});
+
+test("Lücken in einer Sprachdatei oder in den Spieltexten brechen den Lauf ab, statt „undefined“ zu schreiben", () => {
+  const en = LANGS.find(D => D.lang === "en");
+  const xx = (over = {}) => ({ ...en, lang: "xx", name: "Testisch", thisPage: "Testseite", pages: { main: { path: "/xx/", src: "seo-xx",
+    build: h => en.pages.main.build({ ...h, path: kind => (kind === "main" ? "/xx/" : "/en/play-with-friends/") }) } }, ...over });
+  const run = D => seoFiles([...LANGS, D]);
+  for (const l of [DEFAULT_LANG, NEUTRAL_LANG]) assert.ok(LANGS.some(D => D.lang === l), "x-default und Aufnahmesprache stehen in LANGS: " + l);
+  assert.ok(run(xx())["xx/index.html"], "vollständige Test-Sprache läuft");
+  const { play: _play, ...noPlay } = en.ui;
+  assert.throws(() => run(xx({ ui: noPlay })), /tools\/seo\/xx\.mjs: ui\.play fehlt/);
+  assert.throws(() => run(xx({ ui: { ...en.ui, facts: ["Free"] } })), /ui\.facts braucht 3/);
+  assert.throws(() => run(xx({ media: { locale: "xx-XX", host: "Sam" } })), /media\.guest fehlt/);
+  assert.throws(() => run(xx({ name: "" })), /name fehlt oder leer/);
+  assert.throws(() => run(xx({ pages: { blog: { path: "/xx/blog/", src: "seo-xx-blog", build: () => ({}) } } })), /unbekannte Seitenart blog/);
+  assert.throws(() => run(xx({ pages: { main: { path: "xx", src: "seo-xx", build: () => ({}) } } })), /braucht path, src/);
+  const page = build => xx({ pages: { main: { path: "/xx/", src: "seo-xx", build } } });
+  const base = h => en.pages.main.build({ ...h, path: () => "/en/play-with-friends/" });
+  assert.throws(() => run(page(h => ({ ...base(h), lead: undefined }))), /pages\.main: lead fehlt/);
+  assert.throws(() => run(page(h => ({ ...base(h), faq: [["Frage?", ""]] }))), /faq\[0\] Antwort fehlt/);
+  const L = { ...en.L };
+  delete L["arena.eis.name"];
+  assert.throws(() => run(xx({ L })), /xx\/index\.html: „undefined“ im HTML/);
 });
 
 test("„Jetzt spielen“ führt ins Spiel mit Quelle und Sprache der Seite", () => {
@@ -117,9 +141,14 @@ test("Startseite: Titel, canonical, Structured Data ohne Bewertungen, Links zu a
   for (const p of PAGES) assert.match(html, new RegExp(`class="setlink" href="${p.path.slice(1)}"`));
 });
 
-test("Infoseiten werden veröffentlicht", () => {
-  const cp = read(".github/workflows/pages.yml").match(/cp -r ([^\n]+) _site\//)[1].split(/\s+/);
-  for (const f of [...LANGS.map(D => D.lang), "landing", "robots.txt", "sitemap.xml"]) assert.ok(cp.includes(f), f);
+test("Infoseiten werden veröffentlicht: Sprachordner kommen aus tools/seo/langs.mjs", () => {
+  const yml = read(".github/workflows/pages.yml");
+  assert.match(yml, /^\s*langs="\$\(node tools\/gen-seo\.mjs --dirs\)"/m);
+  const cp = yml.match(/cp -r ([^\n]+) _site\//)[1].split(/\s+/);
+  for (const f of ["$langs", "landing", "robots.txt", "sitemap.xml"]) assert.ok(cp.includes(f), f);
+  const dirs = execFileSync(process.execPath, ["tools/gen-seo.mjs", "--dirs"], { cwd: new URL("../../", import.meta.url), encoding: "utf8" }).trim().split(" ");
+  assert.deepEqual(dirs, pageDirs());
+  for (const p of PAGES) assert.ok(dirs.includes(p.path.split("/")[1]), p.path);
 });
 
 test("css/landing.css übernimmt die Tokens aus css/style.css unverändert", () => {
