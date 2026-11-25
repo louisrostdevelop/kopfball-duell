@@ -701,7 +701,7 @@ export default {
   "html.settings.spieler1": "Người chơi 1",
   "html.settings.spieler2": "Người chơi 2",
   "html.settings.springen": "Nhảy",
-  "html.settings.springenKurzTippenHalb": "Chạm nhanh nút nhảy: nhảy thấp, giữ: nhảy hết cỡ. Xuống khi ở dưới đất: xoạc bóng, trên không: dậm, càng cao càng mạnh. Sút: chạm để vung chân, lực đến từ thời điểm chạm bóng. Bóng nằm yên = vồng, bóng ngang đầu = sút thẳng, trên không = vô lê. Emote bằng phím 1 đến 4.",
+  "html.settings.springenKurzTippenHalb": "Chạm nhanh nút nhảy: nhảy thấp, giữ: nhảy hết cỡ. Xuống khi ở dưới đất: xoạc bóng, trên không: dậm, càng cao càng mạnh. Sút: chạm để vung chân, lực đến từ thời điểm chạm bóng. Bóng nằm yên = vồng, bóng ngang đầu = sút sệt, trên không = vô lê. Emote bằng phím 1 đến 4.",
   "html.settings.steuerung": "Điều khiển",
   "html.settings.stick": "Cần analog",
   "html.settings.stick2": "Cần ↓",
